@@ -3,8 +3,20 @@
 #################################################
 
 Base.transpose(S::SymmetricTensors) = copy(S)
+
+function Base.ctranspose(S::SymmetricTensors)
+    S_new = copy(S)
+    @inbounds for i in eachindex(S)
+        S_new[i] = conj(S[i])
+    end
+    return S_new
+end
+
+
 Base.issym(S::SymmetricTensors) = true
 
+symmetrize(S::SymmetricTensors) = copy(S)
+symmetrize!(t1::SymmetricTensors, t2::SymmetricTensors) = copy!(t1, t2)
 
 ######################
 # Double contraction #
@@ -24,6 +36,58 @@ Base.issym(S::SymmetricTensors) = true
     @code :(return s)
 end
 
+function dcontract{dim, T1, T2}(S1::SymmetricTensor{4, dim, T1}, S2::SymmetricTensor{2, dim, T2})
+    Tv = typeof(zero(T1) * zero(T2))
+    t_new = zero(SymmetricTensor{2, dim, Tv})
+    dcontract!(t_new, S1, S2)
+end
+
+
+function dcontract!{dim}(S::SymmetricTensor{2, dim}, S1::SymmetricTensor{4, dim},
+                         S2::SymmetricTensor{2, dim})
+    @inbounds for k in 1:dim, l in 1:k, i in 1:dim, j in 1:i
+            S[i,j] += S1[i,j,k,l] * S2[k,l]
+    end
+    return S
+end
+
+function dcontract{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, S2::SymmetricTensor{4, dim, T2})
+    Tv = typeof(zero(T1) * zero(T2))
+    t_new = zero(SymmetricTensor{2, dim, Tv})
+    dcontract!(t_new, S1, S2)
+end
+
+
+function dcontract!{dim}(S::SymmetricTensor{2, dim}, S1::SymmetricTensor{2, dim},
+                         S2::SymmetricTensor{4, dim})
+    @inbounds for k in 1:dim, l in 1:k, i in 1:dim, j in i:dim
+        S[i,j] += S2[i,j,k,l] * S1[i,j]
+    end
+    return S
+end
+
+#function Base.dot{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, S2::SymmetricTensor{2, dim, T2})
+#    Tv = typeof(zero(T1) * zero(T2))
+#    S = zero(SymmetricTensor{2, dim, Tv})
+#    dot!(S, S1, S2)
+#end
+#
+#
+#@gen_code function dot!{dim}(S::SymmetricTensor{2, dim}, S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
+#    idx(i,j) = compute_index(get_lower_order_tensor(S), i, j)
+#    @code :(data = get_data(S);
+#            data1 = get_data(S1);
+#            data2 = get_data(S2))
+#    for i in 1:dim, j in 1:dim, k in 1:dim
+#        if j != k
+#            @code :(@inbounds v = data[$(idx(i,j))] * data[$(idx(j,k))])
+#        else
+#            @code :(@inbounds v =  2 * data[$(idx(i,j))] * data[$(idx(j,k))])
+#        end
+#    end
+#    @code :(return S)
+#end
+
 
 ########
 # norm #
@@ -32,8 +96,8 @@ end
     idx(i,j) = compute_index(get_lower_order_tensor(S), i, j)
     @code :(data = get_data(S))
     @code :(s = zero(T))
-    for i in 1:dim, j in 1:i, k in 1:dim, l in 1:k
-        @code :(@inbounds v = data[$(idx(i,j)),$(idx(k,l))])
+    for k in 1:dim, l in 1:k, i in 1:dim, j in 1:i
+        @code :(@inbounds v = data[$(idx(i,j)), $(idx(k,l))])
         if i == j && k == l
              @code :(s += v*v)
         elseif i == j || k == l

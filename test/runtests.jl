@@ -1,41 +1,9 @@
 using ContMechTensors
 using Base.Test
 
-import ContMechTensors: n_independent_components, InternalError, get_data
+import ContMechTensors: n_independent_components, ArgumentError, get_data
 
 const T = Float32
-
-########################
-# Promotion/Conversion #
-########################
-
-const WIDE_T = widen(T)
-for dim in (1,2,3)
-    for order in (2,4)
-        tens = Tensor{order, dim, T, div(order,2)}
-        tens_wide = Tensor{order, dim, WIDE_T, div(order,2)}
-
-        @test promote_type(tens, tens) == tens
-        @test promote_type(tens_wide, tens) == tens_wide
-        @test promote_type(tens, tens_wide) == tens_wide
-
-        sym = SymmetricTensor{order, dim, T, div(order,2)}
-        sym_wide = SymmetricTensor{order, dim, WIDE_T, div(order,2)}
-
-        @test promote_type(sym, sym) == sym
-        @test promote_type(sym_wide, sym_wide) == sym_wide
-        @test promote_type(sym, sym_wide) == sym_wide
-        @test promote_type(sym_wide, sym) == sym_wide
-
-        # No automatic promotion between symmetric and nonsymmetric
-        #@test promote_type(tens, sym) == tens
-        #@test promote_type(tens_wide, sym) == tens_wide
-        #@test promote_type(tens, sym_wide) == tens_wide
-        #@test promote_type(sym_wide, tens) == tens_wide
-        #@test promote_type(tens_wide, sym_wide) == tens_wide
-    end
-end
-
 
 
 for dim in (1,2,3)
@@ -62,18 +30,15 @@ for dim in (1,2,3)
         # Constructors #
         ################
 
-        if order == 1
-            t = @inferred Vec(copy(v), Val{dim})
-            @test get_data(t) == v
-            @test_throws InternalError t = Vec(v_err, Val{dim})
-        else
-          t = @inferred Tensor(copy(v), Val{dim})
-          @test get_data(t) == v
 
-          t_sym =  @inferred SymmetricTensor(copy(v_sym), Val{dim})
-          @test get_data(t_sym) == v_sym
-           @test_throws InternalError t = Tensor(v_err, Val{dim})
-           @test_throws InternalError t_sym = SymmetricTensor(v_sym_err, Val{dim})
+        t = @inferred Tensor{order, dim}(copy(v))
+        @test get_data(t) == v
+        @test_throws ArgumentError t = Tensor{order, dim}(v_err)
+
+        if order != 1
+            t_sym =  @inferred SymmetricTensor{order, dim}(copy(v_sym))
+            @test get_data(t_sym) == v_sym
+            @test_throws ArgumentError t_sym = SymmetricTensor{order, dim}(v_sym_err)
         end
 
         #####################################
@@ -99,13 +64,12 @@ for dim in (1,2,3)
         # Simple math #
         ###############
 
-        if order == 1
-            t =  Vec(copy(v), Val{dim})
-            t_one =  one(Vec{dim, Float64})
-        else
-            t =  @inferred Tensor(copy(v), Val{dim})
-            t_one =  @inferred one(Tensor{order, dim, Float64})
-            t_one_sym =  @inferred one(SymmetricTensor{order, dim, Float64})
+        t = Tensor{order, dim}(copy(v))
+        t_one = one(t)
+           # t_one =  one(Vec{dim, Float64})
+        if order != 1
+            #t_one =  @inferred one(Tensor{order, dim, Float64})
+           # t_one_sym =  @inferred one(SymmetricTensor{order, dim, Float64})
         end
 
         @test (@inferred t + t) == 2*t
@@ -115,7 +79,7 @@ for dim in (1,2,3)
         @test (@inferred rand(t) * 0.0) == zero(t)
 
         if order != 1
-            t_sym =  @inferred SymmetricTensor(copy(v_sym), Val{dim})
+            t_sym =  @inferred SymmetricTensor{order, dim}(copy(v_sym))
             @test (@inferred t_sym + t_sym) == 2*t_sym
             @test (@inferred -t_sym) == zero(t_sym) - t_sym
             @test (@inferred 2*t_sym) == t_sym*2
@@ -136,7 +100,7 @@ for dim in (1,2,3)
         n = n_independent_components(dim, false)
 
         if order == 1
-            vec = Vec(rand(dim), Val{dim})
+            vec = Tensor{order, dim}(rand(dim))
             if dim == 1
                 @test vec[:x] == vec[1]
                 @test_throws BoundsError vec[:y]
@@ -235,20 +199,24 @@ end
 
 for dim in (1,2,3)
     for order in (1,2,4)
-        if order == 1
-            t = rand(Vec{dim})
-        else
-            t = rand(Tensor{order, dim})
-            t_sym = rand(SymmetricTensor{order, dim})
-        end
+        t = rand(Tensor{order, dim})
 
         @test t ≈ extract_components(t)
         @test norm(t) ≈ sqrt(sumabs2(extract_components(t)))
 
         if order != 1
+            t_sym = rand(SymmetricTensor{order, dim})
             @test t_sym ≈ extract_components(t_sym)
             @test norm(t_sym) ≈ sqrt(sumabs2(extract_components(t_sym)))
         end
+
+        if order == 2
+            @test det(t) ≈ det(extract_components(t))
+            @test det(t_sym) ≈ det(extract_components(t_sym))
+            @test inv(t) ≈ inv(extract_components(t))
+            @test inv(t_sym) ≈ inv(extract_components(t_sym))
+        end
+
    end
 end
 
@@ -259,105 +227,100 @@ end
 
 # https://en.wikiversity.org/wiki/Continuum_mechanics/Tensor_algebra_identities
 for dim in (1,2,3)
+     println(dim)
+    # Identities with second order and first order
     A = rand(Tensor{2, dim})
     B = rand(Tensor{2, dim})
-    a = rand(Vec{dim, Float64})
-    b = rand(Vec{dim, Float64})
+    C = rand(Tensor{2, dim})
+    I = one(Tensor{2, dim})
+    a = rand(Tensor{1, dim, Float64})
+    b = rand(Tensor{1, dim, Float64})
 
     @test A * B ≈ (A' ⋅ B) * one(A)
-    @test A * (a ⊠ b) ≈ (A ⋅ b) ⋅ a
-    @test (A ⋅ a) ⋅ (B ⋅ b) ≈ (A.' ⋅ B) * (a ⊠ b)
+    @test A * (a ⊗ b) ≈ (A ⋅ b) ⋅ a
+    @test (A ⋅ a) ⋅ (B ⋅ b) ≈ (A.' ⋅ B) * (a ⊗ b)
     @test (A ⋅ a) ⊗ b ≈ A ⋅ (a ⊗ b)
     @test a ⊗ (A ⋅ b) ≈ (A ⋅ (b ⊗ a)).'
     @test a ⊗ (A ⋅ b) ≈ (a ⊗ b) ⋅ A'
+
+    @test A * I ≈ trace(A)
+    @test det(A) ≈ det(A.')
+    @test trace(inv(A) ⋅ A) ≈ dim
+    @test inv(A) ⋅ A ≈ I
+
+    @test (I ⊗ I) * A ≈ trace(A) * I
+    @test (I ⊗ I) * A * A ≈ trace(A)^2
+
+
+    A_sym = rand(SymmetricTensor{2, dim})
+    B_sym = rand(SymmetricTensor{2, dim})
+    C_sym = rand(SymmetricTensor{2, dim})
+    I_sym = one(SymmetricTensor{2, dim})
+
+    @test A_sym * I_sym ≈ trace(A_sym)
+    @test det(A_sym) ≈ det(A_sym.')
+
+    @test (I_sym ⊗ I_sym) * A_sym ≈ trace(A_sym) * I_sym
+    @test (I_sym ⊗ I_sym) * A_sym * A_sym ≈ trace(A_sym)^2
+end
+
+for dim in (1,2,3)
+    println(dim)
+    # Identities with second order and first order
+    II = one(Tensor{4, dim})
+    I = one(Tensor{2, dim})
+    A = rand(Tensor{2, dim})
+    II_sym = one(SymmetricTensor{4, dim})
+    A_sym = rand(SymmetricTensor{2, dim})
+    I_sym = one(SymmetricTensor{2, dim})
+
+
+    @test II * A ≈ A
+    @test A * II ≈ A
+    @test II * A * A ≈ (trace(A.' ⋅ A))
+
+    @test II_sym * A_sym ≈ A_sym
+    @test A_sym * II_sym ≈ A_sym
+
 end
 
 
-#
-#    dim = 2
-#     Ee = rand(SymmetricTensor{4, dim})
-#
-#     E = 200e9
-#     ν = 0.3
-#     μ = E / (2(1+ν))
-#     λ = ν*E / ((1+ν) * (1-2ν))
-#
-#     for i in 1:dim, j in 1:dim, k in 1:dim, l in 1:dim
-#        v = ((i == k && j == l ? μ : 0.0) +
-#            (i == l && j == k ? μ : 0.0) +
-#            (i == j && k == l ? λ : 0.0))
-#         Ee[i,j,k,l] = v
-#      end
-#
-#
-#
-#      ε * (Ee * ε) ==
-#
-#
-#tmp[i][j][k][l] = (((i==k) && (j==l) ? mu : 0.0) +
-#                             ((i==l) && (j==k) ? mu : 0.0) +
-#                             ((i==j) && (k==l) ? lambda : 0.0));
-#
-#for dim in (1,2,3)
-#    for T in (Float32, Float64)
-#        println(dim)
-#        println(T)
-#        n = n_independent_components(SymmetricTensor{2, dim})
-#        t = SymmetricTensor(rand(n), Val{dim})
-#        S2 = SymmetricTensor(rand(n), Val{dim})
-#        S3 = copy(S2)
-#        @test S3 == S2
-#        copy!(S1, S3)
-#        @test S1 == S3
-#        S4 = similar(S1)
-#        @test size(S4) == size(S1)
-#
-#        if dim == 1
-#            @test S1[:x, :x] == S1[1,1]
-#        elseif dim == 2
-#            @test S1[:x, :y] == S1[1,2]
-#            @test S1[:y, :y] == S1[2,2]
-#        elseif dim == 3
-#            @test S3[:x, :z] == S3[1, 3]
-#            @test S3[:z, :y] == S3[3, 2]
-#        end
-#
-#        @test issym(S1) == true
-#        @test transpose(S1) == S1
-#
-#        @test size(S1) == (dim, dim)
-#
-#        @test one(S1) == one(SymmetricTensor{2, dim, T})
-#        @test zero(S1) == zero(SymmetricTensor{2, dim, T})
-#
-#        @test dcontract(S1, one(S1)) == trace(S1)
-#        #@test dot(S1, one(S1)) == S1
-#        v = rand(dim)
-#        @test dot(one(S1), v) == v
-#        # A : B = (A' : B) : 1
-#        #@test dcontract(S1, S2) ≈ dcontract(dot(transpose(S1), S2), one(S1))
-#        # A : (a ⊗ b) = (A ⋅ b) ⋅ a
-#
-#        S1 = SymmetricTensor(rand(n), Val{dim})
-#        S2 = SymmetricTensor(rand(n), Val{dim})
-#        S3 = SymmetricTensor(rand(n), Val{dim})
-#
-#        S = S1 + S2
-#        S = S1 - S2
-#        S = 2*S1
-#        S = -S1
-#        S = S1*2
-#      #  @test dcontract(oprod(S1, S2), S3) ≈ S1 * dcontract(W, V)
-#
-#    end
-#end
-#
-#T = Float64
-#dim = 2
-#S1 = SymmetricTensor(rand(3), Val{dim})
-#S2 = SymmetricTensor(rand(3), Val{dim})
 
-#include("test_transformations.jl")
-#include("test_ops.jl")
+########################
+# Promotion/Conversion #
+########################
 
+const WIDE_T = widen(T)
+for dim in (1,2,3)
+    for order in (1,2,4)
+        if order == 1
+            M = 1
+        else
+            M = div(order, 2)
+        end
+        tens = Tensor{order, dim, T, M}
+        tens_wide = Tensor{order, dim, WIDE_T, M}
 
+        @test promote_type(tens, tens) == tens
+        @test promote_type(tens_wide, tens) == tens_wide
+        @test promote_type(tens, tens_wide) == tens_wide
+
+        A = rand(Tensor{order, dim, T})
+        B = rand(Tensor{order, dim, WIDE_T})
+        @test typeof(A + B) == tens_wide
+
+        if order != 1
+            sym = SymmetricTensor{order, dim, T, M}
+            sym_wide = SymmetricTensor{order, dim, WIDE_T, M}
+
+            @test promote_type(sym, sym) == sym
+            @test promote_type(sym_wide, sym_wide) == sym_wide
+            @test promote_type(sym, sym_wide) == sym_wide
+            @test promote_type(sym_wide, sym) == sym_wide
+
+            A = rand(SymmetricTensor{order, dim, T})
+            B = rand(SymmetricTensor{order, dim, WIDE_T})
+            @test typeof(A + B) == sym_wide
+        end
+    end
+end

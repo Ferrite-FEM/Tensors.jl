@@ -10,9 +10,29 @@ function dcontract!{dim, T, T1, T2}(S::Tensor{4, dim, T}, S1::Tensor{4, dim, T1}
     return S
 end
 
-function dcontract{dim}(S1::Tensor{4, dim}, S2::Tensor{4, dim})
+function dcontract{dim, T1, T2}(S1::Tensor{4, dim, T1}, S2::Tensor{4, dim, T2})
     Tv = typeof(zero(T1) * zero(T2))
     dcontract!(zero(Tensor{4, dim, Tv}), S1, S2)
+end
+
+function dcontract{dim, T1, T2}(S1::Tensor{4, dim, T1}, S2::Tensor{2, dim, T2})
+    Tv = typeof(zero(T1) * zero(T2))
+    dcontract!(zero(Tensor{2, dim, Tv}), S1, S2)
+end
+
+function dcontract!{dim}(S::Tensor{2, dim}, S1::Tensor{4, dim}, S2::Tensor{2, dim})
+    A_mul_B!(get_data(S), get_data(S1), get_data(S2))
+    return S
+end
+
+function dcontract{dim, T1, T2}(S1::Tensor{2, dim, T1}, S2::Tensor{4, dim, T2})
+    Tv = typeof(zero(T1) * zero(T2))
+    dcontract!(zero(Tensor{2, dim, Tv}), S1, S2)
+end
+
+function dcontract!{dim}(S::Tensor{2, dim}, S1::Tensor{2, dim}, S2::Tensor{4, dim})
+    At_mul_B!(get_data(S), get_data(S2), get_data(S1))
+    return S
 end
 
 Base.(:*)(S1::AbstractTensor, S2::AbstractTensor) = dcontract(S1, S2)
@@ -45,9 +65,9 @@ end
 
 function otimes{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2})
     Tv = typeof(zero(T1) * zero(T2))
-    n = n_independent_components(Tensor{2, dim, Tv})
+    n = n_independent_components(dim, false)
     S = Tensor{2, dim, Tv, 1}(zeros(Tv, n))
-    otimes_unsym!(S, v1, v2)
+    otimes!(S, v1, v2)
 end
 
 @gen_code function otimes!{dim}(S::Tensor{2, dim}, v1::Vec{dim}, v2::Vec{dim})
@@ -62,12 +82,24 @@ end
 const ⊗ = otimes
 
 
+symmetrize(t::AllTensors) = symmetrize!(similar(t), t)
+
+function symmetrize!{dim}(t1::Tensors{dim}, t2::Tensors{dim})
+    @assert get_base(typeof(t1)) == get_base(typeof(t2))
+    for i in 1:dim, j in 1:i
+        @inbounds v = 0.5 * (t2[i,j] + t2[j,i])
+        t1[i,j] = v
+        t1[j,i] = v
+    end
+    return t1
+end
+
 ################
 # Dot products #
 ################
 function Base.dot{dim, T1, T2}(S1::Tensor{2, dim, T1}, v2::Vec{dim, T2})
     Tv = eltype(zero(T1) * zero(T2))
-    v = zero(Vec{dim, Tv})
+    v = zero(Tensor{1, dim, Tv})
     dot!(v, S1, v2)
 end
 
@@ -151,8 +183,8 @@ Base.mean{dim}(S::SecondOrderTensor{dim}) = trace(S) / dim
 ###############
 # Determinant #
 ###############
-@gen_code function det{dim, T, M}(S::Tensor{2, dim, T, M})
-    idx(i,j) = compute_sym_index(S, i, j)
+@gen_code function Base.det{dim, T}(S::SecondOrderTensor{dim, T})
+    idx(i,j) = compute_index(S, i, j)
     @code :(v = get_data(S))
     if dim == 1
         @code :(@inbounds d = v[1])
@@ -165,6 +197,47 @@ Base.mean{dim}(S::SecondOrderTensor{dim}) = trace(S) / dim
     end
     @code :(return d)
 end
+
+@gen_code function Base.inv{dim, T}(t::SecondOrderTensor{dim, T})
+    idx(i,j) = compute_index(t, i, j)
+    @code :(d = det(t))
+    @code :(v = get_data(t))
+    @code :(t_inv = similar(t))
+    @code :(v_inv = get_data(t_inv))
+    if dim == 1
+        @code :(@inbounds v_inv[1] = 1/d)
+    elseif dim == 2
+        @code :(@inbounds begin
+            v_inv[$(idx(1,1))] =  v[$(idx(2,2))] / d
+            v_inv[$(idx(1,2))] = -v[$(idx(1,2))] / d
+            v_inv[$(idx(2,1))] = -v[$(idx(2,1))] / d
+            v_inv[$(idx(2,2))] =  v[$(idx(1,1))] / d
+        end)
+    else
+        @code :(@inbounds begin
+            v_inv[$(idx(1,1))] =  (v[$(idx(2,2))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,2))]) / d
+            v_inv[$(idx(2,1))] = -(v[$(idx(2,1))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,1))]) / d
+            v_inv[$(idx(3,1))] =  (v[$(idx(2,1))]*v[$(idx(3,2))] - v[$(idx(2,2))]*v[$(idx(3,1))]) / d
+
+            v_inv[$(idx(1,2))] = -(v[$(idx(1,2))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,2))]) / d
+            v_inv[$(idx(2,2))] =  (v[$(idx(1,1))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,1))]) / d
+            v_inv[$(idx(3,2))] = -(v[$(idx(1,1))]*v[$(idx(3,2))] - v[$(idx(1,2))]*v[$(idx(3,1))]) / d
+
+            v_inv[$(idx(1,3))] =  (v[$(idx(1,2))]*v[$(idx(2,3))] - v[$(idx(1,3))]*v[$(idx(2,2))]) / d
+            v_inv[$(idx(2,3))] = -(v[$(idx(1,1))]*v[$(idx(2,3))] - v[$(idx(1,3))]*v[$(idx(2,1))]) / d
+            v_inv[$(idx(3,3))] =  (v[$(idx(1,1))]*v[$(idx(2,2))] - v[$(idx(1,2))]*v[$(idx(2,1))]) / d
+        end)
+    end
+    @code :(return t_inv)
+end
+
+
+
+function Base.inv{dim, T}(t::FourthOrderTensor{dim, T})
+    typeof(t)(inv(get_data(t)))
+end
+
+
 
 #############
 # Transpose #
