@@ -297,6 +297,22 @@ for dim in (1,2,3)
     inv(A) * A ≈ II
 end
 
+for dim in (1,2,3)
+    for order in (1,2,4)
+        a = rand(Tensor{order, dim})
+        b = similar(a)
+        load_components!(b, extract_components(a))
+        @test a ≈ b
+        if order != 1
+            a = rand(SymmetricTensor{order, dim})
+            b = similar(a)
+            load_components!(b, extract_components(a))
+            @test a ≈ b
+        end
+    end
+end
+
+
 
 ########################
 # Promotion/Conversion #

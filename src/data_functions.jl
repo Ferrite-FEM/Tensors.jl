@@ -17,9 +17,7 @@ end
 
 function load_components!{dim, T}(t::SymmetricTensor{2, dim}, arr::Matrix{T})
     @assert size(arr) == size(t)
-    @inbounds for i in 1:dim, j in 1:j
+    @inbounds for i in 1:dim, j in 1:i
         t[i,j] = 0.5 * (arr[i,j] + arr[j,i])
     end
 end
-
-
