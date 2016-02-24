@@ -39,15 +39,11 @@ Base.(:*)(S1::AbstractTensor, S2::AbstractTensor) = dcontract(S1, S2)
 
 
 ########
-# norm #
+# Norm #
 ########
 Base.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
 Base.norm(S::Tensor{4}) = sqrt(sumabs2(get_data(S)))
 
-
-########
-# Norm #
-########
 
 ################
 # Open product #
@@ -94,6 +90,7 @@ function symmetrize!{dim}(t1::Tensors{dim}, t2::Tensors{dim})
     return t1
 end
 
+
 ################
 # Dot products #
 ################
@@ -139,6 +136,7 @@ function dot!{dim}(S::Tensor{2, dim}, S1::Tensor{2, dim}, S2::Tensor{2, dim})
     return S
 end
 
+
 #########
 # Trace #
 #########
@@ -155,6 +153,7 @@ end
     end
     @code :(return s)
 end
+
 
 ############
 # Deviator #
@@ -173,6 +172,7 @@ end
 end
 
 dev(S::SecondOrderTensor) = dev!(similar(S), S)
+
 
 ########
 # Mean #
@@ -197,6 +197,11 @@ Base.mean{dim}(S::SecondOrderTensor{dim}) = trace(S) / dim
     end
     @code :(return d)
 end
+
+
+###########
+# Inverse #
+###########
 
 @gen_code function Base.inv{dim, T}(t::SecondOrderTensor{dim, T})
     idx(i,j) = compute_index(t, i, j)
@@ -232,16 +237,15 @@ end
 end
 
 
-
 function Base.inv{dim, T}(t::FourthOrderTensor{dim, T})
     typeof(t)(inv(get_data(t)))
 end
 
 
-
 #############
 # Transpose #
 #############
+
 function Base.transpose{dim}(S::Tensor{2, dim})
     S_new = copy(S)
     @inbounds for i in 1:dim, j in 1:i
@@ -259,4 +263,3 @@ function Base.ctranspose{dim}(S::Tensor{2, dim})
     end
     return S_new
 end
-

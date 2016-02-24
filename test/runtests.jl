@@ -66,11 +66,6 @@ for dim in (1,2,3)
 
         t = Tensor{order, dim}(copy(v))
         t_one = one(t)
-           # t_one =  one(Vec{dim, Float64})
-        if order != 1
-            #t_one =  @inferred one(Tensor{order, dim, Float64})
-           # t_one_sym =  @inferred one(SymmetricTensor{order, dim, Float64})
-        end
 
         @test (@inferred t + t) == 2*t
         @test (@inferred -t) == zero(t) - t
@@ -193,7 +188,6 @@ for dim in (1,2,3)
             @test (@inferred trace(t)) == sum([t[i,i,i,i] for i in 1:dim])
             @test (@inferred trace(t_sym)) == sum([t_sym[i,i,i,i] for i in 1:dim])
         end
-        #dcontract(S1, S2) ≈ dcontract(dot(transpose(S1), S2), one(S1))
    end
 end
 
@@ -274,7 +268,6 @@ for dim in (1,2,3)
     A_sym = rand(SymmetricTensor{2, dim})
     I_sym = one(SymmetricTensor{2, dim})
 
-
     @test II * A ≈ A
     @test A * II ≈ A
     @test II * A * A ≈ (trace(A.' ⋅ A))
@@ -283,8 +276,6 @@ for dim in (1,2,3)
     @test A_sym * II_sym ≈ A_sym
 
 end
-
-
 
 ########################
 # Promotion/Conversion #

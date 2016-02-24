@@ -66,28 +66,6 @@ function dcontract!{dim}(S::SymmetricTensor{2, dim}, S1::SymmetricTensor{2, dim}
     return S
 end
 
-#function Base.dot{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, S2::SymmetricTensor{2, dim, T2})
-#    Tv = typeof(zero(T1) * zero(T2))
-#    S = zero(SymmetricTensor{2, dim, Tv})
-#    dot!(S, S1, S2)
-#end
-#
-#
-#@gen_code function dot!{dim}(S::SymmetricTensor{2, dim}, S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
-#    idx(i,j) = compute_index(get_lower_order_tensor(S), i, j)
-#    @code :(data = get_data(S);
-#            data1 = get_data(S1);
-#            data2 = get_data(S2))
-#    for i in 1:dim, j in 1:dim, k in 1:dim
-#        if j != k
-#            @code :(@inbounds v = data[$(idx(i,j))] * data[$(idx(j,k))])
-#        else
-#            @code :(@inbounds v =  2 * data[$(idx(i,j))] * data[$(idx(j,k))])
-#        end
-#    end
-#    @code :(return S)
-#end
-
 
 ########
 # norm #

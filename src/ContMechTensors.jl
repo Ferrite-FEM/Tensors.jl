@@ -290,9 +290,6 @@ function Base.promote_rule{dim , A <: Number, B <: Number, order, M}(::Type{Tens
 end
 
 
-#function Base.convert{order, dim}(::Type{Tensor{order, dim}},
-
-
 # copy / copy! #
 ################
 function Base.copy!(t1::AllTensors, t2::AllTensors)
@@ -337,7 +334,6 @@ end
 # Zero, one, rand #
 ###################
 
-
 for (f, f!) in ((:zero, :zero!), (:rand, :rand!), (:one, :one!))
     @eval begin
         function Base.$(f){order, dim, T, M}(Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}})
@@ -357,7 +353,6 @@ for (f, f!) in ((:zero, :zero!), (:rand, :rand!), (:one, :one!))
 end
 
 
-
 zero!(t::AllTensors) = (fill!(get_data(t), 0.0); return t)
 
 function rand!{dim, T}(t::AllTensors{dim, T})
@@ -372,7 +367,6 @@ end
 set_diag!(S::Vec, v, i) = S[i] = v
 set_diag!(S::SecondOrderTensor, v, i) = S[i,i] = v
 set_diag!(S::FourthOrderTensor, v, i) = S[i,i,i,i] = v
-
 
 
 function one!{dim}(t::Union{SecondOrderTensor{dim}, Vec{dim}})
@@ -394,22 +388,9 @@ function one!{dim}(t::FourthOrderTensor{dim})
     return t
 end
 
-#function one!{dim}(t::SymmetricTensor{4, dim})
-#    fill!(get_data(t), 0.0)
-#    @inbounds for i in 1:dim, j in 1:i, k in 1:dim, l in 1:k
-#        if i == k && j == 1
-#            t[i,j,k,l] += 0.5
-#        end
-#        if i == l && j == k
-#            t[i,j,k,l] += 0.5
-#        end
-#    end
-#    return t
-#end
 
 include("symmetric_ops.jl")
 include("tensor_ops.jl")
 include("data_functions.jl")
-
 
 end # module
