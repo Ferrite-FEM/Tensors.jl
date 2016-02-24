@@ -8,7 +8,7 @@ immutable InternalError <: Exception end
 
 export SymmetricTensor, Tensor, Vec
 
-export otimes, otimes_unsym, otimes_unsym!, otimes!, ⊗, ⊠, dcontract, dev, dev!
+export otimes, otimes_unsym, ⊗, dcontract, dev, dev!
 export extract_components, load_components!, symmetrize, symmetrize!
 
 #########
