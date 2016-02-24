@@ -1,6 +1,7 @@
 # ContMechTensors
 
-[![Build Status](https://travis-ci.org/KristofferC/ContMechTensors.jl.svg?branch=master)](https://travis-ci.org/KristofferC/ContMechTensors.jl)
+[![Build Status](https://travis-ci.org/KristofferC/ContMechTensors.jl.svg?branch=master)](https://travis-ci.org/KristofferC/ContMechTensors.jl) [![codecov.io](https://codecov.io/github/KristofferC/ContMechTensors.jl/coverage.svg?branch=master)](https://codecov.io/github/KristofferC/ContMechTensors.jl?branch=master)
+
 
 
 
