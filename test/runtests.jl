@@ -221,7 +221,6 @@ end
 
 # https://en.wikiversity.org/wiki/Continuum_mechanics/Tensor_algebra_identities
 for dim in (1,2,3)
-     println(dim)
     # Identities with second order and first order
     A = rand(Tensor{2, dim})
     B = rand(Tensor{2, dim})
@@ -235,7 +234,7 @@ for dim in (1,2,3)
     @test (A ⋅ a) ⋅ (B ⋅ b) ≈ (A.' ⋅ B) * (a ⊗ b)
     @test (A ⋅ a) ⊗ b ≈ A ⋅ (a ⊗ b)
     @test a ⊗ (A ⋅ b) ≈ (A ⋅ (b ⊗ a)).'
-    @test a ⊗ (A ⋅ b) ≈ (a ⊗ b) ⋅ A'
+    @test a ⊗ (A ⋅ b) ≈ (a ⊗ b) ⋅ A.'
 
     @test A * I ≈ trace(A)
     @test det(A) ≈ det(A.')
@@ -244,6 +243,10 @@ for dim in (1,2,3)
 
     @test (I ⊗ I) * A ≈ trace(A) * I
     @test (I ⊗ I) * A * A ≈ trace(A)^2
+
+    @test A ⋅ a ≈ a ⋅ A'
+
+    @test symmetrize(A) ≈ 0.5(A + A')
 
 
     A_sym = rand(SymmetricTensor{2, dim})
@@ -259,7 +262,6 @@ for dim in (1,2,3)
 end
 
 for dim in (1,2,3)
-    println(dim)
     # Identities with second order and first order
     II = one(Tensor{4, dim})
     I = one(Tensor{2, dim})
@@ -276,6 +278,25 @@ for dim in (1,2,3)
     @test A_sym * II_sym ≈ A_sym
 
 end
+
+for dim in (1,2,3)
+    # Identities with second order and first order
+    II = one(Tensor{4, dim})
+
+    II * II ≈ II
+    A = rand(Tensor{4, dim})
+    inv(A) * A ≈ II
+end
+
+for dim in (1,2,3)
+    # Identities with second order and first order
+    II = one(Tensor{4, dim})
+
+    II * II ≈ II
+    A = rand(Tensor{4, dim})
+    inv(A) * A ≈ II
+end
+
 
 ########################
 # Promotion/Conversion #

@@ -14,9 +14,9 @@ export extract_components, load_components!, symmetrize, symmetrize!
 #########
 # Types #
 #########
-abstract AbstractTensor{order, dim, T, M} <: AbstractArray{T, order}
+abstract AbstractTensor{order, dim, T <: Real, M} <: AbstractArray{T, order}
 
-immutable SymmetricTensor{order, dim, T, M} <: AbstractTensor{order, dim, T, M}
+immutable SymmetricTensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T, M}
    data::Array{T, M}
 end
 

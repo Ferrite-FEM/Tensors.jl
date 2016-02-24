@@ -4,14 +4,6 @@
 
 Base.transpose(S::SymmetricTensors) = copy(S)
 
-function Base.ctranspose(S::SymmetricTensors)
-    S_new = copy(S)
-    @inbounds for i in eachindex(S)
-        S_new[i] = conj(S[i])
-    end
-    return S_new
-end
-
 
 Base.issym(S::SymmetricTensors) = true
 

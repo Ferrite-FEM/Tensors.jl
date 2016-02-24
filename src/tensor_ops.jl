@@ -80,7 +80,7 @@ const ⊗ = otimes
 
 symmetrize(t::AllTensors) = symmetrize!(similar(t), t)
 
-function symmetrize!{dim}(t1::Tensors{dim}, t2::Tensors{dim})
+function symmetrize!{dim}(t1::Tensor{2, dim}, t2::Tensor{2, dim})
     @assert get_base(typeof(t1)) == get_base(typeof(t2))
     for i in 1:dim, j in 1:i
         @inbounds v = 0.5 * (t2[i,j] + t2[j,i])
@@ -246,6 +246,8 @@ end
 # Transpose #
 #############
 
+Base.transpose{dim}(S::Tensor{1, dim}) = copy(S)
+
 function Base.transpose{dim}(S::Tensor{2, dim})
     S_new = copy(S)
     @inbounds for i in 1:dim, j in 1:i
@@ -255,11 +257,4 @@ function Base.transpose{dim}(S::Tensor{2, dim})
     return S_new
 end
 
-function Base.ctranspose{dim}(S::Tensor{2, dim})
-    S_new = copy(S)
-    @inbounds for i in 1:dim, j in 1:i
-        S_new[i,j] = conj(S[j,i])
-        S_new[j,i] = conj(S[i,j])
-    end
-    return S_new
-end
+Base.ctranspose(S::AllTensors) = transpose(S)
