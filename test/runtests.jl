@@ -11,52 +11,15 @@ for dim in (1,2,3)
         n_sym = n_independent_components(dim, true)
         n = n_independent_components(dim, false)
 
-        if order == 1
-            v = rand(dim)
-            v_err = rand(dim + 1)
-        elseif order == 2
-            v = rand(n)
-            v_sym = rand(n_sym)
-            v_err = rand(n+1)
-            v_sym_err = rand(n_sym+1)
-        elseif order == 4
-            v = rand(n,n)
-            v_sym = rand(n_sym, n_sym)
-            v_err = rand(n+1, n+1)
-            v_sym_err = rand(n_sym+1, n_sym+1)
-        end
 
         ################
         # Constructors #
         ################
 
-
-        t = @inferred Tensor{order, dim}(copy(v))
-        @test get_data(t) == v
-        @test_throws ArgumentError t = Tensor{order, dim}(v_err)
+        t = @inferred rand(Tensor{order, dim})
 
         if order != 1
-            t_sym =  @inferred SymmetricTensor{order, dim}(copy(v_sym))
-            @test get_data(t_sym) == v_sym
-            @test_throws ArgumentError t_sym = SymmetricTensor{order, dim}(v_sym_err)
-        end
-
-        #####################################
-        # copy, copy!, isequal, ==, similar #
-        #####################################
-
-        t_copy = @inferred copy(t)
-        @test t_copy == t
-        t_sim = @inferred similar(t)
-        copy!(t_sim, t)
-        @test t_sim == t
-
-        if order != 1
-            t_sym_copy =  @inferred copy(t_sym)
-            @test t_sym_copy == t_sym
-            t_sym_sim =  @inferred similar(t_sym)
-            copy!(t_sym_sim, t_sym)
-            @test t_sym_sim == t_sym
+            @inferred rand(Tensor{order, dim})
         end
 
 
@@ -64,8 +27,8 @@ for dim in (1,2,3)
         # Simple math #
         ###############
 
-        t = Tensor{order, dim}(copy(v))
-        t_one = one(t)
+        t = rand(Tensor{order, dim})
+        t_one = one(Tensor{order, dim})
 
         @test (@inferred t + t) == 2*t
         @test (@inferred -t) == zero(t) - t
@@ -74,7 +37,7 @@ for dim in (1,2,3)
         @test (@inferred rand(t) * 0.0) == zero(t)
 
         if order != 1
-            t_sym =  @inferred SymmetricTensor{order, dim}(copy(v_sym))
+            t_sym =  @inferred rand(SymmetricTensor{order, dim})
             @test (@inferred t_sym + t_sym) == 2*t_sym
             @test (@inferred -t_sym) == zero(t_sym) - t_sym
             @test (@inferred 2*t_sym) == t_sym*2
@@ -97,70 +60,28 @@ for dim in (1,2,3)
         if order == 1
             vec = Tensor{order, dim}(rand(dim))
             if dim == 1
-                @test vec[:x] == vec[1]
-                @test_throws BoundsError vec[:y]
                 @test_throws BoundsError vec[2]
-                vec[:x] = 2.0
-                @test vec[1] == 2.0
             elseif dim == 2
-                @test vec[:y] == vec[2]
-                @test vec[:x] == vec[1]
-                @test_throws BoundsError vec[:z]
                 @test_throws BoundsError vec[3]
-                vec[:y] = 2.0
-                @test vec[2] == 2.0
             elseif dim == 3
-                @test vec[:x] == vec[1]
-                @test vec[:z] == vec[3]
-                @test_throws BoundsError vec[:a]
                 @test_throws BoundsError vec[4]
-                vec[:z] = 2.0
-                @test vec[3] == 2.0
             else
                 for t in (SymmetricTensor(rand(n), Val{dim}), Tensor(rand(n), Val{dim}))
                     if order == 2
                         if dim == 1
-                            @test t[:x, :x] == t[1,1]
-                            @test_throws BoundsError t[:x, :y]
                             @test_throws BoundsError t[1, 2]
-                            t[:x, :x] = 2.0
-                            @test t[1, 1] == 2.0
                         elseif dim == 2
-                            @test t[:x, :y] == t[1,2]
-                            @test t[:y, :y] == t[2,2]
-                            @test_throws BoundsError t[:z, :y]
                             @test_throws BoundsError t[3, 1]
-                            t[:y, :y] = 2.0
-                            @test t[2,2] == 2.0
                         elseif dim == 3
-                            @test t[:x, :z] == t[1, 3]
-                            @test t[:z, :y] == t[3, 2]
-                            @test_throws BoundsError t[:a, :y]
                             @test_throws BoundsError t[3, 4]
-                            t[:z, :y] = 2.0
-                            @test t[3,2] == 2.0
                         end
                     else
                         if dim == 1
-                            @test t[:x, :x, :x, :x] == t[1,1,1,1]
-                            @test_throws BoundsError t[:x, :y, :x, :x]
                             @test_throws BoundsError t[1, 1, 2, 1]
-                            t[:x, :x, :x, :x] = 2.0
-                            @test t[1,1,1,1] == 2.0
                         elseif dim == 2
-                            @test t[:x, :y, :y, :x] == t[1,2,2,1]
-                            @test t[:y, :x, :y, :x] == t[2,1,2,1]
-                            @test_throws BoundsError t[:x, :y, :x, :z]
                             @test_throws BoundsError t[1, 1, 3, 1]
-                            t[:y, :x, :y, :x] = 2.0
-                            @test t[2,1,2,1] == 2.0
                         elseif dim == 3
-                            @test t[:z, :y, :y, :x] == t[3,2,2,1]
-                            @test t[:y, :x, :y, :z] == t[2,1,2,3]
-                            @test_throws BoundsError t[:x, :y, :x, :a]
                             @test_throws BoundsError t[1, 4, 3, 1]
-                            t[:y, :x, :y, :z] = 2.0
-                            @test t[2,1,2,3] == 2.0
                         end
                     end
                 end
@@ -179,11 +100,11 @@ for dim in (1,2,3)
             @test (@inferred trace(t)) == sum([t[i,i] for i in 1:dim])
             @test (@inferred trace(t_sym)) == sum([t_sym[i,i] for i in 1:dim])
 
-            @test_approx_eq_eps (mean(dev(t)) / norm(t)) 0.0 1e-14
-            @test_approx_eq_eps (mean(dev(t_sym)) / norm(t_sym)) 0.0 1e-14
+            #@test_approx_eq_eps (mean(dev(t)) / norm(t)) 0.0 1e-14
+            #@test_approx_eq_eps (mean(dev(t_sym)) / norm(t_sym)) 0.0 1e-14
 
-            @inferred mean(dev(t_sym)) / norm(t_sym)
-            @inferred mean(dev(t_sym)) / norm(t_sym)
+            #@inferred mean(dev(t_sym)) / norm(t_sym)
+            #@inferred mean(dev(t_sym)) / norm(t_sym)
         elseif order == 4
             @test (@inferred trace(t)) == sum([t[i,i,i,i] for i in 1:dim])
             @test (@inferred trace(t_sym)) == sum([t_sym[i,i,i,i] for i in 1:dim])
@@ -230,13 +151,13 @@ for dim in (1,2,3)
     b = rand(Tensor{1, dim, Float64})
 
     @test A * B ≈ (A' ⋅ B) * one(A)
-    @test A * (a ⊗ b) ≈ (A ⋅ b) ⋅ a
-    @test (A ⋅ a) ⋅ (B ⋅ b) ≈ (A.' ⋅ B) * (a ⊗ b)
+    @test dcontract(A, (a ⊗ b)) ≈ (A ⋅ b) ⋅ a
+    @test (A ⋅ a) ⋅ (B ⋅ b) ≈ dcontract((A.' ⋅ B), (a ⊗ b))
     @test (A ⋅ a) ⊗ b ≈ A ⋅ (a ⊗ b)
     @test a ⊗ (A ⋅ b) ≈ (A ⋅ (b ⊗ a)).'
     @test a ⊗ (A ⋅ b) ≈ (a ⊗ b) ⋅ A.'
 
-    @test A * I ≈ trace(A)
+    @test dcontract(A, I) ≈ trace(A)
     @test det(A) ≈ det(A.')
     @test trace(inv(A) ⋅ A) ≈ dim
     @test inv(A) ⋅ A ≈ I

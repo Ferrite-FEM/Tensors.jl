@@ -35,7 +35,7 @@ julia> one(SymmetricTensor{2, 2})
 
 ## Indexing
 
-Indexing into a `(Symmetric)Tensor{dim, order}` is performed like for an `Array` of dimension `order`. The symbols `:x, :y, :z` can also be used.
+Indexing into a `(Symmetric)Tensor{dim, order}` is performed like for an `Array` of dimension `order`. 
 
 ```jl
 julia> A = rand(Tensor{2, 2})
@@ -43,31 +43,27 @@ julia> A = rand(Tensor{2, 2})
  0.771481  0.865792
  0.860747  0.109753
 
-julia> A[:x, :y]
-0.8657915183351226
-
 julia> A[1, 2]
 0.8657915183351226
 
 julia> B = rand(SymmetricTensor{4, 2});
 
-julia> B[:x,:y,:x,:x]
+julia> B[1, 2, 1, 2]
 0.10221501099081753
 ```
 
 ## Operations
 
+The symbol `*` is overloaded for double contractions between fourth and second order tensors, and single contractions between two second order tensors.
+
 ### Double contractions
 
-Double contractions of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n - 4`. The symbol `*` is overloaded for double contractions but `dcontract(A, B)` can also be used. To store the result in a preallocated tensor, use `dcontract!(C, A, B)`
+Double contractions of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n - 4`.  `dcontract(A, B)` can also be used:
 
 ```jl
 julia> A = rand(SymmetricTensor{2, 2});
 
 julia> B = rand(SymmetricTensor{2, 2});
-
-julia> A*B
-0.9392510193487607
 
 julia> dcontract(A,B)
 0.9392510193487607
@@ -75,7 +71,7 @@ julia> dcontract(A,B)
 
 ### Single contraction (dot products)
 
-Single contractions or scalar products of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n - 2`. The symbol `⋅` is overloaded for scalar products but `dot(A, B)` can also be used. To store the result in a preallocated tensor, use `otimes!(C, A, B)`. Since dot products between symmetric tensors does not give a symmetric result it is not implemented.
+Single contractions or scalar products of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n - 2`. The symbol `⋅  ` is overloaded for scalar products but `dot(A, B)` can also be used.  Since dot products between two symmetric tensors does not give a symmetric result it is not implemented.
 
 ```jl
 julia> A = rand(Tensor{2, 2})
@@ -97,7 +93,7 @@ julia> A ⋅ B
 ### Tensor products
 
 Tensor products or open products of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n`.
-The symbol `⊗` is overloaded for tensor products but `otimes(a, b)` can also be used. To store the result in a preallocated tensor, use `otimes!(c, a, b)`
+The symbol `⊗` is overloaded for tensor products but `otimes(a, b)` can also be used.
 
 ```jl
 julia> A = rand(SymmetricTensor{2, 2});
@@ -124,6 +120,8 @@ For all type of tensors the following operators are implemented; `trace`, `norm`
 For second order tensors: `dev`, `det`.
 
 For second and fourth order tensors: `inv`, `transpose`.
+
+There is also a special function for computing `F' ⋅    F` between two general second order tensors which is called `tdot` and returns a `SymmetricTensor`.
 
 
 

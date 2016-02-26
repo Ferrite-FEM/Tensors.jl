@@ -1,45 +1,67 @@
-__precompile__()
+#__precompile__()
 
 module ContMechTensors
 
-include("utilities.jl")
+
+if VERSION <= v"0.5.0-dev"
+    macro boundscheck(exp)
+        esc(exp)
+    end
+end
+
 
 immutable InternalError <: Exception end
 
-export SymmetricTensor, Tensor, Vec
+export SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
 export otimes, otimes_unsym, ⊗, dcontract, dev, dev!
 export extract_components, load_components!, symmetrize, symmetrize!
+export setindex, store!, tdot
 
 #########
 # Types #
 #########
-abstract AbstractTensor{order, dim, T <: Real, M} <: AbstractArray{T, order}
+abstract AbstractTensor{order, dim, T <: Real} <: AbstractArray{T, order}
 
-immutable SymmetricTensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T, M}
-   data::Array{T, M}
+
+immutable SymmetricTensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
+   data::NTuple{M, T}
 end
 
-immutable Tensor{order, dim, T , M} <: AbstractTensor{order, dim, T, M}
-   data::Array{T, M}
+immutable Tensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
+   data::NTuple{M, T}
 end
-
 
 ###############
 # Typealiases #
 ###############
-typealias Vec{dim, T} Tensor{1, dim, T, 1}
 
-typealias AllTensors{dim, T} Union{SymmetricTensor{2, dim, T, 1}, Tensor{2, dim, T, 1},
-                                   SymmetricTensor{4, dim, T, 2}, Tensor{4, dim, T, 2},
+
+typealias Vec{dim, T, M} Tensor{1, dim, T, dim}
+
+typealias AllTensors{dim, T} Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T},
+                                   SymmetricTensor{4, dim, T}, Tensor{4, dim, T},
                                    Vec{dim, T}}
 
-typealias SecondOrderTensor{dim, T} Union{SymmetricTensor{2, dim, T, 1}, Tensor{2, dim, T, 1}}
-typealias FourthOrderTensor{dim, T} Union{SymmetricTensor{4, dim, T, 2}, Tensor{4, dim, T, 2}}
 
-typealias SymmetricTensors{dim, T} Union{SymmetricTensor{2, dim, T, 1}, SymmetricTensor{4, dim, T, 2}}
-typealias Tensors{dim, T} Union{Tensor{2, dim, T, 1}, Tensor{4, dim, T, 2},
+typealias SecondOrderTensor{dim, T} Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T}}
+typealias FourthOrderTensor{dim, T} Union{SymmetricTensor{4, dim, T}, Tensor{4, dim, T}}
+typealias SymmetricTensors{dim, T} Union{SymmetricTensor{2, dim, T}, SymmetricTensor{4, dim, T}}
+typealias Tensors{dim, T} Union{Tensor{2, dim, T}, Tensor{4, dim, T},
                                    Vec{dim, T}}
+
+include("utilities.jl")
+include("tuple_utils.jl")
+include("tuple_linalg.jl")
+include("symmetric_tuple_linalg.jl")
+
+include("indexing.jl")
+include("promotion_conversion.jl")
+include("tensor_ops.jl")
+include("symmetric_ops.jl")
+include("data_functions.jl")
+
+
 
 ##############################
 # Utility/Accessor Functions #
@@ -47,7 +69,7 @@ typealias Tensors{dim, T} Union{Tensor{2, dim, T, 1}, Tensor{4, dim, T, 2},
 
 get_data(t::AbstractTensor) = t.data
 
-@inline function n_independent_components(dim, issym)
+function n_independent_components(dim, issym)
     dim == 1 && return 1
     if issym
         dim == 2 && return 3
@@ -59,26 +81,41 @@ get_data(t::AbstractTensor) = t.data
     return -1
 end
 
+n_components{dim}(::Type{SymmetricTensor{2, dim}}) = dim*dim - div((dim-1)*dim, 2)
+function n_components{dim}(::Type{SymmetricTensor{4, dim}})
+    n = n_components(SymmetricTensor{2, dim})
+    return n*n
+end
+
+n_components{order, dim}(::Type{Tensor{order, dim}}) = dim^order
+
+is_always_sym{dim, T}(::Type{Tensor{dim, T}}) = false
+is_always_sym{dim, T}(::Type{SymmetricTensor{dim, T}}) = true
+
 
 get_main_type{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}) = SymmetricTensor
 get_main_type{order, dim, T}(::Type{Tensor{order, dim, T}}) = Tensor
 get_main_type{order, dim}(::Type{SymmetricTensor{order, dim}}) = SymmetricTensor
 get_main_type{order, dim}(::Type{Tensor{order, dim}}) = Tensor
 
+#
 get_base{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = SymmetricTensor{order, dim}
 get_base{order, dim, T, M}(::Type{Tensor{order, dim, T, M}}) = Tensor{order, dim}
-
-get_lower_order_tensor{dim, T}(S::Type{SymmetricTensor{2, dim, T, 1}}) = S
-get_lower_order_tensor{dim, T}(S::Type{Tensor{2, dim, T, 1}}) = S
-get_lower_order_tensor{dim, T}(::Type{SymmetricTensor{4, dim, T, 2}}) = SymmetricTensor{2, dim, T, 1}
-get_lower_order_tensor{dim, T}(::Type{Tensor{4, dim, T, 2}}) = Tensor{2, dim, T, 1}
+#
+get_lower_order_tensor{dim, T, M}(S::Type{SymmetricTensor{2, dim, T, M}}) =  SymmetricTensor{2, dim}
+get_lower_order_tensor{dim, T, M}(S::Type{Tensor{2, dim, T, M}}) = Tensor{2, dim}
+get_lower_order_tensor{dim, T, M}(::Type{SymmetricTensor{4, dim, T, M}}) = SymmetricTensor{2, dim}
+get_lower_order_tensor{dim, T, M}(::Type{Tensor{4, dim, T, M}}) = Tensor{2, dim}
 
 
 ############################
 # Abstract Array interface #
 ############################
-Base.linearindexing(::SymmetricTensor) = Base.LinearSlow()
-Base.linearindexing(::Tensors) = Base.LinearSlow()
+
+Base.linearindexing{T <: SymmetricTensor}(::Type{T}) = Base.LinearSlow()
+Base.linearindexing{T <: Tensor}(::Type{T}) = Base.LinearFast()
+
+get_type{X}(::Type{Type{X}}) = X
 
 # Size #
 ########
@@ -95,210 +132,41 @@ Base.size(::FourthOrderTensor{1}) = (1, 1, 1, 1)
 Base.size(::FourthOrderTensor{2}) = (2, 2, 2, 2)
 Base.size(::FourthOrderTensor{3}) = (3, 3, 3, 3)
 
-Base.similar(t::AbstractTensor) = typeof(t)(similar(get_data(t)))
-Base.fill!(t::AbstractTensor, v) = (fill!(get_data(t), v); return t)
+Base.similar(t::AbstractTensor) = typeof(t)(get_data(t))
 
-is_always_sym{dim, T}(::Type{Tensor{dim, T}}) = false
-is_always_sym{dim, T}(::Type{SymmetricTensor{dim, T}}) = true
+# Ambiguity fix
+Base.fill(t::AbstractTensor, v::Integer)  = typeof(t)(const_tuple(typeof(get_data(t)), v))
+Base.fill(t::AbstractTensor, v::Number) = typeof(t)(const_tuple(typeof(get_data(t)), v))
 
 
 # Internal constructors #
 #########################
 
-# These are some kinda ugly stuff to create different type of constructors.
-@gen_code function call{order, dim, T}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}},
-                                       data::AbstractArray{T})
+function call{order, dim, T, M}(Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}},
+                                       data)
+    get_base(Tt)(data)
+end
+
+## These are some kinda ugly stuff to create different type of constructors.
+@gen_code function call{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}},
+                                          data)
     # Check for valid orders
     if !(order in (1,2,4))
         @code (throw(ArgumentError("Only tensors of order 1, 2, 4 supported")))
     else
-        @code :(n = n_independent_components(dim, Tt <: SymmetricTensor))
         # Storage format is of rank 1 for vectors and order / 2 for other tensors
         if order == 1
             @code(:(Tt <: SymmetricTensor && throw(ArgumentError("SymmetricTensor only supported for order 2, 4"))))
-            M = 1
-        else
-            M = div(order, 2)
         end
+
+        n = n_components(get_type(Tt))
 
         # Validate that the input array has the correct number of elements.
-        if order == 1
-            @code :(length(data) == dim || throw(ArgumentError("$(length(data)) != $dim")))
-        elseif order == 2
-            @code :(length(data) == n || throw(ArgumentError("$(length(data)) != $n")))
-        elseif order == 4
-            @code :(length(data) == n*n || throw(ArgumentError("$(length(data)) != $(n*n)")))
-        end
-        @code :(get_main_type(Tt){order, dim, T, $M}(data))
+        @code :(length(data) == $n || throw(ArgumentError("wrong number of tuple elements, expected $nn, got $($n)")))
+        @code :(get_main_type(Tt){order, dim, eltype(data), $n}(to_tuple(NTuple{$n}, data)))
     end
 end
 
-@gen_code function call{order, dim, T}(Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}})
-    @code :(n = n_independent_components(dim, Tt <: SymmetricTensor))
-    # Validate that the input array has the correct number of elements.
-    if order == 1
-       # @code :(length(data) == dim || throw(ArgumentError("$(length(data)) != $dim")))
-       @code :(data = zeros(T, dim))
-    elseif order == 2
-       # @code :(length(data) == n || throw(ArgumentError("$(length(data)) != $n")))
-       @code :(data = zeros(T, n))
-    elseif order == 4
-        @code :(data = zeros(T, n,n))
-      #  @code :(length(data) == n*n || throw(ArgumentError("$(length(data)) != $(n*n)")))
-    end
-    @code :(get_main_type(Tt){order, dim}(data))
-end
-
-function call{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}})
-    get_main_type(Tt){order, dim, Float64}()
-end
-
-# Indexing #
-############
-@inline function get_index_from_symbol(sym::Symbol)
-    if     sym == :x; return 1;
-    elseif sym == :y; return 2;
-    elseif sym == :z; return 3;
-    else              return 0 # This will bound serror later
-    end
-end
-
-@inline function compute_index{dim, T, M}(::Type{SymmetricTensor{2, dim, T, M}}, i::Int, j::Int)
-    if i < j
-        i, j  = j,i
-    end
-    # We are skipping triangle under diagonal = (j-1) * j / 2 indices
-    skipped_indicies = div((j-1) * j, 2)
-    return dim*(j-1) + i - skipped_indicies
-end
-
-@inline function compute_index{dim, T, M}(::Type{Tensor{2, dim, T, M}}, i::Int, j::Int)
-    return dim*(j-1) + i
-end
-
-# getindex #
-############
-@inline function Base.getindex(S::Vec, i::Int)
-    checkbounds(S, i)
-    @inbounds v = get_data(S)[i]
-    return v
-end
-
-@inline function Base.getindex(S::Vec, si::Symbol)
-    i = get_index_from_symbol(si)
-    checkbounds(S, i)
-    @inbounds v = get_data(S)[i]
-    return v
-end
-
-@inline function Base.getindex(S::SecondOrderTensor, i::Int, j::Int)
-    checkbounds(S, i, j)
-    @inbounds v = get_data(S)[compute_index(typeof(S), i, j)]
-    return v
-end
-
-@inline function Base.getindex(S::SecondOrderTensor, si::Symbol, sj::Symbol)
-    i = get_index_from_symbol(si)
-    j = get_index_from_symbol(sj)
-    checkbounds(S, i, j)
-    @inbounds v = get_data(S)[compute_index(typeof(S), i, j)]
-    return v
-end
-
-@inline function Base.getindex(S::FourthOrderTensor, i::Int, j::Int, k::Int, l::Int)
-    checkbounds(S, i, j, k, l)
-    I = compute_index(get_lower_order_tensor(typeof(S)), i, j)
-    J = compute_index(get_lower_order_tensor(typeof(S)), k, l)
-    @inbounds v = get_data(S)[I, J]
-    return v
-end
-
-@inline function Base.getindex(S::FourthOrderTensor, si::Symbol, sj::Symbol, sk::Symbol, sl::Symbol)
-    i = get_index_from_symbol(si)
-    j = get_index_from_symbol(sj)
-    k = get_index_from_symbol(sk)
-    l = get_index_from_symbol(sl)
-    checkbounds(S, i, j, k, l)
-    I = compute_index(get_lower_order_tensor(typeof(S)), i, j)
-    J = compute_index(get_lower_order_tensor(typeof(S)), k, l)
-    @inbounds v = get_data(S)[I, J]
-    return v
-end
-
-# setindex! #
-#############
-@inline function Base.setindex!(S::Vec, v, i::Int)
-    checkbounds(S, i)
-    @inbounds get_data(S)[i] = v
-    return v
-end
-
-@inline function Base.setindex!(S::Vec, v, si::Symbol)
-    i = get_index_from_symbol(si)
-    checkbounds(S, i)
-    @inbounds get_data(S)[i] = v
-    return v
-end
-
-@inline function Base.setindex!(S::SecondOrderTensor, v, i::Int, j::Int)
-    checkbounds(S, i, j)
-    @inbounds get_data(S)[compute_index(typeof(S), i, j)] = v
-    return v
-end
-
-@inline function Base.setindex!(S::SecondOrderTensor, v, si::Symbol, sj::Symbol)
-    i = get_index_from_symbol(si)
-    j = get_index_from_symbol(sj)
-    checkbounds(S, i, j)
-    @inbounds get_data(S)[compute_index(typeof(S), i, j)] = v
-    return v
-end
-
-@inline function Base.setindex!(S::FourthOrderTensor, v, i::Int, j::Int, k::Int, l::Int)
-    checkbounds(S, i, j, k, l)
-    I = compute_index(get_lower_order_tensor(typeof(S)), i, j)
-    J = compute_index(get_lower_order_tensor(typeof(S)), k, l)
-    @inbounds get_data(S)[I, J] = v
-    return v
-end
-
-@inline function Base.setindex!(S::FourthOrderTensor, v, si::Symbol, sj::Symbol, sk::Symbol, sl::Symbol)
-    i = get_index_from_symbol(si)
-    j = get_index_from_symbol(sj)
-    k = get_index_from_symbol(sk)
-    l = get_index_from_symbol(sl)
-    checkbounds(S, i, j, k, l)
-    I = compute_index(get_lower_order_tensor(typeof(S)), i, j)
-    J = compute_index(get_lower_order_tensor(typeof(S)), k, l)
-    @inbounds get_data(S)[I, J] = v
-    return v
-end
-
-
-#############
-# Promotion #
-#############
-
-function Base.promote_rule{dim , A <: Number, B <: Number, order, M}(::Type{SymmetricTensor{order, dim, A, M}},
-                                                                     ::Type{SymmetricTensor{order, dim, B, M}})
-    SymmetricTensor{order, dim, promote_type(A, B), M}
-end
-
-function Base.promote_rule{dim , A <: Number, B <: Number, order, M}(::Type{Tensor{order, dim, A, M}},
-                                                                     ::Type{Tensor{order, dim, B, M}})
-    Tensor{order, dim, promote_type(A, B), M}
-end
-
-
-# copy / copy! #
-################
-function Base.copy!(t1::AllTensors, t2::AllTensors)
-    @assert get_base(typeof(t1)) == get_base(typeof(t2))
-    copy!(get_data(t1), get_data(t2))
-    return t1
-end
-
-Base.copy(t::AllTensors) = copy!(similar(t), t)
 
 
 ###############
@@ -306,91 +174,54 @@ Base.copy(t::AllTensors) = copy!(similar(t), t)
 ###############
 
 function Base.(:*)(n::Number, t::AllTensors)
-    get_base(typeof(t))(n * get_data(t))
+     typeof(t)(scale_tuple(get_data(t), n))
 end
 
 Base.(:*)(t::AllTensors, n::Number) = n * t
 
 function Base.(:/)(t::AllTensors, n::Number)
-    get_base(typeof(t))(get_data(t) / n)
-end
-
-function Base.(:-)(t1::AllTensors, t2::AllTensors)
-    @assert get_base(typeof(t1)) == get_base(typeof(t2))
-    get_base(typeof(t1))(get_data(t1) - get_data(t2))
+    typeof(t)(div_tuple_by_scalar(get_data(t), n))
 end
 
 function Base.(:-)(t::AllTensors)
-    get_base(typeof(t))(- get_data(t))
+    typeof(t)(minus_tuple(get_data(t)))
+end
+                            # The smilieys...
+for (f, tuple_f) in zip((:(:-), :(:+), :(:.*), :(:./)), (:subtract_tuples, :add_tuples, :scalar_mul_tuples, :scalar_div_tuples))
+    @eval begin
+        function Base.($f){dim}(t1::AllTensors{dim}, t2::AllTensors{dim})
+            a, b = promote(t1, t2)
+            typeof(a)($tuple_f(get_data(a), get_data(b)))
+        end
+    end
 end
 
-function Base.(:+)(t1::AllTensors, t2::AllTensors)
-    @assert get_base(typeof(t1)) == get_base(typeof(t2))
-    get_base(typeof(t1))(get_data(t1) + get_data(t2))
-end
 
 
 ###################
 # Zero, one, rand #
 ###################
 
-for (f, f!) in ((:zero, :zero!), (:rand, :rand!), (:one, :one!))
+for (f, tuple_f) in zip( (:zero, :rand, :one), (:zero_tuple, :rand_tuple, :eye_tuple))
     @eval begin
-        function Base.$(f){order, dim, T, M}(Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}})
-            $(f!)(get_base(Tt)())
+
+        function Base.$f{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}})
+            $f(get_main_type(Tt){order, dim, Float64})
         end
 
-        function Base.$(f){order, dim, T}(Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}})
-            $(f!)(Tt())
+        function Base.$f{order, dim, T, M}(Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}})
+            $f(get_base(Tt))
         end
 
-        function Base.$(f){order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}})
-            $(f!)(Tt())
+        function Base.$f(t::AllTensors)
+            $f(typeof(t))
         end
 
-        Base.$(f)(t::AllTensors) = $(f!)(similar(t))
-    end
-end
-
-
-zero!(t::AllTensors) = (fill!(get_data(t), 0.0); return t)
-
-function rand!{dim, T}(t::AllTensors{dim, T})
-    @inbounds for i in eachindex(t)
-        t[i] = rand(T)
-    end
-    return t
-end
-
-
-# Helper function for `one`
-set_diag!(S::Vec, v, i) = S[i] = v
-set_diag!(S::SecondOrderTensor, v, i) = S[i,i] = v
-set_diag!(S::FourthOrderTensor, v, i) = S[i,i,i,i] = v
-
-
-function one!{dim}(t::Union{SecondOrderTensor{dim}, Vec{dim}})
-    fill!(get_data(t), 0.0)
-    for i in 1:dim
-        set_diag!(t, 1, i)
-    end
-    return t
-end
-
-function one!{dim}(t::FourthOrderTensor{dim})
-    @inbounds for i in 1:dim, j in 1:dim, k in 1:dim, l in 1:dim
-        if i == k && j == l
-            t[i,j,k,l] = 1
-        else
-            t[i,j,k,l] = 0
+        @gen_code function Base.$f{order, dim, T}(Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}})
+            n = n_components(get_main_type(get_type(Tt)){order, dim})
+            @code :(get_main_type(Tt){order, dim}($($tuple_f)(NTuple{$n, T})))
         end
     end
-    return t
 end
-
-
-include("symmetric_ops.jl")
-include("tensor_ops.jl")
-include("data_functions.jl")
 
 end # module

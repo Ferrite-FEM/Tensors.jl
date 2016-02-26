@@ -1,3 +1,4 @@
+# Handles getting data out of tensors into e.g vector
 function extract_components{dim, T}(t::AllTensors{dim ,T})
     m = zeros(size(t))
     @inbounds for i in eachindex(t)
@@ -6,18 +7,10 @@ function extract_components{dim, T}(t::AllTensors{dim ,T})
     return m
 end
 
-function load_components!{order, T}(t::AbstractTensor{order}, arr::AbstractArray{T, order})
-    @assert size(arr) == size(t)
-    @inbounds for i in eachindex(t, arr)
-        t[i] = arr[i]
+function store!(v::Vector, t::AllTensors, offset = 0)
+    for (I,i) in enumerate(offset+1:offset+length(t))
+        v[i] = t[I]
     end
-    return t
+    return v
 end
 
-
-function load_components!{dim, T}(t::SymmetricTensor{2, dim}, arr::Matrix{T})
-    @assert size(arr) == size(t)
-    @inbounds for i in 1:dim, j in 1:i
-        t[i,j] = 0.5 * (arr[i,j] + arr[j,i])
-    end
-end
