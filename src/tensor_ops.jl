@@ -16,12 +16,13 @@ end
 end
 
 @inline function dcontract{dim}(S1::Tensor{2, dim}, S2::Tensor{4, dim})
-    Tensor{2, dim}(Amt_mul_Bv(S1.data, S2.data))
+    Tensor{2, dim}(Amt_mul_Bv(S2.data, S1.data))
 end
 
 @inline Base.(:*){dim}(S1::Tensor{4, dim}, S2::Tensor{2, dim}) = dcontract(S1, S2)
 @inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{4, dim}) = dcontract(S1, S2)
 
+const ⊡ = dcontract
 
 ########
 # Norm #
@@ -73,7 +74,7 @@ end
 
 @inline function Base.dot{dim, T1, T2}(v1::Vec{dim, T1}, S2::Tensor{2, dim, T2})
     Tv = typeof(zero(T1) * zero(T2))
-    return Vec{dim, Tv}(Amt_mul_Bv(S1.data, v2.data))
+    return Vec{dim, Tv}(Amt_mul_Bv(S2.data, v1.data))
 end
 
 

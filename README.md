@@ -58,7 +58,8 @@ The symbol `*` is overloaded for double contractions between fourth and second o
 
 ### Double contractions
 
-Double contractions of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n - 4`.  `dcontract(A, B)` can also be used:
+Double contractions of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n - 4`.  `dcontract(A, B)` can also be used.
+The symbol `⊡`, written `\boxdot` is overloaded for double contraction. The reason `:` is not used is because it does not have the same precedence as multiplication which leads to bugs.
 
 ```jl
 julia> A = rand(SymmetricTensor{2, 2});
@@ -71,7 +72,7 @@ julia> dcontract(A,B)
 
 ### Single contraction (dot products)
 
-Single contractions or scalar products of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n - 2`. The symbol `⋅  ` is overloaded for scalar products but `dot(A, B)` can also be used.  Since dot products between two symmetric tensors does not give a symmetric result it is not implemented.
+Single contractions or scalar products of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n - 2`. The symbol `⋅  ` is overloaded for scalar products but `dot(A, B)` can also be used.  Since dot products between two symmetric tensors does not give a symmetric result it is not implemented. The symbol `⋅` is overloaded for single contractiom.
 
 ```jl
 julia> A = rand(Tensor{2, 2})

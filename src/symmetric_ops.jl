@@ -24,11 +24,11 @@ Base.issym(S::SymmetricTensors) = true
 end
 
 function dcontract{dim, T1, T2}(S1::SymmetricTensor{4, dim, T1}, S2::SymmetricTensor{2, dim, T2})
-    SymmetricTensor{4, dim}(Am_mul_Bv(S1.data, S2.data))
+    SymmetricTensor{2, dim}(Am_mul_Bv(S1.data, S2.data))
 end
 
 function dcontract{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, S2::SymmetricTensor{4, dim, T2})
-    SymmetricTensor{4, dim}(Amt_mul_Bv(S1.data, S2.data))
+    SymmetricTensor{2, dim}(Amt_mul_Bv(S1.data, S2.data))
 end
 
 ########

@@ -31,8 +31,15 @@ end
 ###############
 
 # Identity conversions
-@inline Base.convert{order, dim}(::Type{Tensor{order, dim}}, t::Tensor{order, dim}) = t
-@inline Base.convert{order, dim}(::Type{SymmetricTensor{order, dim}}, t::SymmetricTensor{order, dim}) = t
+@inline Base.convert{order, dim, T}(::Type{Tensor{order, dim, T}}, t::Tensor{order, dim, T}) = t
+@inline function Base.convert{order, dim, T1, T2, M}(::Type{Tensor{order, dim, T1, M}}, t::Tensor{order, dim, T2, M})
+    Tensor{order, dim}(convert(NTuple{M, T1}, t.data))
+end
+
+@inline Base.convert{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}, t::SymmetricTensor{order, dim, T}) = t
+@inline function Base.convert{order, dim, T1, T2, M}(::Type{SymmetricTensor{order, dim, T1, M}}, t::SymmetricTensor{order, dim, T2, M})
+    SymmetricTensor{order, dim}(convert(NTuple{M, T1}, t.data))
+end
 
 
 # Converting general data to a (symmetric) tensor. We leave the type of data unspecified to allow anything

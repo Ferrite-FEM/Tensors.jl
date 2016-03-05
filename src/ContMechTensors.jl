@@ -14,7 +14,7 @@ immutable InternalError <: Exception end
 
 export SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
-export otimes, otimes_unsym, ⊗, dcontract, dev, dev!
+export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, dev!
 export extract_components, load_components!, symmetrize, symmetrize!
 export setindex, store!, tdot
 
@@ -162,7 +162,7 @@ end
         n = n_components(get_type(Tt))
 
         # Validate that the input array has the correct number of elements.
-        @code :(length(data) == $n || throw(ArgumentError("wrong number of tuple elements, expected $nn, got $($n)")))
+        @code :(length(data) == $n || throw(ArgumentError("wrong number of tuple elements, expected $($n), got $(length(data))")))
         @code :(get_main_type(Tt){order, dim, eltype(data), $n}(to_tuple(NTuple{$n}, data)))
     end
 end
@@ -197,14 +197,41 @@ for (f, tuple_f) in zip((:(:-), :(:+), :(:.*), :(:./)), (:subtract_tuples, :add_
 end
 
 
-
 ###################
 # Zero, one, rand #
 ###################
 
-for (f, tuple_f) in zip( (:zero, :rand, :one), (:zero_tuple, :rand_tuple, :eye_tuple))
-    @eval begin
+@gen_code function Base.rand{order, dim, T}(Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}})
+    n = n_components(get_main_type(get_type(Tt)){order, dim})
+    @code :(get_main_type(Tt){order, dim}(rand_tuple(NTuple{$n, T})))
+end
 
+@gen_code function Base.zero{order, dim, T}(Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}})
+    n = n_components(get_main_type(get_type(Tt)){order, dim})
+    @code :(get_main_type(Tt){order, dim}(zero_tuple(NTuple{$n, T})))
+end
+
+@gen_code function Base.one{order, dim, T}(Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}})
+    n = n_components(get_main_type(get_type(Tt)){order, dim})
+    @code :(get_main_type(Tt){order, dim}(eye_tuple(NTuple{$n, T})))
+end
+
+@gen_code function Base.one{order, dim, T}(Tt::Type{Tensor{order, dim, T}})
+    n = n_components(get_main_type(get_type(Tt)){order, dim})
+    @code :(get_main_type(Tt){order, dim}(eye_tuple(NTuple{$n, T})))
+end
+
+@gen_code function Base.one{order, dim, T}(Tt::Type{SymmetricTensor{order, dim, T}})
+    n = n_components(get_main_type(get_type(Tt)){order, dim})
+    @code :(get_main_type(Tt){order, dim}(sym_eye_tuple(NTuple{$n, T})))
+end
+
+function Base.one{dim, T}(Tt::Type{Tensor{1, dim, T}})
+    get_main_type(Tt){1, dim}(const_tuple(NTuple{dim, T}, one(T)))
+end
+
+for f in (:zero, :rand, :one)
+    @eval begin
         function Base.$f{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}})
             $f(get_main_type(Tt){order, dim, Float64})
         end
@@ -215,11 +242,6 @@ for (f, tuple_f) in zip( (:zero, :rand, :one), (:zero_tuple, :rand_tuple, :eye_t
 
         function Base.$f(t::AllTensors)
             $f(typeof(t))
-        end
-
-        @gen_code function Base.$f{order, dim, T}(Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}})
-            n = n_components(get_main_type(get_type(Tt)){order, dim})
-            @code :(get_main_type(Tt){order, dim}($($tuple_f)(NTuple{$n, T})))
         end
     end
 end

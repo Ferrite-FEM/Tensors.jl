@@ -1,8 +1,8 @@
 function sym_tupexpr_mat(f,N)
-    dim = Int( div(sqrt(1 + 8*N), 2))
+    rows = Int( div(sqrt(1 + 8*N), 2))
     expr = Expr[]
-    for i in 1:dim, j = 1:i
-        push!(expr, f(i,j))
+    for i in 1:rows, j in 1:(rows-i+1)
+        push!(expr, f(j+i-1,i))
     end
     return quote
         @inbounds return $(Expr(:tuple, expr...))
@@ -23,7 +23,6 @@ end
 
 
 @generated function sym_eye_tuple{N, T}(::Type{NTuple{N,T}})
-    elT = eltype(T)
     b = sym_tupexpr_mat((i,j) -> i == j ? :(one(T)) : :(zero(T)), N)
       return quote
         $(inline_body(T))

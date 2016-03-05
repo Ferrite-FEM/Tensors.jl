@@ -3,7 +3,6 @@ using Base.Test
 
 import ContMechTensors: n_independent_components, ArgumentError, get_data
 
-const T = Float32
 
 
 for dim in (1,2,3)
@@ -150,24 +149,24 @@ for dim in (1,2,3)
     a = rand(Tensor{1, dim, Float64})
     b = rand(Tensor{1, dim, Float64})
 
-    @test A * B ≈ (A' ⋅ B) * one(A)
-    @test dcontract(A, (a ⊗ b)) ≈ (A ⋅ b) ⋅ a
-    @test (A ⋅ a) ⋅ (B ⋅ b) ≈ dcontract((A.' ⋅ B), (a ⊗ b))
+    @test A ⊡ B ≈ (A' * B) ⊡ one(A)
+    @test A ⊡ (a ⊗ b) ≈ (A ⋅ b) ⋅ a
+    @test (A ⋅ a) ⋅ (B ⋅ b) ≈ (A.' ⋅ B) ⊡ (a ⊗ b)
     @test (A ⋅ a) ⊗ b ≈ A ⋅ (a ⊗ b)
     @test a ⊗ (A ⋅ b) ≈ (A ⋅ (b ⊗ a)).'
     @test a ⊗ (A ⋅ b) ≈ (a ⊗ b) ⋅ A.'
 
-    @test dcontract(A, I) ≈ trace(A)
+    @test A ⊡ I ≈ trace(A)
     @test det(A) ≈ det(A.')
     @test trace(inv(A) ⋅ A) ≈ dim
     @test inv(A) ⋅ A ≈ I
 
-    @test (I ⊗ I) * A ≈ trace(A) * I
-    @test (I ⊗ I) * A * A ≈ trace(A)^2
+    @test (I ⊗ I) ⊡ A ≈ trace(A) * I
+    @test (I ⊗ I) ⊡ A ⊡ A ≈ trace(A)^2
 
     @test A ⋅ a ≈ a ⋅ A'
 
-    @test symmetrize(A) ≈ 0.5(A + A')
+    @test convert(SymmetricTensor{2, dim}, A) ≈ 0.5(A + A')
 
 
     A_sym = rand(SymmetricTensor{2, dim})
@@ -175,11 +174,11 @@ for dim in (1,2,3)
     C_sym = rand(SymmetricTensor{2, dim})
     I_sym = one(SymmetricTensor{2, dim})
 
-    @test A_sym * I_sym ≈ trace(A_sym)
+    @test A_sym ⊡ I_sym ≈ trace(A_sym)
     @test det(A_sym) ≈ det(A_sym.')
 
-    @test (I_sym ⊗ I_sym) * A_sym ≈ trace(A_sym) * I_sym
-    @test (I_sym ⊗ I_sym) * A_sym * A_sym ≈ trace(A_sym)^2
+    @test (I_sym ⊗ I_sym) ⊡ A_sym ≈ trace(A_sym) * I_sym
+    @test ((I_sym ⊗ I_sym) ⊡ A_sym) ⊡ A_sym ≈ trace(A_sym)^2
 end
 
 for dim in (1,2,3)
@@ -187,17 +186,28 @@ for dim in (1,2,3)
     II = one(Tensor{4, dim})
     I = one(Tensor{2, dim})
     A = rand(Tensor{2, dim})
-    II_sym = one(SymmetricTensor{4, dim})
-    A_sym = rand(SymmetricTensor{2, dim})
-    I_sym = one(SymmetricTensor{2, dim})
+    #II_sym = one(SymmetricTensor{4, dim})
+    #A_sym = rand(SymmetricTensor{2, dim})
+    #I_sym = one(SymmetricTensor{2, dim})
 
-    @test II * A ≈ A
-    @test A * II ≈ A
-    @test II * A * A ≈ (trace(A.' ⋅ A))
+    @test II ⊡ A ≈ A
+    @test A ⊡ II ≈ A
+    @test II ⊡ A ⊡ A ≈ (trace(A.' ⋅ A))
 
-    @test II_sym * A_sym ≈ A_sym
-    @test A_sym * II_sym ≈ A_sym
+    #@test II_sym ⊡ A_sym ≈ A_sym
+    #@test A_sym ⊡ II_sym ≈ A_sym
 
+end
+
+# Inverse for fourth order not yet implemented
+#=
+for dim in (1,2,3)
+    # Identities with second order and first order
+    II = one(Tensor{4, dim})
+
+    II ⊡ II ≈ II
+    A = rand(Tensor{4, dim})
+   # inv(A) ⊡ A ≈ II
 end
 
 for dim in (1,2,3)
@@ -208,30 +218,7 @@ for dim in (1,2,3)
     A = rand(Tensor{4, dim})
     inv(A) * A ≈ II
 end
-
-for dim in (1,2,3)
-    # Identities with second order and first order
-    II = one(Tensor{4, dim})
-
-    II * II ≈ II
-    A = rand(Tensor{4, dim})
-    inv(A) * A ≈ II
-end
-
-for dim in (1,2,3)
-    for order in (1,2,4)
-        a = rand(Tensor{order, dim})
-        b = similar(a)
-        load_components!(b, extract_components(a))
-        @test a ≈ b
-        if order != 1
-            a = rand(SymmetricTensor{order, dim})
-            b = similar(a)
-            load_components!(b, extract_components(a))
-            @test a ≈ b
-        end
-    end
-end
+=#
 
 
 
@@ -239,16 +226,13 @@ end
 # Promotion/Conversion #
 ########################
 
+const T = Float32
 const WIDE_T = widen(T)
 for dim in (1,2,3)
     for order in (1,2,4)
-        if order == 1
-            M = 1
-        else
-            M = div(order, 2)
-        end
-        tens = Tensor{order, dim, T, M}
-        tens_wide = Tensor{order, dim, WIDE_T, M}
+
+        tens = Tensor{order, dim, T, dim^order}
+        tens_wide = Tensor{order, dim, WIDE_T, dim^order}
 
         @test promote_type(tens, tens) == tens
         @test promote_type(tens_wide, tens) == tens_wide
@@ -259,6 +243,8 @@ for dim in (1,2,3)
         @test typeof(A + B) == tens_wide
 
         if order != 1
+
+            M = ContMechTensors.n_components(SymmetricTensor{order, dim})
             sym = SymmetricTensor{order, dim, T, M}
             sym_wide = SymmetricTensor{order, dim, WIDE_T, M}
 
@@ -266,6 +252,10 @@ for dim in (1,2,3)
             @test promote_type(sym_wide, sym_wide) == sym_wide
             @test promote_type(sym, sym_wide) == sym_wide
             @test promote_type(sym_wide, sym) == sym_wide
+
+            @test promote_type(sym, tens) == tens
+            @test promote_type(sym_wide, tens_wide) == tens_wide
+            @test promote_type(tens, sym_wide) == tens_wide
 
             A = rand(SymmetricTensor{order, dim, T})
             B = rand(SymmetricTensor{order, dim, WIDE_T})
