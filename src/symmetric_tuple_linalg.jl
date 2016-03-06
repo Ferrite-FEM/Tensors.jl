@@ -1,6 +1,6 @@
 function sym_tupexpr_mat(f,N)
     rows = Int( div(sqrt(1 + 8*N), 2))
-    expr = Expr[]
+    expr = Any[]
     for i in 1:rows, j in 1:(rows-i+1)
         push!(expr, f(j+i-1,i))
     end
@@ -9,17 +9,22 @@ function sym_tupexpr_mat(f,N)
     end
 end
 
-# Assume i > j to avoid branch penalty
-#@generated function sym_mat_get_index{N}(t::NTuple{N}, i::Int, j::Int)
-#    dim = Int( div(sqrt(1 + 8*N), 2))
-#    # We are skipping triangle under diagonal = (j-1) * j / 2 indices
-#    return quote
-#        skipped_indicies = div((j-1) * j, 2)
-#        @inbounds v = t[$dim*(j-1) + i - skipped_indicies]
-#        return v
-#    end
-#end
+function sym_mat_get_index(N::Int, i::Int, j::Int)
+    dim = Int( div(sqrt(1 + 8*N), 2))
+    skipped_indicies = div((j-1) * j, 2)
+    return dim*(j-1) + i - skipped_indicies
+end
 
+
+
+@generated function sym_mat_set_index{N, T, I, J}(a::NTuple{N, T}, v, ::Type{Val{I}}, ::Type{Val{J}})
+    dim = Int( div(sqrt(1 + 8*N), 2))
+    b = sym_tupexpr_mat((i,j) -> (i == I && j == J) ? :(v) : :(a[$(sym_mat_get_index(N, i, j))]), N)
+    return quote
+        $(inline_body(T))
+        $b
+    end
+end
 
 
 @generated function sym_eye_tuple{N, T}(::Type{NTuple{N,T}})

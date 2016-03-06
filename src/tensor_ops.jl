@@ -34,7 +34,10 @@ const ⊡ = dcontract
 ################
 # Open product #
 ################
-@inline otimes{dim}(S1::AllTensors{dim}, S2::AllTensors{dim}) = otimes(promote(S1, S2)...)
+"""
+Computes the outer product between two tensors `t1` and `t2`. Can also be called via the infix operator `⊗`.
+"""
+@inline otimes{order, dim}(t1::AbstractTensor{order, dim}, t2::AbstractTensor{order, dim}) = otimes(promote(t1, t2)...)
 
 @inline function otimes{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
    Tensor{4, dim}(A_otimes_B(S1.data, S2.data))
@@ -47,32 +50,21 @@ end
 const ⊗ = otimes
 
 
-symmetrize(t::AllTensors) = symmetrize!(similar(t), t)
-
-function symmetrize!{dim}(t1::Tensor{2, dim}, t2::Tensor{2, dim})
-    @assert get_base(typeof(t1)) == get_base(typeof(t2))
-    for i in 1:dim, j in 1:i
-        @inbounds v = 0.5 * (t2[i,j] + t2[j,i])
-        t1[i,j] = v
-        t1[j,i] = v
-    end
-    return t1
-end
-
-
 ################
 # Dot products #
 ################
-@inline Base.dot{dim}(S1::AllTensors{dim}, S2::AllTensors{dim}) = dot(promote(S1, S2)...)
+import Base.dot
 
-@inline Base.dot{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2}) = A_dot_B(v1.data, v2.data)
 
-@inline function Base.dot{dim, T1, T2}(S1::Tensor{2, dim, T1}, v2::Vec{dim, T2})
+
+@inline dot{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2}) = A_dot_B(v1.data, v2.data)
+
+@inline function dot{dim, T1, T2}(S1::Tensor{2, dim, T1}, v2::Vec{dim, T2})
     Tv = typeof(zero(T1) * zero(T2))
     return Vec{dim, Tv}(Am_mul_Bv(S1.data, v2.data))
 end
 
-@inline function Base.dot{dim, T1, T2}(v1::Vec{dim, T1}, S2::Tensor{2, dim, T2})
+@inline function dot{dim, T1, T2}(v1::Vec{dim, T1}, S2::Tensor{2, dim, T2})
     Tv = typeof(zero(T1) * zero(T2))
     return Vec{dim, Tv}(Amt_mul_Bv(S2.data, v1.data))
 end
@@ -80,12 +72,18 @@ end
 @inline Base.(:*){dim}(S1::Tensor{1, dim}, S2::Tensor{2, dim}) = dot(S1, S2)
 @inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{1, dim}) = dot(S1, S2)
 
-@inline function Base.dot{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
+@inline function dot{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
     return Tensor{2, dim}(Am_mul_Bm(S1.data, S2.data))
 end
 
 @inline function tdot{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
     return Tensor{2, dim}(Amt_mul_Bm(S1.data, S2.data))
+end
+
+@inline function dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
+    S1_t = convert(Tensor{2, dim}, S1)
+    S2_t = convert(Tensor{2, dim}, S2)
+    return Tensor{2, dim}(Am_mul_Bm(S1_t.data, S2_t.data))
 end
 
 @inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim}) = dot(S1, S2)
@@ -105,7 +103,11 @@ end
 #########
 # Trace #
 #########
-@gen_code function LinAlg.trace{dim, T}(S::AllTensors{dim, T})
+import Base.LinAlg.trace
+"""
+Computes the trace of a second or fourth order tensor.
+"""
+@gen_code function trace{dim, T}(S::Union{SecondOrderTensor{dim, T}, FourthOrderTensor{dim, T}})
     @code :($(Expr(:meta, :inline)))
     @code :(s = zero(T))
     for i = 1:dim
@@ -141,10 +143,16 @@ end
 Base.mean{dim}(S::SecondOrderTensor{dim}) = trace(S) / dim
 
 
+
 ###############
 # Determinant #
 ###############
-@gen_code function Base.det{dim, T}(t::SecondOrderTensor{dim, T})
+import Base.det
+
+"""
+Computes the trace of a second order tensor.
+"""
+@gen_code function det{dim, T}(t::SecondOrderTensor{dim, T})
     idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
     @code :(v = get_data(t))
     if dim == 1
@@ -164,6 +172,11 @@ end
 # Inverse #
 ###########
 
+import Base.inv
+
+"""
+Computes the inverse of a second order tensor.
+"""
 @gen_code function Base.inv{dim, T}(t::Tensor{2, dim, T})
     idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
     @code :(dinv = 1 / det(t))
@@ -188,6 +201,9 @@ end
     end
 end
 
+"""
+Computes the inverse of a second order symmetric tensor.
+"""
 @gen_code function Base.inv{dim, T}(t::SymmetricTensor{2, dim, T})
     idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
     @code :(dinv = 1 / det(t))
@@ -214,6 +230,9 @@ end
 # Transpose #
 #############
 
+"""
+Computes the transpose of a second order tensor.
+"""
 @inline function Base.transpose{dim}(S::Tensor{2, dim})
     typeof(S)(mat_transpose(S.data))
 end

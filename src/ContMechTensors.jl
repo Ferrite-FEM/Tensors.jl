@@ -9,6 +9,9 @@ if VERSION <= v"0.5.0-dev"
     end
 end
 
+macro L_str(text)
+    text
+end
 
 immutable InternalError <: Exception end
 
@@ -16,7 +19,7 @@ export SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
 export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, dev!
 export extract_components, load_components!, symmetrize, symmetrize!
-export setindex, store!, tdot
+export setindex, store!, tdot, dot, det
 
 #########
 # Types #
@@ -238,6 +241,11 @@ for f in (:zero, :rand, :one)
 
         function Base.$f{order, dim, T, M}(Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}})
             $f(get_base(Tt))
+        end
+
+        # Special for Vec
+        function Base.$f{dim}(Tt::Type{Vec{dim}})
+            $f(Vec{dim, Float64})
         end
 
         function Base.$f(t::AllTensors)

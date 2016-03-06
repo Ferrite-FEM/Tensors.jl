@@ -72,19 +72,37 @@ end
     return t
 end
 
+@inline function setindex{dim}(S::Tensor{4, dim}, v, i::Int, j::Int, k::Int, l::Int)
+    @boundscheck checkbounds(S, i, j)
+    lower_order = Tensor{2,dim}
+    I = compute_index(lower_order, i, j)
+    J = compute_index(lower_order, k, l)
+    t = typeof(S)(mat_set_index(S.data, v, Val{I}, Val{J}))
+    return t
+end
 
-#@inline function Base.setindex!(S::SecondOrderTensor, v, i::Int, j::Int)
-#    checkbounds(S, i, j)
-#    @inbounds get_data(S)[compute_index(typeof(S), i, j)] = v
-#    return v
-#end
+
+@inline function setindex{dim}(S::SymmetricTensor{2, dim}, v, i::Int, j::Int)
+    @boundscheck checkbounds(S, i, j)
+    if i < j
+        i, j  = j,i
+    end
+    t = typeof(S)(sym_mat_set_index(S.data, v, Val{i}, Val{j}))
+    return t
+end
 #
-#@inline function Base.setindex!(S::FourthOrderTensor, v, i::Int, j::Int, k::Int, l::Int)
-#    checkbounds(S, i, j, k, l)
-#    I = compute_index(get_lower_order_tensor(typeof(S)), i, j)
-#    J = compute_index(get_lower_order_tensor(typeof(S)), k, l)
-#    @inbounds get_data(S)[I, J] = v
-#    return v
+#@inline function setindex{dim}(S::SymmetricTensor{4, dim}, v, i::Int, j::Int, k::Int, l::Int)
+#    @boundscheck checkbounds(S, i, j)
+#    lower_order = Tensor{2,dim}
+#    if i < j
+#        i, j  = j,i
+#    end
+#    if k < l
+#        k, l  = l,k
+#    end
+#    I = compute_index(lower_order, i, j)
+#    J = compute_index(lower_order, k, l)
+#    t = typeof(S)(sym_mat_set_index(S.data, v, Val{I}, Val{J}))
+#    return t
 #end
-#
 
