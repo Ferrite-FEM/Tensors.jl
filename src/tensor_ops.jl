@@ -77,6 +77,8 @@ end
     return Vec{dim, Tv}(Amt_mul_Bv(S2.data, v1.data))
 end
 
+@inline Base.(:*){dim}(S1::Tensor{1, dim}, S2::Tensor{2, dim}) = dot(S1, S2)
+@inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{1, dim}) = dot(S1, S2)
 
 @inline function Base.dot{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
     return Tensor{2, dim}(Am_mul_Bm(S1.data, S2.data))
@@ -92,7 +94,7 @@ end
     return SymmetricTensor{2, dim}(transpdot(S2.data))
 end
 
-@inline Base.Ac_mul_B{dim}(S1::AllTensors{dim}, S2::AllTensors{dim}) = dtot(promote(S1, S2)...)
+@inline Base.Ac_mul_B{dim}(S1::AllTensors{dim}, S2::AllTensors{dim}) = tdot(promote(S1, S2)...)
 @inline Base.Ac_mul_B{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim}) = tdot(S1, S2)
 
 @inline Base.At_mul_B{dim}(S1::AllTensors{dim}, S2::AllTensors{dim}) = tdot(promote(S1, S2)...)

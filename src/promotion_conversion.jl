@@ -106,7 +106,15 @@ end
         end
 end
 
-@generated function Base.convert{order, dim, T, M}(::Type{SymmetricTensor{order, dim}}, t::Tensor{order, dim, T, M})
+@generated function Base.convert{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}, t::Tensor{order, dim, T})
+    N = n_components(SymmetricTensor{order, dim})
+    return quote
+        $(Expr(:meta, :inline))
+        convert(SymmetricTensor{order, dim, T, $N}, t)
+    end
+end
+
+@generated function Base.convert{order, dim, T}(::Type{SymmetricTensor{order, dim}}, t::Tensor{order, dim, T})
     N = n_components(SymmetricTensor{order, dim})
     return quote
         $(Expr(:meta, :inline))
