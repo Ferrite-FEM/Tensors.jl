@@ -1,8 +1,8 @@
 # ContMechTensors
 
-[![Build Status](https://travis-ci.org/KristofferC/ContMechTensors.jl.svg?branch=master)](https://travis-ci.org/KristofferC/ContMechTensors.jl) 
+[![Build Status](https://travis-ci.org/KristofferC/ContMechTensors.jl.svg?branch=master)](https://travis-ci.org/KristofferC/ContMechTensors.jl)
 
-This Julia package provides fast operations with symmetric/unsymmetric tensors of order 1, 2 and 4. The tensors are stack allocated which means that there is no need to preallocate results of operations and nice infix notation can be used without a perfomance penalty. For the symmetric tensors, when possible, the symmetriy is exploited for better performance.
+This Julia package provides fast operations with symmetric/unsymmetric tensors of order 1, 2 and 4. The tensors are stack allocated which means that there is no need to preallocate results of operations and nice infix notation can be used without a performance penalty. For the symmetric tensors, when possible, the symmetry is exploited for better performance.
 
 Note that this package might not provide satisfactory performance on julia v0.4 because julia v0.4 lacks various optimizations to tuples that julia v0.5 has.
 
@@ -36,9 +36,23 @@ julia> one(SymmetricTensor{2, 2})
  0.0  1.0
 ```
 
+Tensors can also be created by giving a tuple or an array with the same number of elements as the number of independent indices in the tensor:
+
+```jl
+julia> Tensor{1,2}([1.0,2.0])
+2-element ContMechTensors.Tensor{1,2,Float64,2}:
+ 1.0
+ 2.0
+
+julia> SymmetricTensor{2,2}((1.0,2.0,3.0))
+2x2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
+ 1.0  2.0
+ 2.0  3.0
+```
+
 ## Indexing
 
-Indexing into a `(Symmetric)Tensor{dim, order}` is performed like for an `Array` of dimension `order`. 
+Indexing into a `(Symmetric)Tensor{dim, order}` is performed like for an `Array` of dimension `order`.
 
 ```jl
 julia> A = rand(Tensor{2, 2});
@@ -60,7 +74,7 @@ julia> a = rand(Vec{2});
 julia> setindex(a, 1.337, 2)
 2-element ContMechTensors.Tensor{1,2,Float64,2}:
  0.026256
- 1.337   
+ 1.337
 ```
 
 
@@ -135,5 +149,15 @@ For second order tensors: `dev`, `det`, `inv`, `transpose`.
 
 There is also a special function for computing `F' ⋅ F` between two general second order tensors which is called `tdot` and returns a `SymmetricTensor`.
 
+### Storing tensors in `type`s.
 
+Even though a user mostly deals with the `Tensor{order, dim, T}` parameters, the full parameter list for a tensor is actually `Tensor{order, dim, T, N}` where `N` is the number of independent elements in the tensor. The reason for this is that the internal storage is a `NTuple{N, T}`. In order to get good performance when storing tensors in other types it is importatant that the container type is also parametrized on `N`. For example, when storing one symmetric second order tensor and one unsymmetric tensor, this is the preferred way:
 
+```julia
+immutable Container{dim, T, N, M}
+    sym_tens::SymmetricTensor{2, dim, T, N}
+    tens::Tensor{2, dim, T, M}
+end
+```
+
+Leaving out the `M` and `N` would lead to bad performance.
