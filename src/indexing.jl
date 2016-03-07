@@ -14,15 +14,6 @@ end
     return dim*(j-1) + i
 end
 
-#@inline function compute_index{dim}(::Type{SymmetricTensor{4, dim}},
-#                                    i::Int, j::Int, k::Int, l::Int)
-#    lower_order = SymmetricTensor{2,dim}
-#    I = compute_index(lower_order, i, j)
-#    J = compute_index(lower_order, k, l)
-#    n = n_components(lower_order)
-#    return (J-1) * n + I
-#end
-
 
 @inline function compute_index{dim}(::Union{Type{SymmetricTensor{4, dim}}, Type{Tensor{4, dim}}},
                                     i::Int, j::Int, k::Int, l::Int)

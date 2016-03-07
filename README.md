@@ -50,6 +50,15 @@ julia> SymmetricTensor{2,2}((1.0,2.0,3.0))
  2.0  3.0
 ```
 
+It is also possible to create a tensor by giving a function `f(index...) -> v`:
+
+```jl
+julia> SymmetricTensor{2,2}((i,j) -> i + j)
+2x2 ContMechTensors.SymmetricTensor{2,2,Int64,3}:
+ 2  3
+ 3  4
+```
+
 ## Indexing
 
 Indexing into a `(Symmetric)Tensor{dim, order}` is performed like for an `Array` of dimension `order`.
