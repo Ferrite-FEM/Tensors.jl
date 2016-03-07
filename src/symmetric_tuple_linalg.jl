@@ -9,6 +9,65 @@ function sym_tupexpr_mat(f,N)
     end
 end
 
+tensor_create{order, dim}(::Type{SymmetricTensor{order, dim}}, f) = tensor_create(SymmetricTensor{order, dim, Float64}, f)
+function tensor_create{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}, f)
+    expr = Any[]
+    if order == 2
+        for i in 1:dim, j in i:dim
+            push!(expr, f(i, j))
+        end
+    elseif order == 4
+        for i in 1:dim, j in i:dim, k in 1:dim, l in k:dim
+            push!(expr, f(i, j, k, l))
+        end
+    end
+    return quote
+        $(Expr(:tuple, expr...))
+    end
+end
+
+tensor_create_no_arg{order, dim}(::Type{SymmetricTensor{order, dim}}, f) = tensor_create_no_arg(SymmetricTensor{order, dim, Float64}, f)
+function tensor_create_no_arg{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}, f)
+    expr = Any[]
+    if order == 2
+        for i in 1:dim, j in i:dim
+            push!(expr, f())
+        end
+    elseif order == 4
+        for i in 1:dim, j in i:dim, k in 1:dim, l in k:dim
+            push!(expr, f())
+        end
+    end
+    return quote
+        $(Expr(:tuple, expr...))
+    end
+end
+
+tensor_create_elementwise{order, dim}(::Type{SymmetricTensor{order, dim}}, f) = tensor_create_elementwise(SymmetricTensor{order, dim, Float64}, f)
+
+function tensor_create_elementwise{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}, f)
+    expr = Any[]
+    z = 0
+    if order == 1
+        for i in 1:dim
+            push!(expr, f(z+=1))
+    end
+    elseif order == 2
+        for i in 1:dim, j in i:dim
+            push!(expr, f(z+=1))
+        end
+    elseif order == 4
+        for i in 1:dim, j in i:dim, k in 1:dim, l in k:dim
+            push!(expr, f(z+=1))
+        end
+    end
+    return quote
+        $(Expr(:tuple, expr...))
+    end
+end
+
+
+
 function sym_mat_get_index(N::Int, i::Int, j::Int)
     dim = Int( div(sqrt(1 + 8*N), 2))
     skipped_indicies = div((j-1) * j, 2)
@@ -27,13 +86,6 @@ end
 end
 
 
-@generated function sym_eye_tuple{N, T}(::Type{NTuple{N,T}})
-    b = sym_tupexpr_mat((i,j) -> i == j ? :(one(T)) : :(zero(T)), N)
-      return quote
-        $(inline_body(T))
-        $b
-    end
-end
 
 
 @generated function dot_matmatT{N, T}(F::NTuple{N, T}, i, j)
