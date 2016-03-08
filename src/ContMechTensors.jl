@@ -201,17 +201,17 @@ end
 # Simple Math #
 ###############
 
-@generated function Base.(:*)(n::Number, t::AllTensors)
+@generated function Base.(:*){order,dim}(n::Number, t::AbstractTensor{order, dim})
     exp = tensor_create_elementwise(get_base(t), (k) -> :(n * t.data[$k]))
     return quote
-        @inbounds t = typeof(t)($exp)
+        @inbounds t = get_base(typeof(t))($exp)
         return t
     end
 end
 
 Base.(:*)(t::AllTensors, n::Number) = n * t
 
-@generated function Base.(:/)(t::AllTensors, n::Number)
+@generated function Base.(:/)(t::AbstractTensor, n::Number)
     exp = tensor_create_elementwise(get_base(t), (k) -> :(t.data[$k] / n))
     return quote
         @inbounds t = typeof(t)($exp)
@@ -219,7 +219,7 @@ Base.(:*)(t::AllTensors, n::Number) = n * t
     end
 end
 
-@generated function Base.(:-)(t::AllTensors)
+@generated function Base.(:-)(t::AbstractTensor)
     exp = tensor_create_elementwise(get_base(t), (k) -> :(-t.data[$k]))
     return quote
         @inbounds t = typeof(t)($exp)
@@ -227,7 +227,7 @@ end
     end
 end
 
-@generated function Base.(:-){dim}(t1::AllTensors{dim}, t2::AllTensors{dim})
+@generated function Base.(:-){dim}(t1::AbstractTensor{dim}, t2::AbstractTensor{dim})
     typ = promote_type(t1, t2)
     exp = tensor_create_elementwise(get_base(typ), (k) -> :(p.data[$k] - q.data[$k]))
     return quote
@@ -237,7 +237,7 @@ end
     end
 end
 
-@generated function Base.(:.*){dim}(t1::AllTensors{dim}, t2::AllTensors{dim})
+@generated function Base.(:.*){dim}(t1::AbstractTensor{dim}, t2::AbstractTensor{dim})
     typ = promote_type(t1, t2)
     exp = tensor_create_elementwise(get_base(typ), (k) -> :(p.data[$k] * q.data[$k]))
     return quote
@@ -246,7 +246,7 @@ end
     end
 end
 
-@generated function Base.(:./){dim}(t1::AllTensors{dim}, t2::AllTensors{dim})
+@generated function Base.(:./){dim}(t1::AbstractTensor{dim}, t2::AbstractTensor{dim})
     typ = promote_type(t1, t2)
     exp = tensor_create_elementwise(get_base(typ), (k) -> :(p.data[$k] / q.data[$k]))
     return quote
@@ -256,7 +256,7 @@ end
     end
 end
 
-@generated function Base.(:+){dim}(t1::AllTensors{dim}, t2::AllTensors{dim})
+@generated function Base.(:+){dim}(t1::AbstractTensor{dim}, t2::AbstractTensor{dim})
     typ = promote_type(t1, t2)
     exp = tensor_create_elementwise(get_base(typ), (k) -> :(p.data[$k] + q.data[$k]))
     return quote
@@ -304,7 +304,7 @@ for f in (:zero, :rand, :one)
         end
 
         function Base.$f{order, dim, T, M}(Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}})
-            $f(get_base(Tt))
+            $f(get_main_type(Tt){order, dim, T})
         end
 
         # Special for Vec
