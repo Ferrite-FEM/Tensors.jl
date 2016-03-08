@@ -24,11 +24,22 @@ Base.issym(S::SymmetricTensors) = true
 end
 
 function dcontract{dim, T1, T2}(S1::SymmetricTensor{4, dim, T1}, S2::SymmetricTensor{2, dim, T2})
-    SymmetricTensor{2, dim}(Am_mul_Bv(S1.data, S2.data))
+    r = SymmetricTensor{2, dim}(Am_mul_Bv(S1.data, S2.data))
+    scale_offdiagonal(r)
 end
 
 function dcontract{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, S2::SymmetricTensor{4, dim, T2})
-    SymmetricTensor{2, dim}(Amt_mul_Bv(S1.data, S2.data))
+    r = SymmetricTensor{2, dim}(Amt_mul_Bv(S1.data, S2.data))
+    scale_offdiagonal(r)
+end
+
+@generated function scale_offdiagonal{dim}(t::SymmetricTensor{2, dim})
+    g(i, dim) = is_diagonal_index(dim, i)? :(t.data[$i]) : :(2*t.data[$i])
+    f = (i) -> g(i, dim)
+    exp = tensor_create_elementwise(get_base(t), f)
+    return quote
+        typeof(t)($exp)
+    end
 end
 
 ########

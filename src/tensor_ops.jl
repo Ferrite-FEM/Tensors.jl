@@ -21,6 +21,8 @@ end
 
 @inline Base.(:*){dim}(S1::Tensor{4, dim}, S2::Tensor{2, dim}) = dcontract(S1, S2)
 @inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{4, dim}) = dcontract(S1, S2)
+@inline Base.(:*){dim}(S1::SymmetricTensor{4, dim}, S2::SymmetricTensor{2, dim}) = dcontract(S1, S2)
+@inline Base.(:*){dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{4, dim}) = dcontract(S1, S2)
 
 const ⊡ = dcontract
 

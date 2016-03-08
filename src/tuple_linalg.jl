@@ -51,7 +51,7 @@ end
          return quote
             $(Expr(:meta, :inline))
             s = zero(T1)*zero(T2)
-            @inbounds @simd for k = 1:$rows;
+            @inbounds for k = 1:$rows;
                 s += mat_get_index(A, k, i) * b[k];
             end
             return s
@@ -129,15 +129,6 @@ function tupexpr_mat(f,N)
     end
 end
 
-
-@generated function eye_tuple{N, T}(::Type{NTuple{N,T}})
-    elT = eltype(T)
-    b = tupexpr_mat((i,j) -> i == j ? :(one(T)) : :(zero(T)), N)
-      return quote
-        $(inline_body(T))
-        $b
-    end
-end
 
 
 @generated function mat_set_index{N, T, I, J}(a::NTuple{N, T}, v, ::Type{Val{I}}, ::Type{Val{J}})
