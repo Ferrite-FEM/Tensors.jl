@@ -199,27 +199,6 @@ for dim in (1,2,3)
 
 end
 
-# Inverse for fourth order not yet implemented
-#=
-for dim in (1,2,3)
-    # Identities with second order and first order
-    II = one(Tensor{4, dim})
-
-    II ⊡ II ≈ II
-    A = rand(Tensor{4, dim})
-   # inv(A) ⊡ A ≈ II
-end
-
-for dim in (1,2,3)
-    # Identities with second order and first order
-    II = one(Tensor{4, dim})
-
-    II * II ≈ II
-    A = rand(Tensor{4, dim})
-    inv(A) * A ≈ II
-end
-=#
-
 
 
 ########################
