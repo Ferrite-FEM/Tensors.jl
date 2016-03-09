@@ -3,7 +3,7 @@ using Base.Test
 
 import ContMechTensors: n_independent_components, ArgumentError, get_data
 
-
+include("test_ops.jl")
 
 for dim in (1,2,3)
     for order in (1,2,4)

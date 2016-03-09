@@ -23,23 +23,95 @@ Base.issym(S::SymmetricTensors) = true
     @code :(return s)
 end
 
-function dcontract{dim, T1, T2}(S1::SymmetricTensor{4, dim, T1}, S2::SymmetricTensor{2, dim, T2})
-    r = SymmetricTensor{2, dim}(Am_mul_Bv(S1.data, S2.data))
-    scale_offdiagonal(r)
-end
-
-function dcontract{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, S2::SymmetricTensor{4, dim, T2})
-    r = SymmetricTensor{2, dim}(Amt_mul_Bv(S1.data, S2.data))
-    scale_offdiagonal(r)
-end
-
-@generated function scale_offdiagonal{dim}(t::SymmetricTensor{2, dim})
-    g(i, dim) = is_diagonal_index(dim, i)? :(t.data[$i]) : :(2*t.data[$i])
-    f = (i) -> g(i, dim)
-    exp = tensor_create_elementwise(get_base(t), f)
-    return quote
-        typeof(t)($exp)
+@generated function dcontract{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, S2::SymmetricTensor{4, dim, T2})
+    idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
+    idx2(k,l) = compute_index(SymmetricTensor{2, dim}, k, l)
+    exps = Expr(:tuple)
+    for i in 1:dim, j in i:dim
+        exps_ele = Expr(:call)
+        push!(exps_ele.args, :+)
+            for k in 1:dim, l in k:dim
+            if k == l
+                push!(exps_ele.args, :(data4[$(idx4(l, k, j, i))] * data2[$(idx2(l,k))]))
+            else
+                push!(exps_ele.args, :( 2 * data4[$(idx4(l, k, j, i))] * data2[$(idx2(l,k))]))
+            end
+        end
+        push!(exps.args, exps_ele)
     end
+    quote
+         data2 = S1.data
+         data4 = S2.data
+         @inbounds r = $exps
+         SymmetricTensor{2, dim}(r)
+    end
+end
+
+@generated function dcontract{dim, T1, T2}(S1::SymmetricTensor{4, dim, T1}, S2::SymmetricTensor{2, dim, T2})
+    idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
+    idx2(k,l) = compute_index(SymmetricTensor{2, dim}, k, l)
+    exps = Expr(:tuple)
+    for i in 1:dim, j in i:dim
+        exps_ele = Expr(:call)
+        push!(exps_ele.args, :+)
+            for k in 1:dim, l in k:dim
+            if k == l
+                push!(exps_ele.args, :(data4[$(idx4(j, i, l, k))] * data2[$(idx2(l,k))]))
+            else
+                push!(exps_ele.args, :( 2 * data4[$(idx4(j, i, l, k))] * data2[$(idx2(l,k))]))
+            end
+        end
+        push!(exps.args, exps_ele)
+    end
+    quote
+         data2 = S2.data
+         data4 = S1.data
+         @inbounds r = $exps
+         SymmetricTensor{2, dim}(r)
+    end
+end
+
+@generated function dcontract{dim, T1, T2}(S1::SymmetricTensor{4, dim, T1}, S2::SymmetricTensor{4, dim, T2})
+    idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
+    idx2(k,l) = compute_index(SymmetricTensor{2, dim}, k, l)
+    exps = Expr(:tuple)
+    for k in 1:dim, l in k:dim, i in 1:dim, j in i:dim
+        exps_ele = Expr(:call)
+        push!(exps_ele.args, :+)
+        for m in 1:dim, n in m:dim
+            if m == n
+                push!(exps_ele.args, :(data1[$(idx4(j,i,n,m))] * data2[$(idx4(m,n,l,k))]))
+            else
+                 push!(exps_ele.args, :(2*data1[$(idx4(j,i,n,m))] * data2[$(idx4(m,n,l,k))]))
+            end
+        end
+        push!(exps.args, exps_ele)
+    end
+    quote
+         data2 = S2.data
+         data1 = S1.data
+         @inbounds r = $exps
+         SymmetricTensor{4, dim}(r)
+    end
+end
+
+
+
+#######
+# Dot #
+#######
+
+# TODO: Do not promote here but just write out the multiplication
+@inline function Base.dot{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, v2::Vec{dim, T2})
+    Tv = typeof(zero(T1) * zero(T2))
+    S1_t = convert(Tensor{2, dim}, S1)
+    return Vec{dim, Tv}(Am_mul_Bv(S1_t.data, v2.data))
+end
+
+@inline function Base.dot{dim, T1, T2}(v1::Vec{dim, T1}, S2::SymmetricTensor{2, dim, T2})
+    Tv = typeof(zero(T1) * zero(T2))
+    S2_t = convert(Tensor{2, dim}, S2)
+    return Vec{dim, Tv}(Amt_mul_Bv(S2_t.data, v1.data))
 end
 
 ########

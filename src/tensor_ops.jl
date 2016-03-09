@@ -1,7 +1,6 @@
 ######################
 # Double contraction #
 ######################
-@inline dcontract{dim}(S1::AllTensors{dim}, S2::AllTensors{dim}) = dcontract(promote(S1, S2)...)
 
 @inline function dcontract{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
     return A_dot_B(S1.data, S2.data)
@@ -25,6 +24,18 @@ end
 @inline Base.(:*){dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{4, dim}) = dcontract(S1, S2)
 
 const ⊡ = dcontract
+
+# Promotion
+dcontract{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = dcontract(promote(S1, S2)...)
+dcontract{dim}(S1::Tensor{4, dim}, S2::SymmetricTensor{2, dim}) = dcontract(S1, convert(Tensor, S2))
+dcontract{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{4, dim}) = dcontract(S1, convert(Tensor, S2))
+
+dcontract{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = dcontract(promote(S1, S2)...)
+dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::Tensor{2, dim}) = dcontract(convert(Tensor, S1), S2)
+dcontract{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{4, dim}) = dcontract(convert(Tensor, S1), S2)
+
+dcontract{dim}(S1::Tensor{4, dim}, S2::SymmetricTensor{4, dim}) = dcontract(promote(S1, S2)...)
+dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::Tensor{4, dim}) = dcontract(promote(S1, S2)...)
 
 ########
 # Norm #
@@ -51,22 +62,26 @@ end
 
 const ⊗ = otimes
 
+# Promotion
+otimes{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = otimes(promote(S1, S2)...)
+otimes{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = otimes(promote(S1, S2)...)
+
 
 ################
 # Dot products #
 ################
-import Base.dot
 
 
 
-@inline dot{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2}) = A_dot_B(v1.data, v2.data)
 
-@inline function dot{dim, T1, T2}(S1::Tensor{2, dim, T1}, v2::Vec{dim, T2})
+@inline Base.dot{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2}) = A_dot_B(v1.data, v2.data)
+
+@inline function Base.dot{dim, T1, T2}(S1::Tensor{2, dim, T1}, v2::Vec{dim, T2})
     Tv = typeof(zero(T1) * zero(T2))
     return Vec{dim, Tv}(Am_mul_Bv(S1.data, v2.data))
 end
 
-@inline function dot{dim, T1, T2}(v1::Vec{dim, T1}, S2::Tensor{2, dim, T2})
+@inline function Base.dot{dim, T1, T2}(v1::Vec{dim, T1}, S2::Tensor{2, dim, T2})
     Tv = typeof(zero(T1) * zero(T2))
     return Vec{dim, Tv}(Amt_mul_Bv(S2.data, v1.data))
 end
@@ -74,7 +89,7 @@ end
 @inline Base.(:*){dim}(S1::Tensor{1, dim}, S2::Tensor{2, dim}) = dot(S1, S2)
 @inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{1, dim}) = dot(S1, S2)
 
-@inline function dot{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
+@inline function Base.dot{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
     return Tensor{2, dim}(Am_mul_Bm(S1.data, S2.data))
 end
 
@@ -82,7 +97,7 @@ end
     return Tensor{2, dim}(Amt_mul_Bm(S1.data, S2.data))
 end
 
-@inline function dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
+@inline function Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
     S1_t = convert(Tensor{2, dim}, S1)
     S2_t = convert(Tensor{2, dim}, S2)
     return Tensor{2, dim}(Am_mul_Bm(S1_t.data, S2_t.data))
@@ -94,11 +109,15 @@ end
     return SymmetricTensor{2, dim}(transpdot(S2.data))
 end
 
-@inline Base.Ac_mul_B{dim}(S1::AllTensors{dim}, S2::AllTensors{dim}) = tdot(promote(S1, S2)...)
-@inline Base.Ac_mul_B{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim}) = tdot(S1, S2)
+@inline Base.Ac_mul_B{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) = tdot(S1, S2)
+@inline Base.At_mul_B{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) = tdot(S1, S2)
 
-@inline Base.At_mul_B{dim}(S1::AllTensors{dim}, S2::AllTensors{dim}) = tdot(promote(S1, S2)...)
-@inline Base.At_mul_B{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim}) = tdot(S1, S2)
+# Promotions
+
+Base.dot{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = dot(promote(S1, S2)...)
+Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = dot(promote(S1, S2)...)
+Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim}) = dot(convert(Tensor, S1), convert(Tensor, S2))
+
 
 
 
@@ -149,12 +168,11 @@ Base.mean{dim}(S::SecondOrderTensor{dim}) = trace(S) / dim
 ###############
 # Determinant #
 ###############
-import Base.det
 
 """
 Computes the trace of a second order tensor.
 """
-@gen_code function det{dim, T}(t::SecondOrderTensor{dim, T})
+@gen_code function Base.det{dim, T}(t::SecondOrderTensor{dim, T})
     idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
     @code :(v = get_data(t))
     if dim == 1
