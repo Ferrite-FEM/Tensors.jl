@@ -19,7 +19,7 @@ export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOr
 
 export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, dev!
 export extract_components, load_components!, symmetrize, symmetrize!
-export setindex, store!, tdot, dot, det
+export setindex, store!, tdot
 
 #########
 # Types #

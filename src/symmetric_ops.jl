@@ -81,15 +81,12 @@ end
         for m in 1:dim, n in m:dim
             if m == n
                 push!(exps_ele.args, :(data1[$(idx4(j,i,n,m))] * data2[$(idx4(m,n,l,k))]))
-            else #if i == j || k == l
+            else
                  push!(exps_ele.args, :(2*data1[$(idx4(j,i,n,m))] * data2[$(idx4(m,n,l,k))]))
-            #else
-            #    push!(exps_ele.args, :( 4 *data1[$(idx4(i,j,m,n))] * data2[$(idx4(n,m,k,l))]))
             end
         end
         push!(exps.args, exps_ele)
     end
-    println(exps)
     quote
          data2 = S2.data
          data1 = S1.data
@@ -105,13 +102,13 @@ end
 #######
 
 # TODO: Do not promote here but just write out the multiplication
-@inline function dot{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, v2::Vec{dim, T2})
+@inline function Base.dot{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, v2::Vec{dim, T2})
     Tv = typeof(zero(T1) * zero(T2))
     S1_t = convert(Tensor{2, dim}, S1)
     return Vec{dim, Tv}(Am_mul_Bv(S1_t.data, v2.data))
 end
 
-@inline function dot{dim, T1, T2}(v1::Vec{dim, T1}, S2::SymmetricTensor{2, dim, T2})
+@inline function Base.dot{dim, T1, T2}(v1::Vec{dim, T1}, S2::SymmetricTensor{2, dim, T2})
     Tv = typeof(zero(T1) * zero(T2))
     S2_t = convert(Tensor{2, dim}, S2)
     return Vec{dim, Tv}(Amt_mul_Bv(S2_t.data, v1.data))
