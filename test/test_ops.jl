@@ -82,6 +82,40 @@ for dim in (1,2,3)
     @test det(A) ≈ det(reshape(vec(A), (dim,dim)))
     @test det(A_sym) ≈ det(reshape(vec(A_sym), (dim,dim)))
 
+    ##########################
+    # Creating with function #
+    ##########################
+
+    fi = (i) -> cos(i)
+    fij = (i,j) -> cos(i) + sin(j)
+    fijkl = (i, j, k ,l) -> cos(i) + sin(j) + tan(k) + exp(l)
+
+    af = Tensor{1,dim}(fi)
+    Af = Tensor{2,dim}(fij)
+    AAf = Tensor{4,dim}(fijkl)
+
+    Af_sym = SymmetricTensor{2,dim}(fij)
+    AAf_sym = SymmetricTensor{4,dim}(fijkl)
+    for i in 1:dim
+        @test af[i] == fi(i)
+        for j in 1:dim
+            @test Af[i,j] == fij(i, j)
+            for k in 1:dim, l in 1:dim
+                @test AAf[i,j,k,l] == fijkl(i, j,k,l)
+
+            end
+        end
+    end
+
+    for i in 1:dim, j in 1:i
+        @test Af_sym[i,j] == fij(i, j)
+        for k in 1:dim, l in 1:k
+             @test AAf_sym[i,j,k,l] == fijkl(i, j,k,l)
+        end
+    end
+
+
+
 end
 
 

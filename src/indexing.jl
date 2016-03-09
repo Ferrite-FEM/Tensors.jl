@@ -81,19 +81,3 @@ end
     t = typeof(S)(sym_mat_set_index(S.data, v, Val{i}, Val{j}))
     return t
 end
-#
-#@inline function setindex{dim}(S::SymmetricTensor{4, dim}, v, i::Int, j::Int, k::Int, l::Int)
-#    @boundscheck checkbounds(S, i, j)
-#    lower_order = Tensor{2,dim}
-#    if i < j
-#        i, j  = j,i
-#    end
-#    if k < l
-#        k, l  = l,k
-#    end
-#    I = compute_index(lower_order, i, j)
-#    J = compute_index(lower_order, k, l)
-#    t = typeof(S)(sym_mat_set_index(S.data, v, Val{I}, Val{J}))
-#    return t
-#end
-
