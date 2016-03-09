@@ -14,11 +14,11 @@ function tensor_create{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}, f)
     expr = Any[]
     if order == 2
         for i in 1:dim, j in i:dim
-            push!(expr, f(i, j))
+            push!(expr, f(j, i))
         end
     elseif order == 4
-        for i in 1:dim, j in i:dim, k in 1:dim, l in k:dim
-            push!(expr, f(i, j, k, l))
+        for k in 1:dim, l in k:dim, i in 1:dim, j in i:dim
+            push!(expr, f(j, i, l, k))
         end
     end
     return quote
@@ -34,7 +34,7 @@ function tensor_create_no_arg{order, dim, T}(::Type{SymmetricTensor{order, dim, 
             push!(expr, f())
         end
     elseif order == 4
-        for i in 1:dim, j in i:dim, k in 1:dim, l in k:dim
+        for k in 1:dim, l in k:dim, i in 1:dim, j in i:dim
             push!(expr, f())
         end
     end
@@ -57,7 +57,7 @@ function tensor_create_elementwise{order, dim, T}(::Type{SymmetricTensor{order, 
             push!(expr, f(z+=1))
         end
     elseif order == 4
-        for i in 1:dim, j in i:dim, k in 1:dim, l in k:dim
+        for k in 1:dim, l in k:dim, i in 1:dim, j in i:dim
             push!(expr, f(z+=1))
         end
     end

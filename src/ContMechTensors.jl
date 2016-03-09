@@ -15,7 +15,7 @@ end
 
 immutable InternalError <: Exception end
 
-export SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
+export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
 export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, dev!
 export extract_components, load_components!, symmetrize, symmetrize!
@@ -192,7 +192,6 @@ end
         elseif order == 4
             exp = tensor_create(get_main_type(get_type(Tt)){order, dim}, (i,j,k,l) -> :(f($i, $j, $k, $l)))
         end
-
         @code :(get_main_type(Tt){order, dim}($exp))
     end
 end

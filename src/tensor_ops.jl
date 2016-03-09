@@ -1,7 +1,6 @@
 ######################
 # Double contraction #
 ######################
-@inline dcontract{dim}(S1::AllTensors{dim}, S2::AllTensors{dim}) = dcontract(promote(S1, S2)...)
 
 @inline function dcontract{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
     return A_dot_B(S1.data, S2.data)
@@ -25,6 +24,18 @@ end
 @inline Base.(:*){dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{4, dim}) = dcontract(S1, S2)
 
 const ⊡ = dcontract
+
+# Promotion
+dcontract{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = dcontract(promote(S1, S2)...)
+dcontract{dim}(S1::Tensor{4, dim}, S2::SymmetricTensor{2, dim}) = dcontract(S1, convert(Tensor, S2))
+dcontract{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{4, dim}) = dcontract(S1, convert(Tensor, S2))
+
+dcontract{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = dcontract(promote(S1, S2)...)
+dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::Tensor{2, dim}) = dcontract(convert(Tensor, S1), S2)
+dcontract{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{4, dim}) = dcontract(convert(Tensor, S1), S2)
+
+dcontract{dim}(S1::Tensor{4, dim}, S2::SymmetricTensor{4, dim}) = dcontract(promote(S1, S2)...)
+dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::Tensor{4, dim}) = dcontract(promote(S1, S2)...)
 
 ########
 # Norm #
@@ -50,6 +61,10 @@ end
 end
 
 const ⊗ = otimes
+
+# Promotion
+otimes{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = otimes(promote(S1, S2)...)
+otimes{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = otimes(promote(S1, S2)...)
 
 
 ################
@@ -94,12 +109,8 @@ end
     return SymmetricTensor{2, dim}(transpdot(S2.data))
 end
 
-@inline Base.Ac_mul_B{dim}(S1::AllTensors{dim}, S2::AllTensors{dim}) = tdot(promote(S1, S2)...)
-@inline Base.Ac_mul_B{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim}) = tdot(S1, S2)
-
-@inline Base.At_mul_B{dim}(S1::AllTensors{dim}, S2::AllTensors{dim}) = tdot(promote(S1, S2)...)
-@inline Base.At_mul_B{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim}) = tdot(S1, S2)
-
+@inline Base.Ac_mul_B{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) = dot(S1, S2)
+@inline Base.At_mul_B{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) = dot(S1, S2)
 
 
 #########
