@@ -41,6 +41,64 @@ end
     SymmetricTensor{order, dim}(convert(NTuple{M, T1}, t.data))
 end
 
+# Convert dimensions
+@generated function Base.convert{order, dim1, dim2, T1}(::Type{Tensor{order, dim1}}, t::Tensor{order, dim2, T1})
+    exps = Expr[]
+    if order == 2
+        for j in 1:dim1, i in 1:dim1
+            if i > dim2 || j > dim2
+                push!(exps, :(zero(T1)))
+            else
+                push!(exps, :(t.data[$(compute_index(Tensor{order, dim2}, i, j))]))
+            end
+        end
+    end
+     if order == 4
+        for l in 1:dim1, k in 1:dim1, j in 1:dim1, i in 1:dim1
+            if i > dim2 || j > dim2 || k > dim2  || l > dim2
+                push!(exps, :(zero(T1)))
+            else
+                push!(exps, :(t.data[$(compute_index(Tensor{order, dim2}, i, j, k, l))]))
+            end
+        end
+    end
+    exp = Expr(:tuple, exps...)
+    return quote
+        $(Expr(:meta, :inline))
+        v = $exp
+        Tensor{order, dim1, T1, $N}(v)
+    end
+end
+
+@generated function Base.convert{order, dim1, dim2, T1}(::Type{SymmetricTensor{order, dim1}}, t::SymmetricTensor{order, dim2, T1})
+    N = n_components(SymmetricTensor{order, dim1})
+    exps = Expr[]
+    if order == 2
+        for i in 1:dim1, j in i:dim1
+            if i > dim2 || j > dim2
+                push!(exps, :(zero(T1)))
+            else
+                push!(exps, :(t.data[$(compute_index(SymmetricTensor{order, dim2}, i, j))]))
+            end
+        end
+    end
+     if order == 4
+        for k in 1:dim1, l in k:dim1, i in 1:dim1, j in i:dim1
+            if i > dim2 || j > dim2 || k > dim2  || l > dim2
+                push!(exps, :(zero(T1)))
+            else
+                push!(exps, :(t.data[$(compute_index(SymmetricTensor{order, dim2}, i, j, k, l))]))
+            end
+        end
+    end
+    exp = Expr(:tuple, exps...)
+    return quote
+        $(Expr(:meta, :inline))
+        v = $exp
+        SymmetricTensor{order, dim1, T1, $N}(v)
+    end
+end
+
 
 # Converting general data to a (symmetric) tensor. We leave the type of data unspecified to allow anything
 # that fulfil the contract of having a getindex and length.
