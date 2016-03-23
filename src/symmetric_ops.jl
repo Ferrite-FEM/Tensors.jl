@@ -138,8 +138,10 @@ end
 # dev #
 #######
 @generated function dev{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
-    f = (i,j) -> i == j ? :((S[$i,$j] - 1/dim*tr)) : :(S[$i,$j])
+    f = (i,j) -> i == j ? :((S.data[$(compute_index(SymmetricTensor{2, dim}, i, j))] - 1/dim*tr)) :
+                           :(S.data[$(compute_index(SymmetricTensor{2, dim}, i, j))])
     exp = tensor_create(SymmetricTensor{2, dim, T},f)
+    print(exp)
     return quote
         $(Expr(:meta, :inline))
         tr = trace(S)
@@ -151,6 +153,12 @@ end
 ################
 # Open product #
 ################
-function otimes{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, S2::SymmetricTensor{2, dim, T2})
-    SymmetricTensor{4, dim}(A_otimes_B(S1.data, S2.data))
+@generated function otimes{dim, T, M}(S1::SymmetricTensor{2, dim, T, M}, S2::SymmetricTensor{2, dim, T, M})
+    N = n_components(SymmetricTensor{4, dim})
+    return quote
+        $(Expr(:meta, :inline))
+        SymmetricTensor{4, dim, T, $N}(A_otimes_B(S1.data, S2.data))
+    end
 end
+
+otimes{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, S2::SymmetricTensor{2, dim, T2}) = otimes(promote(S1, S2)...)

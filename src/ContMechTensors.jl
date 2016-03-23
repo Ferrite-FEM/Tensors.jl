@@ -203,7 +203,8 @@ end
 @generated function Base.(:*){order,dim}(n::Number, t::AbstractTensor{order, dim})
     exp = tensor_create_elementwise(get_base(t), (k) -> :(n * t.data[$k]))
     return quote
-        @inbounds t = get_base(typeof(t))($exp)
+        $(Expr(:meta, :inline))
+        @inbounds t = typeof(t)($exp)
         return t
     end
 end
@@ -213,6 +214,7 @@ Base.(:*)(t::AllTensors, n::Number) = n * t
 @generated function Base.(:/)(t::AbstractTensor, n::Number)
     exp = tensor_create_elementwise(get_base(t), (k) -> :(t.data[$k] / n))
     return quote
+        $(Expr(:meta, :inline))
         @inbounds t = typeof(t)($exp)
         return t
     end
@@ -221,49 +223,34 @@ end
 @generated function Base.(:-)(t::AbstractTensor)
     exp = tensor_create_elementwise(get_base(t), (k) -> :(-t.data[$k]))
     return quote
+        $(Expr(:meta, :inline))
         @inbounds t = typeof(t)($exp)
         return t
     end
 end
 
-@generated function Base.(:-){dim}(t1::AbstractTensor{dim}, t2::AbstractTensor{dim})
-    typ = promote_type(t1, t2)
-    exp = tensor_create_elementwise(get_base(typ), (k) -> :(p.data[$k] - q.data[$k]))
-    return quote
-        p, q = promote(t1, t2)
-        @inbounds t = typeof(p)($exp)
-        return t
+for (op, fun) in ((:-, (k) -> :(t1.data[$k] - t2.data[$k])),
+                  (:+, (k) -> :(t1.data[$k] + t2.data[$k])),
+                  (:.*, (k) -> :(t1.data[$k] * t2.data[$k])),
+                  (:./, (k) -> :(t1.data[$k] / t2.data[$k])))
+    for TensorType in (SymmetricTensor, Tensor)
+        @eval begin
+            @generated function Base.$op{order, dim, T}(t1::$(TensorType){order, dim, T}, t2::$(TensorType){order, dim, T})
+                exp = tensor_create_elementwise(get_base(t1), $fun)
+                return quote
+                    $(Expr(:meta, :inline))
+                    @inbounds t = typeof(t1)($exp)
+                    return t
+                end
+            end
+        end
+    end
+
+    @eval begin
+        Base.$op{order, dim}(t1::AbstractTensor{order, dim}, t2::AbstractTensor{order, dim}) = Base.$op(promote(t1, t2)...)
     end
 end
 
-@generated function Base.(:.*){dim}(t1::AbstractTensor{dim}, t2::AbstractTensor{dim})
-    typ = promote_type(t1, t2)
-    exp = tensor_create_elementwise(get_base(typ), (k) -> :(p.data[$k] * q.data[$k]))
-    return quote
-        @inbounds t = typ($exp)
-        return t
-    end
-end
-
-@generated function Base.(:./){dim}(t1::AbstractTensor{dim}, t2::AbstractTensor{dim})
-    typ = promote_type(t1, t2)
-    exp = tensor_create_elementwise(get_base(typ), (k) -> :(p.data[$k] / q.data[$k]))
-    return quote
-        p, q = promote(t1, t2)
-        @inbounds t = typeof(p)($exp)
-        return t
-    end
-end
-
-@generated function Base.(:+){dim}(t1::AbstractTensor{dim}, t2::AbstractTensor{dim})
-    typ = promote_type(t1, t2)
-    exp = tensor_create_elementwise(get_base(typ), (k) -> :(p.data[$k] + q.data[$k]))
-    return quote
-        p, q = promote(t1, t2)
-        @inbounds t = typeof(p)($exp)
-        return t
-    end
-end
 
 
 
