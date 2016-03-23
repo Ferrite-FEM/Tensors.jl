@@ -204,8 +204,8 @@ Computes the inverse of a second order tensor.
     if dim == 1
         @code :(return  typeof(t)((dinv,)))
     elseif dim == 2
-        @code :( return typeof(t)((v[$(idx(2,2))] * dinv, -v[$(idx(2,1))] * dinv,
-                                  -v[$(idx(1,2))] * dinv, v[$(idx(1,1))] * dinv)))
+        @code :(return typeof(t)((v[$(idx(2,2))] * dinv, -v[$(idx(2,1))] * dinv,
+                                 -v[$(idx(1,2))] * dinv, v[$(idx(1,1))] * dinv)))
     else
         @code :(return typeof(t)((  (v[$(idx(2,2))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,2))]) * dinv,
                                    -(v[$(idx(2,1))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,1))]) * dinv,
@@ -242,6 +242,19 @@ Computes the inverse of a second order symmetric tensor.
                                    -(v[$(idx(1,1))]*v[$(idx(3,2))] - v[$(idx(1,2))]*v[$(idx(3,1))]) * dinv,
 
                                     (v[$(idx(1,1))]*v[$(idx(2,2))] - v[$(idx(1,2))]*v[$(idx(2,1))]) * dinv)))
+    end
+end
+
+#######
+# dev #
+#######
+@generated function dev{dim, T, M}(S::Tensor{2, dim, T, M})
+    f = (i,j) -> i == j ? :((S[$i,$j] - 1/dim*tr)) : :(S[$i,$j])
+    exp = tensor_create(Tensor{2, dim, T},f)
+    return quote
+        $(Expr(:meta, :inline))
+        tr = trace(S)
+        Tensor{2, dim, T, M}($exp)
     end
 end
 

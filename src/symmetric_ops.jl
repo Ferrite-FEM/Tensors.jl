@@ -134,6 +134,19 @@ end
     @code :(return sqrt(s))
 end
 
+#######
+# dev #
+#######
+@generated function dev{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
+    f = (i,j) -> i == j ? :((S[$i,$j] - 1/dim*tr)) : :(S[$i,$j])
+    exp = tensor_create(SymmetricTensor{2, dim, T},f)
+    return quote
+        $(Expr(:meta, :inline))
+        tr = trace(S)
+        SymmetricTensor{2, dim, T, M}($exp)
+    end
+end
+
 
 ################
 # Open product #
