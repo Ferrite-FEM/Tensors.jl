@@ -43,6 +43,7 @@ end
 
 # Convert dimensions
 @generated function Base.convert{order, dim1, dim2, T1}(::Type{Tensor{order, dim1}}, t::Tensor{order, dim2, T1})
+    N = n_components(Tensor{order, dim1})
     exps = Expr[]
     if order == 2
         for j in 1:dim1, i in 1:dim1
