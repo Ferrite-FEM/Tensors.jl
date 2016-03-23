@@ -96,13 +96,16 @@ end
 @inline Base.(:*){dim}(S1::Tensor{1, dim}, S2::Tensor{2, dim}) = dot(S1, S2)
 @inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{1, dim}) = dot(S1, S2)
 
+
 @inline function Base.dot{dim, T, M}(S1::Tensor{2, dim, T, M}, S2::Tensor{2, dim, T, M})
     return Tensor{2, dim, T, M}(Am_mul_Bm(S1.data, S2.data))
 end
+Base.dot{dim, T1, T2}(S1::Tensor{2, dim, T1}, S2::Tensor{2, dim, T2}) = dot(promote(S1, S2)...)
 
 @inline function tdot{dim, T, M}(S1::Tensor{2, dim, T, M}, S2::Tensor{2, dim, T, M})
     return Tensor{2, dim, T, M}(Amt_mul_Bm(S1.data, S2.data))
 end
+tdot{dim, T1, T2}(S1::Tensor{2, dim, T1}, S2::Tensor{2, dim, T2}) = tdot(promote(S1, S2)...)
 
 @inline function Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
     S1_t = convert(Tensor{2, dim}, S1)
@@ -135,7 +138,6 @@ Computes the trace of a second or fourth order tensor.
 """
 @gen_code function trace{dim, T}(S::Union{SecondOrderTensor{dim, T}, FourthOrderTensor{dim, T}})
     @code :($(Expr(:meta, :inline)))
-    @code :($(Expr(:meta, :inline)))
     @code :(s = zero(T))
     for i = 1:dim
         if S <: SecondOrderTensor
@@ -147,34 +149,15 @@ Computes the trace of a second or fourth order tensor.
     @code :(return s)
 end
 
-
-############
-# Deviator #
-############
-#@gen_code function dev{dim}(S1::SecondOrderTensor{dim})
-#    idx(i,j) = compute_index(S, i, j)
-#    @code :(vol = mean(S1))
-#    @code :(data = get_data(S))
-#     for i = 1:dim, j = 1:dim
-#        if i == j
-#            @code :(data[$(idx(i,j))] -= vol)
-#        end
-#    end
-#    @code :(return  S)
-#end
-
-
 ########
 # Mean #
 ########
 Base.mean{dim}(S::SecondOrderTensor{dim}) = trace(S) / dim
 
 
-
 ###############
 # Determinant #
 ###############
-
 """
 Computes the trace of a second order tensor.
 """
