@@ -155,10 +155,11 @@ end
     f = (i,j) -> i == j ? :((S.data[$(compute_index(SymmetricTensor{2, dim}, i, j))] - 1/3*tr)) :
                            :(S.data[$(compute_index(SymmetricTensor{2, dim}, i, j))])
     exp = tensor_create(SymmetricTensor{2, dim, T},f)
+    Tv = typeof(zero(T) * 1 / 3)
     return quote
         $(Expr(:meta, :inline))
         tr = trace(S)
-        SymmetricTensor{2, dim, T, M}($exp)
+        SymmetricTensor{2, dim, $Tv, M}($exp)
     end
 end
 
@@ -173,4 +174,15 @@ end
         $(Expr(:meta, :inline))
         SymmetricTensor{4, dim, $Tv, $N}(A_otimes_B(S1.data, S2.data))
     end
+end
+
+#######
+# Eig #
+#######
+function Base.eig{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
+    S_m = Symmetric(reshape(S[:], (dim, dim)))
+    λ, ϕ = eig(S_m)
+    Λ = Tensor{1, dim}(λ)
+    Φ = Tensor{2, dim}(ϕ)
+    return Λ, Φ
 end

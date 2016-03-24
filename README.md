@@ -59,6 +59,21 @@ julia> SymmetricTensor{2,2}((i,j) -> i + j)
  3  4
 ```
 
+A diagonal tensor can be created by either giving a number of a vector on the diagonal:
+
+```
+julia> diagm(Tensor{2,2}, 2.0)
+2x2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 2.0  0.0
+ 0.0  2.0
+
+julia> diagm(SymmetricTensor{2,3}, [1.0, 2.0, 3.0])
+3x3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+ 1.0  0.0  0.0
+ 0.0  2.0  0.0
+ 0.0  0.0  3.0
+```
+
 ## Indexing
 
 Indexing into a `(Symmetric)Tensor{dim, order}` is performed like for an `Array` of dimension `order`.
@@ -154,7 +169,7 @@ julia> A ⊗ B
 
 For all type of tensors the following operators are implemented; `trace`, `norm`.
 
-For second order tensors: `det`, `inv`, `transpose` and `dev` defined as `s - 1/3 trace(s) * I`.
+For second order tensors: `det`, `inv`, `transpose` `eig`, and `dev` defined as `s - 1/3 trace(s) * I`.
 
 There is also a special function for computing `F' ⋅ F` between two general second order tensors which is called `tdot` and returns a `SymmetricTensor`.
 

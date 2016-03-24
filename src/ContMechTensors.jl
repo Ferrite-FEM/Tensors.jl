@@ -281,14 +281,31 @@ for TensorType in (SymmetricTensor, Tensor)
             end
         end
 
-        @generated function Base.one{order, dim, T}(Tt::Type{$(TensorType){order, dim, T}})
+        @generated function Base.diagm{order, dim, T}(Tt::Type{$(TensorType){order, dim}}, v::AbstractVector{T})
             N = n_components($(TensorType){order, dim})
             if order == 1
-                f = (i) -> :($(one(T)))
+                f = (i) -> :(v[$i])
             elseif order == 2
-                f = (i,j) -> i == j ? :($(one(T))) : :($(zero(T)))
+                f = (i,j) -> i == j ? :(v[$i]) : :($(zero(T)))
             elseif order == 4
-                f = (i,j,k,l) -> i == k && j == l ? :($(one(T))) : :($(zero(T)))
+                f = (i,j,k,l) -> i == k && j == l ? :(v[$i]) : :($(zero(T)))
+            end
+            exp = tensor_create(get_type(Tt),f)
+            return quote
+                $(Expr(:meta, :inline))
+                @inbounds t = $exp
+                $($TensorType){order, dim, T, $N}(t)
+            end
+        end
+
+        @generated function Base.diagm{order, dim, T}(Tt::Type{$(TensorType){order, dim}}, v::T)
+            N = n_components($(TensorType){order, dim})
+            if order == 1
+                f = (i) -> :(v)
+            elseif order == 2
+                f = (i,j) -> i == j ? :(v) : :($(zero(T)))
+            elseif order == 4
+                f = (i,j,k,l) -> i == k && j == l ? :(v) : :($(zero(T)))
             end
             exp = tensor_create(get_type(Tt),f)
             return quote
@@ -296,9 +313,12 @@ for TensorType in (SymmetricTensor, Tensor)
                 $($TensorType){order, dim, T, $N}($exp)
             end
         end
+
+        function Base.one{order, dim, T}(Tt::Type{$(TensorType){order, dim, T}})
+            Base.diagm($(TensorType){order, dim}, one(T))
+        end
     end
 end
-
 
 for f in (:zero, :rand, :one)
     for TensorType in (SymmetricTensor, Tensor)
