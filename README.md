@@ -61,7 +61,7 @@ julia> SymmetricTensor{2,2}((i,j) -> i + j)
 
 A diagonal tensor can be created by either giving a number of a vector on the diagonal:
 
-```
+```jl
 julia> diagm(Tensor{2,2}, 2.0)
 2x2 ContMechTensors.Tensor{2,2,Float64,4}:
  2.0  0.0
