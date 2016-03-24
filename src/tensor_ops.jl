@@ -6,16 +6,19 @@
     return A_dot_B(S1.data, S2.data)
 end
 
-@inline function dcontract{dim}(S1::Tensor{4, dim}, S2::Tensor{4, dim})
-    Tensor{4, dim}(Am_mul_Bm(S1.data, S2.data))
+@inline function dcontract{dim, T1, T2, M}(S1::Tensor{4, dim, T1, M}, S2::Tensor{4, dim, T2})
+    Tv = typeof(zero(T1)*zero(T2))
+    Tensor{4, dim, Tv, M}(Am_mul_Bm(S1.data, S2.data))
 end
 
-@inline function dcontract{dim}(S1::Tensor{4, dim}, S2::Tensor{2, dim})
-    Tensor{2, dim}(Am_mul_Bv(S1.data, S2.data))
+@inline function dcontract{dim, T1, T2, M}(S1::Tensor{4, dim, T1}, S2::Tensor{2, dim, T2, M})
+    Tv = typeof(zero(T1)*zero(T2))
+    Tensor{2, dim, Tv, M}(Am_mul_Bv(S1.data, S2.data))
 end
 
-@inline function dcontract{dim}(S1::Tensor{2, dim}, S2::Tensor{4, dim})
-    Tensor{2, dim}(Amt_mul_Bv(S2.data, S1.data))
+@inline function dcontract{dim,T1,T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{4, dim, T2})
+    Tv = typeof(zero(T1)*zero(T2))
+    Tensor{2, dim, Tv, M}(Amt_mul_Bv(S2.data, S1.data))
 end
 
 @inline Base.(:*){dim}(S1::Tensor{4, dim}, S2::Tensor{2, dim}) = dcontract(S1, S2)
@@ -52,13 +55,24 @@ Computes the outer product between two tensors `t1` and `t2`. Can also be called
 """
 @inline otimes{order, dim}(t1::AbstractTensor{order, dim}, t2::AbstractTensor{order, dim}) = otimes(promote(t1, t2)...)
 
-@inline function otimes{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
-   Tensor{4, dim}(A_otimes_B(S1.data, S2.data))
+@generated function otimes{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
+    N = n_components(Tensor{4, dim})
+    return quote
+        $(Expr(:meta, :inline))
+        Tv = typeof(zero(T1)*zero(T2))
+       Tensor{4, dim, Tv, $N}(A_otimes_B(S1.data, S2.data))
+    end
 end
 
-@inline function otimes{dim}(v1::Vec{dim}, v2::Vec{dim})
-    Tensor{2, dim}(A_otimes_B(v1.data, v2.data))
+@generated function otimes{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2})
+    N = n_components(Tensor{2, dim})
+    return quote
+        $(Expr(:meta, :inline))
+        Tv = typeof(zero(T1)*zero(T2))
+        Tensor{2, dim, Tv, $N}(A_otimes_B(v1.data, v2.data))
+    end
 end
+
 
 const ⊗ = otimes
 
@@ -70,10 +84,6 @@ otimes{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = otimes(promote(S1
 ################
 # Dot products #
 ################
-
-
-
-
 @inline Base.dot{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2}) = A_dot_B(v1.data, v2.data)
 
 @inline function Base.dot{dim, T1, T2}(S1::Tensor{2, dim, T1}, v2::Vec{dim, T2})
@@ -89,12 +99,15 @@ end
 @inline Base.(:*){dim}(S1::Tensor{1, dim}, S2::Tensor{2, dim}) = dot(S1, S2)
 @inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{1, dim}) = dot(S1, S2)
 
-@inline function Base.dot{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
-    return Tensor{2, dim}(Am_mul_Bm(S1.data, S2.data))
+
+@inline function Base.dot{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
+    Tv = typeof(zero(T1) * zero(T2))
+    return Tensor{2, dim, Tv, M}(Am_mul_Bm(S1.data, S2.data))
 end
 
-@inline function tdot{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
-    return Tensor{2, dim}(Amt_mul_Bm(S1.data, S2.data))
+@inline function tdot{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
+    Tv = typeof(zero(T1) * zero(T2))
+    return Tensor{2, dim, Tv, M}(Amt_mul_Bm(S1.data, S2.data))
 end
 
 @inline function Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
@@ -104,6 +117,7 @@ end
 end
 
 @inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim}) = dot(S1, S2)
+@inline Base.(:*){dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim}) = dot(S1, S2)
 
 @inline function tdot{dim}(S2::Tensor{2, dim})
     return SymmetricTensor{2, dim}(transpdot(S2.data))
@@ -116,9 +130,6 @@ end
 
 Base.dot{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = dot(promote(S1, S2)...)
 Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = dot(promote(S1, S2)...)
-Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim}) = dot(convert(Tensor, S1), convert(Tensor, S2))
-
-
 
 
 #########
@@ -141,39 +152,21 @@ Computes the trace of a second or fourth order tensor.
     @code :(return s)
 end
 
-
-############
-# Deviator #
-############
-#@gen_code function dev{dim}(S1::SecondOrderTensor{dim})
-#    idx(i,j) = compute_index(S, i, j)
-#    @code :(vol = mean(S1))
-#    @code :(data = get_data(S))
-#     for i = 1:dim, j = 1:dim
-#        if i == j
-#            @code :(data[$(idx(i,j))] -= vol)
-#        end
-#    end
-#    @code :(return  S)
-#end
-
-
 ########
 # Mean #
 ########
 Base.mean{dim}(S::SecondOrderTensor{dim}) = trace(S) / dim
 
 
-
 ###############
 # Determinant #
 ###############
-
 """
 Computes the trace of a second order tensor.
 """
 @gen_code function Base.det{dim, T}(t::SecondOrderTensor{dim, T})
     idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
+    @code :($(Expr(:meta, :inline)))
     @code :(v = get_data(t))
     if dim == 1
         @code :(@inbounds d = v[$(idx(1,1))])
@@ -199,6 +192,7 @@ Computes the inverse of a second order tensor.
 """
 @gen_code function Base.inv{dim, T}(t::Tensor{2, dim, T})
     idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
+    @code :($(Expr(:meta, :inline)))
     @code :(dinv = 1 / det(t))
     @code :(v = get_data(t))
     if dim == 1
@@ -226,6 +220,7 @@ Computes the inverse of a second order symmetric tensor.
 """
 @gen_code function Base.inv{dim, T}(t::SymmetricTensor{2, dim, T})
     idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
+    @code :($(Expr(:meta, :inline)))
     @code :(dinv = 1 / det(t))
     @code :(v = get_data(t))
     if dim == 1
@@ -248,9 +243,13 @@ end
 #######
 # dev #
 #######
+
+
 @generated function dev{dim, T, M}(S::Tensor{2, dim, T, M})
-    f = (i,j) -> i == j ? :((S[$i,$j] - 1/dim*tr)) : :(S[$i,$j])
-    exp = tensor_create(Tensor{2, dim, T},f)
+    f = (i,j) -> i == j ? :((S.data[$(compute_index(Tensor{2, dim}, i, j))] - 1/dim*tr)) :
+                           :(S.data[$(compute_index(Tensor{2, dim}, i, j))])
+    exp = tensor_create(Tensor{2, dim, T}, f)
+    print(exp)
     return quote
         $(Expr(:meta, :inline))
         tr = trace(S)
