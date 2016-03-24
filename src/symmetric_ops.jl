@@ -152,7 +152,7 @@ end
 # dev #
 #######
 @generated function dev{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
-    f = (i,j) -> i == j ? :((S.data[$(compute_index(SymmetricTensor{2, dim}, i, j))] - 1/dim*tr)) :
+    f = (i,j) -> i == j ? :((S.data[$(compute_index(SymmetricTensor{2, dim}, i, j))] - 1/3*tr)) :
                            :(S.data[$(compute_index(SymmetricTensor{2, dim}, i, j))])
     exp = tensor_create(SymmetricTensor{2, dim, T},f)
     return quote
