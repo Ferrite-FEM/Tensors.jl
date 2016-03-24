@@ -7,25 +7,21 @@
 
 function Base.promote_rule{dim , A <: Number, B <: Number, order, M}(::Type{SymmetricTensor{order, dim, A, M}},
                                                                      ::Type{SymmetricTensor{order, dim, B, M}})
-    Base.@_pure_meta
     SymmetricTensor{order, dim, promote_type(A, B), M}
 end
 
 function Base.promote_rule{dim , A <: Number, B <: Number, order, M}(::Type{Tensor{order, dim, A, M}},
                                                                      ::Type{Tensor{order, dim, B, M}})
-    Base.@_pure_meta
     Tensor{order, dim, promote_type(A, B), M}
 end
 
 function Base.promote_rule{dim , A <: Number, B <: Number, order, M1, M2}(::Type{SymmetricTensor{order, dim, A, M1}},
                                                                           ::Type{Tensor{order, dim, B, M2}})
-    Base.@_pure_meta
     Tensor{order, dim, promote_type(A, B), M2}
 end
 
 function Base.promote_rule{dim , A <: Number, B <: Number, order, M1, M2}(::Type{Tensor{order, dim, A, M1}},
                                                                           ::Type{SymmetricTensor{order, dim, B, M2}})
-    Base.@_pure_meta
     Tensor{order, dim, promote_type(A, B), M1}
 end
 
@@ -37,13 +33,11 @@ end
 # Identity conversions
 @inline Base.convert{order, dim, T}(::Type{Tensor{order, dim, T}}, t::Tensor{order, dim, T}) = t
 @inline function Base.convert{order, dim, T1, T2, M}(::Type{Tensor{order, dim, T1, M}}, t::Tensor{order, dim, T2, M})
-    Base.@_pure_meta
     Tensor{order, dim}(convert(NTuple{M, T1}, t.data))
 end
 
 @inline Base.convert{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}, t::SymmetricTensor{order, dim, T}) = t
 @inline function Base.convert{order, dim, T1, T2, M}(::Type{SymmetricTensor{order, dim, T1, M}}, t::SymmetricTensor{order, dim, T2, M})
-    Base.@_pure_meta
     SymmetricTensor{order, dim}(convert(NTuple{M, T1}, t.data))
 end
 

@@ -199,33 +199,38 @@ end
 ###############
 # Simple Math #
 ###############
-
-@generated function Base.(:*){order,dim}(n::Number, t::AbstractTensor{order, dim})
-    exp = tensor_create_elementwise(get_base(t), (k) -> :(n * t.data[$k]))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds t = typeof(t)($exp)
-        return t
-    end
-end
-
 Base.(:*)(t::AllTensors, n::Number) = n * t
 
-@generated function Base.(:/)(t::AbstractTensor, n::Number)
-    exp = tensor_create_elementwise(get_base(t), (k) -> :(t.data[$k] / n))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds t = typeof(t)($exp)
-        return t
-    end
-end
+for TensorType in (SymmetricTensor, Tensor)
+    @eval begin
+        @generated function Base.(:*){order,dim, T, M}(n::Number, t::$(TensorType){order, dim, T, M})
+            exp = tensor_create_elementwise(get_base(t), (k) -> :(n * t.data[$k]))
+            Tv = typeof(zero(n) * zero(T))
+            return quote
+                $(Expr(:meta, :inline))
+                @inbounds t = $($TensorType){order, dim, $Tv, M}($exp)
+                return t
+            end
+        end
 
-@generated function Base.(:-)(t::AbstractTensor)
-    exp = tensor_create_elementwise(get_base(t), (k) -> :(-t.data[$k]))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds t = typeof(t)($exp)
-        return t
+        @generated function Base.(:/){order,dim, T, M}(t::$(TensorType){order, dim, T, M}, n::Number)
+            exp = tensor_create_elementwise(get_base(t), (k) -> :(t.data[$k] / n))
+            Tv = typeof(zero(n) / zero(T))
+            return quote
+                $(Expr(:meta, :inline))
+                @inbounds t = $($TensorType){order, dim, $Tv, M}($exp)
+                return t
+            end
+        end
+
+        @generated function Base.(:-){order,dim, T, M}(t::$(TensorType){order, dim, T, M})
+            exp = tensor_create_elementwise(get_base(t), (k) -> :(-t.data[$k]))
+            return quote
+                $(Expr(:meta, :inline))
+                @inbounds t = $($TensorType){order, dim, T, M}($exp)
+                return t
+            end
+        end
     end
 end
 
@@ -252,50 +257,65 @@ for (op, fun) in ((:-, (k) -> :(t1.data[$k] - t2.data[$k])),
     end
 end
 
-
-
-
-
 ###################
 # Zero, one, rand #
 ###################
 
-@gen_code function Base.rand{order, dim, T}(Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}})
-    exp = tensor_create_no_arg(get_type(Tt), () -> :(rand(T)))
-    @code :(get_main_type(Tt){order, dim}($exp))
-end
+for TensorType in (SymmetricTensor, Tensor)
+    @eval begin
+        @generated function Base.rand{order, dim, T}(Tt::Type{$(TensorType){order, dim, T}})
+            N = n_components($(TensorType){order, dim})
+            exp = tensor_create_no_arg(get_type(Tt), () -> :(rand(T)))
+            return quote
+                $(Expr(:meta, :inline))
+                $($TensorType){order, dim, T, $N}($exp)
+            end
+        end
 
-@gen_code function Base.zero{order, dim, T}(Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}})
-    exp = tensor_create_no_arg(get_type(Tt), () -> :(zero(T)))
-    @code :(get_main_type(Tt){order, dim}($exp))
-end
+        @generated function Base.zero{order, dim, T}(Tt::Type{$(TensorType){order, dim, T}})
+            N = n_components($(TensorType){order, dim})
+            exp = tensor_create_no_arg(get_type(Tt), () -> :(zero(T)))
+            return quote
+                $(Expr(:meta, :inline))
+                $($TensorType){order, dim, T, $N}($exp)
+            end
+        end
 
-@gen_code function Base.one{order, dim, T}(Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}})
-    if order == 1
-        f = (i) -> :($(one(T)))
-    elseif order == 2
-        f = (i,j) -> i == j ? :($(one(T))) : :($(zero(T)))
-    elseif order == 4
-        f = (i,j,k,l) -> i == k && j == l ? :($(one(T))) : :($(zero(T)))
+        @generated function Base.one{order, dim, T}(Tt::Type{$(TensorType){order, dim, T}})
+            N = n_components($(TensorType){order, dim})
+            if order == 1
+                f = (i) -> :($(one(T)))
+            elseif order == 2
+                f = (i,j) -> i == j ? :($(one(T))) : :($(zero(T)))
+            elseif order == 4
+                f = (i,j,k,l) -> i == k && j == l ? :($(one(T))) : :($(zero(T)))
+            end
+            exp = tensor_create(get_type(Tt),f)
+            return quote
+                $(Expr(:meta, :inline))
+                $($TensorType){order, dim, T, $N}($exp)
+            end
+        end
     end
-    exp = tensor_create(get_type(Tt),f)
-    @code :(get_main_type(Tt){order, dim}($exp))
 end
-
 
 
 for f in (:zero, :rand, :one)
+    for TensorType in (SymmetricTensor, Tensor)
+        @eval begin
+            @inline function Base.$f{order, dim}(Tt::Type{$(TensorType){order, dim}})
+                $f($(TensorType){order, dim, Float64})
+            end
+
+            @inline function Base.$f{order, dim, T, M}(Tt::Type{$(TensorType){order, dim, T, M}})
+                $f($(TensorType){order, dim, T})
+            end
+        end
+    end
+
     @eval begin
-        function Base.$f{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}})
-            $f(get_main_type(Tt){order, dim, Float64})
-        end
-
-        function Base.$f{order, dim, T, M}(Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}})
-            $f(get_main_type(Tt){order, dim, T})
-        end
-
-        # Special for Vec
-        function Base.$f{dim}(Tt::Type{Vec{dim}})
+     # Special for Vec
+        @inline function Base.$f{dim}(Tt::Type{Vec{dim}})
             $f(Vec{dim, Float64})
         end
 
