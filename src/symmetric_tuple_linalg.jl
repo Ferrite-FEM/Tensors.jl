@@ -66,15 +66,11 @@ function tensor_create_elementwise{order, dim, T}(::Type{SymmetricTensor{order, 
     end
 end
 
-
-
 function sym_mat_get_index(N::Int, i::Int, j::Int)
     dim = Int( div(sqrt(1 + 8*N), 2))
     skipped_indicies = div((j-1) * j, 2)
     return dim*(j-1) + i - skipped_indicies
 end
-
-
 
 @generated function sym_mat_set_index{N, T, I, J}(a::NTuple{N, T}, v, ::Type{Val{I}}, ::Type{Val{J}})
     dim = Int( div(sqrt(1 + 8*N), 2))
@@ -84,9 +80,6 @@ end
         $b
     end
 end
-
-
-
 
 @generated function dot_matmatT{N, T}(F::NTuple{N, T}, i, j)
     rows = Int(sqrt(N))
@@ -113,4 +106,3 @@ end
        return d
     end
 end
-

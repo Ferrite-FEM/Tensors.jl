@@ -129,7 +129,12 @@ function tupexpr_mat(f,N)
     end
 end
 
-
+function tupexpr(f,N)
+    ex = Expr(:tuple, [f(i) for i=1:Int(N)]...)
+    return quote
+        @inbounds return $ex
+    end
+end
 
 @generated function mat_set_index{N, T, I, J}(a::NTuple{N, T}, v, ::Type{Val{I}}, ::Type{Val{J}})
     rows = Int(sqrt(N))
@@ -156,13 +161,3 @@ end
         $b
     end
 end
-
-
-#N = 3
-#Atup = ((rand(N*N)...))
-#Btup = ((rand(N*N)...))
-#btup = ((rand(N)...))
-##
-#Am_mult_Bv(Atup, btup) == ( (reshape([Atup...], N, N) * reshape([btup...], N))...)
-#Amt_mult_Bv(Atup, btup) == ( (reshape([Atup...], N, N)' * reshape([btup...], N))...)
-#Am_mult_Bm(Atup, Btup) == ( (reshape([Atup...], N, N) * reshape([Btup...], N, N))...)
