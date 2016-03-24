@@ -24,7 +24,7 @@ Base.issym(S::SymmetricTensors) = true
     @code :(return s)
 end
 
-@generated function dcontract{dim, T, M}(S1::SymmetricTensor{2, dim, T, M}, S2::SymmetricTensor{4, dim, T})
+@generated function dcontract{dim, T1, T2, M}(S1::SymmetricTensor{2, dim, T1, M}, S2::SymmetricTensor{4, dim, T2})
     idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
     idx2(k,l) = compute_index(SymmetricTensor{2, dim}, k, l)
     exps = Expr(:tuple)
@@ -41,15 +41,16 @@ end
         push!(exps.args, exps_ele)
     end
     quote
+         Tv = typeof(zero(T1) * zero(T2))
          data2 = S1.data
          data4 = S2.data
          @inbounds r = $exps
-         SymmetricTensor{2, dim, T, M}(r)
+         SymmetricTensor{2, dim, Tv, M}(r)
     end
 end
 
 
-@generated function dcontract{dim, T, M}(S1::SymmetricTensor{4, dim, T}, S2::SymmetricTensor{2, dim, T, M})
+@generated function dcontract{dim, T1, T2, M}(S1::SymmetricTensor{4, dim, T1}, S2::SymmetricTensor{2, dim, T2, M})
     idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
     idx2(k,l) = compute_index(SymmetricTensor{2, dim}, k, l)
     exps = Expr(:tuple)
@@ -66,14 +67,15 @@ end
         push!(exps.args, exps_ele)
     end
     quote
+        Tv = typeof(zero(T1) * zero(T2))
          data2 = S2.data
          data4 = S1.data
          @inbounds r = $exps
-         SymmetricTensor{2, dim, T, M}(r)
+         SymmetricTensor{2, dim, Tv, M}(r)
     end
 end
 
-@generated function dcontract{dim, T, M}(S1::SymmetricTensor{4, dim, T, M}, S2::SymmetricTensor{4, dim, T, M})
+@generated function dcontract{dim, T1, T2, M}(S1::SymmetricTensor{4, dim, T1, M}, S2::SymmetricTensor{4, dim, T2, M})
     idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
     idx2(k,l) = compute_index(SymmetricTensor{2, dim}, k, l)
     exps = Expr(:tuple)
@@ -90,10 +92,11 @@ end
         push!(exps.args, exps_ele)
     end
     quote
+        Tv = typeof(zero(T1) * zero(T2))
          data2 = S2.data
          data1 = S1.data
          @inbounds r = $exps
-         SymmetricTensor{4, dim, T, M}(r)
+         SymmetricTensor{4, dim, Tv, M}(r)
     end
 end
 
@@ -103,7 +106,7 @@ end
 # Dot #
 #######
 
-@generated function Base.dot{dim, T}(S1::SymmetricTensor{2, dim, T}, v2::Vec{dim, T})
+@generated function Base.dot{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, v2::Vec{dim, T2})
     idx(i,j) = compute_index(SymmetricTensor{2, dim}, i, j)
     exps = Expr(:tuple)
     for i in 1:dim
@@ -116,8 +119,9 @@ end
     end
     quote
          $(Expr(:meta, :inline))
+         Tv = typeof(zero(T1) * zero(T2))
          @inbounds r = $exps
-         Vec{dim,T}(r)
+         Vec{dim,Tv}(r)
     end
 end
 Base.dot{dim, T}(v2::Vec{dim, T}, S1::SymmetricTensor{2, dim, T}) = dot(S1, v2)
@@ -165,11 +169,12 @@ end
 ################
 # Open product #
 ################
-@generated function otimes{dim, T, M}(S1::SymmetricTensor{2, dim, T, M}, S2::SymmetricTensor{2, dim, T, M})
+@generated function otimes{dim, T1, T2, M}(S1::SymmetricTensor{2, dim, T1, M}, S2::SymmetricTensor{2, dim, T2, M})
     N = n_components(SymmetricTensor{4, dim})
     return quote
         $(Expr(:meta, :inline))
-        SymmetricTensor{4, dim, T, $N}(A_otimes_B(S1.data, S2.data))
+        Tv = typeof(zero(T1) * zero(T2))
+        SymmetricTensor{4, dim, Tv, $N}(A_otimes_B(S1.data, S2.data))
     end
 end
 

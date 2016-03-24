@@ -235,11 +235,12 @@ for (op, fun) in ((:-, (k) -> :(t1.data[$k] - t2.data[$k])),
                   (:./, (k) -> :(t1.data[$k] / t2.data[$k])))
     for TensorType in (SymmetricTensor, Tensor)
         @eval begin
-            @generated function Base.$op{order, dim, T}(t1::$(TensorType){order, dim, T}, t2::$(TensorType){order, dim, T})
+            @generated function Base.$op{order, dim, T1, T2, M}(t1::$(TensorType){order, dim, T1, M}, t2::$(TensorType){order, dim, T2, M})
                 exp = tensor_create_elementwise(get_base(t1), $fun)
+                Tv = typeof( $op(zero(T1), zero(T2)))
                 return quote
                     $(Expr(:meta, :inline))
-                    @inbounds t = typeof(t1)($exp)
+                    @inbounds t = $($TensorType){order, dim, $Tv, M}($exp)
                     return t
                 end
             end

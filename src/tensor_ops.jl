@@ -6,16 +6,19 @@
     return A_dot_B(S1.data, S2.data)
 end
 
-@inline function dcontract{dim, T, M}(S1::Tensor{4, dim, T, M}, S2::Tensor{4, dim, T})
-    Tensor{4, dim, T, M}(Am_mul_Bm(S1.data, S2.data))
+@inline function dcontract{dim, T1, T2, M}(S1::Tensor{4, dim, T1, M}, S2::Tensor{4, dim, T2})
+    Tv = typeof(zero(T1)*zero(T2))
+    Tensor{4, dim, Tv, M}(Am_mul_Bm(S1.data, S2.data))
 end
 
-@inline function dcontract{dim, T, M}(S1::Tensor{4, dim, T}, S2::Tensor{2, dim, T, M})
-    Tensor{2, dim, T, M}(Am_mul_Bv(S1.data, S2.data))
+@inline function dcontract{dim, T1, T2, M}(S1::Tensor{4, dim, T1}, S2::Tensor{2, dim, T2, M})
+    Tv = typeof(zero(T1)*zero(T2))
+    Tensor{2, dim, Tv, M}(Am_mul_Bv(S1.data, S2.data))
 end
 
-@inline function dcontract{dim,T, M}(S1::Tensor{2, dim, T, M}, S2::Tensor{4, dim, T})
-    Tensor{2, dim, T, M}(Amt_mul_Bv(S2.data, S1.data))
+@inline function dcontract{dim,T1,T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{4, dim, T2})
+    Tv = typeof(zero(T1)*zero(T2))
+    Tensor{2, dim, Tv, M}(Amt_mul_Bv(S2.data, S1.data))
 end
 
 @inline Base.(:*){dim}(S1::Tensor{4, dim}, S2::Tensor{2, dim}) = dcontract(S1, S2)
@@ -52,23 +55,23 @@ Computes the outer product between two tensors `t1` and `t2`. Can also be called
 """
 @inline otimes{order, dim}(t1::AbstractTensor{order, dim}, t2::AbstractTensor{order, dim}) = otimes(promote(t1, t2)...)
 
-@generated function otimes{dim, T, M}(S1::Tensor{2, dim, T, M}, S2::Tensor{2, dim, T, M})
+@generated function otimes{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
     N = n_components(Tensor{4, dim})
     return quote
         $(Expr(:meta, :inline))
-       Tensor{4, dim, T, $N}(A_otimes_B(S1.data, S2.data))
+        Tv = typeof(zero(T1)*zero(T2))
+       Tensor{4, dim, Tv, $N}(A_otimes_B(S1.data, S2.data))
     end
 end
-otimes{dim, T1, T2}(S1::Tensor{2, dim, T1}, S2::Tensor{2, dim, T2}) = otimes(promote(S1, S2)...)
 
-@generated function otimes{dim, T}(v1::Vec{dim, T}, v2::Vec{dim, T})
+@generated function otimes{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2})
     N = n_components(Tensor{2, dim})
     return quote
         $(Expr(:meta, :inline))
-        Tensor{2, dim, T, $N}(A_otimes_B(v1.data, v2.data))
+        Tv = typeof(zero(T1)*zero(T2))
+        Tensor{2, dim, Tv, $N}(A_otimes_B(v1.data, v2.data))
     end
 end
-otimes{dim}(v1::Vec{dim}, v2::Vec{dim}) = otimes(promote(v1, v2)...)
 
 
 const ⊗ = otimes
@@ -97,15 +100,15 @@ end
 @inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{1, dim}) = dot(S1, S2)
 
 
-@inline function Base.dot{dim, T, M}(S1::Tensor{2, dim, T, M}, S2::Tensor{2, dim, T, M})
-    return Tensor{2, dim, T, M}(Am_mul_Bm(S1.data, S2.data))
+@inline function Base.dot{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
+    Tv = typeof(zero(T1) * zero(T2))
+    return Tensor{2, dim, Tv, M}(Am_mul_Bm(S1.data, S2.data))
 end
-Base.dot{dim, T1, T2}(S1::Tensor{2, dim, T1}, S2::Tensor{2, dim, T2}) = dot(promote(S1, S2)...)
 
-@inline function tdot{dim, T, M}(S1::Tensor{2, dim, T, M}, S2::Tensor{2, dim, T, M})
-    return Tensor{2, dim, T, M}(Amt_mul_Bm(S1.data, S2.data))
+@inline function tdot{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
+    Tv = typeof(zero(T1) * zero(T2))
+    return Tensor{2, dim, Tv, M}(Amt_mul_Bm(S1.data, S2.data))
 end
-tdot{dim, T1, T2}(S1::Tensor{2, dim, T1}, S2::Tensor{2, dim, T2}) = tdot(promote(S1, S2)...)
 
 @inline function Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
     S1_t = convert(Tensor{2, dim}, S1)
