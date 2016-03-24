@@ -249,14 +249,13 @@ end
     f = (i,j) -> i == j ? :((S.data[$(compute_index(Tensor{2, dim}, i, j))] - 1/3*tr)) :
                            :(S.data[$(compute_index(Tensor{2, dim}, i, j))])
     exp = tensor_create(Tensor{2, dim, T}, f)
-    print(exp)
+    Tv = typeof(zero(T) * 1 / 3)
     return quote
         $(Expr(:meta, :inline))
         tr = trace(S)
-        Tensor{2, dim, T, M}($exp)
+        Tensor{2, dim, $Tv, M}($exp)
     end
 end
-
 
 #############
 # Transpose #
@@ -270,3 +269,17 @@ Computes the transpose of a second order tensor.
 end
 
 Base.ctranspose(S::AllTensors) = transpose(S)
+
+#######
+# Eig #
+#######
+
+function Base.eig{dim, T, M}(S::Tensor{2, dim, T, M})
+    S_m = reshape(S[:], (dim, dim))
+    λ, ϕ = eig(S_m)
+    Λ = Tensor{1, dim}(λ)
+    Φ = Tensor{2, dim}(ϕ)
+    return Λ, Φ
+end
+
+
