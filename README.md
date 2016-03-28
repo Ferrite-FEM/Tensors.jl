@@ -167,9 +167,11 @@ julia> A ⊗ B
 
 ### Other operators:
 
-For all type of tensors the following operators are implemented; `trace`, `norm`.
+For vectors (first order tensors): `norm`
 
-For second order tensors: `det`, `inv`, `transpose` `eig`, and `dev` defined as `s - 1/3 trace(s) * I`.
+For second order tensors: `norm`, `trace` (`vol`), `det`, `inv`, `transpose`, `eig`, `mean` defined as `trace(s) / 3`, and `dev` defined as `s - mean(s) * I`.
+
+For fourth order tensors: `norm` and `trace`
 
 There is also a special function for computing `F' ⋅ F` between two general second order tensors which is called `tdot` and returns a `SymmetricTensor`.
 

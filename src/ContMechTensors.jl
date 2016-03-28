@@ -17,13 +17,15 @@ immutable InternalError <: Exception end
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
-export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, dev!
+export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, vol
 export extract_components, load_components!, symmetrize, symmetrize!
 export setindex, store!, tdot
+
 
 #########
 # Types #
 #########
+
 abstract AbstractTensor{order, dim, T <: Real} <: AbstractArray{T, order}
 
 
@@ -35,10 +37,10 @@ immutable Tensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
    data::NTuple{M, T}
 end
 
+
 ###############
 # Typealiases #
 ###############
-
 
 typealias Vec{dim, T, M} Tensor{1, dim, T, dim}
 
@@ -63,7 +65,6 @@ include("promotion_conversion.jl")
 include("tensor_ops.jl")
 include("symmetric_ops.jl")
 include("data_functions.jl")
-
 
 
 ##############################
@@ -120,6 +121,8 @@ Base.linearindexing{T <: Tensor}(::Type{T}) = Base.LinearFast()
 
 get_type{X}(::Type{Type{X}}) = X
 
+
+########
 # Size #
 ########
 
@@ -142,6 +145,7 @@ Base.fill(t::AbstractTensor, v::Integer)  = typeof(t)(const_tuple(typeof(get_dat
 Base.fill(t::AbstractTensor, v::Number) = typeof(t)(const_tuple(typeof(get_data(t)), v))
 
 
+#########################
 # Internal constructors #
 #########################
 
@@ -196,9 +200,11 @@ end
     end
 end
 
+
 ###############
 # Simple Math #
 ###############
+
 Base.(:*)(t::AllTensors, n::Number) = n * t
 
 for TensorType in (SymmetricTensor, Tensor)
@@ -257,9 +263,10 @@ for (op, fun) in ((:-, (k) -> :(t1.data[$k] - t2.data[$k])),
     end
 end
 
-###################
-# Zero, one, rand #
-###################
+
+##########################
+# Zero, one, rand, diagm #
+##########################
 
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
