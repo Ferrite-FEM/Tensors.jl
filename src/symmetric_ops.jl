@@ -1,13 +1,15 @@
 #################################################
-# Sepcialized Second Order Symmetric Operations #
+# Specialized Second Order Symmetric Operations #
 #################################################
 
 Base.transpose(S::SymmetricTensors) = S
 Base.issym(S::SymmetricTensors) = true
 
+
 ######################
 # Double contraction #
 ######################
+
 @gen_code function dcontract{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, S2::SymmetricTensor{2, dim, T2})
     Tv = typeof(zero(T1) * zero(T2))
     @code :($(Expr(:meta, :inline)))
@@ -104,6 +106,7 @@ end
 #######
 # Dot #
 #######
+
 @generated function Base.dot{dim, T1, T2}(S1::SymmetricTensor{2, dim, T1}, v2::Vec{dim, T2})
     idx(i,j) = compute_index(SymmetricTensor{2, dim}, i, j)
     exps = Expr(:tuple)
@@ -128,9 +131,40 @@ end
 @inline Base.(:*){dim, T}(v1::Vec{dim, T}, S1::SymmetricTensor{2, dim, T}) = dot(v1, S1)
 
 
+###########
+# Inverse #
+###########
+
+"""
+Computes the inverse of a second order symmetric tensor.
+"""
+@gen_code function Base.inv{dim, T}(t::SymmetricTensor{2, dim, T})
+    idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
+    @code :($(Expr(:meta, :inline)))
+    @code :(dinv = 1 / det(t))
+    @code :(v = get_data(t))
+    if dim == 1
+        @code :(return  typeof(t)((dinv,)))
+    elseif dim == 2
+        @code :( return typeof(t)((v[$(idx(2,2))] * dinv, -v[$(idx(2,1))] * dinv,
+                                   v[$(idx(1,1))] * dinv)))
+    else
+        @code :(return typeof(t)((  (v[$(idx(2,2))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,2))]) * dinv,
+                                   -(v[$(idx(2,1))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,1))]) * dinv,
+                                    (v[$(idx(2,1))]*v[$(idx(3,2))] - v[$(idx(2,2))]*v[$(idx(3,1))]) * dinv,
+
+                                    (v[$(idx(1,1))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,1))]) * dinv,
+                                   -(v[$(idx(1,1))]*v[$(idx(3,2))] - v[$(idx(1,2))]*v[$(idx(3,1))]) * dinv,
+
+                                    (v[$(idx(1,1))]*v[$(idx(2,2))] - v[$(idx(1,2))]*v[$(idx(2,1))]) * dinv)))
+    end
+end
+
+
 ########
-# norm #
+# Norm #
 ########
+
 @gen_code function Base.norm{dim, T}(S::SymmetricTensor{4, dim, T})
     idx(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
     @code :(data = get_data(S))
@@ -148,9 +182,11 @@ end
     @code :(return sqrt(s))
 end
 
+
 #######
-# dev #
+# Dev #
 #######
+
 @generated function dev{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
     f = (i,j) -> i == j ? :((S.data[$(compute_index(SymmetricTensor{2, dim}, i, j))] - 1/3*tr)) :
                            :(S.data[$(compute_index(SymmetricTensor{2, dim}, i, j))])
@@ -167,6 +203,7 @@ end
 ################
 # Open product #
 ################
+
 @generated function otimes{dim, T1, T2, M}(S1::SymmetricTensor{2, dim, T1, M}, S2::SymmetricTensor{2, dim, T2, M})
     N = n_components(SymmetricTensor{4, dim})
     Tv = typeof(zero(T1) * zero(T2))
@@ -176,9 +213,11 @@ end
     end
 end
 
+
 #######
 # Eig #
 #######
+
 function Base.eig{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
     S_m = Symmetric(reshape(S[:], (dim, dim)))
     λ, ϕ = eig(S_m)

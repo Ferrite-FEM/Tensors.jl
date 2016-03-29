@@ -48,6 +48,7 @@ for dim in (1,2,3)
     end
 end
 
+
 ############
 # Indexing #
 ############
@@ -198,7 +199,6 @@ for dim in (1,2,3)
     #@test A_sym ⊡ II_sym ≈ A_sym
 
 end
-
 
 
 ########################

@@ -1,6 +1,7 @@
-
+############
 # Indexing #
 ############
+
 @inline function compute_index{dim}(::Type{SymmetricTensor{2, dim}}, i::Int, j::Int)
     if i < j
         i, j  = j,i
@@ -25,8 +26,9 @@ end
 end
 
 
+###########################
 # getindex general tensor #
-############
+###########################
 @inline function Base.getindex(S::Tensor, i::Int)
     @boundscheck checkbounds(S, i)
     @inbounds v = get_data(S)[i]
@@ -47,9 +49,9 @@ end
 end
 
 
-
+############
 # setindex #
-#############
+############
 
 @inline function setindex{dim}(S::Tensor{1, dim}, v, i::Int)
     @boundscheck checkbounds(S, i)
