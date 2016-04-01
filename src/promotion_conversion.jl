@@ -45,6 +45,16 @@ end
 @generated function Base.convert{order, dim1, dim2, T1}(::Type{Tensor{order, dim1}}, t::Tensor{order, dim2, T1})
     N = n_components(Tensor{order, dim1})
     exps = Expr[]
+    if order == 1
+         for i in 1:dim1
+            if i > dim2
+                push!(exps, :(zero(T1)))
+            else
+                push!(exps, :(t.data[$i]))
+            end
+        end
+    end
+
     if order == 2
         for j in 1:dim1, i in 1:dim1
             if i > dim2 || j > dim2
@@ -54,7 +64,7 @@ end
             end
         end
     end
-     if order == 4
+    if order == 4
         for l in 1:dim1, k in 1:dim1, j in 1:dim1, i in 1:dim1
             if i > dim2 || j > dim2 || k > dim2  || l > dim2
                 push!(exps, :(zero(T1)))
