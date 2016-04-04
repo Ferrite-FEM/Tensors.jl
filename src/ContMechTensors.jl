@@ -154,6 +154,9 @@ function call{order, dim, T, M}(Tt::Union{Type{Tensor{order, dim, T, M}}, Type{S
     get_base(Tt)(data)
 end
 
+function call{dim}(Tt::Type{Vec{dim}}, data)
+    Tensor{1, dim}(data)
+end
 
 ## These are some kinda ugly stuff to create different type of constructors.
 @gen_code function call{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}},
