@@ -115,6 +115,9 @@ end
     return Tensor{2, dim, Tv, M}(Amt_mul_Bm(S1.data, S2.data))
 end
 
+@inline tdot{dim, T1, T2, M}(S1::SymmetricTensor{2, dim, T1, M}, S2::SymmetricTensor{2, dim, T2, M}) = dot(S1,S2)
+@inline tdot{dim, T1, T2, M, N}(S1::SymmetricTensor{2, dim, T1, N}, S2::Tensor{2, dim, T2, M}) = dot(S1,S2)
+
 @inline function Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
     S1_t = convert(Tensor{2, dim}, S1)
     S2_t = convert(Tensor{2, dim}, S2)
