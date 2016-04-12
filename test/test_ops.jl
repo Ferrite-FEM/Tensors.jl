@@ -69,11 +69,14 @@ for dim in (1,2,3)
     @test dot(b, A_sym) ≈ reshape(vec(A_sym), (dim,dim))' * extract_components(b)
 
     # 2 - 2
-    @test dot(A, B) ≈ reshape(vec(A), (dim,dim))  * reshape(vec(B), (dim,dim))
-    @test dot(A_sym, B_sym) ≈ reshape(vec(A_sym), (dim,dim))  * reshape(vec(B_sym), (dim,dim))
-    @test dot(A, B_sym) ≈ reshape(vec(A), (dim,dim))  * reshape(vec(B_sym), (dim,dim))
-    @test dot(A_sym, B) ≈ reshape(vec(A_sym), (dim,dim))  * reshape(vec(B), (dim,dim))
-    @test tdot(A) ≈ reshape(vec(A), (dim,dim))'  * reshape(vec(A), (dim,dim))
+    @test dot(A, B) ≈ reshape(vec(A), (dim,dim)) * reshape(vec(B), (dim,dim))
+    @test dot(A_sym, B_sym) ≈ reshape(vec(A_sym), (dim,dim)) * reshape(vec(B_sym), (dim,dim))
+    @test dot(A, B_sym) ≈ reshape(vec(A), (dim,dim)) * reshape(vec(B_sym), (dim,dim))
+    @test dot(A_sym, B) ≈ reshape(vec(A_sym), (dim,dim)) * reshape(vec(B), (dim,dim))
+    @test tdot(A) ≈ reshape(vec(A), (dim,dim))' * reshape(vec(A), (dim,dim))
+    @test tdot(A_sym) ≈ reshape(vec(A_sym), (dim,dim))' * reshape(vec(A_sym), (dim,dim))
+    @test tdot(A_sym,B) ≈ reshape(vec(A_sym), (dim,dim))' * reshape(vec(B), (dim,dim))
+    @test tdot(A_sym,A_sym) ≈ reshape(vec(A_sym), (dim,dim))' * reshape(vec(A_sym), (dim,dim))
 
     ###############
     # Determinant #

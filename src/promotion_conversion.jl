@@ -128,7 +128,7 @@ function Base.convert{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{Symme
     convert(get_main_type(Tt){order, dim, eltype(data)}, data)
 end
 
-# Tensor -> SymmetricTensor
+# SymmetricTensor -> Tensor
 # We unroll the creation by calling the compute_index function
 @generated function Base.convert{order, dim, T1, T2, M1, M2}(::Type{Tensor{order, dim, T1, M1}}, t::SymmetricTensor{order, dim, T2, M2})
     N = n_components(Tensor{order, dim})
