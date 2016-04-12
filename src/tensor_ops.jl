@@ -1,3 +1,15 @@
+# Stop `*` from working with tensors
+function Base.(:*)(S1::AbstractTensor, S2::AbstractTensor)
+    error("Don't use `*` for multiplication between tensors. Use `⋅` (`\\cdot`) for single contraction and `⊡` (`\\boxdot`) for double contraction.")
+end
+function Base.Ac_mul_B{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
+    error("Don't use `A'*B`, use `tdot(A,B)` (or `A'⋅B`) instead.")
+end
+function Base.At_mul_B{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
+    error("Don't use `A.'*B`, use `tdot(A,B)` (or `A.'⋅B`) instead.")
+end
+
+
 ######################
 # Double contraction #
 ######################
@@ -20,11 +32,6 @@ end
     Tv = typeof(zero(T1)*zero(T2))
     Tensor{2, dim, Tv, M}(Amt_mul_Bv(S2.data, S1.data))
 end
-
-@inline Base.(:*){dim}(S1::Tensor{4, dim}, S2::Tensor{2, dim}) = dcontract(S1, S2)
-@inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{4, dim}) = dcontract(S1, S2)
-@inline Base.(:*){dim}(S1::SymmetricTensor{4, dim}, S2::SymmetricTensor{2, dim}) = dcontract(S1, S2)
-@inline Base.(:*){dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{4, dim}) = dcontract(S1, S2)
 
 const ⊡ = dcontract
 
@@ -59,7 +66,6 @@ Computes the norm of a tensor
 """
 Computes the outer product between two tensors `t1` and `t2`. Can also be called via the infix operator `⊗`.
 """
-@inline otimes{order, dim}(t1::AbstractTensor{order, dim}, t2::AbstractTensor{order, dim}) = otimes(promote(t1, t2)...)
 
 @generated function otimes{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
     N = n_components(Tensor{4, dim})
@@ -101,9 +107,6 @@ end
     return Vec{dim, Tv}(Amt_mul_Bv(S2.data, v1.data))
 end
 
-@inline Base.(:*){dim}(S1::Tensor{1, dim}, S2::Tensor{2, dim}) = dot(S1, S2)
-@inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{1, dim}) = dot(S1, S2)
-
 
 @inline function Base.dot{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
     Tv = typeof(zero(T1) * zero(T2))
@@ -117,6 +120,7 @@ end
 
 @inline tdot{dim, T1, T2, M}(S1::SymmetricTensor{2, dim, T1, M}, S2::SymmetricTensor{2, dim, T2, M}) = dot(S1,S2)
 @inline tdot{dim, T1, T2, M1, M2}(S1::SymmetricTensor{2, dim, T1, M1}, S2::Tensor{2, dim, T2, M2}) = dot(S1,S2)
+@inline tdot{dim, T1, T2, M1, M2}(S1::Tensor{2, dim, T1, M1}, S2::SymmetricTensor{2, dim, T2, M2}) = tdot(promote(S1,S2)...)
 
 @inline function Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
     S1_t = convert(Tensor{2, dim}, S1)
@@ -124,17 +128,11 @@ end
     return Tensor{2, dim}(Am_mul_Bm(S1_t.data, S2_t.data))
 end
 
-@inline Base.(:*){dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim}) = dot(S1, S2)
-@inline Base.(:*){dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim}) = dot(S1, S2)
-
 @inline function tdot{dim}(S1::Tensor{2, dim})
     return SymmetricTensor{2, dim}(transpdot(S1.data))
 end
 
-@inline tdot(S1::SymmetricTensor{2}) = dot(S1,S1)
-
-@inline Base.Ac_mul_B{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) = tdot(S1, S2)
-@inline Base.At_mul_B{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) = tdot(S1, S2)
+@inline tdot{dim}(S1::SymmetricTensor{2,dim}) = tdot(convert(Tensor{2,dim}, S1))
 
 # Promotion
 Base.dot{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = dot(promote(S1, S2)...)

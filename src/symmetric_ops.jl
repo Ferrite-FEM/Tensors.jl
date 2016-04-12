@@ -127,9 +127,6 @@ end
 end
 @inline Base.dot{dim, T}(v2::Vec{dim, T}, S1::SymmetricTensor{2, dim, T}) = dot(S1, v2)
 
-@inline Base.(:*){dim, T}(S1::SymmetricTensor{2, dim, T}, v1::Vec{dim, T}) = dot(S1, v1)
-@inline Base.(:*){dim, T}(v1::Vec{dim, T}, S1::SymmetricTensor{2, dim, T}) = dot(v1, S1)
-
 
 ###########
 # Inverse #

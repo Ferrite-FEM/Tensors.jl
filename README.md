@@ -92,7 +92,7 @@ julia> B[1, 2, 1, 2]
 
 In order to set an index the function `setindex(t, value, index...)` is used. This returns a new tensor with the modified index. Explicitly setting indicies is not recommended in performance critical code since it will invoke dynamic dispatch. It is provided as a means of convenience when working in for example the REPL.
 
-```julia
+```jl
 julia> a = rand(Vec{2});
 
 julia> setindex(a, 1.337, 2)
@@ -104,11 +104,36 @@ julia> setindex(a, 1.337, 2)
 
 ## Operations
 
-The symbol `*` is overloaded for double contractions between fourth and second order tensors, and single contractions between two second order tensors or between a second and first order tensor.
+### Single contraction (dot product)
 
-### Double contractions
+Single contractions or scalar products of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n - 2`. The symbol `⋅`, written `\cdot`, is overloaded for single contraction.
 
-Double contractions contracts the two most inner "legs" of the tensors. The result of a double contraction between a tensor of order `n` and a tensor with order `m` gives a tensor with order `m + n - 4`. The symbol `⊡`, written `\boxdot` is overloaded for double contraction. The reason `:` is not used is because it does not have the same precedence as multiplication.
+```jl
+julia> A = rand(Tensor{2, 2})
+2x2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 0.0928652  0.664058
+ 0.799669   0.979861
+
+julia> B = rand(Tensor{1, 2})
+2-element ContMechTensors.Tensor{1,2,Float64,2}:
+ 0.687288
+ 0.461646
+
+julia> dot(A, B)
+2-element ContMechTensors.Tensor{1,2,Float64,2}:
+ 0.370385
+ 1.00195 
+
+julia> A ⋅ B
+2-element ContMechTensors.Tensor{1,2,Float64,2}:
+ 0.370385
+ 1.00195
+```
+
+
+### Double contraction
+
+Double contractions contracts the two most inner "legs" of the tensors. The result of a double contraction between a tensor of order `n` and a tensor with order `m` gives a tensor with order `m + n - 4`. The symbol `⊡`, written `\boxdot`, is overloaded for double contraction. The reason `:` is not used is because it does not have the same precedence as multiplication.
 
 ```jl
 julia> A = rand(SymmetricTensor{2, 2});
@@ -122,30 +147,10 @@ julia> A ⊡ B
 0.9392510193487607
 ```
 
-### Single contraction (dot products)
 
-Single contractions or scalar products of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n - 2`. The symbol `⋅` is overloaded for single contractiom.
+### Tensor product (open product)
 
-```jl
-julia> A = rand(Tensor{2, 2})
-2x2 ContMechTensors.Tensor{2,2,Float64,1}:
- 0.246704  0.379757
- 0.180964  0.947665
-
-julia> B = rand(Tensor{1, 2})
-2-element ContMechTensors.Tensor{1,2,Float64,1}:
- 0.772635
- 0.0625623
-
-julia> dot(A, B)
-2-element ContMechTensors.Tensor{1,2,Float64,1}:
- 0.214371
- 0.199108
-```
-
-### Tensor products
-
-Tensor products or open products of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n`T. he symbol `⊗` is overloaded for tensor products.
+Tensor products or open product of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n`. The symbol `⊗`, written `\otimes`, is overloaded for tensor products.
 
 ```jl
 julia> A = rand(SymmetricTensor{2, 2});
@@ -179,7 +184,7 @@ There is also a special function for computing `F' ⋅ F` between two general se
 
 Even though a user mostly deals with the `Tensor{order, dim, T}` parameters, the full parameter list for a tensor is actually `Tensor{order, dim, T, N}` where `N` is the number of independent elements in the tensor. The reason for this is that the internal storage is a `NTuple{N, T}`. In order to get good performance when storing tensors in other types it is importatant that the container type is also parametrized on `N`. For example, when storing one symmetric second order tensor and one unsymmetric tensor, this is the preferred way:
 
-```julia
+```jl
 immutable Container{dim, T, N, M}
     sym_tens::SymmetricTensor{2, dim, T, N}
     tens::Tensor{2, dim, T, M}

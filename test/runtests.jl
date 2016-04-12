@@ -1,10 +1,17 @@
 using ContMechTensors
-using Base.Test
+
+if VERSION >= v"0.5-"
+    using Base.Test
+else
+    using BaseTestNext
+    const Test = BaseTestNext
+end
 
 import ContMechTensors: n_independent_components, ArgumentError, get_data
 
 include("test_ops.jl")
 
+@testset "Constructors and simple math ops." begin
 for dim in (1,2,3)
     for order in (1,2,4)
         n_sym = n_independent_components(dim, true)
@@ -47,11 +54,13 @@ for dim in (1,2,3)
         end
     end
 end
+end # of testset
 
 
 ############
 # Indexing #
 ############
+@testset "Indexing" begin
 for dim in (1,2,3)
     for order in (1,2,4)
         n_sym = n_independent_components(dim, true)
@@ -89,8 +98,14 @@ for dim in (1,2,3)
         end
     end
 end
+end # of testset
 
 
+############################
+# Trace, norm, det and inv #
+############################
+
+@testset "trace, norm, det, inv" begin
 for dim in (1,2,3)
     for order in (2,4)
         t = rand(Tensor{order, dim})
@@ -99,6 +114,9 @@ for dim in (1,2,3)
         if order == 2
             @test (@inferred trace(t)) == sum([t[i,i] for i in 1:dim])
             @test (@inferred trace(t_sym)) == sum([t_sym[i,i] for i in 1:dim])
+
+            @test trace(t) ≈ vol(t) ≈ mean(t)*3.0
+            @test trace(t_sym) ≈ vol(t_sym) ≈ mean(t_sym)*3.0
 
             #@test_approx_eq_eps (mean(dev(t)) / norm(t)) 0.0 1e-14
             #@test_approx_eq_eps (mean(dev(t_sym)) / norm(t_sym)) 0.0 1e-14
@@ -135,12 +153,15 @@ for dim in (1,2,3)
    end
 end
 
+end # of testset
+
 
 ##############
 # Identities #
 ##############
 
 # https://en.wikiversity.org/wiki/Continuum_mechanics/Tensor_algebra_identities
+@testset "Tensor identities" begin
 for dim in (1,2,3)
     # Identities with second order and first order
     A = rand(Tensor{2, dim})
@@ -150,7 +171,7 @@ for dim in (1,2,3)
     a = rand(Tensor{1, dim, Float64})
     b = rand(Tensor{1, dim, Float64})
 
-    @test A ⊡ B ≈ (A' * B) ⊡ one(A)
+    @test A ⊡ B ≈ (A' ⋅ B) ⊡ one(A)
     @test A ⊡ (a ⊗ b) ≈ (A ⋅ b) ⋅ a
     @test (A ⋅ a) ⋅ (B ⋅ b) ≈ (A.' ⋅ B) ⊡ (a ⊗ b)
     @test (A ⋅ a) ⊗ b ≈ A ⋅ (a ⊗ b)
@@ -197,14 +218,15 @@ for dim in (1,2,3)
 
     #@test II_sym ⊡ A_sym ≈ A_sym
     #@test A_sym ⊡ II_sym ≈ A_sym
-
 end
+
+end # of testset
 
 
 ########################
 # Promotion/Conversion #
 ########################
-
+@testset "promotion/conversion" begin
 const T = Float32
 const WIDE_T = widen(T)
 for dim in (1,2,3)
@@ -242,3 +264,5 @@ for dim in (1,2,3)
         end
     end
 end
+
+end  # of testset
