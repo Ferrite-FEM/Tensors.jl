@@ -63,6 +63,7 @@ include("symmetric_tuple_linalg.jl")
 include("indexing.jl")
 include("promotion_conversion.jl")
 include("tensor_ops.jl")
+include("tensor_ops_errors.jl")
 include("symmetric_ops.jl")
 include("data_functions.jl")
 

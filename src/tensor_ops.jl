@@ -1,15 +1,3 @@
-# Stop `*` from working with tensors
-function Base.(:*)(S1::AbstractTensor, S2::AbstractTensor)
-    error("Don't use `*` for multiplication between tensors. Use `⋅` (`\\cdot`) for single contraction and `⊡` (`\\boxdot`) for double contraction.")
-end
-function Base.Ac_mul_B{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
-    error("Don't use `A'*B`, use `tdot(A,B)` (or `A'⋅B`) instead.")
-end
-function Base.At_mul_B{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
-    error("Don't use `A.'*B`, use `tdot(A,B)` (or `A.'⋅B`) instead.")
-end
-
-
 ######################
 # Double contraction #
 ######################
