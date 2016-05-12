@@ -17,8 +17,8 @@ immutable InternalError <: Exception end
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
-export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, vol
-export extract_components, load_components!, symmetrize, symmetrize!
+export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, vol, symmetric, skew
+export extract_components, load_components!
 export setindex, store!, tdot
 
 

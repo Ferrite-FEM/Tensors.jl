@@ -7,7 +7,7 @@ else
     const Test = BaseTestNext
 end
 
-import ContMechTensors: n_independent_components, ArgumentError, get_data
+import ContMechTensors: n_independent_components, ArgumentError, get_data, isminorsymmetric, ismajorsymmetric
 
 include("test_ops.jl")
 
@@ -188,7 +188,6 @@ for dim in (1,2,3)
 
     @test A ⋅ a ≈ a ⋅ A'
 
-    @test convert(SymmetricTensor{2, dim}, A) ≈ 0.5(A + A')
 
 
     A_sym = rand(SymmetricTensor{2, dim})

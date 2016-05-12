@@ -165,23 +165,78 @@ Base.convert{order, dim, T, M}(::Type{SymmetricTensor}, t::Tensor{order, dim, T,
 
 
 # Tensor -> SymmetricTensor
-@generated function Base.convert{order, dim, T1, T2, M1, M2}(::Type{SymmetricTensor{order, dim, T1, M1}}, t::Tensor{order, dim, T2, M2})
-    N = n_components(SymmetricTensor{order, dim})
-    rows = Int(div(sqrt(1 + 8*N), 2))
+function Base.issymmetric{dim}(t::Tensor{2, dim})
+    N = n_components(Tensor{2, dim})
+    rows = Int(N^(1/2))
+    @inbounds for row in 1:rows, col in row:rows
+        if t[row, col] != t[col, row]
+            return false
+        end
+    end
+    return true
+end
+
+function isminorsymmetric{dim}(t::Tensor{4, dim})
+    N = n_components(Tensor{4, dim})
+    rows = Int(N^(1/4))
+    @inbounds for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
+        if (t[i,j,k,l] != t[j,i,k,l]) || (t[i,j,k,l] != t[i,j,l,k])
+            return false
+        end
+    end
+    return true
+end
+
+isminorsymmetric(::SymmetricTensor{4}) = true
+
+function ismajorsymmetric{dim}(t::Tensor{4, dim})
+    N = n_components(Tensor{4, dim})
+    rows = Int(N^(1/4))
+    @inbounds for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
+        if t[i,j,k,l] != t[k,l,i,j]
+            return false
+        end
+    end
+    return true
+end
+
+Base.issymmetric(t::Tensor{4}) = isminorsymmetric(t)
+
+Base.issymmetric(::SymmetricTensors) = true
+
+@generated function Base.convert{dim, T1, T2, M1, M2}(::Type{SymmetricTensor{2, dim, T1, M1}}, t::Tensor{2, dim, T2, M2})
+    N = n_components(Tensor{2, dim})
+    rows = Int(N^(1/2))
     exps = Expr[]
     for row in 1:rows, col in row:rows
-        if row == col
-            push!(exps, :(t.data[$(compute_index(Tensor{order, dim}, row, col))]))
-        else
-            I = compute_index(Tensor{order, dim}, row, col)
-            J = compute_index(Tensor{order, dim}, col, row)
-            push!(exps, :(0.5 * (t.data[$I] + t.data[$J])))
-        end
+        push!(exps, :(t.data[$(compute_index(Tensor{2, dim}, row, col))]))
     end
     exp = Expr(:tuple, exps...)
     return quote
             $(Expr(:meta, :inline))
-            SymmetricTensor{order, dim, promote_type(T1, T2), M1}($exp)
+            if issymmetric(t)
+                return SymmetricTensor{order, dim, promote_type(T1, T2), M1}($exp)
+            else
+                throw(InexactError())
+            end
+        end
+end
+
+@generated function Base.convert{dim, T1, T2, M1, M2}(::Type{SymmetricTensor{4, dim, T1, M1}}, t::Tensor{4, dim, T2, M2})
+    N = n_components(Tensor{4, dim})
+    rows = Int(N^(1/4))
+    exps = Expr[]
+    for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
+        push!(exps, :(t.data[$(compute_index(Tensor{4, dim}, i, j, k, l))]))
+    end
+    exp = Expr(:tuple, exps...)
+    return quote
+            $(Expr(:meta, :inline))
+            if issymmetric(t)
+                return SymmetricTensor{4, dim, promote_type(T1, T2), M1}($exp)
+            else
+                throw(InexactError())
+            end
         end
 end
 

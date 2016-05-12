@@ -174,7 +174,7 @@ julia> A ⊗ B
 
 For vectors (first order tensors): `norm`
 
-For second order tensors: `norm`, `trace` (`vol`), `det`, `inv`, `transpose`, `eig`, `mean` defined as `trace(s) / 3`, and `dev` defined as `s - mean(s) * I`.
+For second order tensors: `norm`, `trace` (`vol`), `det`, `inv`, `transpose`, `symmetric`, `skew`, `eig`, `mean` defined as `trace(s) / 3`, and `dev` defined as `s - mean(s) * I`.
 
 For fourth order tensors: `norm` and `trace`
 

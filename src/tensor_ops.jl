@@ -256,6 +256,69 @@ end
 Base.ctranspose(S::AllTensors) = transpose(S)
 
 
+############################
+# Symmetric/Skew-symmetric #
+############################
+
+"""
+Computes the symmetric part of a second order tensor, returns a `SymmetricTensor{2}`
+"""
+@generated function symmetric{dim, T}(t::Tensor{2, dim, T})
+    N = n_components(SymmetricTensor{2, dim})
+    rows = Int(div(sqrt(1 + 8*N), 2))
+    exps = Expr[]
+    for row in 1:rows, col in row:rows
+        if row == col
+            push!(exps, :(t.data[$(compute_index(Tensor{2, dim}, row, col))]))
+        else
+            I = compute_index(Tensor{2, dim}, row, col)
+            J = compute_index(Tensor{2, dim}, col, row)
+            push!(exps, :(0.5 * (t.data[$I] + t.data[$J])))
+        end
+    end
+    exp = Expr(:tuple, exps...)
+    return quote
+            $(Expr(:meta, :inline))
+            SymmetricTensor{2, dim, T, $N}($exp)
+        end
+end
+
+"""
+Computes the (minor) symmetric part of a fourth order tensor, returns a `SymmetricTensor{4}`
+"""
+@generated function symmetric{dim, T}(t::Tensor{4, dim, T})
+    N = n_components(Tensor{4, dim})
+    M = n_components(SymmetricTensor{4,dim})
+    rows = Int(N^(1/4))
+    exps = Expr[]
+    for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
+        if i == j & k == l
+            push!(exps, :(t.data[$(compute_index(Tensor{4, dim}, i, j, k, l))]))
+        else
+            I = compute_index(Tensor{4, dim}, i, j, k, l)
+            J = compute_index(Tensor{4, dim}, j, i, k, l)
+            K = compute_index(Tensor{4, dim}, i, j, k, l)
+            L = compute_index(Tensor{4, dim}, i, j, l, k)
+            push!(exps, :(0.25 * (t.data[$I] + t.data[$J] + t.data[$K] + t.data[$L])))
+        end
+    end
+    exp = Expr(:tuple, exps...)
+    return quote
+            $(Expr(:meta, :inline))
+            SymmetricTensor{4, dim, T, $M}($exp)
+        end
+end
+
+@inline symmetric(S1::SymmetricTensors) = S1
+
+
+"""
+Computes the skew-symmetric (anti-symmetric) part of a second order tensor, returns a `Tensor{2}`
+"""
+@inline skew(S1::Tensor{2}) = 0.5*(S1 - S1.')
+@inline skew{dim,T}(S1::SymmetricTensor{2,dim,T}) = zero(Tensor{2,dim,T})
+
+
 #######
 # Eig #
 #######
