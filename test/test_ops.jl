@@ -145,6 +145,8 @@ for dim in (1,2,3)
     ############################
     # Symmetric/Skew-symmetric #
     ############################
+    i,j,k,l = rand(1:dim,4)
+
     if dim != 1
         @test !issymmetric(A)
         @test !issymmetric(AA)
@@ -162,9 +164,28 @@ for dim in (1,2,3)
     @test symmetric(A) ≈ 0.5(A + A.')
     @test symmetric(A_sym) ≈ A_sym
     @test typeof(symmetric(A)) <: SymmetricTensor{2,dim}
-    @test symmetric(AA_sym) ≈ AA_sym
-    @test typeof(symmetric(AA)) <: SymmetricTensor{4,dim}
-    @test convert(typeof(AA_sym),convert(Tensor,symmetric(AA))) ≈ symmetric(AA)
+
+    @test symmetric(AA) ≈ minorsymmetric(AA)
+    @test minorsymmetric(AA)[i,j,k,l] ≈ minorsymmetric(AA)[j,i,l,k]
+    @test issymmetric(convert(Tensor,minorsymmetric(AA)))
+    @test isminorsymmetric(convert(Tensor,minorsymmetric(AA)))
+    @test symmetric(AA_sym) ≈ minorsymmetric(AA_sym)
+    @test minorsymmetric(AA_sym)[i,j,k,l] ≈ minorsymmetric(AA_sym)[j,i,l,k]
+    @test minorsymmetric(AA_sym) ≈ AA_sym
+    @test issymmetric(convert(Tensor,minorsymmetric(AA_sym)))
+    @test isminorsymmetric(convert(Tensor,minorsymmetric(AA_sym)))
+
+    @test typeof(minorsymmetric(AA)) <: SymmetricTensor{4,dim}
+    @test convert(typeof(AA_sym),convert(Tensor,minorsymmetric(AA))) ≈ minorsymmetric(AA)
+
+    @test majorsymmetric(AA)[i,j,k,l] ≈ 0.5*(AA[i,j,k,l] + AA[k,l,i,j])
+    @test majorsymmetric(AA)[i,j,k,l] ≈ majorsymmetric(AA)[k,l,i,j]
+    @test ismajorsymmetric(majorsymmetric(AA))
+    @test majorsymmetric(AA_sym)[i,j,k,l] ≈ 0.5*(AA_sym[i,j,k,l] + AA_sym[k,l,i,j])
+    @test majorsymmetric(AA_sym)[i,j,k,l] ≈ majorsymmetric(AA_sym)[k,l,i,j]
+    @test ismajorsymmetric(majorsymmetric(AA_sym))
+    @test typeof(majorsymmetric(AA)) <: Tensor{4,dim}
+    @test typeof(majorsymmetric(AA_sym)) <: Tensor{4,dim}
 
     @test skew(A) ≈ 0.5(A - A.')
     @test skew(A_sym) ≈ zero(A_sym)
@@ -175,6 +196,43 @@ for dim in (1,2,3)
     @test skew(A) ≈ -skew(A).'
     @test trace(skew(A)) ≈ 0.0
     @test trace(symmetric(A)) ≈ trace(A)
+
+    #############
+    # Transpose #
+    #############
+    @test transpose(A) ≈ reshape(vec(A), (dim,dim)).'
+    @test transpose(transpose(A)) ≈ A
+    @test transpose(A_sym) ≈ reshape(vec(A_sym), (dim,dim)).'
+    @test transpose(A_sym) ≈ A_sym
+    @test transpose(transpose(A_sym)) ≈ A_sym
+
+    @test transpose(AA) ≈ minortranspose(AA)
+    @test AA[i,j,k,l] ≈ minortranspose(AA)[j,i,l,k]
+    @test AA_sym[i,j,k,l] ≈ minortranspose(AA_sym)[j,i,l,k]
+    @test minortranspose(AA_sym) ≈ AA_sym
+    @test minortranspose(minortranspose(AA)) ≈ AA
+    @test minortranspose(minortranspose(AA_sym)) ≈ AA_sym
+
+    @test majortranspose(majortranspose(AA)) ≈ AA
+    @test majortranspose(majortranspose(AA_sym)) ≈ AA_sym
+    @test AA[i,j,k,l] ≈ majortranspose(AA)[k,l,i,j]
+    @test AA_sym[i,j,k,l] ≈ majortranspose(AA_sym)[k,l,i,j]
+    @test typeof(majortranspose(AA_sym)) <: Tensor{4,dim}
+
+    #################
+    # Permute index #
+    #################
+    @test permute_index(AA,(1,2,3,4)) ≈ AA
+    @test permute_index(AA_sym,(1,2,3,4)) ≈ AA_sym
+    @test permute_index(AA,(2,1,4,3)) ≈ minortranspose(AA)
+    @test permute_index(AA_sym,(2,1,4,3)) ≈ minortranspose(AA_sym)
+    @test permute_index(AA,(3,4,1,2)) ≈ majortranspose(AA)
+    @test permute_index(AA_sym,(3,4,1,2)) ≈ majortranspose(AA_sym)
+    @test permute_index(permute_index(AA,(1,4,2,3)),(1,3,4,2)) ≈ AA
+    @test permute_index(permute_index(AA_sym,(1,4,2,3)),(1,3,4,2)) ≈ AA_sym
+    @test typeof(permute_index(AA,(1,4,3,2))) <: Tensor{4,dim}
+    @test typeof(permute_index(AA_sym,(1,4,3,2))) <: Tensor{4,dim}
+    @test_throws ArgumentError permute_index(AA,(1,1,2,3))
 
 
     ##########################

@@ -2,10 +2,6 @@
 # Specialized Second Order Symmetric Operations #
 #################################################
 
-Base.transpose(S::SymmetricTensors) = S
-Base.issym(S::SymmetricTensors) = true
-
-
 ######################
 # Double contraction #
 ######################

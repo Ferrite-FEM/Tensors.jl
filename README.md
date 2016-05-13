@@ -176,7 +176,7 @@ For vectors (first order tensors): `norm`
 
 For second order tensors: `norm`, `trace` (`vol`), `det`, `inv`, `transpose`, `symmetric`, `skew`, `eig`, `mean` defined as `trace(s) / 3`, and `dev` defined as `s - mean(s) * I`.
 
-For fourth order tensors: `norm` and `trace`
+For fourth order tensors: `norm`, `trace`, `symmetric` (same as `minorsymmetric`), `majorsymmetric`, `transpose` (same as `minortranspose`), `majortranspose`, `permute_index`
 
 There is also a special function for computing `F' ⋅ F` between two general second order tensors which is called `tdot` and returns a `SymmetricTensor`.
 

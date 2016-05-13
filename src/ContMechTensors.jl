@@ -2,6 +2,7 @@
 
 module ContMechTensors
 
+using Compat; import Compat.issymmetric
 
 if VERSION <= v"0.5.0-dev"
     macro boundscheck(exp)
@@ -17,7 +18,8 @@ immutable InternalError <: Exception end
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
-export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, vol, symmetric, skew
+export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
+export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric, permute_index
 export extract_components, load_components!
 export setindex, store!, tdot
 

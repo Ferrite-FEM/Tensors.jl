@@ -165,7 +165,7 @@ Base.convert{order, dim, T, M}(::Type{SymmetricTensor}, t::Tensor{order, dim, T,
 
 
 # Tensor -> SymmetricTensor
-function Base.issymmetric{dim}(t::Tensor{2, dim})
+function issymmetric{dim}(t::Tensor{2, dim})
     N = n_components(Tensor{2, dim})
     rows = Int(N^(1/2))
     @inbounds for row in 1:rows, col in row:rows
@@ -189,7 +189,7 @@ end
 
 isminorsymmetric(::SymmetricTensor{4}) = true
 
-function ismajorsymmetric{dim}(t::Tensor{4, dim})
+function ismajorsymmetric{dim}(t::FourthOrderTensor{dim})
     N = n_components(Tensor{4, dim})
     rows = Int(N^(1/4))
     @inbounds for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
@@ -200,9 +200,9 @@ function ismajorsymmetric{dim}(t::Tensor{4, dim})
     return true
 end
 
-Base.issymmetric(t::Tensor{4}) = isminorsymmetric(t)
+issymmetric(t::Tensor{4}) = isminorsymmetric(t)
 
-Base.issymmetric(::SymmetricTensors) = true
+issymmetric(::SymmetricTensors) = true
 
 @generated function Base.convert{dim, T1, T2, M1, M2}(::Type{SymmetricTensor{2, dim, T1, M1}}, t::Tensor{2, dim, T2, M2})
     N = n_components(Tensor{2, dim})

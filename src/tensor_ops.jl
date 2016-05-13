@@ -241,6 +241,17 @@ Computes the deviatoric part of a second order tensor.
     end
 end
 
+###################
+# Permute indices #
+###################
+
+function permute_index{dim}(S::FourthOrderTensor{dim},idx::NTuple{4,Int})
+    sort([idx...]) == [1,2,3,4] || throw(ArgumentError("Missing index."))
+    neworder = sortperm([idx...])
+    f = (i,j,k,l) -> S[[i,j,k,l][neworder]...]
+    return Tensor{4,dim}(f)
+end
+
 
 #############
 # Transpose #
@@ -249,8 +260,46 @@ end
 """
 Computes the transpose of a second order tensor.
 """
-@inline function Base.transpose{dim}(S::Tensor{2, dim})
+@inline function Base.transpose(S::Tensor{2})
     typeof(S)(mat_transpose(S.data))
+end
+Base.transpose(S::SymmetricTensor{2}) = S
+
+"""
+Computes the minor transpose of a fourth order tensor.
+"""
+@generated function minortranspose{dim, T, M}(t::Tensor{4, dim, T, M})
+    N = n_components(Tensor{4, dim})
+    rows = Int(N^(1/4))
+    exps = Expr[]
+    for l in 1:rows, k in 1:rows, j in 1:rows, i in 1:rows
+        push!(exps, :(t.data[$(compute_index(Tensor{4, dim}, j, i, l, k))]))
+    end
+    exp = Expr(:tuple, exps...)
+    return quote
+            $(Expr(:meta, :inline))
+            Tensor{4, dim, T, M}($exp)
+        end
+end
+##############################
+minortranspose(S::SymmetricTensor{4}) = S
+Base.transpose(S::FourthOrderTensor) = minortranspose(S)
+
+"""
+Computes the major transpose of a fourth order tensor.
+"""
+@generated function majortranspose{dim, T}(t::FourthOrderTensor{dim, T})
+    N = n_components(Tensor{4, dim})
+    rows = Int(N^(1/4))
+    exps = Expr[]
+    for l in 1:rows, k in 1:rows, j in 1:rows, i in 1:rows
+        push!(exps, :(t.data[$(compute_index(get_base(t), k, l, i, j))]))
+    end
+    exp = Expr(:tuple, exps...)
+    return quote
+            $(Expr(:meta, :inline))
+            Tensor{4, dim, T, $N}($exp)
+        end
 end
 
 Base.ctranspose(S::AllTensors) = transpose(S)
@@ -259,6 +308,8 @@ Base.ctranspose(S::AllTensors) = transpose(S)
 ############################
 # Symmetric/Skew-symmetric #
 ############################
+
+@inline symmetric(S1::SymmetricTensors) = S1
 
 """
 Computes the symmetric part of a second order tensor, returns a `SymmetricTensor{2}`
@@ -286,13 +337,13 @@ end
 """
 Computes the (minor) symmetric part of a fourth order tensor, returns a `SymmetricTensor{4}`
 """
-@generated function symmetric{dim, T}(t::Tensor{4, dim, T})
+@generated function minorsymmetric{dim, T}(t::Tensor{4, dim, T})
     N = n_components(Tensor{4, dim})
     M = n_components(SymmetricTensor{4,dim})
     rows = Int(N^(1/4))
     exps = Expr[]
     for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
-        if i == j & k == l
+        if i == j && k == l
             push!(exps, :(t.data[$(compute_index(Tensor{4, dim}, i, j, k, l))]))
         else
             I = compute_index(Tensor{4, dim}, i, j, k, l)
@@ -309,7 +360,32 @@ Computes the (minor) symmetric part of a fourth order tensor, returns a `Symmetr
         end
 end
 
-@inline symmetric(S1::SymmetricTensors) = S1
+@inline minorsymmetric(t::SymmetricTensors) = t
+
+@inline symmetric(t::Tensor{4}) = minorsymmetric(t)
+
+"""
+Computes the major symmetric part of a fourth order tensor, returns a `Tensor{4}`
+"""
+@generated function majorsymmetric{dim, T}(t::FourthOrderTensor{dim, T})
+    N = n_components(Tensor{4, dim})
+    rows = Int(N^(1/4))
+    exps = Expr[]
+    for l in 1:rows, k in 1:rows, j in 1:rows, i in 1:rows
+        if i == j == k == l || i == k && j == l
+            push!(exps, :(t.data[$(compute_index(get_base(t), i, j, k, l))]))
+        else
+            I = compute_index(get_base(t), i, j, k, l)
+            J = compute_index(get_base(t), k, l, i, j)
+            push!(exps, :(0.5 * (t.data[$I] + t.data[$J])))
+        end
+    end
+    exp = Expr(:tuple, exps...)
+    return quote
+            $(Expr(:meta, :inline))
+            Tensor{4, dim, T, $N}($exp)
+        end
+end
 
 
 """

@@ -5,9 +5,10 @@ if VERSION >= v"0.5-"
 else
     using BaseTestNext
     const Test = BaseTestNext
+    using Compat; import Compat.issymmetric
 end
 
-import ContMechTensors: n_independent_components, ArgumentError, get_data, isminorsymmetric, ismajorsymmetric
+import ContMechTensors: n_independent_components, ArgumentError, get_data
 
 include("test_ops.jl")
 
