@@ -215,7 +215,7 @@ issymmetric(::SymmetricTensors) = true
     return quote
             $(Expr(:meta, :inline))
             if issymmetric(t)
-                return SymmetricTensor{order, dim, promote_type(T1, T2), M1}($exp)
+                return SymmetricTensor{2, dim, promote_type(T1, T2), M1}($exp)
             else
                 throw(InexactError())
             end

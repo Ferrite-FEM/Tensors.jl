@@ -164,6 +164,7 @@ for dim in (1,2,3)
     @test symmetric(A) ≈ 0.5(A + A.')
     @test symmetric(A_sym) ≈ A_sym
     @test typeof(symmetric(A)) <: SymmetricTensor{2,dim}
+    @test convert(typeof(A_sym),convert(Tensor,symmetric(A))) ≈ symmetric(A)
 
     @test symmetric(AA) ≈ minorsymmetric(AA)
     @test minorsymmetric(AA)[i,j,k,l] ≈ minorsymmetric(AA)[j,i,l,k]
