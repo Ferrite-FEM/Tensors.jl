@@ -161,23 +161,23 @@ function call{dim}(Tt::Type{Vec{dim}}, data)
     Tensor{1, dim}(data)
 end
 
-## These are some kinda ugly stuff to create different type of constructors.
+# These are some kinda ugly stuff to create different type of constructors.
 @gen_code function call{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}},
                                           data)
     # Check for valid orders
-    if !(order in (1,2,4))
-        @code (throw(ArgumentError("Only tensors of order 1, 2, 4 supported")))
+    if get_type(Tt) <: Tensor
+        @code (order in (1,2,4) || throw(ArgumentError("Tensor only supported for order 1, 2, 4")))
+        n = ContMechTensors.n_components(Tensor{order,dim})
+        @code :(length(data) == $n || throw(ArgumentError("Wrong number of tuple elements, expected $($n), got $(length(data))")))
+        @code :(Tensor{order, dim, eltype(data), $n}(ContMechTensors.to_tuple(NTuple{$n}, data)))
     else
-        # Storage format is of rank 1 for vectors and order / 2 for other tensors
-        if order == 1
-            @code(:(Tt <: SymmetricTensor && throw(ArgumentError("SymmetricTensor only supported for order 2, 4"))))
-        end
-
-        n = n_components(get_type(Tt))
-
-        # Validate that the input array has the correct number of elements.
-        @code :(length(data) == $n || throw(ArgumentError("wrong number of tuple elements, expected $($n), got $(length(data))")))
-        @code :(get_main_type(Tt){order, dim, eltype(data), $n}(to_tuple(NTuple{$n}, data)))
+        @code (order in (2,4) || throw(ArgumentError("SymmetricTensor only supported for order 2, 4")))
+        n = ContMechTensors.n_components(Tensor{order,dim})
+        m = ContMechTensors.n_components(SymmetricTensor{order,dim})
+        @code :((length(data) == $n || length(data) == $m) || throw(ArgumentError("Wrong number of tuple elements, expected $($n) or $($m), got $(length(data))")))
+        @code :(length(data)== $m && return SymmetricTensor{order, dim, eltype(data), $m}(ContMechTensors.to_tuple(NTuple{$m}, data)))
+        @code :(S = Tensor{order, dim, eltype(data), $n}(ContMechTensors.to_tuple(NTuple{$n}, data)))
+        @code :(return convert(SymmetricTensor{order, dim}, S))
     end
 end
 

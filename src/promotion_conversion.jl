@@ -35,11 +35,14 @@ end
 @inline function Base.convert{order, dim, T1, T2, M}(::Type{Tensor{order, dim, T1, M}}, t::Tensor{order, dim, T2, M})
     Tensor{order, dim}(convert(NTuple{M, T1}, t.data))
 end
+@inline Base.convert{order, dim, T1, T2, M}(::Type{Tensor{order, dim, T1}}, t::Tensor{order, dim, T2, M}) = convert(Tensor{order, dim, T1, M}, t)
+
 
 @inline Base.convert{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}, t::SymmetricTensor{order, dim, T}) = t
 @inline function Base.convert{order, dim, T1, T2, M}(::Type{SymmetricTensor{order, dim, T1, M}}, t::SymmetricTensor{order, dim, T2, M})
     SymmetricTensor{order, dim}(convert(NTuple{M, T1}, t.data))
 end
+@inline Base.convert{order, dim, T1, T2, M}(::Type{SymmetricTensor{order, dim, T1}}, t::SymmetricTensor{order, dim, T2, M}) = convert(SymmetricTensor{order, dim, T1, M}, t)
 
 # Convert dimensions
 @generated function Base.convert{order, dim1, dim2, T1}(::Type{Tensor{order, dim1}}, t::Tensor{order, dim2, T1})

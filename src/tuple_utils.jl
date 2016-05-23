@@ -50,11 +50,8 @@ function tensor_create_elementwise{order, dim, T}(::Type{Tensor{order, dim, T}},
     end
 end
 
-@generated function to_tuple{N}(::Type{NTuple{N}},  data::AbstractVecOrMat)
+@generated function to_tuple{N}(::Type{NTuple{N}},  data::AbstractArray)
     return Expr(:tuple, [:(data[$i]) for i=1:N]...)
 end
 
 @inline to_tuple{N}(::Type{NTuple{N}},  data::NTuple{N}) = data
-
-
-

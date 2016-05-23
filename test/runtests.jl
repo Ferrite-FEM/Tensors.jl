@@ -242,6 +242,15 @@ for dim in (1,2,3)
         A = rand(Tensor{order, dim, T})
         B = rand(Tensor{order, dim, WIDE_T})
         @test typeof(A + B) == tens_wide
+        @test convert(Tensor{order, dim, WIDE_T},A) ≈ A
+        @test convert(typeof(B),A) ≈ A
+
+        Aint = rand(Tensor{order, dim, Int})
+        @test convert(typeof(A),Aint) ≈ Aint
+        @test typeof(convert(typeof(A),Aint)) == typeof(A)
+
+        gen_data = rand(dim*ones(Int,order)...)
+        @test Tensor{order,dim}(gen_data) ≈ gen_data
 
         if order != 1
 
@@ -261,6 +270,16 @@ for dim in (1,2,3)
             A = rand(SymmetricTensor{order, dim, T})
             B = rand(SymmetricTensor{order, dim, WIDE_T})
             @test typeof(A + B) == sym_wide
+
+            gen_data = rand(dim*ones(Int,order)...)
+            A = Tensor{order, dim}(gen_data)
+            As = symmetric(A)
+            gen_sym_data = As.data
+            Ast = convert(Tensor{order, dim}, As)
+            gen_sym_data_full = reshape([Ast.data...],(dim*ones(Int,order)...))
+            @test SymmetricTensor{order,dim}(gen_sym_data_full) ≈ gen_sym_data_full
+            @test SymmetricTensor{order,dim}(gen_sym_data) ≈ gen_sym_data_full
+
         end
     end
 end
