@@ -409,3 +409,11 @@ function Base.eig{dim, T, M}(S::Tensor{2, dim, T, M})
     Φ = Tensor{2, dim}(ϕ)
     return Λ, Φ
 end
+
+#########
+# Cross #
+#########
+
+function Base.cross{T}(u::Vec{3, T}, v::Vec{3, T})
+    Vec{3, T}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
+end

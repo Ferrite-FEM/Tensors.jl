@@ -235,6 +235,16 @@ for dim in (1,2,3)
     @test typeof(permute_index(AA_sym,(1,4,3,2))) <: Tensor{4,dim}
     @test_throws ArgumentError permute_index(AA,(1,1,2,3))
 
+    #########
+    # Cross #
+    #########
+    if dim == 3
+        @test a × a ≈ zero(a)
+        @test a × b ≈ -b × a
+        ad = Vec{3}((1.0,0.0,0.0))
+        ad2 = Vec{3}((0.0,1.0,0.0))
+        @test ad × ad2 ≈ Vec{3}((0.0, 0.0, 1.0))
+    end
 
     ##########################
     # Creating with function #
