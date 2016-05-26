@@ -1,4 +1,4 @@
-#__precompile__()
+__precompile__()
 
 module ContMechTensors
 
@@ -10,10 +10,6 @@ if VERSION <= v"0.5.0-dev"
     end
 end
 
-macro L_str(text)
-    text
-end
-
 immutable InternalError <: Exception end
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
@@ -21,7 +17,7 @@ export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOr
 export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
 export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric, permute_index
 export extract_components, load_components!
-export setindex, store!, tdot
+export setindex, store!, tdot, dotdot
 
 
 #########
@@ -129,17 +125,9 @@ get_type{X}(::Type{Type{X}}) = X
 # Size #
 ########
 
-Base.size(::Vec{1}) = (1,)
-Base.size(::Vec{2}) = (2,)
-Base.size(::Vec{3}) = (3,)
-
-Base.size(::SecondOrderTensor{1}) = (1, 1)
-Base.size(::SecondOrderTensor{2}) = (2, 2)
-Base.size(::SecondOrderTensor{3}) = (3, 3)
-
-Base.size(::FourthOrderTensor{1}) = (1, 1, 1, 1)
-Base.size(::FourthOrderTensor{2}) = (2, 2, 2, 2)
-Base.size(::FourthOrderTensor{3}) = (3, 3, 3, 3)
+Base.size{dim}(::Vec{dim}) = (dim,)
+Base.size{dim}(::SecondOrderTensor{dim}) = (dim, dim)
+Base.size{dim}(::FourthOrderTensor{dim}) = (dim, dim, dim, dim)
 
 Base.similar(t::AbstractTensor) = typeof(t)(get_data(t))
 
@@ -152,58 +140,74 @@ Base.fill(t::AbstractTensor, v::Number) = typeof(t)(const_tuple(typeof(get_data(
 # Internal constructors #
 #########################
 
-function call{order, dim, T, M}(Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}},
+@inline function call{order, dim, T, M}(Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}},
                                        data)
     get_base(Tt)(data)
 end
 
-function call{dim}(Tt::Type{Vec{dim}}, data)
+@inline function call{dim}(Tt::Type{Vec{dim}}, data)
     Tensor{1, dim}(data)
 end
 
 # These are some kinda ugly stuff to create different type of constructors.
-@gen_code function call{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}},
-                                          data)
+@generated function call{order, dim}(Tt::Type{Tensor{order, dim}}, data::Union{AbstractArray, Tuple})
     # Check for valid orders
-    if get_type(Tt) <: Tensor
-        @code (order in (1,2,4) || throw(ArgumentError("Tensor only supported for order 1, 2, 4")))
-        n = ContMechTensors.n_components(Tensor{order,dim})
-        @code :(length(data) == $n || throw(ArgumentError("Wrong number of tuple elements, expected $($n), got $(length(data))")))
-        @code :(Tensor{order, dim, eltype(data), $n}(ContMechTensors.to_tuple(NTuple{$n}, data)))
-    else
-        @code (order in (2,4) || throw(ArgumentError("SymmetricTensor only supported for order 2, 4")))
-        n = ContMechTensors.n_components(Tensor{order,dim})
-        m = ContMechTensors.n_components(SymmetricTensor{order,dim})
-        @code :((length(data) == $n || length(data) == $m) || throw(ArgumentError("Wrong number of tuple elements, expected $($n) or $($m), got $(length(data))")))
-        @code :(length(data)== $m && return SymmetricTensor{order, dim, eltype(data), $m}(ContMechTensors.to_tuple(NTuple{$m}, data)))
-        @code :(S = Tensor{order, dim, eltype(data), $n}(ContMechTensors.to_tuple(NTuple{$n}, data)))
-        @code :(return convert(SymmetricTensor{order, dim}, S))
+    n = n_components(Tensor{order,dim})
+    if !(order in (1,2,4))
+        throw(ArgumentError("Tensor only supported for order 1, 2, 4"))
+    end
+    return quote
+        if length(data) != $n
+            throw(ArgumentError("Wrong number of tuple elements, expected $($n), got $(length(data))"))
+        end
+        Tensor{order, dim, eltype(data), $n}(to_tuple(NTuple{$n}, data))
     end
 end
 
-@gen_code function call{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}},
+# These are some kinda ugly stuff to create different type of constructors.
+@generated function call{order, dim}(Tt::Type{SymmetricTensor{order, dim}}, data::Union{AbstractArray, Tuple})
+    n = n_components(Tensor{order,dim})
+    m = n_components(SymmetricTensor{order,dim})
+    if !(order in (2,4))
+        throw(ArgumentError("SymmetricTensor only supported for order 2, 4"))
+    end
+    return quote
+        if length(data) != $n && length(data) != $m
+            throw(ArgumentError("Wrong number of tuple elements, expected $($n) or $($m), got $(length(data))"))
+        end
+        if length(data) == $m
+            return SymmetricTensor{order, dim, eltype(data), $m}(to_tuple(NTuple{$m}, data))
+        end
+        S = Tensor{order, dim, eltype(data), $n}(to_tuple(NTuple{$n}, data))
+        return convert(SymmetricTensor{order, dim}, S)
+    end
+end
+
+
+@generated function call{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}},
                                           f::Function)
     # Check for valid orders
     if !(order in (1,2,4))
-        @code (throw(ArgumentError("Only tensors of order 1, 2, 4 supported")))
-    else
-        # Storage format is of rank 1 for vectors and order / 2 for other tensors
-        if order == 1
-            @code(:(Tt <: SymmetricTensor && throw(ArgumentError("SymmetricTensor only supported for order 2, 4"))))
-        end
-
-        n = n_components(get_type(Tt))
-
-        # Validate that the input array has the correct number of elements.
-        if order == 1
-            exp = tensor_create(get_main_type(get_type(Tt)){order, dim}, (i) -> :(f($i)))
-        elseif order == 2
-            exp = tensor_create(get_main_type(get_type(Tt)){order, dim}, (i,j) -> :(f($i, $j)))
-        elseif order == 4
-            exp = tensor_create(get_main_type(get_type(Tt)){order, dim}, (i,j,k,l) -> :(f($i, $j, $k, $l)))
-        end
-        @code :(get_main_type(Tt){order, dim}($exp))
+        throw(ArgumentError("Only tensors of order 1, 2, 4 supported"))
     end
+ 
+    # Storage format is of rank 1 for vectors and order / 2 for other tensors
+    if order == 1 && Tt <: SymmetricTensor
+        throw(ArgumentError("SymmetricTensor only supported for order 2, 4"))
+    end
+
+    n = n_components(get_type(Tt))
+
+    # Validate that the input array has the correct number of elements.
+    if order == 1
+        exp = tensor_create(get_main_type(get_type(Tt)){order, dim}, (i) -> :(f($i)))
+    elseif order == 2
+        exp = tensor_create(get_main_type(get_type(Tt)){order, dim}, (i,j) -> :(f($i, $j)))
+    elseif order == 4
+        exp = tensor_create(get_main_type(get_type(Tt)){order, dim}, (i,j,k,l) -> :(f($i, $j, $k, $l)))
+    end
+    
+    return :(get_main_type(Tt){order, dim}($exp))
 end
 
 

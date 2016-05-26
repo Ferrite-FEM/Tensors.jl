@@ -277,5 +277,12 @@ for dim in (1,2,3)
         end
     end
 
+    ###########
+    # Special #
+    ###########
+
+    AAT = Tensor{4, dim}((i,j,k,l) -> AA_sym[i,l,k,j])
+    @test AAT ⊡ (b ⊗ a) ≈ dotdot(a, AA_sym, b)
+
 end
 end # of testset

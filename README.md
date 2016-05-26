@@ -178,7 +178,11 @@ For second order tensors: `norm`, `trace` (`vol`), `det`, `inv`, `transpose`, `s
 
 For fourth order tensors: `norm`, `trace`, `symmetric` (same as `minorsymmetric`), `majorsymmetric`, `transpose` (same as `minortranspose`), `majortranspose`, `permute_index`
 
-There is also a special function for computing `F' ⋅ F` between two general second order tensors which is called `tdot` and returns a `SymmetricTensor`.
+There is also a few special functions that can be convenient:
+
+* For computing `F' ⋅ F` between two general second order tensors there is `tdot(F)` which returns a `SymmetricTensor`.
+
+* For computing `a ⋅ C ⋅ b` for two vectors `a` and `b` and a fourth order tensors `C` there is `dotdot(a, C, b)`.
 
 ### Storing tensors in `type`s.
 
