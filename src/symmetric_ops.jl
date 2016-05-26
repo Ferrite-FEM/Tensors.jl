@@ -220,7 +220,7 @@ function Base.eig{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
 end
 
 ###############################
-# Vec dot SecondOrder dot Vec #
+# Vec dot FourthOrder dot Vec #
 ###############################
 
 @generated function dotdot{dim, T1, T2, T3}(v1::Vec{dim, T1}, S::SymmetricTensor{4, dim, T2}, v2::Vec{dim, T3})
