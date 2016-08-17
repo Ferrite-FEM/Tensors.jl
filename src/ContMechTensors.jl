@@ -140,17 +140,16 @@ Base.fill(t::AbstractTensor, v::Number) = typeof(t)(const_tuple(typeof(get_data(
 # Internal constructors #
 #########################
 
-@inline function call{order, dim, T, M}(Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}},
-                                       data)
+@compat @inline function (Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}}){order, dim, T, M}(data)
     get_base(Tt)(data)
 end
 
-@inline function call{dim}(Tt::Type{Vec{dim}}, data)
+@compat @inline function (Tt::Type{Vec{dim}}){dim}(data)
     Tensor{1, dim}(data)
 end
 
 # These are some kinda ugly stuff to create different type of constructors.
-@generated function call{order, dim}(Tt::Type{Tensor{order, dim}}, data::Union{AbstractArray, Tuple})
+@compat @generated function (Tt::Type{Tensor{order, dim}}){order, dim}(data::Union{AbstractArray, Tuple})
     # Check for valid orders
     n = n_components(Tensor{order,dim})
     if !(order in (1,2,4))
@@ -165,7 +164,7 @@ end
 end
 
 # These are some kinda ugly stuff to create different type of constructors.
-@generated function call{order, dim}(Tt::Type{SymmetricTensor{order, dim}}, data::Union{AbstractArray, Tuple})
+@compat @generated function (Tt::Type{SymmetricTensor{order, dim}}){order, dim}(data::Union{AbstractArray, Tuple})
     n = n_components(Tensor{order,dim})
     m = n_components(SymmetricTensor{order,dim})
     if !(order in (2,4))
@@ -184,8 +183,7 @@ end
 end
 
 
-@generated function call{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}},
-                                          f::Function)
+@compat @generated function (Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}){order, dim}(f::Function)
     # Check for valid orders
     if !(order in (1,2,4))
         throw(ArgumentError("Only tensors of order 1, 2, 4 supported"))
@@ -215,11 +213,11 @@ end
 # Simple Math #
 ###############
 
-Base.(:*)(t::AllTensors, n::Number) = n * t
+@compat Base.:*(t::AllTensors, n::Number) = n * t
 
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
-        @generated function Base.(:*){order,dim, T, M}(n::Number, t::$(TensorType){order, dim, T, M})
+        @compat @generated function Base.:*{order,dim, T, M}(n::Number, t::$(TensorType){order, dim, T, M})
             exp = tensor_create_elementwise(get_base(t), (k) -> :(n * t.data[$k]))
             Tv = typeof(zero(n) * zero(T))
             return quote
@@ -229,7 +227,7 @@ for TensorType in (SymmetricTensor, Tensor)
             end
         end
 
-        @generated function Base.(:/){order,dim, T, M}(t::$(TensorType){order, dim, T, M}, n::Number)
+        @compat @generated function Base.:/{order,dim, T, M}(t::$(TensorType){order, dim, T, M}, n::Number)
             exp = tensor_create_elementwise(get_base(t), (k) -> :(t.data[$k] / n))
             Tv = typeof(zero(n) / zero(T))
             return quote
@@ -239,7 +237,7 @@ for TensorType in (SymmetricTensor, Tensor)
             end
         end
 
-        @generated function Base.(:-){order,dim, T, M}(t::$(TensorType){order, dim, T, M})
+        @compat @generated function Base.:-{order,dim, T, M}(t::$(TensorType){order, dim, T, M})
             exp = tensor_create_elementwise(get_base(t), (k) -> :(-t.data[$k]))
             return quote
                 $(Expr(:meta, :inline))
