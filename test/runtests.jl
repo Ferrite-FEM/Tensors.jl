@@ -15,25 +15,17 @@ include("test_ops.jl")
 @testset "Constructors and simple math ops." begin
 for dim in (1,2,3)
     for order in (1,2,4)
-        n_sym = n_independent_components(dim, true)
-        n = n_independent_components(dim, false)
-
-
         ################
         # Constructors #
         ################
-
         t = @inferred rand(Tensor{order, dim})
-
         if order != 1
             @inferred rand(Tensor{order, dim})
         end
 
-
         ###############
         # Simple math #
         ###############
-
         t = rand(Tensor{order, dim})
         t_one = one(Tensor{order, dim})
 
@@ -48,15 +40,12 @@ for dim in (1,2,3)
             @test (@inferred t_sym + t_sym) == 2*t_sym
             @test (@inferred -t_sym) == zero(t_sym) - t_sym
             @test (@inferred 2*t_sym) == t_sym*2
-
             @test 2*t_sym == t_sym*2
-
             @test (@inferred rand(t_sym) * 0.0) == zero(t_sym)
         end
     end
 end
 end # of testset
-
 
 ############
 # Indexing #
@@ -64,36 +53,51 @@ end # of testset
 @testset "Indexing" begin
 for dim in (1,2,3)
     for order in (1,2,4)
-        n_sym = n_independent_components(dim, true)
-        n = n_independent_components(dim, false)
-
         if order == 1
-            vec = Tensor{order, dim}(rand(dim))
-            if dim == 1
-                @test_throws BoundsError vec[2]
-            elseif dim == 2
-                @test_throws BoundsError vec[3]
-            elseif dim == 3
-                @test_throws BoundsError vec[4]
-            else
-                for t in (SymmetricTensor(rand(n), Val{dim}), Tensor(rand(n), Val{dim}))
-                    if order == 2
-                        if dim == 1
-                            @test_throws BoundsError t[1, 2]
-                        elseif dim == 2
-                            @test_throws BoundsError t[3, 1]
-                        elseif dim == 3
-                            @test_throws BoundsError t[3, 4]
-                        end
-                    else
-                        if dim == 1
-                            @test_throws BoundsError t[1, 1, 2, 1]
-                        elseif dim == 2
-                            @test_throws BoundsError t[1, 1, 3, 1]
-                        elseif dim == 3
-                            @test_throws BoundsError t[1, 4, 3, 1]
-                        end
-                    end
+            data = rand(dim)
+            vec = Tensor{order, dim}(data)
+            for i in 1:dim+1
+                if i > dim
+                    @test_throws BoundsError vec[i]
+                else
+                    @test vec[i] ≈ data[i]
+                end
+            end
+        elseif order == 2
+            data = rand(dim,dim)
+            symdata = data + data'
+            S = Tensor{order,dim}(data)
+            Ssym = SymmetricTensor{order,dim}(symdata)
+            for i in 1:dim+1, j in 1:dim+1
+                if i > dim || j > dim
+                    @test_throws BoundsError S[i, j]
+                    @test_throws BoundsError Ssym[i, j]
+                else
+                    @test S[i, j] ≈ data[i, j]
+                    @test Ssym[i, j] ≈ symdata[i, j]
+                    # Slice
+                    @test S[i,:] ≈ data[i,:]
+                    @test typeof(S[i,:]) <: Tensor{1,dim}
+                    @test S[:,j] ≈ data[:,j]
+                    @test typeof(S[:,j]) <: Tensor{1,dim}
+                    @test Ssym[i,:] ≈ symdata[i,:]
+                    @test typeof(Ssym[i,:]) <: Tensor{1,dim}
+                    @test Ssym[:,j] ≈ symdata[:,j]
+                    @test typeof(Ssym[:,j]) <: Tensor{1,dim}
+                end
+            end
+        elseif order == 4
+            data = rand(dim,dim,dim,dim)
+            S = Tensor{order,dim}(data)
+            Ssym = symmetric(S)
+            symdata = reshape(Ssym[:],(dim, dim , dim , dim))
+            for i in 1:dim+1, j in 1:dim+1, k in 1:dim+1, l in 1:dim+1
+                if i > dim || j > dim || k > dim || l > dim
+                    @test_throws BoundsError S[i, j, k, l]
+                    @test_throws BoundsError Ssym[i, j, k, l]
+                else
+                    @test S[i, j, k, l] ≈ data[i, j, k, l]
+                    @test Ssym[i, j, k, l] ≈ symdata[i, j, k, l]
                 end
             end
         end
@@ -101,11 +105,9 @@ for dim in (1,2,3)
 end
 end # of testset
 
-
 ############################
 # Trace, norm, det and inv #
 ############################
-
 @testset "trace, norm, det, inv" begin
 for dim in (1,2,3)
     for order in (2,4)
@@ -156,11 +158,9 @@ end
 
 end # of testset
 
-
 ##############
 # Identities #
 ##############
-
 # https://en.wikiversity.org/wiki/Continuum_mechanics/Tensor_algebra_identities
 @testset "Tensor identities" begin
 for dim in (1,2,3)
@@ -188,8 +188,6 @@ for dim in (1,2,3)
     @test (I ⊗ I) ⊡ A ⊡ A ≈ trace(A)^2
 
     @test A ⋅ a ≈ a ⋅ A'
-
-
 
     A_sym = rand(SymmetricTensor{2, dim})
     B_sym = rand(SymmetricTensor{2, dim})
@@ -221,7 +219,6 @@ for dim in (1,2,3)
 end
 
 end # of testset
-
 
 ########################
 # Promotion/Conversion #

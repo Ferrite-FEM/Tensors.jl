@@ -183,7 +183,7 @@ function isminorsymmetric{dim}(t::Tensor{4, dim})
     N = n_components(Tensor{4, dim})
     rows = Int(N^(1/4))
     @inbounds for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
-        if (t[i,j,k,l] != t[j,i,k,l]) || (t[i,j,k,l] != t[i,j,l,k])
+        if t[i,j,k,l] != t[j,i,k,l] || t[i,j,k,l] != t[i,j,l,k]
             return false
         end
     end
