@@ -1,12 +1,6 @@
 using ContMechTensors
 
-if VERSION >= v"0.5-"
-    using Base.Test
-else
-    using BaseTestNext
-    const Test = BaseTestNext
-    using Compat; import Compat.issymmetric
-end
+using Base.Test
 
 import ContMechTensors: n_independent_components, ArgumentError, get_data
 

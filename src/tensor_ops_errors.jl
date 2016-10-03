@@ -1,7 +1,7 @@
 # Give error for use of `*` as infix operator between tensors
 
 # Remove `*` as infix operator between tensors
-@compat function Base.:*(S1::AbstractTensor, S2::AbstractTensor)
+function Base.:*(S1::AbstractTensor, S2::AbstractTensor)
     error("Don't use `*` for multiplication between tensors. Use `⋅` (`\\cdot`) for single contraction and `⊡` (`\\boxdot`) for double contraction.")
 end
 

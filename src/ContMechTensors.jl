@@ -2,14 +2,6 @@ __precompile__()
 
 module ContMechTensors
 
-using Compat; import Compat.issymmetric
-
-if VERSION <= v"0.5.0-dev"
-    macro boundscheck(exp)
-        esc(exp)
-    end
-end
-
 immutable InternalError <: Exception end
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
@@ -140,16 +132,16 @@ Base.fill(t::AbstractTensor, v::Number) = typeof(t)(const_tuple(typeof(get_data(
 # Internal constructors #
 #########################
 
-@compat @inline function (Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}}){order, dim, T, M}(data)
+@inline function (Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}}){order, dim, T, M}(data)
     get_base(Tt)(data)
 end
 
-@compat @inline function (Tt::Type{Vec{dim}}){dim}(data)
+@inline function (Tt::Type{Vec{dim}}){dim}(data)
     Tensor{1, dim}(data)
 end
 
 # These are some kinda ugly stuff to create different type of constructors.
-@compat @generated function (Tt::Type{Tensor{order, dim}}){order, dim}(data::Union{AbstractArray, Tuple})
+@generated function (Tt::Type{Tensor{order, dim}}){order, dim}(data::Union{AbstractArray, Tuple})
     # Check for valid orders
     n = n_components(Tensor{order,dim})
     if !(order in (1,2,4))
@@ -164,7 +156,7 @@ end
 end
 
 # These are some kinda ugly stuff to create different type of constructors.
-@compat @generated function (Tt::Type{SymmetricTensor{order, dim}}){order, dim}(data::Union{AbstractArray, Tuple})
+@generated function (Tt::Type{SymmetricTensor{order, dim}}){order, dim}(data::Union{AbstractArray, Tuple})
     n = n_components(Tensor{order,dim})
     m = n_components(SymmetricTensor{order,dim})
     if !(order in (2,4))
@@ -183,7 +175,7 @@ end
 end
 
 
-@compat @generated function (Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}){order, dim}(f::Function)
+@generated function (Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}){order, dim}(f::Function)
     # Check for valid orders
     if !(order in (1,2,4))
         throw(ArgumentError("Only tensors of order 1, 2, 4 supported"))
@@ -213,11 +205,11 @@ end
 # Simple Math #
 ###############
 
-@compat Base.:*(t::AllTensors, n::Number) = n * t
+Base.:*(t::AllTensors, n::Number) = n * t
 
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
-        @compat @generated function Base.:*{order,dim, T, M}(n::Number, t::$(TensorType){order, dim, T, M})
+        @generated function Base.:*{order,dim, T, M}(n::Number, t::$(TensorType){order, dim, T, M})
             exp = tensor_create_elementwise(get_base(t), (k) -> :(n * t.data[$k]))
             Tv = typeof(zero(n) * zero(T))
             return quote
@@ -227,7 +219,7 @@ for TensorType in (SymmetricTensor, Tensor)
             end
         end
 
-        @compat @generated function Base.:/{order,dim, T, M}(t::$(TensorType){order, dim, T, M}, n::Number)
+        @generated function Base.:/{order,dim, T, M}(t::$(TensorType){order, dim, T, M}, n::Number)
             exp = tensor_create_elementwise(get_base(t), (k) -> :(t.data[$k] / n))
             Tv = typeof(zero(n) / zero(T))
             return quote
@@ -237,7 +229,7 @@ for TensorType in (SymmetricTensor, Tensor)
             end
         end
 
-        @compat @generated function Base.:-{order,dim, T, M}(t::$(TensorType){order, dim, T, M})
+        @generated function Base.:-{order,dim, T, M}(t::$(TensorType){order, dim, T, M})
             exp = tensor_create_elementwise(get_base(t), (k) -> :(-t.data[$k]))
             return quote
                 $(Expr(:meta, :inline))
