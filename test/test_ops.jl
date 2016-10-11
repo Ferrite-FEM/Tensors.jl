@@ -238,9 +238,14 @@ for dim in (1,2,3)
     #########
     # Cross #
     #########
+    @test a × a ≈ Vec{3}((0.0,0.0,0.0))
+    @test a × b ≈ -b × a
+    if dim == 2
+        ad = Vec{2}((1.0,0.0))
+        ad2 = Vec{2}((0.0,1.0))
+        @test ad × ad2 ≈ Vec{3}((0.0, 0.0, 1.0))
+    end
     if dim == 3
-        @test a × a ≈ zero(a)
-        @test a × b ≈ -b × a
         ad = Vec{3}((1.0,0.0,0.0))
         ad2 = Vec{3}((0.0,1.0,0.0))
         @test ad × ad2 ≈ Vec{3}((0.0, 0.0, 1.0))

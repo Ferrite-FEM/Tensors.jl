@@ -415,9 +415,17 @@ end
 #########
 
 """
-Computes the cross product between two `Vec{3}` vectors, returns a `Vec{3}`.
+Computes the cross product between two `Vec` vectors, returns a `Vec{3}`. For dimensions 1 and 2 the `Vec`'s
+are expanded to 3D first.
 """
 function Base.cross{T}(u::Vec{3, T}, v::Vec{3, T})
     @inbounds w = Vec{3, T}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
     return w
+end
+function Base.cross{T}(u::Vec{2, T}, v::Vec{2, T})
+    @inbounds w = Vec{3, T}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
+    return w
+end
+function Base.cross{T}(::Vec{1, T}, ::Vec{1, T})
+    return zero(Vec{3,T})
 end
