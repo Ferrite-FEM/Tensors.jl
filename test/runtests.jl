@@ -4,9 +4,7 @@ using Base.Test
 
 import ContMechTensors: n_independent_components, ArgumentError, get_data
 
-include("test_ops.jl")
-
-@testset "Constructors and simple math ops." begin
+@testset "constructors and simple math ops." begin
 for dim in (1,2,3)
     for order in (1,2,4)
         ################
@@ -41,10 +39,41 @@ for dim in (1,2,3)
 end
 end # of testset
 
+@testset "create with a function" begin
+for dim in (1,2,3)
+    fi = (i) -> cos(i)
+    fij = (i,j) -> cos(i) + sin(j)
+    fijkl = (i, j, k ,l) -> cos(i) + sin(j) + tan(k) + exp(l)
+
+    af = Tensor{1,dim}(fi)
+    Af = Tensor{2,dim}(fij)
+    AAf = Tensor{4,dim}(fijkl)
+
+    Af_sym = SymmetricTensor{2,dim}(fij)
+    AAf_sym = SymmetricTensor{4,dim}(fijkl)
+    for i in 1:dim
+        @test af[i] == fi(i)
+        for j in 1:dim
+            @test Af[i,j] == fij(i, j)
+            for k in 1:dim, l in 1:dim
+                @test AAf[i,j,k,l] == fijkl(i, j,k,l)
+            end
+        end
+    end
+
+    for i in 1:dim, j in 1:i
+        @test Af_sym[i,j] == fij(i, j)
+        for k in 1:dim, l in 1:k
+             @test AAf_sym[i,j,k,l] == fijkl(i, j,k,l)
+        end
+    end
+end
+end # of testset
+
 ############
 # Indexing #
 ############
-@testset "Indexing" begin
+@testset "indexing" begin
 for dim in (1,2,3)
     for order in (1,2,4)
         if order == 1
@@ -124,39 +153,36 @@ for dim in (1,2,3)
             @test (@inferred trace(t)) == sum([t[i,i,i,i] for i in 1:dim])
             @test (@inferred trace(t_sym)) == sum([t_sym[i,i,i,i] for i in 1:dim])
         end
-   end
-end
+    end
 
-for dim in (1,2,3)
     for order in (1,2,4)
         t = rand(Tensor{order, dim})
 
-        @test t ≈ extract_components(t)
-        @test norm(t) ≈ sqrt(sumabs2(extract_components(t)))
+        @test t ≈ Array(t)
+        @test norm(t) ≈ sqrt(sumabs2(Array(t)))
 
         if order != 1
             t_sym = rand(SymmetricTensor{order, dim})
-            @test t_sym ≈ extract_components(t_sym)
-            @test norm(t_sym) ≈ sqrt(sumabs2(extract_components(t_sym)))
+            @test t_sym ≈ Array(t_sym)
+            @test norm(t_sym) ≈ sqrt(sumabs2(Array(t_sym)))
         end
 
         if order == 2
-            @test det(t) ≈ det(extract_components(t))
-            @test det(t_sym) ≈ det(extract_components(t_sym))
-            @test inv(t) ≈ inv(extract_components(t))
-            @test inv(t_sym) ≈ inv(extract_components(t_sym))
+            @test det(t) ≈ det(Array(t))
+            @test det(t_sym) ≈ det(Array(t_sym))
+            @test inv(t) ≈ inv(Array(t))
+            @test inv(t_sym) ≈ inv(Array(t_sym))
         end
 
    end
 end
-
 end # of testset
 
 ##############
 # Identities #
 ##############
 # https://en.wikiversity.org/wiki/Continuum_mechanics/Tensor_algebra_identities
-@testset "Tensor identities" begin
+@testset "tensor identities" begin
 for dim in (1,2,3)
     # Identities with second order and first order
     A = rand(Tensor{2, dim})
@@ -276,3 +302,5 @@ for dim in (1,2,3)
 end
 
 end  # of testset
+
+include("test_ops.jl")

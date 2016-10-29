@@ -6,11 +6,11 @@ immutable InternalError <: Exception end
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
-export otimes, otimes_unsym, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
+export otimes, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
 export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric, permute_index
-export extract_components, load_components!
-export setindex, store!, tdot, dotdot
+export setindex, tdot, dotdot
 
+@deprecate extract_components(tensor) Array(tensor)
 
 #########
 # Types #
@@ -42,8 +42,7 @@ typealias AllTensors{dim, T} Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T}
 typealias SecondOrderTensor{dim, T} Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T}}
 typealias FourthOrderTensor{dim, T} Union{SymmetricTensor{4, dim, T}, Tensor{4, dim, T}}
 typealias SymmetricTensors{dim, T} Union{SymmetricTensor{2, dim, T}, SymmetricTensor{4, dim, T}}
-typealias Tensors{dim, T} Union{Tensor{2, dim, T}, Tensor{4, dim, T},
-                                   Vec{dim, T}}
+typealias Tensors{dim, T} Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T}}
 
 include("utilities.jl")
 include("tuple_utils.jl")
@@ -55,7 +54,6 @@ include("promotion_conversion.jl")
 include("tensor_ops.jl")
 include("tensor_ops_errors.jl")
 include("symmetric_ops.jl")
-include("data_functions.jl")
 
 
 ##############################

@@ -1,22 +1,19 @@
-@testset "Tensor operations" begin
-for dim in (1,2,3)
-    AA = rand(Tensor{4, dim})
-    BB = rand(Tensor{4, dim})
-    A = rand(Tensor{2, dim})
-    B = rand(Tensor{2, dim})
-    a = rand(Tensor{1, dim})
-    b = rand(Tensor{1, dim})
+@testset "tensor operations" begin; for dim in (1,2,3)
+AA = rand(Tensor{4, dim})
+BB = rand(Tensor{4, dim})
+A = rand(Tensor{2, dim})
+B = rand(Tensor{2, dim})
+a = rand(Tensor{1, dim})
+b = rand(Tensor{1, dim})
 
-    AA_sym = rand(SymmetricTensor{4, dim})
-    BB_sym = rand(SymmetricTensor{4, dim})
-    A_sym = rand(SymmetricTensor{2, dim})
-    B_sym = rand(SymmetricTensor{2, dim})
+AA_sym = rand(SymmetricTensor{4, dim})
+BB_sym = rand(SymmetricTensor{4, dim})
+A_sym = rand(SymmetricTensor{2, dim})
+B_sym = rand(SymmetricTensor{2, dim})
 
+i,j,k,l = rand(1:dim,4)
 
-    #############
-    # dcontract #
-    #############
-
+@testset "double contraction" begin
     # 4 - 4
     # Value tests
     @test vec(dcontract(AA, BB)) ≈ vec(reshape(vec(AA), (dim^2, dim^2)) * reshape(vec(BB), (dim^2, dim^2)))
@@ -24,13 +21,11 @@ for dim in (1,2,3)
     @test vec(dcontract(AA, BB_sym)) ≈ vec(reshape(vec(AA), (dim^2, dim^2)) * reshape(vec(BB_sym), (dim^2, dim^2)))
     @test vec(dcontract(AA_sym, BB_sym)) ≈ vec(reshape(vec(AA_sym), (dim^2, dim^2)) * reshape(vec(BB_sym), (dim^2, dim^2)))
     @test dcontract(convert(Tensor, AA_sym), convert(Tensor, BB_sym)) ≈ dcontract(AA_sym, BB_sym)
-
     # Type tests
-    @test typeof(dcontract(AA, BB)) <: Tensor{4,dim}
-    @test typeof(dcontract(AA_sym, BB)) <: Tensor{4,dim}
-    @test typeof(dcontract(AA, BB_sym)) <: Tensor{4,dim}
-    @test typeof(dcontract(AA_sym, BB_sym)) <: SymmetricTensor{4,dim}
-
+    @test isa(dcontract(AA, BB), Tensor{4,dim})
+    @test isa(dcontract(AA_sym, BB), Tensor{4,dim})
+    @test isa(dcontract(AA, BB_sym), Tensor{4,dim})
+    @test isa(dcontract(AA_sym, BB_sym), SymmetricTensor{4,dim})
 
     # 2 - 4
     # Value tests
@@ -43,17 +38,15 @@ for dim in (1,2,3)
     @test dcontract(A, AA_sym) ≈ reshape(reshape(vec(AA_sym), (dim^2, dim^2))' * reshape(vec(A), (dim^2,)), dim, dim)
     @test dcontract(A_sym, AA_sym) ≈ reshape(reshape(vec(AA_sym), (dim^2, dim^2))' * reshape(vec(A_sym), (dim^2,)), dim, dim)
     @test dcontract(convert(Tensor, AA_sym), convert(Tensor, A_sym)) ≈ dcontract(AA_sym, A_sym)
-
     # Type tests
-    @test typeof(dcontract(AA, A)) <: Tensor{2,dim}
-    @test typeof(dcontract(AA_sym, A)) <: Tensor{2,dim}
-    @test typeof(dcontract(AA, A_sym)) <: Tensor{2,dim}
-    @test typeof(dcontract(AA_sym, A_sym)) <: SymmetricTensor{2,dim}
-    @test typeof(dcontract(A, AA)) <: Tensor{2,dim}
-    @test typeof(dcontract(A_sym, AA)) <: Tensor{2,dim}
-    @test typeof(dcontract(A, AA_sym)) <: Tensor{2,dim}
-    @test typeof(dcontract(A_sym, AA_sym)) <: SymmetricTensor{2,dim}
-
+    @test isa(dcontract(AA, A), Tensor{2,dim})
+    @test isa(dcontract(AA_sym, A), Tensor{2,dim})
+    @test isa(dcontract(AA, A_sym), Tensor{2,dim})
+    @test isa(dcontract(AA_sym, A_sym), SymmetricTensor{2,dim})
+    @test isa(dcontract(A, AA), Tensor{2,dim})
+    @test isa(dcontract(A_sym, AA), Tensor{2,dim})
+    @test isa(dcontract(A, AA_sym), Tensor{2,dim})
+    @test isa(dcontract(A_sym, AA_sym), SymmetricTensor{2,dim})
 
     # 2 - 2
     # Value tests
@@ -61,92 +54,78 @@ for dim in (1,2,3)
     @test dcontract(A_sym, B) ≈ sum(vec(A_sym) .* vec(B))
     @test dcontract(A, B_sym) ≈ sum(vec(A) .* vec(B_sym))
     @test dcontract(A_sym, B_sym) ≈ sum(vec(A_sym) .* vec(B_sym))
-
     # Type tests
-    @test typeof(dcontract(A, B)) <: Real
-    @test typeof(dcontract(A_sym, B)) <: Real
-    @test typeof(dcontract(A, B_sym)) <: Real
-    @test typeof(dcontract(A_sym, B_sym)) <: Real
+    @test isa(dcontract(A, B), Real)
+    @test isa(dcontract(A_sym, B), Real)
+    @test isa(dcontract(A, B_sym), Real)
+    @test isa(dcontract(A_sym, B_sym), Real)
+end # of testset
 
-
-    #################
-    # Outer product #
-    #################
-
+@testset "outer product" begin
     # Value tests
-    @test otimes(a, b) ≈ extract_components(a) * extract_components(b)'
+    @test otimes(a, b) ≈ Array(a) * Array(b)'
     @test reshape(vec(otimes(A, B)), dim^2, dim^2) ≈ vec(A) * vec(B)'
     @test reshape(vec(otimes(A_sym, B)), dim^2, dim^2) ≈ vec(A_sym) * vec(B)'
     @test reshape(vec(otimes(A, B_sym)), dim^2, dim^2) ≈ vec(A) * vec(B_sym)'
     @test reshape(vec(otimes(A_sym, B_sym)), dim^2, dim^2) ≈ vec(A_sym) * vec(B_sym)'
 
     # Type tests
-    @test typeof(otimes(a, b)) <: Tensor{2,dim}
-    @test typeof(otimes(A, B)) <: Tensor{4,dim}
-    @test typeof(otimes(A_sym, B)) <: Tensor{4,dim}
-    @test typeof(otimes(A, B_sym)) <: Tensor{4,dim}
-    @test typeof(otimes(A_sym, B_sym)) <: SymmetricTensor{4,dim}
+    @test isa(otimes(a, b), Tensor{2,dim})
+    @test isa(otimes(A, B), Tensor{4,dim})
+    @test isa(otimes(A_sym, B), Tensor{4,dim})
+    @test isa(otimes(A, B_sym), Tensor{4,dim})
+    @test isa(otimes(A_sym, B_sym), SymmetricTensor{4,dim})
+end # of testset
 
-
-    ################
-    # Dot products #
-    ################
-
+@testset "dot products" begin
     # 1 - 2
     # Value tests
-    @test dot(a, b) ≈ sum(extract_components(a) .* extract_components(b))
-    @test dot(A, b) ≈ reshape(vec(A), (dim,dim)) * extract_components(b)
-    @test dot(A_sym, b) ≈ reshape(vec(A_sym), (dim,dim)) * extract_components(b)
-    @test dot(a, B) ≈ reshape(vec(B), (dim,dim))' * extract_components(a)
-    @test dot(a, B_sym) ≈ reshape(vec(B_sym), (dim,dim))' * extract_components(a)
-
+    @test dot(a, b) ≈ sum(Array(a) .* Array(b))
+    @test dot(A, b) ≈ Array(A) * Array(b)
+    @test dot(A_sym, b) ≈ Array(A_sym) * Array(b)
+    @test dot(a, B) ≈ Array(B)' * Array(a)
+    @test dot(a, B_sym) ≈ Array(B_sym)' * Array(a)
     # Type tests
-    @test typeof(dot(a, b)) <: Real
-    @test typeof(dot(A, b)) <: Tensor{1,dim}
-    @test typeof(dot(A_sym, b)) <: Tensor{1,dim}
-    @test typeof(dot(b, A)) <: Tensor{1,dim}
-    @test typeof(dot(b, A_sym)) <: Tensor{1,dim}
+    @test isa(dot(a, b), Real)
+    @test isa(dot(A, b), Tensor{1,dim})
+    @test isa(dot(A_sym, b), Tensor{1,dim})
+    @test isa(dot(b, A), Tensor{1,dim})
+    @test isa(dot(b, A_sym), Tensor{1,dim})
 
     # 2 - 2
     # Value tests
-    @test dot(A, B) ≈ reshape(vec(A), (dim,dim)) * reshape(vec(B), (dim,dim))
-    @test dot(A_sym, B) ≈ reshape(vec(A_sym), (dim,dim)) * reshape(vec(B), (dim,dim))
-    @test dot(A, B_sym) ≈ reshape(vec(A), (dim,dim)) * reshape(vec(B_sym), (dim,dim))
-    @test dot(A_sym, B_sym) ≈ reshape(vec(A_sym), (dim,dim)) * reshape(vec(B_sym), (dim,dim))
+    @test dot(A, B) ≈ Array(A) * Array(B)
+    @test dot(A_sym, B) ≈ Array(A_sym) * Array(B)
+    @test dot(A, B_sym) ≈ Array(A) * Array(B_sym)
+    @test dot(A_sym, B_sym) ≈ Array(A_sym) * Array(B_sym)
 
-    @test tdot(A, B) ≈ reshape(vec(A), (dim,dim))' * reshape(vec(B), (dim,dim))
-    @test tdot(A_sym, B) ≈ reshape(vec(A_sym), (dim,dim))' * reshape(vec(B), (dim,dim))
-    @test tdot(A, B_sym) ≈ reshape(vec(A), (dim,dim))' * reshape(vec(B_sym), (dim,dim))
-    @test tdot(A_sym, B_sym) ≈ reshape(vec(A_sym), (dim,dim))' * reshape(vec(B_sym), (dim,dim))
-    @test tdot(A) ≈ reshape(vec(A), (dim,dim))' * reshape(vec(A), (dim,dim))
-    @test tdot(A_sym) ≈ reshape(vec(A_sym), (dim,dim))' * reshape(vec(A_sym), (dim,dim))
+    @test tdot(A, B) ≈ Array(A)' * Array(B)
+    @test tdot(A_sym, B) ≈ Array(A_sym)' * Array(B)
+    @test tdot(A, B_sym) ≈ Array(A)' * Array(B_sym)
+    @test tdot(A_sym, B_sym) ≈ Array(A_sym)' * Array(B_sym)
+    @test tdot(A) ≈ Array(A)' * Array(A)
+    @test tdot(A_sym) ≈ Array(A_sym)' * Array(A_sym)
 
     # Type tests
-    @test typeof(dot(A, B)) <: Tensor{2,dim}
-    @test typeof(dot(A_sym, B)) <: Tensor{2,dim}
-    @test typeof(dot(A, B_sym)) <: Tensor{2,dim}
-    @test typeof(dot(A_sym, B_sym)) <: Tensor{2,dim}
+    @test isa(dot(A, B), Tensor{2,dim})
+    @test isa(dot(A_sym, B), Tensor{2,dim})
+    @test isa(dot(A, B_sym), Tensor{2,dim})
+    @test isa(dot(A_sym, B_sym), Tensor{2,dim})
 
-    @test typeof(tdot(A, B)) <: Tensor{2,dim}
-    @test typeof(tdot(A_sym, B)) <: Tensor{2,dim}
-    @test typeof(tdot(A, B_sym)) <: Tensor{2,dim}
-    @test typeof(tdot(A_sym, B_sym)) <: Tensor{2,dim}
-    @test typeof(tdot(A)) <: SymmetricTensor{2,dim}
-    @test typeof(tdot(A_sym)) <: SymmetricTensor{2,dim}
+    @test isa(tdot(A, B), Tensor{2,dim})
+    @test isa(tdot(A_sym, B), Tensor{2,dim})
+    @test isa(tdot(A, B_sym), Tensor{2,dim})
+    @test isa(tdot(A_sym, B_sym), Tensor{2,dim})
+    @test isa(tdot(A), SymmetricTensor{2,dim})
+    @test isa(tdot(A_sym), SymmetricTensor{2,dim})
+end # of testset
 
-
-    ###############
-    # Determinant #
-    ###############
-
+@testset "determinant" begin
     @test det(A) ≈ det(reshape(vec(A), (dim,dim)))
     @test det(A_sym) ≈ det(reshape(vec(A_sym), (dim,dim)))
+end # of testset
 
-    ############################
-    # Symmetric/Skew-symmetric #
-    ############################
-    i,j,k,l = rand(1:dim,4)
-
+@testset "symmetric/skew-symmetric" begin
     if dim != 1
         @test !issymmetric(A)
         @test !issymmetric(AA)
@@ -197,15 +176,14 @@ for dim in (1,2,3)
     @test skew(A) ≈ -skew(A).'
     @test trace(skew(A)) ≈ 0.0
     @test trace(symmetric(A)) ≈ trace(A)
+end # of testset
 
-    #############
-    # Transpose #
-    #############
+@testset "transpose" begin
     @test transpose(a) ≈ a' ≈ a
     @test isa(transpose(a), Vec{dim})
-    @test transpose(A) ≈ reshape(vec(A), (dim,dim)).'
+    @test transpose(A) ≈ Array(A).'
     @test transpose(transpose(A)) ≈ A
-    @test transpose(A_sym) ≈ reshape(vec(A_sym), (dim,dim)).'
+    @test transpose(A_sym) ≈ Array(A_sym).'
     @test transpose(A_sym) ≈ A_sym
     @test transpose(transpose(A_sym)) ≈ A_sym
 
@@ -221,10 +199,9 @@ for dim in (1,2,3)
     @test AA[i,j,k,l] ≈ majortranspose(AA)[k,l,i,j]
     @test AA_sym[i,j,k,l] ≈ majortranspose(AA_sym)[k,l,i,j]
     @test typeof(majortranspose(AA_sym)) <: Tensor{4,dim}
+end # of testset
 
-    #################
-    # Permute index #
-    #################
+@testset "permute_index" begin
     @test permute_index(AA,(1,2,3,4)) ≈ AA
     @test permute_index(AA_sym,(1,2,3,4)) ≈ AA_sym
     @test permute_index(AA,(2,1,4,3)) ≈ minortranspose(AA)
@@ -236,10 +213,9 @@ for dim in (1,2,3)
     @test typeof(permute_index(AA,(1,4,3,2))) <: Tensor{4,dim}
     @test typeof(permute_index(AA_sym,(1,4,3,2))) <: Tensor{4,dim}
     @test_throws ArgumentError permute_index(AA,(1,1,2,3))
+end # of testset
 
-    #########
-    # Cross #
-    #########
+@testset "cross product" begin
     @test a × a ≈ Vec{3}((0.0,0.0,0.0))
     @test a × b ≈ -b × a
     if dim == 2
@@ -252,44 +228,11 @@ for dim in (1,2,3)
         ad2 = Vec{3}((0.0,1.0,0.0))
         @test ad × ad2 ≈ Vec{3}((0.0, 0.0, 1.0))
     end
+end # of testset
 
-    ##########################
-    # Creating with function #
-    ##########################
-
-    fi = (i) -> cos(i)
-    fij = (i,j) -> cos(i) + sin(j)
-    fijkl = (i, j, k ,l) -> cos(i) + sin(j) + tan(k) + exp(l)
-
-    af = Tensor{1,dim}(fi)
-    Af = Tensor{2,dim}(fij)
-    AAf = Tensor{4,dim}(fijkl)
-
-    Af_sym = SymmetricTensor{2,dim}(fij)
-    AAf_sym = SymmetricTensor{4,dim}(fijkl)
-    for i in 1:dim
-        @test af[i] == fi(i)
-        for j in 1:dim
-            @test Af[i,j] == fij(i, j)
-            for k in 1:dim, l in 1:dim
-                @test AAf[i,j,k,l] == fijkl(i, j,k,l)
-            end
-        end
-    end
-
-    for i in 1:dim, j in 1:i
-        @test Af_sym[i,j] == fij(i, j)
-        for k in 1:dim, l in 1:k
-             @test AAf_sym[i,j,k,l] == fijkl(i, j,k,l)
-        end
-    end
-
-    ###########
-    # Special #
-    ###########
-
+@testset "special" begin
     AAT = Tensor{4, dim}((i,j,k,l) -> AA_sym[i,l,k,j])
     @test AAT ⊡ (b ⊗ a) ≈ dotdot(a, AA_sym, b)
-
+end # of testset
 end
 end # of testset
