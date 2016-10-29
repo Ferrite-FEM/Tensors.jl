@@ -258,8 +258,10 @@ end
 #############
 
 """
-Computes the transpose of a second order tensor.
+Computes the transpose of a tensor.
 """
+@inline Base.transpose(S::Vec) = S
+
 @inline function Base.transpose(S::Tensor{2})
     typeof(S)(mat_transpose(S.data))
 end

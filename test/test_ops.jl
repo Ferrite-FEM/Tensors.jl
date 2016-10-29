@@ -201,6 +201,8 @@ for dim in (1,2,3)
     #############
     # Transpose #
     #############
+    @test transpose(a) ≈ a' ≈ a
+    @test isa(transpose(a), Vec{dim})
     @test transpose(A) ≈ reshape(vec(A), (dim,dim)).'
     @test transpose(transpose(A)) ≈ A
     @test transpose(A_sym) ≈ reshape(vec(A_sym), (dim,dim)).'
