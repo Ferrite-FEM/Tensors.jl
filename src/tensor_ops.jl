@@ -43,6 +43,7 @@ dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::Tensor{4, dim}) = dcontract(prom
 """
 Computes the norm of a tensor
 """
+@inline Base.norm(v::Vec) = sqrt(dot(v,v))
 @inline Base.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
 @inline Base.norm(S::Tensor{4}) = sqrt(sumabs2(get_data(S)))
 
