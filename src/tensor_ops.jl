@@ -95,11 +95,17 @@ end
     return Vec{dim, Tv}(Amt_mul_Bv(S2.data, v1.data))
 end
 
-
 @inline function Base.dot{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
     Tv = typeof(zero(T1) * zero(T2))
     return Tensor{2, dim, Tv, M}(Am_mul_Bm(S1.data, S2.data))
 end
+
+#########################
+# transpose-dot product #
+#########################
+@inline tdot{dim, T1, T2}(v1::Vec{dim, T1}, S2::SecondOrderTensor{dim, T2}) = dot(v1, S2)
+@inline tdot{dim, T1, T2}(S1::SecondOrderTensor{dim, T1}, v2::Vec{dim, T2}) = dot(v2, S1)
+@inline tdot{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2}) = dot(v1, v2)
 
 @inline function tdot{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
     Tv = typeof(zero(T1) * zero(T2))

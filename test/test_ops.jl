@@ -85,12 +85,25 @@ end # of testset
     @test dot(A_sym, b) ≈ Array(A_sym) * Array(b)
     @test dot(a, B) ≈ Array(B)' * Array(a)
     @test dot(a, B_sym) ≈ Array(B_sym)' * Array(a)
+
+    @test tdot(a, b) ≈ tdot(b, a) ≈ dot(a,b) ≈ dot(b,a) ≈ sum(Array(a) .* Array(b))
+    @test tdot(A, b) ≈ tdot(b, A) ≈ dot(b,A) ≈ Array(A)' * Array(b)
+    @test tdot(A_sym, b) ≈ tdot(b, A_sym) ≈ dot(A_sym, b) ≈ Array(A_sym)' * Array(b)
+    @test tdot(a, B) ≈ tdot(B, a) ≈ dot(a, B) ≈ Array(B)' * Array(a)
+    @test tdot(a, B_sym) ≈ tdot(B_sym, a) ≈ dot(a, B_sym) ≈ Array(B_sym)' * Array(a)
+
     # Type tests
     @test isa(dot(a, b), Real)
-    @test isa(dot(A, b), Tensor{1,dim})
-    @test isa(dot(A_sym, b), Tensor{1,dim})
-    @test isa(dot(b, A), Tensor{1,dim})
-    @test isa(dot(b, A_sym), Tensor{1,dim})
+    @test isa(dot(A, b), Vec{dim})
+    @test isa(dot(A_sym, b), Vec{dim})
+    @test isa(dot(b, A), Vec{dim})
+    @test isa(dot(b, A_sym), Vec{dim})
+
+    @test isa(tdot(a, b), Real)
+    @test isa(tdot(A, b), Vec{dim})
+    @test isa(tdot(A_sym, b), Vec{dim})
+    @test isa(tdot(a, B), Vec{dim})
+    @test isa(tdot(a, B_sym), Vec{dim})
 
     # 2 - 2
     # Value tests
