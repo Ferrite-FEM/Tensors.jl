@@ -404,21 +404,6 @@ Computes the skew-symmetric (anti-symmetric) part of a second order tensor, retu
 @inline skew{dim,T}(S1::SymmetricTensor{2,dim,T}) = zero(Tensor{2,dim,T})
 
 
-#######
-# Eig #
-#######
-
-"""
-Computes the eigenvalues and eigendirections of a second order tensor.
-"""
-function Base.eig{dim, T, M}(S::Tensor{2, dim, T, M})
-    S_m = reshape(S[:], (dim, dim))
-    λ, ϕ = eig(S_m)
-    Λ = Tensor{1, dim}(λ)
-    Φ = Tensor{2, dim}(ϕ)
-    return Λ, Φ
-end
-
 #########
 # Cross #
 #########

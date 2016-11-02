@@ -122,7 +122,7 @@ julia> B = rand(Tensor{1, 2})
 julia> dot(A, B)
 2-element ContMechTensors.Tensor{1,2,Float64,2}:
  0.370385
- 1.00195 
+ 1.00195
 
 julia> A ⋅ B
 2-element ContMechTensors.Tensor{1,2,Float64,2}:
@@ -174,7 +174,7 @@ julia> A ⊗ B
 
 For vectors (first order tensors): `norm`
 
-For second order tensors: `norm`, `trace` (`vol`), `det`, `inv`, `transpose`, `symmetric`, `skew`, `eig`, `mean` defined as `trace(s) / 3`, and `dev` defined as `s - mean(s) * I`.
+For second order tensors: `norm`, `trace` (`vol`), `det`, `inv`, `transpose`, `symmetric`, `skew`, `eig` (for symmetric tensors), `mean` defined as `trace(s) / 3`, and `dev` defined as `s - mean(s) * I`.
 
 For fourth order tensors: `norm`, `trace`, `symmetric` (same as `minorsymmetric`), `majorsymmetric`, `transpose` (same as `minortranspose`), `majortranspose`, `permute_index`
 
