@@ -1,14 +1,20 @@
-# Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
+
 os:
   - linux
   - osx
+
 julia:
   - 0.5
   - nightly
+
 notifications:
   email: false
-script:
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("ContMechTensors"); Pkg.test("ContMechTensors"; coverage=true)'
+
+# https://github.com/travis-ci/travis-ci/issues/4942 workaround
+git:
+  depth: 99999
+
 after_success:
-  - julia -e 'cd(Pkg.dir("ContMechTensors")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+  - julia -e 'include(Pkg.dir("ContMechTensors", "docs", "travis.jl"))'
+  - julia -e 'include(Pkg.dir("ContMechTensors", "test", "coverage.jl"))'
