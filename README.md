@@ -29,10 +29,10 @@ The package is tested against Julia `0.5`, and `0.6-dev` on Linux, OS X, and Win
 Contributions are very welcome, as are feature requests and suggestions. Please open an [issue][issues-url] if you encounter any problems.
 
 [docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
-[docs-latest-url]: https://github.com/KristofferC/ContMechTensors.jl/latest
+[docs-latest-url]: https://kristofferc.github.io/ContMechTensors.jl/latest/
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://github.com/KristofferC/ContMechTensors.jl/stable
+[docs-stable-url]: https://kristofferc.github.io/ContMechTensors.jl/stable
 
 [travis-img]: https://travis-ci.org/KristofferC/ContMechTensors.jl.svg?branch=master
 [travis-url]: https://travis-ci.org/KristofferC/ContMechTensors.jl

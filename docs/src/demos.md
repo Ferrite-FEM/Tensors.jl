@@ -33,7 +33,7 @@ We can define the energy for a material with the
 
 $\Psi(\mathbf{C}) = 1/2 \mu (\mathrm{tr}(\hat{\mathbf{C}}) - 3) + K_b(J-1)^2,$
 
-where $\hat{\mathbf{C}} = \mathrm{det}(\mathbf{C})^{-1/3} \mathbf{C}$ and $J = \det(F) = \sqrt{\det(C)}$ and the shear and bulk modulus are given by $\mu$ and $K_b$ respectively.
+where $\hat{\mathbf{C}} = \mathrm{det}(\mathbf{C})^{-1/3} \mathbf{C}$ and $J = \det(\mathbf{F}) = \sqrt{\det(\mathbf{C})}$ and the shear and bulk modulus are given by $\mu$ and $K_b$ respectively.
 
 This free energy function can be implemented as:
 
