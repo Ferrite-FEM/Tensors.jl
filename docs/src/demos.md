@@ -12,7 +12,7 @@ where $\delta_{ij} = 1$ if $i = j$ otherwise $0$. It can also be computed in ter
 
 The code below creates the elasticity tensor for given parameters $E$ and $\nu$ and dimension $\texttt{dim}$. Note the similarity between the mathematical formula and the code.
 
-```jl
+```julia
 using ContMechTensors
 E = 200e9
 ν = 0.3
@@ -37,7 +37,7 @@ where $\hat{\mathbf{C}} = \mathrm{det}(\mathbf{C})^{-1/3} \mathbf{C}$ and $J = \
 
 This free energy function can be implemented as:
 
-```jl
+```julia
 function Ψ(C, μ, Kb)
     detC = det(C)
     J = sqrt(detC)
@@ -53,7 +53,7 @@ $
 
 which can be implemented by the function
 
-```jl
+```julia
 function S(C, μ, Kb)
     I = one(C)
     J = sqrt(det(C))
@@ -66,7 +66,7 @@ end
 
 For some material models it can be cumbersome to compute the analytical expression for the Second Piola Kirchoff tensor. We can then use Automatic Differentiation (AD) to compute it. Here, the AD package (`ForwardDiff.jl`)[https://github.com/JuliaDiff/ForwardDiff.jl] is used. Unfortunately we have to here do a bit of juggling between tensors and standard Julia `Array`s due to `ForwardDiff` expecting the input to be of `Array` type.
 
-```jl
+```julia
 using ForwardDiff
 
 function S_AD{dim}(C::SymmetricTensor{2,dim}, μ, Kb)
@@ -76,27 +76,65 @@ function S_AD{dim}(C::SymmetricTensor{2,dim}, μ, Kb)
 end
 ```
 
-We can compare the results from the analyitcal and AD functions and they are obviously equal:
+We can compare the results from the analytical and AD functions and they are obviously equal:
 
-```jl
-julia> μ = 1e10
+```@meta
+DocTestSetup = quote
+    srand(1234)
+    using ContMechTensors
+    E = 200e9
+    ν = 0.3
+    dim = 2
+    λ = E*ν / ((1 + ν) * (1 - 2ν))
+    μ = E / (2(1 + ν))
+    δ(i,j) = i == j ? 1.0 : 0.0
+    f = (i,j,k,l) -> λ*δ(i,j)*δ(k,l) + μ*(δ(i,k)*δ(j,l) + δ(i,l)*δ(j,k))
 
-julia> Kb = 1.66e11
+    C = SymmetricTensor{4, dim}(f)
 
-julia> F = one(Tensor{2,3}) + rand(Tensor{2,3})
+    function Ψ(C, μ, Kb)
+        detC = det(C)
+        J = sqrt(detC)
+        Ĉ = detC^(-1/3)*C
+        return 1/2*(μ * (trace(Ĉ)- 3) + Kb*(J-1)^2)
+    end
 
-julia> C = tdot(F)
+    function S(C, μ, Kb)
+        I = one(C)
+        J = sqrt(det(C))
+        invC = inv(C)
+        return μ * det(C)^(-1/3)*(I - 1/3*trace(C)*invC) + Kb*(J-1)*J*invC
+    end
+
+    using ForwardDiff
+
+    function S_AD{dim}(C::SymmetricTensor{2,dim}, μ, Kb)
+        Ψvec = Cvec -> Ψ(SymmetricTensor{2,dim}(Cvec), μ, Kb)
+        ∂Ψ∂C = C -> symmetric(Tensor{2,dim}(ForwardDiff.gradient(Ψvec, vec(C))))
+        return 2 * ∂Ψ∂C(C)
+    end
+
+end
+```
+
+```jldoctest
+julia> μ = 1e10;
+
+julia> Kb = 1.66e11;
+
+julia> F = one(Tensor{2,3}) + rand(Tensor{2,3});
+
+julia> C = tdot(F);
 
 julia> S_AD(C, μ, Kb)
 3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
- -4.77332e11   3.63242e11   2.90976e11
-  3.63242e11  -2.99684e11  -1.97385e11
-  2.90976e11  -1.97385e11  -2.06299e11
+  4.30534e11  -2.30282e11  -8.52861e10
+ -2.30282e11   4.38793e11  -2.64481e11
+ -8.52861e10  -2.64481e11   7.85515e11
 
 julia> S(C, μ, Kb)
 3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
- -4.77332e11   3.63242e11   2.90976e11
-  3.63242e11  -2.99684e11  -1.97385e11
-  2.90976e11  -1.97385e11  -2.06299e11
+  4.30534e11  -2.30282e11  -8.52861e10
+ -2.30282e11   4.38793e11  -2.64481e11
+ -8.52861e10  -2.64481e11   7.85515e11
 ```
-
