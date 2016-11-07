@@ -1,3 +1,6 @@
+# Build the real docs first.
+include("../docs/make.jl")
+
 using ContMechTensors
 
 using Base.Test

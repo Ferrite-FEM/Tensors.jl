@@ -1,8 +1,9 @@
 using Documenter, ContMechTensors
 
 makedocs(
+    modules = [ContMechTensors],
     format = :html,
-    sitename = "ContMechTensors",
+    sitename = "ContMechTensors.jl",
     pages = Any[
         "Home" => "index.md",
         "Manual" => [
