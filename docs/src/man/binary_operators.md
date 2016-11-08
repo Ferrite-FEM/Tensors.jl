@@ -13,7 +13,7 @@ Pages = ["binary_operators.md"]
 
 ## Dot product (single contraction)
 
-Dot product or single contraction of a tensor of order `n` and a tensor of order `m` gives a tensor of order `m + n - 2`. For example, single contraction between two vectors ``\mathbf{b}`` and ``\mathbf{c}`` can be written as:
+The dot product (or single contraction) between a tensor of order `n` and a tensor of order `m` is a tensor of order `m + n - 2`. For example, single contraction between two vectors ``\mathbf{b}`` and ``\mathbf{c}`` can be written as:
 
 $a = \mathbf{b} \cdot \mathbf{c} \Leftrightarrow a = b_i c_i$
 
@@ -27,7 +27,7 @@ dot
 
 ## Double contraction
 
-Double contractions contracts the two most inner "legs" of the tensors. The result of a double contraction between a tensor of order `n` and a tensor of order `m` gives a tensor of order `m + n - 4`. For example, double contraction between two second order tensors ``\mathbf{B}`` and ``\mathbf{C}`` can be written as:
+A double contraction between two tensors contracts the two most inner indices. The result of a double contraction between a tensor of order `n` and a tensor of order `m` is a tensor of order `m + n - 4`. For example, double contraction between two second order tensors ``\mathbf{B}`` and ``\mathbf{C}`` can be written as:
 
 $a = \mathbf{B} : \mathbf{C} \Leftrightarrow a = B_{ij} C_{ij}$
 
@@ -41,7 +41,7 @@ dcontract
 
 ## Tensor product (open product)
 
-Tensor products or open product of a tensor of order `n` and a tensor of order `m` gives a tensor of order `m + n`.  For example, open product between two vectors ``\mathbf{b}`` and ``\mathbf{c}`` can be written as:
+The tensor product (or open product) between a tensor of order `n` and a tensor of order `m` is a tensor of order `m + n`.  For example, open product between two vectors ``\mathbf{b}`` and ``\mathbf{c}`` can be written as:
 
 $\mathbf{A} = \mathbf{b} \otimes \mathbf{c} \Leftrightarrow A_{ij} = b_i c_j$
 
