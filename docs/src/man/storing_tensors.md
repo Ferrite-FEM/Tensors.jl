@@ -10,3 +10,12 @@ end
 ```
 
 Leaving out the `M` and `N` would lead to bad performance.
+
+!!! tip
+    The number of independent elements `N` are already included in the `typealias` `Vec` so they can be stored with e.g.
+    ```julia
+    immutable VecContainer{dim, T}
+        vec::Vec{dim, T}
+    end
+    ```
+    without giving bad performance.

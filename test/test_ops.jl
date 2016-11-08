@@ -214,18 +214,18 @@ end # of testset
     @test typeof(majortranspose(AA_sym)) <: Tensor{4,dim}
 end # of testset
 
-@testset "permute_index" begin
-    @test permute_index(AA,(1,2,3,4)) ≈ AA
-    @test permute_index(AA_sym,(1,2,3,4)) ≈ AA_sym
-    @test permute_index(AA,(2,1,4,3)) ≈ minortranspose(AA)
-    @test permute_index(AA_sym,(2,1,4,3)) ≈ minortranspose(AA_sym)
-    @test permute_index(AA,(3,4,1,2)) ≈ majortranspose(AA)
-    @test permute_index(AA_sym,(3,4,1,2)) ≈ majortranspose(AA_sym)
-    @test permute_index(permute_index(AA,(1,4,2,3)),(1,3,4,2)) ≈ AA
-    @test permute_index(permute_index(AA_sym,(1,4,2,3)),(1,3,4,2)) ≈ AA_sym
-    @test typeof(permute_index(AA,(1,4,3,2))) <: Tensor{4,dim}
-    @test typeof(permute_index(AA_sym,(1,4,3,2))) <: Tensor{4,dim}
-    @test_throws ArgumentError permute_index(AA,(1,1,2,3))
+@testset "permutedims" begin
+    @test permutedims(AA,(1,2,3,4)) ≈ AA
+    @test permutedims(AA_sym,(1,2,3,4)) ≈ AA_sym
+    @test permutedims(AA,(2,1,4,3)) ≈ minortranspose(AA)
+    @test permutedims(AA_sym,(2,1,4,3)) ≈ minortranspose(AA_sym)
+    @test permutedims(AA,(3,4,1,2)) ≈ majortranspose(AA)
+    @test permutedims(AA_sym,(3,4,1,2)) ≈ majortranspose(AA_sym)
+    @test permutedims(permutedims(AA,(1,4,2,3)),(1,3,4,2)) ≈ AA
+    @test permutedims(permutedims(AA_sym,(1,4,2,3)),(1,3,4,2)) ≈ AA_sym
+    @test typeof(permutedims(AA,(1,4,3,2))) <: Tensor{4,dim}
+    @test typeof(permutedims(AA_sym,(1,4,3,2))) <: Tensor{4,dim}
+    @test_throws ArgumentError permutedims(AA,(1,1,2,3))
 end # of testset
 
 @testset "cross product" begin

@@ -7,74 +7,48 @@ end
 
 # Binary Operations
 
-## Single contraction (dot product)
-
-Single contractions or scalar products of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n - 2`. The symbol `⋅`, written `\cdot`, is overloaded for single contraction.
-
-```jldoctest
-julia> A = rand(Tensor{2, 2})
-2×2 ContMechTensors.Tensor{2,2,Float64,4}:
- 0.590845  0.566237
- 0.766797  0.460085
-
-julia> B = rand(Tensor{1, 2})
-2-element ContMechTensors.Tensor{1,2,Float64,2}:
- 0.794026
- 0.854147
-
-julia> dot(A, B)
-2-element ContMechTensors.Tensor{1,2,Float64,2}:
- 0.952796
- 1.00184
-
-julia> A ⋅ B
-2-element ContMechTensors.Tensor{1,2,Float64,2}:
- 0.952796
- 1.00184
+```@index
+Pages = ["binary_operators.md"]
 ```
 
+## Dot product (single contraction)
+
+Dot product or single contraction of a tensor of order `n` and a tensor of order `m` gives a tensor of order `m + n - 2`. For example, single contraction between two vectors ``\mathbf{b}`` and ``\mathbf{c}`` can be written as:
+
+$a = \mathbf{b} \cdot \mathbf{c} \Leftrightarrow a = b_i c_i$
+
+and single contraction between a second order tensor ``\mathbf{B}`` and a vector ``\mathbf{c}``:
+
+$\mathbf{a} = \mathbf{B} \cdot \mathbf{c} \Leftrightarrow a_i = B_{ij} c_j$
+
+```@docs
+dot
+```
 
 ## Double contraction
 
-Double contractions contracts the two most inner "legs" of the tensors. The result of a double contraction between a tensor of order `n` and a tensor with order `m` gives a tensor with order `m + n - 4`. The symbol `⊡`, written `\boxdot`, is overloaded for double contraction. The reason `:` is not used is because it does not have the same precedence as multiplication.
+Double contractions contracts the two most inner "legs" of the tensors. The result of a double contraction between a tensor of order `n` and a tensor of order `m` gives a tensor of order `m + n - 4`. For example, double contraction between two second order tensors ``\mathbf{B}`` and ``\mathbf{C}`` can be written as:
 
-```jldoctest
-julia> A = rand(SymmetricTensor{2, 2});
+$a = \mathbf{B} : \mathbf{C} \Leftrightarrow a = B_{ij} C_{ij}$
 
-julia> B = rand(SymmetricTensor{2, 2});
+and double contraction between a fourth order tensor ``\mathsf{B}`` and a second order tensor ``\mathbf{C}``:
 
-julia> dcontract(A,B)
-1.9732018397544984
+$\mathbf{A} = \mathsf{B} : \mathbf{C} \Leftrightarrow A_{ij} = B_{ijkl} C_{kl}$
 
-julia> A ⊡ B
-1.9732018397544984
+```@docs
+dcontract
 ```
-
 
 ## Tensor product (open product)
 
-Tensor products or open product of a tensor with order `n` and a tensor with order `m` gives a tensor with order `m + n`. The symbol `⊗`, written `\otimes`, is overloaded for tensor products.
+Tensor products or open product of a tensor of order `n` and a tensor of order `m` gives a tensor of order `m + n`.  For example, open product between two vectors ``\mathbf{b}`` and ``\mathbf{c}`` can be written as:
 
-```jldoctest
-julia> A = rand(SymmetricTensor{2, 2});
+$\mathbf{A} = \mathbf{b} \otimes \mathbf{c} \Leftrightarrow A_{ij} = b_i c_j$
 
-julia> B = rand(SymmetricTensor{2, 2});
+and open product between two second order tensors ``\mathbf{B}`` and ``\mathbf{C}``:
 
-julia> A ⊗ B
-2×2×2×2 ContMechTensors.SymmetricTensor{4,2,Float64,9}:
-[:, :, 1, 1] =
- 0.271839  0.352792
- 0.352792  0.260518
+$\mathsf{A} = \mathbf{B} \otimes \mathbf{C} \Leftrightarrow A_{ijkl} = B_{ij} C_{kl}$
 
-[:, :, 2, 1] =
- 0.469146  0.608857
- 0.608857  0.449607
-
-[:, :, 1, 2] =
- 0.469146  0.608857
- 0.608857  0.449607
-
-[:, :, 2, 2] =
- 0.504668  0.654957
- 0.654957  0.48365
+```@docs
+otimes
 ```

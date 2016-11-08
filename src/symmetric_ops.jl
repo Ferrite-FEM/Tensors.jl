@@ -127,10 +127,6 @@ end
 ###########
 # Inverse #
 ###########
-
-"""
-Computes the inverse of a second order symmetric tensor.
-"""
 @gen_code function Base.inv{dim, T}(t::SymmetricTensor{2, dim, T})
     idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
     @code :($(Expr(:meta, :inline)))
@@ -206,11 +202,27 @@ end
     end
 end
 
+"""
+Computes the eigenvalues and eigenvectors of a symmetric second order tensor.
 
-#######
-# Eig #
-#######
+```julia
+eig(::SymmetricSecondOrderTensor)
+```
 
+**Example:**
+
+```jldoctest
+julia> A = rand(SymmetricTensor{2,3})
+3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+ 0.590845  0.766797  0.566237
+ 0.766797  0.460085  0.794026
+ 0.566237  0.794026  0.854147
+
+julia> eig(A)
+([-0.312033,0.15636,2.06075],
+[0.492843 -0.684993 -0.536554; -0.811724 -0.139855 -0.567049; 0.313385 0.715 -0.624952])
+```
+"""
 function Base.eig{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
     S_m = Symmetric(reshape(S[:], (dim, dim)))
     λ, ϕ = eig(S_m)
@@ -219,10 +231,14 @@ function Base.eig{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
     return Λ, Φ
 end
 
-###############################
-# Vec dot FourthOrder dot Vec #
-###############################
+"""
+Computes a special dot product between two vectors and a symmetric fourth order tensor
+such that ``a_k C_{ikjl} b_l``.
 
+```julia
+dotdot(::Vec, ::SymmetricFourthOrderTensor, ::Vec)
+```
+"""
 @generated function dotdot{dim, T1, T2, T3}(v1::Vec{dim, T1}, S::SymmetricTensor{4, dim, T2}, v2::Vec{dim, T3})
     idx(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
     N = n_components(Tensor{2, dim})

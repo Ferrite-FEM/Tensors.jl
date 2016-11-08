@@ -7,7 +7,7 @@ immutable InternalError <: Exception end
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
 export otimes, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
-export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric, permute_index
+export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric
 export setindex, tdot, dotdot
 
 @deprecate extract_components(tensor) Array(tensor)

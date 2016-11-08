@@ -82,3 +82,29 @@ julia> diagm(SymmetricTensor{2,3}, [1.0, 2.0, 3.0])
  0.0  2.0  0.0
  0.0  0.0  3.0
 ```
+
+## Converting to tensors
+
+Sometimes it is necessary to convert between standard Julia `Array`'s and `Tensor`'s. This can be done
+with `reinterpret`. For example, a `2×5` Julia `Array` can be translated to a vector of `Vec{2}` with the
+following code (and then translated back again)
+
+```jldoctest
+julia> data = rand(2, 5)
+2×5 Array{Float64,2}:
+ 0.590845  0.566237  0.794026  0.200586  0.246837
+ 0.766797  0.460085  0.854147  0.298614  0.579672
+
+julia> tensor_data = reinterpret(Vec{2, Float64}, data, (5,))
+5-element Array{ContMechTensors.Tensor{1,2,Float64,2},1}:
+ [0.590845,0.766797]
+ [0.566237,0.460085]
+ [0.794026,0.854147]
+ [0.200586,0.298614]
+ [0.246837,0.579672]
+
+julia> data = reinterpret(Float64, tensor_data, (2,5))
+2×5 Array{Float64,2}:
+ 0.590845  0.566237  0.794026  0.200586  0.246837
+ 0.766797  0.460085  0.854147  0.298614  0.579672
+```

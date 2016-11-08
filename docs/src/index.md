@@ -1,10 +1,10 @@
 # ContMechTensors
 
-*Efficient computations with symmetric and unsymmetric tensors in Julia.*
+*Efficient computations with symmetric and non-symmetric tensors in Julia.*
 
 ## Introduction
 
-This Julia package provides fast operations with symmetric/unsymmetric tensors of order 1, 2 and 4.
+This Julia package provides fast operations with symmetric and non-symmetric tensors of order 1, 2 and 4 in 1, 2 and 3 dimensions.
 The tensors are stack allocated which means that there is no need to preallocate results of operations and nice infix notation can be used without a performance penalty.
 For the symmetric tensors, when possible, the symmetry is exploited for better performance.
 

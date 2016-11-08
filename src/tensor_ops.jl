@@ -1,7 +1,29 @@
-######################
-# Double contraction #
-######################
+"""
+Computes the double contraction between two tensors.
+The symbol `⊡`, written `\\boxdot`, is overloaded for double contraction.
+The reason `:` is not used is because it does not have the same precedence as multiplication.
 
+```julia
+dcontract(::SecondOrderTensor, ::SecondOrderTensor)
+dcontract(::SecondOrderTensor, ::FourthOrderTensor)
+dcontract(::FourthOrderTensor, ::SecondOrderTensor)
+dcontract(::FourthOrderTensor, ::FourthOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(SymmetricTensor{2, 2});
+
+julia> B = rand(SymmetricTensor{2, 2});
+
+julia> dcontract(A,B)
+1.9732018397544984
+
+julia> A ⊡ B
+1.9732018397544984
+```
+"""
 @inline function dcontract{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
     return A_dot_B(S1.data, S2.data)
 end
@@ -36,26 +58,68 @@ dcontract{dim}(S1::Tensor{4, dim}, S2::SymmetricTensor{4, dim}) = dcontract(prom
 dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::Tensor{4, dim}) = dcontract(promote(S1, S2)...)
 
 
-########
-# Norm #
-########
-
 """
 Computes the norm of a tensor
+
+```julia
+norm(::Vec)
+norm(::SecondOrderTensor)
+norm(::FourthOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(Tensor{2,3})
+3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> norm(A)
+1.7377443667834922
+```
 """
 @inline Base.norm(v::Vec) = sqrt(dot(v,v))
 @inline Base.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
 @inline Base.norm(S::Tensor{4}) = sqrt(sumabs2(get_data(S)))
 
 
-################
-# Open product #
-################
-
 """
-Computes the outer product between two tensors `t1` and `t2`. Can also be called via the infix operator `⊗`.
-"""
+Computes the open product between two tensors.
+The symbol `⊗`, written `\\otimes`, is overloaded for tensor products.
 
+```julia
+otimes(::Vec, ::Vec)
+otimes(::SecondOrderTensor, ::SecondOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(SymmetricTensor{2, 2});
+
+julia> B = rand(SymmetricTensor{2, 2});
+
+julia> A ⊗ B
+2×2×2×2 ContMechTensors.SymmetricTensor{4,2,Float64,9}:
+[:, :, 1, 1] =
+ 0.271839  0.352792
+ 0.352792  0.260518
+
+[:, :, 2, 1] =
+ 0.469146  0.608857
+ 0.608857  0.449607
+
+[:, :, 1, 2] =
+ 0.469146  0.608857
+ 0.608857  0.449607
+
+[:, :, 2, 2] =
+ 0.504668  0.654957
+ 0.654957  0.48365
+```
+"""
 @generated function otimes{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
     N = n_components(Tensor{4, dim})
     return quote
@@ -80,10 +144,41 @@ const ⊗ = otimes
 otimes{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = otimes(promote(S1, S2)...)
 otimes{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = otimes(promote(S1, S2)...)
 
+"""
+Computes the dot product (single contraction) between two tensors.
+The symbol `⋅`, written `\\cdot`, is overloaded for single contraction.
 
-###############
-# Dot product #
-###############
+```julia
+dot(::Vec, ::Vec)
+dot(::Vec, ::SecondOrderTensor)
+dot(::SecondOrderTensor, ::Vec)
+dot(::SecondOrderTensor, ::SecondOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(Tensor{2, 2})
+2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 0.590845  0.566237
+ 0.766797  0.460085
+
+julia> B = rand(Tensor{1, 2})
+2-element ContMechTensors.Tensor{1,2,Float64,2}:
+ 0.794026
+ 0.854147
+
+julia> dot(A, B)
+2-element ContMechTensors.Tensor{1,2,Float64,2}:
+ 0.952796
+ 1.00184
+
+julia> A ⋅ B
+2-element ContMechTensors.Tensor{1,2,Float64,2}:
+ 0.952796
+ 1.00184
+```
+"""
 @inline Base.dot{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2}) = A_dot_B(v1.data, v2.data)
 
 @inline function Base.dot{dim, T1, T2}(S1::Tensor{2, dim, T1}, v2::Vec{dim, T2})
@@ -101,9 +196,50 @@ end
     return Tensor{2, dim, Tv, M}(Am_mul_Bm(S1.data, S2.data))
 end
 
-#########################
-# transpose-dot product #
-#########################
+@inline function Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
+    S1_t = convert(Tensor{2, dim}, S1)
+    S2_t = convert(Tensor{2, dim}, S2)
+    return Tensor{2, dim}(Am_mul_Bm(S1_t.data, S2_t.data))
+end
+
+# Promotion
+Base.dot{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = dot(promote(S1, S2)...)
+Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = dot(promote(S1, S2)...)
+
+"""
+Computes the transpose-dot product (single contraction) between two tensors.
+
+```julia
+tdot(::Vec, ::Vec)
+tdot(::Vec, ::SecondOrderTensor)
+tdot(::SecondOrderTensor, ::Vec)
+tdot(::SecondOrderTensor, ::SecondOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(Tensor{2,2})
+2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 0.590845  0.566237
+ 0.766797  0.460085
+
+julia> B = rand(Tensor{2,2})
+2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 0.794026  0.200586
+ 0.854147  0.298614
+
+julia> tdot(A,B)
+2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 1.1241    0.347492
+ 0.842587  0.250967
+
+julia> A'⋅B
+2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 1.1241    0.347492
+ 0.842587  0.250967
+```
+"""
 @inline tdot{dim, T1, T2}(v1::Vec{dim, T1}, S2::SecondOrderTensor{dim, T2}) = dot(v1, S2)
 @inline tdot{dim, T1, T2}(S1::SecondOrderTensor{dim, T1}, v2::Vec{dim, T2}) = dot(v2, S1)
 @inline tdot{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2}) = dot(v1, v2)
@@ -117,65 +253,94 @@ end
 @inline tdot{dim, T1, T2, M1, M2}(S1::SymmetricTensor{2, dim, T1, M1}, S2::Tensor{2, dim, T2, M2}) = dot(S1,S2)
 @inline tdot{dim, T1, T2, M1, M2}(S1::Tensor{2, dim, T1, M1}, S2::SymmetricTensor{2, dim, T2, M2}) = tdot(promote(S1,S2)...)
 
-@inline function Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
-    S1_t = convert(Tensor{2, dim}, S1)
-    S2_t = convert(Tensor{2, dim}, S2)
-    return Tensor{2, dim}(Am_mul_Bm(S1_t.data, S2_t.data))
-end
+"""
+Computes the transpose-dot of a second order tensor with itself.
+Returns a `SymmetricTensor`
 
+```julia
+tdot(::SecondOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(Tensor{2,3})
+3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> tdot(A)
+3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+ 1.2577   1.36435   0.48726 
+ 1.36435  1.57172   0.540229
+ 0.48726  0.540229  0.190334
+```
+"""
 @inline function tdot{dim}(S1::Tensor{2, dim})
     return SymmetricTensor{2, dim}(transpdot(S1.data))
 end
-
 @inline tdot{dim}(S1::SymmetricTensor{2,dim}) = tdot(convert(Tensor{2,dim}, S1))
 
-# Promotion
-Base.dot{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = dot(promote(S1, S2)...)
-Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = dot(promote(S1, S2)...)
 
-
-#########
-# Trace #
-#########
-
-import Base.LinAlg.trace
 """
-Computes the trace of a second or fourth order tensor.
+Computes the trace of a second order tensor.
+The synonym `vol` can also be used.
+
+```julia
+trace(::SecondOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(SymmetricTensor{2,3})
+3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+ 0.590845  0.766797  0.566237
+ 0.766797  0.460085  0.794026
+ 0.566237  0.794026  0.854147
+
+julia> trace(A)
+1.9050765715072775
+```
 """
-@gen_code function trace{dim, T}(S::Union{SecondOrderTensor{dim, T}, FourthOrderTensor{dim, T}})
-    @code :($(Expr(:meta, :inline)))
-    @code :(s = zero(T))
-    for i = 1:dim
-        if S <: SecondOrderTensor
-            @code :(@inbounds s += S[$i,$i])
-        elseif S <: FourthOrderTensor
-            @code :(@inbounds s += S[$i,$i,$i,$i])
-        end
+@generated function Base.trace{dim, T}(S::SecondOrderTensor{dim, T})
+    idx(i,j) = compute_index(get_lower_order_tensor(S), i, j)
+    exp = Expr(:call)
+    push!(exp.args, :+)
+    for i in 1:dim
+        push!(exp.args, :(S.data[$(idx(i,i))]))
     end
-    @code :(return s)
+    return exp
 end
-
-
-#######
-# Vol #
-#######
-
 vol(S::SecondOrderTensor) = trace(S)
 
 
 ########
 # Mean #
 ########
-
 Base.mean(S::SecondOrderTensor) = trace(S) / 3
 
 
-###############
-# Determinant #
-###############
-
 """
 Computes the determinant of a second order tensor.
+
+```julia
+det(::SecondOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(SymmetricTensor{2,3})
+3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+ 0.590845  0.766797  0.566237
+ 0.766797  0.460085  0.794026
+ 0.566237  0.794026  0.854147
+
+julia> det(A)
+-0.1005427219925894
+```
 """
 @gen_code function Base.det{dim, T}(t::SecondOrderTensor{dim, T})
     idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
@@ -194,14 +359,28 @@ Computes the determinant of a second order tensor.
 end
 
 
-###########
-# Inverse #
-###########
-
-import Base.inv
-
 """
 Computes the inverse of a second order tensor.
+
+```julia
+inv(::SecondOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(Tensor{2,3})
+3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> inv(A)
+3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+  19.7146   -19.2802    7.30384
+   6.73809  -10.7687    7.55198
+ -68.541     81.4917  -38.8361
+```
 """
 @gen_code function Base.inv{dim, T}(t::Tensor{2, dim, T})
     idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
@@ -248,11 +427,14 @@ Computes the deviatoric part of a second order tensor.
     end
 end
 
-###################
-# Permute indices #
-###################
+"""
+Permutes the dimensions according to `idx` of a fourth order tensor.
 
-function permute_index{dim}(S::FourthOrderTensor{dim},idx::NTuple{4,Int})
+```julia
+permutedims(::FourthOrderTensor, idx::NTuple{4,Int})
+```
+"""
+function Base.permutedims{dim}(S::FourthOrderTensor{dim}, idx::NTuple{4,Int})
     sort([idx...]) == [1,2,3,4] || throw(ArgumentError("Missing index."))
     neworder = sortperm([idx...])
     f = (i,j,k,l) -> S[[i,j,k,l][neworder]...]
@@ -260,12 +442,29 @@ function permute_index{dim}(S::FourthOrderTensor{dim},idx::NTuple{4,Int})
 end
 
 
-#############
-# Transpose #
-#############
-
 """
 Computes the transpose of a tensor.
+For a fourth order tensor, the transpose is the minor transpose
+
+```julia
+transpose(::Vec)
+transpose(::SecondOrderTensor)
+transpose(::FourthOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(Tensor{2,2})
+2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 0.590845  0.566237
+ 0.766797  0.460085
+
+julia> A'
+2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 0.590845  0.766797
+ 0.566237  0.460085
+```
 """
 @inline Base.transpose(S::Vec) = S
 
@@ -276,6 +475,10 @@ Base.transpose(S::SymmetricTensor{2}) = S
 
 """
 Computes the minor transpose of a fourth order tensor.
+
+```julia
+minortranspose(::FourthOrderTensor)
+```
 """
 @generated function minortranspose{dim, T, M}(t::Tensor{4, dim, T, M})
     N = n_components(Tensor{4, dim})
@@ -296,6 +499,10 @@ Base.transpose(S::FourthOrderTensor) = minortranspose(S)
 
 """
 Computes the major transpose of a fourth order tensor.
+
+```julia
+majortranspose(::FourthOrderTensor)
+```
 """
 @generated function majortranspose{dim, T}(t::FourthOrderTensor{dim, T})
     N = n_components(Tensor{4, dim})
@@ -314,15 +521,32 @@ end
 Base.ctranspose(S::AllTensors) = transpose(S)
 
 
-############################
-# Symmetric/Skew-symmetric #
-############################
+"""
+Computes the symmetric part of a second or fourth order tensor.
+For a fourth order tensor, the symmetric part is the same as the minor symmetric part.
+Returns a `SymmetricTensor`.
 
+```julia
+symmetric(::SecondOrderTensor)
+symmetric(::FourthOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(Tensor{2,2})
+2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 0.590845  0.566237
+ 0.766797  0.460085
+
+julia> symmetric(A)
+2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
+ 0.590845  0.666517
+ 0.666517  0.460085
+```
+"""
 @inline symmetric(S1::SymmetricTensors) = S1
 
-"""
-Computes the symmetric part of a second order tensor, returns a `SymmetricTensor{2}`
-"""
 @generated function symmetric{dim, T}(t::Tensor{2, dim, T})
     N = n_components(SymmetricTensor{2, dim})
     rows = Int(div(sqrt(1 + 8*N), 2))
@@ -344,7 +568,11 @@ Computes the symmetric part of a second order tensor, returns a `SymmetricTensor
 end
 
 """
-Computes the (minor) symmetric part of a fourth order tensor, returns a `SymmetricTensor{4}`
+Computes the minor symmetric part of a fourth order tensor, returns a `SymmetricTensor{4}`
+
+```julia
+minorsymmetric(::FourthOrderTensor)
+```
 """
 @generated function minorsymmetric{dim, T}(t::Tensor{4, dim, T})
     N = n_components(Tensor{4, dim})
@@ -375,6 +603,10 @@ end
 
 """
 Computes the major symmetric part of a fourth order tensor, returns a `Tensor{4}`
+
+```julia
+majorsymmetric(::FourthOrderTensor)
+```
 """
 @generated function majorsymmetric{dim, T}(t::FourthOrderTensor{dim, T})
     N = n_components(Tensor{4, dim})
@@ -399,18 +631,44 @@ end
 
 """
 Computes the skew-symmetric (anti-symmetric) part of a second order tensor, returns a `Tensor{2}`
+
+```julia
+skew(::SecondOrderTensor)
+```
 """
 @inline skew(S1::Tensor{2}) = 0.5*(S1 - S1.')
 @inline skew{dim,T}(S1::SymmetricTensor{2,dim,T}) = zero(Tensor{2,dim,T})
 
 
-#########
-# Cross #
-#########
-
 """
 Computes the cross product between two `Vec` vectors, returns a `Vec{3}`. For dimensions 1 and 2 the `Vec`'s
-are expanded to 3D first.
+are expanded to 3D first. The infix operator × (written `\\times`) can also be used
+
+```julia
+cross(::Vec, ::Vec)
+```
+
+**Example:**
+
+```jldoctest
+julia> a = rand(Vec{3})
+3-element ContMechTensors.Tensor{1,3,Float64,3}:
+ 0.590845
+ 0.766797
+ 0.566237
+
+julia> b = rand(Vec{3})
+3-element ContMechTensors.Tensor{1,3,Float64,3}:
+ 0.460085
+ 0.794026
+ 0.854147
+
+julia> a × b
+3-element ContMechTensors.Tensor{1,3,Float64,3}:
+  0.20535 
+ -0.24415 
+  0.116354
+```
 """
 function Base.cross{T}(u::Vec{3, T}, v::Vec{3, T})
     @inbounds w = Vec{3, T}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))

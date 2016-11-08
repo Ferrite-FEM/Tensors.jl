@@ -136,26 +136,21 @@ end # of testset
 ############################
 @testset "trace, norm, det, inv" begin
 for dim in (1,2,3)
-    for order in (2,4)
+    for order in (2,)
         t = rand(Tensor{order, dim})
         t_sym = rand(Tensor{order, dim})
 
-        if order == 2
-            @test (@inferred trace(t)) == sum([t[i,i] for i in 1:dim])
-            @test (@inferred trace(t_sym)) == sum([t_sym[i,i] for i in 1:dim])
+        @test (@inferred trace(t)) == sum([t[i,i] for i in 1:dim])
+        @test (@inferred trace(t_sym)) == sum([t_sym[i,i] for i in 1:dim])
 
-            @test trace(t) ≈ vol(t) ≈ mean(t)*3.0
-            @test trace(t_sym) ≈ vol(t_sym) ≈ mean(t_sym)*3.0
+        @test trace(t) ≈ vol(t) ≈ mean(t)*3.0
+        @test trace(t_sym) ≈ vol(t_sym) ≈ mean(t_sym)*3.0
 
-            #@test_approx_eq_eps (mean(dev(t)) / norm(t)) 0.0 1e-14
-            #@test_approx_eq_eps (mean(dev(t_sym)) / norm(t_sym)) 0.0 1e-14
+        #@test_approx_eq_eps (mean(dev(t)) / norm(t)) 0.0 1e-14
+        #@test_approx_eq_eps (mean(dev(t_sym)) / norm(t_sym)) 0.0 1e-14
 
-            #@inferred mean(dev(t_sym)) / norm(t_sym)
-            #@inferred mean(dev(t_sym)) / norm(t_sym)
-        elseif order == 4
-            @test (@inferred trace(t)) == sum([t[i,i,i,i] for i in 1:dim])
-            @test (@inferred trace(t_sym)) == sum([t_sym[i,i,i,i] for i in 1:dim])
-        end
+        #@inferred mean(dev(t_sym)) / norm(t_sym)
+        #@inferred mean(dev(t_sym)) / norm(t_sym)
     end
 
     for order in (1,2,4)
