@@ -9,6 +9,7 @@ SUITE["dot"] = BenchmarkGroup()
 SUITE["dcontract"] = BenchmarkGroup()
 SUITE["otimes"] = BenchmarkGroup()
 SUITE["other"] = BenchmarkGroup()
+SUITE["promotion"] = BenchmarkGroup()
 
 function create_tensors()
     tensor_dict = Dict{Tuple{Int, Int, DataType}, AbstractTensor}()
@@ -77,10 +78,13 @@ for dim in (1,2,3)
 
         for (i, V4t) in enumerate((V4, V4sym))
             symstr = i == 2 ? "sym" : ""
-            for f in (norm, trace, symmetric)
+            for f in (norm, symmetric)
                 SUITE["other"]["$f - dim $dim - order 4$(symstr) - $T"] = @benchmarkable $f($V4t)
             end
         end
+
+        SUITE["promotion"]["dim $dim - order 2"] = @benchmarkable promote($V2, $V2sym)
+        SUITE["promotion"]["dim $dim - order 4"] = @benchmarkable promote($V4, $V4sym)
     end
 end
 

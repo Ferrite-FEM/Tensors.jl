@@ -80,9 +80,16 @@ julia> norm(A)
 1.7377443667834922
 ```
 """
-@inline Base.norm(v::Vec) = sqrt(dot(v,v))
+@inline Base.norm(v::Vec) = sqrt(dot(v, v))
 @inline Base.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
-@inline Base.norm(S::Tensor{4}) = sqrt(sumabs2(get_data(S)))
+@inline function Base.norm{dim, T}(S::Tensor{4, dim, T})
+    s = zero(T)
+    data = S.data
+    @inbounds for i in 1:length(data)
+        s += data[i] * data[i]
+    end
+    return sqrt(s)
+end
 
 
 """
