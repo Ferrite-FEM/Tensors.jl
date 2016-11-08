@@ -6,6 +6,12 @@
 |:-------------------------------------------------------------------------------:|:---------------------------------------------------------------:|
 | [![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] |
 
+# Introduction
+
+This Julia package provides fast operations with symmetric and non-symmetric tensors of order 1, 2 and 4.
+The Tensors are allocated on the stack which means that there is no need to preallocate output results for performance. 
+Unicode infix operators are provided such that the tensor expression in the source code is similar to the one written with mathematical notation.
+When possible, symmetry of tensors is exploited for better performance.
 
 ## Installation
 

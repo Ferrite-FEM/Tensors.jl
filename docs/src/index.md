@@ -4,9 +4,10 @@
 
 ## Introduction
 
-This Julia package provides fast operations with symmetric and non-symmetric tensors of order 1, 2 and 4 in 1, 2 and 3 dimensions.
-The tensors are stack allocated which means that there is no need to preallocate results of operations and nice infix notation can be used without a performance penalty.
-For the symmetric tensors, when possible, the symmetry is exploited for better performance.
+This Julia package provides fast operations with symmetric and non-symmetric tensors of order 1, 2 and 4.
+The Tensors are allocated on the stack which means that there is no need to preallocate output results for performance. 
+Unicode infix operators are provided such that the tensor expression in the source code is similar to the one written with mathematical notation.
+When possible, symmetry of tensors is exploited for better performance.
 
 ## Installation
 
