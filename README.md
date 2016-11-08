@@ -6,7 +6,7 @@
 |:-------------------------------------------------------------------------------:|:---------------------------------------------------------------:|
 | [![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] |
 
-# Introduction
+## Introduction
 
 This Julia package provides fast operations with symmetric and non-symmetric tensors of order 1, 2 and 4.
 The Tensors are allocated on the stack which means that there is no need to preallocate output results for performance. 
