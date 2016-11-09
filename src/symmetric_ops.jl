@@ -40,8 +40,8 @@ end
     end
     Tv = typeof(zero(T1) * zero(T2))
     quote
-         data2 = S1.data
-         data4 = S2.data
+         data2 = get_data(S1)
+         data4 = get_data(S2)
          @inbounds r = $exps
          SymmetricTensor{2, dim, $Tv, M}(r)
     end
@@ -66,8 +66,8 @@ end
     end
     Tv = typeof(zero(T1) * zero(T2))
     quote
-         data2 = S2.data
-         data4 = S1.data
+         data2 = get_data(S2)
+         data4 = get_data(S1)
          @inbounds r = $exps
          SymmetricTensor{2, dim, $Tv, M}(r)
     end
@@ -91,8 +91,8 @@ end
     end
     Tv = typeof(zero(T1) * zero(T2))
     quote
-         data2 = S2.data
-         data1 = S1.data
+         data2 = get_data(S2)
+         data1 = get_data(S1)
          @inbounds r = $exps
          SymmetricTensor{4, dim, $Tv, M}(r)
     end
@@ -110,7 +110,7 @@ end
         exps_ele = Expr(:call)
         push!(exps_ele.args, :+)
             for j in 1:dim
-                push!(exps_ele.args, :( S1.data[$(idx(i, j))] * v2.data[$j]))
+                push!(exps_ele.args, :(get_data(S1)[$(idx(i, j))] * get_data(v2)[$j]))
             end
         push!(exps.args, exps_ele)
     end
@@ -177,10 +177,10 @@ end
 #######
 
 @generated function dev{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
-    f = (i,j) -> i == j ? :((S.data[$(compute_index(SymmetricTensor{2, dim}, i, j))] - 1/3*tr)) :
-                           :(S.data[$(compute_index(SymmetricTensor{2, dim}, i, j))])
+    f = (i,j) -> i == j ? :((get_data(S)[$(compute_index(SymmetricTensor{2, dim}, i, j))] - tr/3)) :
+                           :(get_data(S)[$(compute_index(SymmetricTensor{2, dim}, i, j))])
     exp = tensor_create(SymmetricTensor{2, dim, T},f)
-    Tv = typeof(zero(T) * 1 / 3)
+    Tv = typeof(zero(T) /3)
     return quote
         $(Expr(:meta, :inline))
         tr = trace(S)
@@ -193,13 +193,10 @@ end
 # Open product #
 ################
 
-@generated function otimes{dim, T1, T2, M}(S1::SymmetricTensor{2, dim, T1, M}, S2::SymmetricTensor{2, dim, T2, M})
+@inline function otimes{dim, T1, T2, M}(S1::SymmetricTensor{2, dim, T1, M}, S2::SymmetricTensor{2, dim, T2, M})
     N = n_components(SymmetricTensor{4, dim})
     Tv = typeof(zero(T1) * zero(T2))
-    return quote
-        $(Expr(:meta, :inline))
-        SymmetricTensor{4, dim, $Tv, $N}(A_otimes_B(S1.data, S2.data))
-    end
+    SymmetricTensor{4, dim, Tv, N}(tovector(S1) * tovector(S2)')
 end
 
 """
@@ -248,7 +245,7 @@ dotdot(::Vec, ::SymmetricFourthOrderTensor, ::Vec)
         exps_ele = Expr(:call)
         push!(exps_ele.args, :+)
         for l in 1:dim, k in 1:dim
-            push!(exps_ele.args, :(v1.data[$k] * S.data[$(idx(i,k,j,l))] * v2.data[$l]))
+            push!(exps_ele.args, :(get_data(v1)[$k] * get_data(S)[$(idx(i,k,j,l))] * get_data(v2)[$l]))
         end
         push!(exps.args, exps_ele)
     end

@@ -103,14 +103,14 @@ end
 function generate_report(v1, v2)
     v1_res = load(joinpath(dirname(@__FILE__), v1 * ".jld"), "results")
     v2_res = load(joinpath(dirname(@__FILE__), v2 * ".jld"), "results")
-    open(joinpath(dirname(@__FILE__), "results_compare.md"), "w") do f
+    open(joinpath(dirname(@__FILE__), "results_$(v1)_$(v2).md"), "w") do f
         printreport(f, judge(minimum(v1_res), minimum(v2_res)); iscomparisonjob = true)
     end
 end
 
 function generate_report(v1)
     v1_res = load(joinpath(dirname(@__FILE__), v1 * ".jld"), "results")
-    open(joinpath(dirname(@__FILE__), "results_single.md"), "w") do f
+    open(joinpath(dirname(@__FILE__), "results_$(v1).md"), "w") do f
         printreport(f, minimum(v1_res); iscomparisonjob = false)
     end
 end

@@ -1,15 +1,17 @@
-@testset "tensor operations" begin; for dim in (1,2,3)
-AA = rand(Tensor{4, dim})
-BB = rand(Tensor{4, dim})
-A = rand(Tensor{2, dim})
-B = rand(Tensor{2, dim})
-a = rand(Tensor{1, dim})
-b = rand(Tensor{1, dim})
+@testset "tensor operations" begin;
+for T in (Float32, Float64)
+for dim in (1,2,3)
+AA = rand(Tensor{4, dim, T})
+BB = rand(Tensor{4, dim, T})
+A = rand(Tensor{2, dim, T})
+B = rand(Tensor{2, dim, T})
+a = rand(Tensor{1, dim, T})
+b = rand(Tensor{1, dim, T})
 
-AA_sym = rand(SymmetricTensor{4, dim})
-BB_sym = rand(SymmetricTensor{4, dim})
-A_sym = rand(SymmetricTensor{2, dim})
-B_sym = rand(SymmetricTensor{2, dim})
+AA_sym = rand(SymmetricTensor{4, dim, T})
+BB_sym = rand(SymmetricTensor{4, dim, T})
+A_sym = rand(SymmetricTensor{2, dim, T})
+B_sym = rand(SymmetricTensor{2, dim, T})
 
 i,j,k,l = rand(1:dim,4)
 
@@ -229,23 +231,24 @@ end # of testset
 end # of testset
 
 @testset "cross product" begin
-    @test a × a ≈ Vec{3}((0.0,0.0,0.0))
+    @test a × a ≈ Vec{3, T}((0.0,0.0,0.0))
     @test a × b ≈ -b × a
     if dim == 2
-        ad = Vec{2}((1.0,0.0))
-        ad2 = Vec{2}((0.0,1.0))
-        @test ad × ad2 ≈ Vec{3}((0.0, 0.0, 1.0))
+        ad = Vec{2, T}((1.0,0.0))
+        ad2 = Vec{2, T}((0.0,1.0))
+        @test ad × ad2 ≈ Vec{3, T}((0.0, 0.0, 1.0))
     end
     if dim == 3
-        ad = Vec{3}((1.0,0.0,0.0))
-        ad2 = Vec{3}((0.0,1.0,0.0))
-        @test ad × ad2 ≈ Vec{3}((0.0, 0.0, 1.0))
+        ad = Vec{3, T}((1.0,0.0,0.0))
+        ad2 = Vec{3, T}((0.0,1.0,0.0))
+        @test ad × ad2 ≈ Vec{3, T}((0.0, 0.0, 1.0))
     end
 end # of testset
 
 @testset "special" begin
-    AAT = Tensor{4, dim}((i,j,k,l) -> AA_sym[i,l,k,j])
+    AAT = Tensor{4, dim, T}((i,j,k,l) -> AA_sym[i,l,k,j])
     @test AAT ⊡ (b ⊗ a) ≈ dotdot(a, AA_sym, b)
 end # of testset
+end
 end
 end # of testset

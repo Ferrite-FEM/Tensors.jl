@@ -33,14 +33,14 @@ end
 # Identity conversions
 @inline Base.convert{order, dim, T}(::Type{Tensor{order, dim, T}}, t::Tensor{order, dim, T}) = t
 @inline function Base.convert{order, dim, T1, T2, M}(::Type{Tensor{order, dim, T1, M}}, t::Tensor{order, dim, T2, M})
-    Tensor{order, dim}(convert(NTuple{M, T1}, t.data))
+    Tensor{order, dim}(convert(NTuple{M, T1}, get_data(t)))
 end
 @inline Base.convert{order, dim, T1, T2, M}(::Type{Tensor{order, dim, T1}}, t::Tensor{order, dim, T2, M}) = convert(Tensor{order, dim, T1, M}, t)
 
 
 @inline Base.convert{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}, t::SymmetricTensor{order, dim, T}) = t
 @inline function Base.convert{order, dim, T1, T2, M}(::Type{SymmetricTensor{order, dim, T1, M}}, t::SymmetricTensor{order, dim, T2, M})
-    SymmetricTensor{order, dim}(convert(NTuple{M, T1}, t.data))
+    SymmetricTensor{order, dim}(convert(NTuple{M, T1}, get_data(t)))
 end
 @inline Base.convert{order, dim, T1, T2, M}(::Type{SymmetricTensor{order, dim, T1}}, t::SymmetricTensor{order, dim, T2, M}) = convert(SymmetricTensor{order, dim, T1, M}, t)
 
@@ -53,7 +53,7 @@ end
             if i > dim2
                 push!(exps, :(zero(T1)))
             else
-                push!(exps, :(t.data[$i]))
+                push!(exps, :(get_data(t)[$i]))
             end
         end
     end
@@ -63,7 +63,7 @@ end
             if i > dim2 || j > dim2
                 push!(exps, :(zero(T1)))
             else
-                push!(exps, :(t.data[$(compute_index(Tensor{order, dim2}, i, j))]))
+                push!(exps, :(get_data(t)[$(compute_index(Tensor{order, dim2}, i, j))]))
             end
         end
     end
@@ -72,7 +72,7 @@ end
             if i > dim2 || j > dim2 || k > dim2  || l > dim2
                 push!(exps, :(zero(T1)))
             else
-                push!(exps, :(t.data[$(compute_index(Tensor{order, dim2}, i, j, k, l))]))
+                push!(exps, :(get_data(t)[$(compute_index(Tensor{order, dim2}, i, j, k, l))]))
             end
         end
     end
@@ -92,7 +92,7 @@ end
             if i > dim2 || j > dim2
                 push!(exps, :(zero(T1)))
             else
-                push!(exps, :(t.data[$(compute_index(SymmetricTensor{order, dim2}, i, j))]))
+                push!(exps, :(get_data(t)[$(compute_index(SymmetricTensor{order, dim2}, i, j))]))
             end
         end
     end
@@ -101,7 +101,7 @@ end
             if i > dim2 || j > dim2 || k > dim2  || l > dim2
                 push!(exps, :(zero(T1)))
             else
-                push!(exps, :(t.data[$(compute_index(SymmetricTensor{order, dim2}, i, j, k, l))]))
+                push!(exps, :(get_data(t)[$(compute_index(SymmetricTensor{order, dim2}, i, j, k, l))]))
             end
         end
     end
@@ -140,11 +140,11 @@ end
     # Compute (row, col) from linear index
     if order == 2
         for j in 1:rows, i in 1:rows
-            push!(exps, :(t.data[$(compute_index(SymmetricTensor{order, dim}, i, j))]))
+            push!(exps, :(get_data(t)[$(compute_index(SymmetricTensor{order, dim}, i, j))]))
         end
     else
         for l in 1:rows, k in 1:rows, j in 1:rows, i in 1:rows
-            push!(exps, :(t.data[$(compute_index(SymmetricTensor{order, dim}, i, j, k, l))]))
+            push!(exps, :(get_data(t)[$(compute_index(SymmetricTensor{order, dim}, i, j, k, l))]))
         end
     end
     exp = Expr(:tuple, exps...)
@@ -212,7 +212,7 @@ Base.issymmetric(::SymmetricTensors) = true
     rows = Int(N^(1/2))
     exps = Expr[]
     for row in 1:rows, col in row:rows
-        push!(exps, :(t.data[$(compute_index(Tensor{2, dim}, row, col))]))
+        push!(exps, :(get_data(t)[$(compute_index(Tensor{2, dim}, row, col))]))
     end
     exp = Expr(:tuple, exps...)
     return quote
@@ -230,7 +230,7 @@ end
     rows = Int(N^(1/4))
     exps = Expr[]
     for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
-        push!(exps, :(t.data[$(compute_index(Tensor{4, dim}, i, j, k, l))]))
+        push!(exps, :(get_data(t)[$(compute_index(Tensor{4, dim}, i, j, k, l))]))
     end
     exp = Expr(:tuple, exps...)
     return quote

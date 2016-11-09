@@ -43,16 +43,16 @@ end
 
 @inline function Base.getindex{dim}(S::SymmetricTensor{4, dim}, i::Int, j::Int, k::Int, l::Int)
     @boundscheck checkbounds(S, i, j, k, l)
-    @inbounds v = S.data[compute_index(SymmetricTensor{4, dim}, i, j, k, l)]
+    @inbounds v = get_data(S)[compute_index(SymmetricTensor{4, dim}, i, j, k, l)]
     return v
 end
 
 # Slice
 @inline @generated function Base.getindex{dim, T}(S::SecondOrderTensor{dim, T}, ::Colon, j::Int)
     idx2(i,j) = compute_index(get_base(S), i, j)
-    ex1 = Expr(:tuple, [:(S.data[$(idx2(i,1))]) for i in 1:dim]...)
-    ex2 = Expr(:tuple, [:(S.data[$(idx2(i,2))]) for i in 1:dim]...)
-    ex3 = Expr(:tuple, [:(S.data[$(idx2(i,3))]) for i in 1:dim]...)
+    ex1 = Expr(:tuple, [:(get_data(S)[$(idx2(i,1))]) for i in 1:dim]...)
+    ex2 = Expr(:tuple, [:(get_data(S)[$(idx2(i,2))]) for i in 1:dim]...)
+    ex3 = Expr(:tuple, [:(get_data(S)[$(idx2(i,3))]) for i in 1:dim]...)
     return quote
         @boundscheck checkbounds(S,Colon(),j)
         if     j == 1 return Vec{dim, T}($ex1)
@@ -63,9 +63,9 @@ end
 end
 @inline @generated function Base.getindex{dim, T}(S::SecondOrderTensor{dim, T}, i::Int, ::Colon)
     idx2(i,j) = compute_index(get_base(S), i, j)
-    ex1 = Expr(:tuple, [:(S.data[$(idx2(1,j))]) for j in 1:dim]...)
-    ex2 = Expr(:tuple, [:(S.data[$(idx2(2,j))]) for j in 1:dim]...)
-    ex3 = Expr(:tuple, [:(S.data[$(idx2(3,j))]) for j in 1:dim]...)
+    ex1 = Expr(:tuple, [:(get_data(S)[$(idx2(1,j))]) for j in 1:dim]...)
+    ex2 = Expr(:tuple, [:(get_data(S)[$(idx2(2,j))]) for j in 1:dim]...)
+    ex3 = Expr(:tuple, [:(get_data(S)[$(idx2(3,j))]) for j in 1:dim]...)
     return quote
         @boundscheck checkbounds(S,i,Colon())
         if     i == 1 return Vec{dim, T}($ex1)
@@ -82,13 +82,13 @@ end
 
 @inline function setindex{dim}(S::Tensor{1, dim}, v, i::Int)
     @boundscheck checkbounds(S, i)
-    t = typeof(S)(vec_set_index(S.data, v, Val{i}))
+    t = typeof(S)(setindex(tovector(S), v, i))
     return t
 end
 
 @inline function setindex{dim}(S::Tensor{2, dim}, v, i::Int, j::Int)
     @boundscheck checkbounds(S, i, j)
-    t = typeof(S)(mat_set_index(S.data, v, Val{i}, Val{j}))
+    t = typeof(S)(setindex(tomatrix(S), v, i, j))
     return t
 end
 
@@ -97,7 +97,7 @@ end
     lower_order = Tensor{2,dim}
     I = compute_index(lower_order, i, j)
     J = compute_index(lower_order, k, l)
-    t = typeof(S)(mat_set_index(S.data, v, Val{I}, Val{J}))
+    t = typeof(S)(setindex(tomatrix(S), v, I, J))
     return t
 end
 
@@ -107,6 +107,6 @@ end
     if i < j
         i, j  = j,i
     end
-    t = typeof(S)(sym_mat_set_index(S.data, v, Val{i}, Val{j}))
+    t = typeof(S)(sym_mat_set_index(get_data(S), v, Val{i}, Val{j}))
     return t
 end

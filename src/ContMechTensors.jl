@@ -2,6 +2,11 @@ __precompile__()
 
 module ContMechTensors
 
+import Base.@pure
+
+using StaticArrays
+import StaticArrays.setindex
+
 immutable InternalError <: Exception end
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
@@ -18,16 +23,15 @@ export setindex, tdot, dotdot
 
 abstract AbstractTensor{order, dim, T <: Real} <: AbstractArray{T, order}
 
-
 immutable SymmetricTensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
-   data::NTuple{M, T}
+   data::SVector{M, T}
 end
+(::Type{SymmetricTensor{order, dim, T, M}}){order, dim, T <: Real, T2, M}(t::NTuple{M, T2}) = SymmetricTensor{order, dim, T, M}(SVector{M,T}(t))
 
 immutable Tensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
-   data::NTuple{M, T}
+   data::SVector{M, T}
 end
-
-
+(::Type{Tensor{order, dim, T, M}}){order, dim, T <: Real, T2, M}(t::NTuple{M, T2}) = Tensor{order, dim, T, M}(SVector{M,T}(t))
 ###############
 # Typealiases #
 ###############
@@ -46,7 +50,6 @@ typealias Tensors{dim, T} Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T
 
 include("utilities.jl")
 include("tuple_utils.jl")
-include("tuple_linalg.jl")
 include("symmetric_tuple_linalg.jl")
 
 include("indexing.jl")
@@ -60,7 +63,18 @@ include("symmetric_ops.jl")
 # Utility/Accessor Functions #
 ##############################
 
-get_data(t::AbstractTensor) = t.data
+get_data(t::AbstractTensor) = t.data.data
+tovector(t::AbstractTensor) = t.data
+
+function tomatrix{dim}(t::Tensor{4, dim})
+    N = n_components(Tensor{2,dim})
+    return SMatrix{N, N}(tovector(t))
+end
+
+function tomatrix{dim}(t::Tensor{2, dim})
+    N = n_components(Tensor{1,dim})
+    return SMatrix{N, N}(tovector(t))
+end
 
 function n_independent_components(dim, issym)
     dim == 1 && return 1
@@ -74,31 +88,28 @@ function n_independent_components(dim, issym)
     return -1
 end
 
-n_components{dim}(::Type{SymmetricTensor{2, dim}}) = dim*dim - div((dim-1)*dim, 2)
-function n_components{dim}(::Type{SymmetricTensor{4, dim}})
+@pure n_components{dim}(::Type{SymmetricTensor{2, dim}}) = dim*dim - div((dim-1)*dim, 2)
+@pure function n_components{dim}(::Type{SymmetricTensor{4, dim}})
     n = n_components(SymmetricTensor{2, dim})
     return n*n
 end
 
-@inline n_components{order, dim}(::Type{Tensor{order, dim}}) = dim^order
+@pure n_components{order, dim}(::Type{Tensor{order, dim}}) = dim^order
 
-@inline is_always_sym{dim, T}(::Type{Tensor{dim, T}}) = false
-@inline is_always_sym{dim, T}(::Type{SymmetricTensor{dim, T}}) = true
+@pure get_main_type{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = SymmetricTensor
+@pure get_main_type{order, dim, T, M}(::Type{Tensor{order, dim, T, M}}) = Tensor
+@pure get_main_type{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}) = SymmetricTensor
+@pure get_main_type{order, dim, T}(::Type{Tensor{order, dim, T}}) = Tensor
+@pure get_main_type{order, dim}(::Type{SymmetricTensor{order, dim}}) = SymmetricTensor
+@pure get_main_type{order, dim}(::Type{Tensor{order, dim}}) = Tensor
 
-@inline get_main_type{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = SymmetricTensor
-@inline get_main_type{order, dim, T, M}(::Type{Tensor{order, dim, T, M}}) = Tensor
-@inline get_main_type{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}) = SymmetricTensor
-@inline get_main_type{order, dim, T}(::Type{Tensor{order, dim, T}}) = Tensor
-@inline get_main_type{order, dim}(::Type{SymmetricTensor{order, dim}}) = SymmetricTensor
-@inline get_main_type{order, dim}(::Type{Tensor{order, dim}}) = Tensor
+@pure get_base{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = SymmetricTensor{order, dim}
+@pure get_base{order, dim, T, M}(::Type{Tensor{order, dim, T, M}}) = Tensor{order, dim}
 
-@inline get_base{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = SymmetricTensor{order, dim}
-@inline get_base{order, dim, T, M}(::Type{Tensor{order, dim, T, M}}) = Tensor{order, dim}
-
-@inline get_lower_order_tensor{dim, T, M}(S::Type{SymmetricTensor{2, dim, T, M}}) =  SymmetricTensor{2, dim}
-@inline get_lower_order_tensor{dim, T, M}(S::Type{Tensor{2, dim, T, M}}) = Tensor{2, dim}
-@inline get_lower_order_tensor{dim, T, M}(::Type{SymmetricTensor{4, dim, T, M}}) = SymmetricTensor{2, dim}
-@inline get_lower_order_tensor{dim, T, M}(::Type{Tensor{4, dim, T, M}}) = Tensor{2, dim}
+@pure get_lower_order_tensor{dim, T, M}(S::Type{SymmetricTensor{2, dim, T, M}}) =  SymmetricTensor{2, dim}
+@pure get_lower_order_tensor{dim, T, M}(S::Type{Tensor{2, dim, T, M}}) = Tensor{2, dim}
+@pure get_lower_order_tensor{dim, T, M}(::Type{SymmetricTensor{4, dim, T, M}}) = SymmetricTensor{2, dim}
+@pure get_lower_order_tensor{dim, T, M}(::Type{Tensor{4, dim, T, M}}) = Tensor{2, dim}
 
 
 ############################
@@ -119,11 +130,11 @@ Base.size{dim}(::Vec{dim}) = (dim,)
 Base.size{dim}(::SecondOrderTensor{dim}) = (dim, dim)
 Base.size{dim}(::FourthOrderTensor{dim}) = (dim, dim, dim, dim)
 
-Base.similar(t::AbstractTensor) = typeof(t)(get_data(t))
+Base.similar(t::AbstractTensor) = t
 
 # Ambiguity fix
-Base.fill(t::AbstractTensor, v::Integer)  = typeof(t)(const_tuple(typeof(get_data(t)), v))
-Base.fill(t::AbstractTensor, v::Number) = typeof(t)(const_tuple(typeof(get_data(t)), v))
+Base.fill(t::AbstractTensor, v::Integer)  = one(typeof(t)) * v
+Base.fill(t::AbstractTensor, v::Number) = one(typeof(t)) * v
 
 
 #########################
@@ -172,13 +183,12 @@ end
     end
 end
 
-
 @generated function (Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}){order, dim}(f::Function)
     # Check for valid orders
     if !(order in (1,2,4))
         throw(ArgumentError("Only tensors of order 1, 2, 4 supported"))
     end
- 
+
     # Storage format is of rank 1 for vectors and order / 2 for other tensors
     if order == 1 && Tt <: SymmetricTensor
         throw(ArgumentError("SymmetricTensor only supported for order 2, 4"))
@@ -194,8 +204,13 @@ end
     elseif order == 4
         exp = tensor_create(get_main_type(get_type(Tt)){order, dim}, (i,j,k,l) -> :(f($i, $j, $k, $l)))
     end
-    
+
     return :(get_main_type(Tt){order, dim}($exp))
+end
+
+function (Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}}){order, dim, T}(f_or_data)
+    t1 = get_main_type(Tt){order, dim}(f_or_data)
+    return convert(get_main_type(Tt){order, dim, T}, t1)
 end
 
 
@@ -203,64 +218,68 @@ end
 # Simple Math #
 ###############
 
-Base.:*(t::AllTensors, n::Number) = n * t
-
+# Num, tensor. *, /
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
-        @generated function Base.:*{order,dim, T, M}(n::Number, t::$(TensorType){order, dim, T, M})
-            exp = tensor_create_elementwise(get_base(t), (k) -> :(n * t.data[$k]))
-            Tv = typeof(zero(n) * zero(T))
-            return quote
-                $(Expr(:meta, :inline))
-                @inbounds t = $($TensorType){order, dim, $Tv, M}($exp)
-                return t
-            end
-        end
+        @inline Base.:*{order, dim, T, N}(n::Number, t::$TensorType{order, dim, T, N}) = $TensorType{order, dim, T, N}(n * tovector(t))
+        @inline Base.:*{order, dim, T, N}(t::$TensorType{order, dim, T, N}, n::Number) = $TensorType{order, dim, T, N}(tovector(t) * n)
+        @inline Base.:/{order, dim, T, N}(t::$TensorType{order, dim, T, N}, n::Number) = $TensorType{order, dim, T, N}(tovector(t) / n)
 
-        @generated function Base.:/{order,dim, T, M}(t::$(TensorType){order, dim, T, M}, n::Number)
-            exp = tensor_create_elementwise(get_base(t), (k) -> :(t.data[$k] / n))
-            Tv = typeof(zero(n) / zero(T))
-            return quote
-                $(Expr(:meta, :inline))
-                @inbounds t = $($TensorType){order, dim, $Tv, M}($exp)
-                return t
-            end
-        end
-
-        @generated function Base.:-{order,dim, T, M}(t::$(TensorType){order, dim, T, M})
-            exp = tensor_create_elementwise(get_base(t), (k) -> :(-t.data[$k]))
-            return quote
-                $(Expr(:meta, :inline))
-                @inbounds t = $($TensorType){order, dim, T, M}($exp)
-                return t
-            end
-        end
+        # Unary -, +
+        @inline Base.:-{order, dim, T, N}(t::$TensorType{order, dim, T, N}) = $TensorType{order, dim, T, N}(-tovector(t))
+        @inline Base.:+{order, dim, T, N}(t::$TensorType{order, dim, T, N}) = $TensorType{order, dim, T, N}(+tovector(t))
     end
 end
 
-for (op, fun) in ((:-, (k) -> :(t1.data[$k] - t2.data[$k])),
-                  (:+, (k) -> :(t1.data[$k] + t2.data[$k])),
-                  (:.*, (k) -> :(t1.data[$k] * t2.data[$k])),
-                  (:./, (k) -> :(t1.data[$k] / t2.data[$k])))
+# Binary, +, -, -*, ./
+for (op) in (:-, :+, :.*, :./, :.-, :.+)
     for TensorType in (SymmetricTensor, Tensor)
         @eval begin
-            @generated function Base.$op{order, dim, T1, T2, M}(t1::$(TensorType){order, dim, T1, M}, t2::$(TensorType){order, dim, T2, M})
-                exp = tensor_create_elementwise(get_base(t1), $fun)
-                Tv = typeof( $op(zero(T1), zero(T2)))
-                return quote
-                    $(Expr(:meta, :inline))
-                    @inbounds t = $($TensorType){order, dim, $Tv, M}($exp)
-                    return t
-                end
+            @inline function Base.$op{order, dim, T1, T2, N}(t1::$TensorType{order, dim, T1, N}, t2::$TensorType{order, dim, T2, N})
+                $TensorType{order, dim, promote_type(T1, T2), N}($op(tovector(t1), tovector(t2)))
             end
         end
     end
-
     @eval begin
         Base.$op{order, dim}(t1::AbstractTensor{order, dim}, t2::AbstractTensor{order, dim}) = Base.$op(promote(t1, t2)...)
     end
 end
 
+# zero, rand
+for op in (:zero, :rand)
+    for TensorType in (SymmetricTensor, Tensor)
+        @eval begin
+            @inline function Base.$op{order, dim, T}(Tt::Type{$TensorType{order, dim, T}})
+                N = n_components($TensorType{order, dim})
+                return $TensorType{order, dim, T, N}($op(SVector{N, T}))
+            end
+        end
+    end
+end
+
+
+for op in (:zero, :rand, :one)
+    for TensorType in (SymmetricTensor, Tensor)
+        @eval begin
+            @inline Base.$op{order, dim}(Tt::Type{$TensorType{order, dim}}) = Base.$op($TensorType{order, dim, Float64})
+
+            @inline function Base.$op{order, dim, T, M}(Tt::Type{$(TensorType){order, dim, T, M}})
+                $op($(TensorType){order, dim, T})
+            end
+        end
+    end
+
+    # Special for Vecs
+    @eval begin
+        @inline function Base.$op{dim}(Tt::Type{Vec{dim}})
+            $op(Vec{dim, Float64})
+        end
+
+        @inline function Base.$op(t::AllTensors)
+            $op(typeof(t))
+        end
+    end
+end
 
 ##########################
 # Zero, one, rand, diagm #
@@ -268,24 +287,6 @@ end
 
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
-        @generated function Base.rand{order, dim, T}(Tt::Type{$(TensorType){order, dim, T}})
-            N = n_components($(TensorType){order, dim})
-            exp = tensor_create_no_arg(get_type(Tt), () -> :(rand(T)))
-            return quote
-                $(Expr(:meta, :inline))
-                $($TensorType){order, dim, T, $N}($exp)
-            end
-        end
-
-        @generated function Base.zero{order, dim, T}(Tt::Type{$(TensorType){order, dim, T}})
-            N = n_components($(TensorType){order, dim})
-            exp = tensor_create_no_arg(get_type(Tt), () -> :(zero(T)))
-            return quote
-                $(Expr(:meta, :inline))
-                $($TensorType){order, dim, T, $N}($exp)
-            end
-        end
-
         @generated function Base.diagm{order, dim, T}(Tt::Type{$(TensorType){order, dim}}, v::AbstractVector{T})
             N = n_components($(TensorType){order, dim})
             if order == 1
@@ -322,31 +323,7 @@ for TensorType in (SymmetricTensor, Tensor)
         function Base.one{order, dim, T}(Tt::Type{$(TensorType){order, dim, T}})
             Base.diagm($(TensorType){order, dim}, one(T))
         end
-    end
-end
 
-for f in (:zero, :rand, :one)
-    for TensorType in (SymmetricTensor, Tensor)
-        @eval begin
-            @inline function Base.$f{order, dim}(Tt::Type{$(TensorType){order, dim}})
-                $f($(TensorType){order, dim, Float64})
-            end
-
-            @inline function Base.$f{order, dim, T, M}(Tt::Type{$(TensorType){order, dim, T, M}})
-                $f($(TensorType){order, dim, T})
-            end
-        end
-    end
-
-    @eval begin
-     # Special for Vec
-        @inline function Base.$f{dim}(Tt::Type{Vec{dim}})
-            $f(Vec{dim, Float64})
-        end
-
-        function Base.$f(t::AllTensors)
-            $f(typeof(t))
-        end
     end
 end
 
