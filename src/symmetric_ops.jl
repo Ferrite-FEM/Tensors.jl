@@ -220,14 +220,14 @@ julia> Λ, Φ = eig(A);
 julia> Λ
 3-element ContMechTensors.Tensor{1,3,Float64,3}:
  -0.312033
-  0.15636 
+  0.15636
   2.06075
 
-julia> Φ 
+julia> Φ
 3×3 ContMechTensors.Tensor{2,3,Float64,9}:
-  0.492843  -0.684993  -0.536554
- -0.811724  -0.139855  -0.567049
-  0.313385   0.715     -0.624952
+  0.492843   0.684993  0.536554
+ -0.811724   0.139855  0.567049
+  0.313385  -0.715     0.624952
 
 julia> Φ ⋅ diagm(Tensor{2,3}, Λ) ⋅ inv(Φ) # Same as A
 3×3 ContMechTensors.Tensor{2,3,Float64,9}:
@@ -237,8 +237,8 @@ julia> Φ ⋅ diagm(Tensor{2,3}, Λ) ⋅ inv(Φ) # Same as A
 ```
 """
 function Base.eig{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
-    S_m = Symmetric(Array(S))
-    λ, ϕ = eig(S_m)
+    S_m = convert(Tensor{2,dim,T}, S)
+    λ, ϕ = eig(tomatrix(S_m))
     Λ = Tensor{1, dim}(λ)
     Φ = Tensor{2, dim}(ϕ)
     return Λ, Φ
