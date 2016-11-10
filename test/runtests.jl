@@ -94,11 +94,15 @@ for T in (Float32, Float64)
                         @test vec[i] ≈ data[i]
                     end
                 end
+                @test vec[:] == vec
+                @test typeof(vec[:]) <: Vec{dim, T}
             elseif order == 2
                 data = rand(T, dim, dim)
                 symdata = data + data'
                 S = Tensor{order,dim, T}(data)
                 Ssym = SymmetricTensor{order,dim, T}(symdata)
+                @test_throws ArgumentError S[:]
+                @test_throws ArgumentError Ssym[:]
                 for i in 1:dim+1, j in 1:dim+1
                     if i > dim || j > dim
                         @test_throws BoundsError S[i, j]
@@ -121,7 +125,9 @@ for T in (Float32, Float64)
                 data = rand(T,dim,dim,dim,dim)
                 S = Tensor{order,dim, T}(data)
                 Ssym = symmetric(S)
-                symdata = reshape(Ssym[:],(dim, dim , dim , dim))
+                symdata = Array(Ssym)
+                @test_throws ArgumentError S[:]
+                @test_throws ArgumentError Ssym[:]
                 for i in 1:dim+1, j in 1:dim+1, k in 1:dim+1, l in 1:dim+1
                     if i > dim || j > dim || k > dim || l > dim
                         @test_throws BoundsError S[i, j, k, l]

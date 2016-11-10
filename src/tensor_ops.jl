@@ -405,6 +405,25 @@ end
 
 """
 Computes the deviatoric part of a second order tensor.
+
+```julia
+dev(::SecondOrderTensor)
+```
+
+**Example:**
+
+```jldoctest
+julia> A = rand(Tensor{2,3});
+
+julia> dev(A)
+3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+ 0.0469421  0.460085   0.200586
+ 0.766797   0.250123   0.298614
+ 0.566237   0.854147  -0.297065
+
+julia> trace(dev(A))
+0.0
+```
 """
 @generated function dev{dim, T, M}(S::Tensor{2, dim, T, M})
     f = (i,j) -> i == j ? :((get_data(S)[$(compute_index(Tensor{2, dim}, i, j))] - tr/3)) :
@@ -417,21 +436,6 @@ Computes the deviatoric part of a second order tensor.
         Tensor{2, dim, $Tv, M}($exp)
     end
 end
-
-"""
-Permutes the dimensions according to `idx` of a fourth order tensor.
-
-```julia
-permutedims(::FourthOrderTensor, idx::NTuple{4,Int})
-```
-"""
-function Base.permutedims{dim}(S::FourthOrderTensor{dim}, idx::NTuple{4,Int})
-    sort([idx...]) == [1,2,3,4] || throw(ArgumentError("Missing index."))
-    neworder = sortperm([idx...])
-    f = (i,j,k,l) -> S[[i,j,k,l][neworder]...]
-    return Tensor{4,dim}(f)
-end
-
 
 """
 Computes the transpose of a tensor.

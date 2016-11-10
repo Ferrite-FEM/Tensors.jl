@@ -101,12 +101,22 @@ majorsymmetric
 
 The skew symmetric part of a second order tensor is defined by
 
-$\mathbf{A}^{skw} = \frac{1}{2}(\mathbf{A} - \mathbf{A}^\text{T}) \Leftrightarrow A^\text{skw}_{ij} = \frac{1}{2}(A_{ij} - A_{ji})$
+$\mathbf{A}^\text{skw} = \frac{1}{2}(\mathbf{A} - \mathbf{A}^\text{T}) \Leftrightarrow A^\text{skw}_{ij} = \frac{1}{2}(A_{ij} - A_{ji})$
 
 The skew symmetric part of a symmetric tensor is zero.
 
 ```@docs
 skew
+```
+
+## Deviator
+
+The deviatoric part of a second order tensor is defined by
+
+$\mathbf{A}^\text{dev} = \mathbf{A} - \frac{1}{3} \mathrm{trace}[\mathbf{A}] \mathbf{I} \Leftrightarrow A_{ij}^\text{dev} = A_{ij} - \frac{1}{3}A_{kk}\delta_{ij}$
+
+```@docs
+dev
 ```
 
 ## Cross product

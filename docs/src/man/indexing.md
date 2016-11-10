@@ -21,13 +21,36 @@ julia> B[1, 2, 1, 2]
 0.24683718661000897
 ```
 
-In order to set an index the function `setindex(t, value, index...)` is used. This returns a new tensor with the modified index. Explicitly setting indices is not recommended in performance critical code since it will invoke dynamic dispatch. It is provided as a means of convenience when working in for example the REPL.
+Slicing will produce a `Tensor` of lower order.
 
 ```jldoctest
-julia> a = rand(Vec{2});
+julia> A = rand(Tensor{2, 2});
 
-julia> setindex(a, 1.337, 2)
+julia> A[:, 1]
 2-element ContMechTensors.Tensor{1,2,Float64,2}:
  0.590845
- 1.337
+ 0.766797
+```
+
+Since `Tensor`s are immutable there is no `setindex!` function defined on them. Instead, use the functionality to create tensors from functions as described [here](@ref function_index). As an example, this sets the `[1,2]` index on a tensor to one and the rest to zero:
+
+```jldoctest
+julia> Tensor{2, 2}((i,j) -> i == 1 && j == 2 ? 1.0 : 0.0)
+2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 0.0  1.0
+ 0.0  0.0
+```
+
+For symmetric tensors, note that you should only set the lower triangular part of the tensor:
+
+```jldoctest
+julia> SymmetricTensor{2, 2}((i,j) -> i == 1 && j == 2 ? 1.0 : 0.0)
+2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
+ 0.0  0.0
+ 0.0  0.0
+
+julia> SymmetricTensor{2, 2}((i,j) -> i == 2 && j == 1 ? 1.0 : 0.0)
+2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
+ 0.0  1.0
+ 1.0  0.0
 ```

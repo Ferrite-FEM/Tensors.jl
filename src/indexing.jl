@@ -48,6 +48,12 @@ end
 end
 
 # Slice
+@inline Base.getindex(v::Vec, ::Colon) = v
+
+function Base.getindex(S::Union{SecondOrderTensor, FourthOrderTensor}, ::Colon)
+    throw(ArgumentError("S[:] not defined for S of order 2 or 4, use Array(S) to convert to an Array"))
+end
+
 @inline @generated function Base.getindex{dim, T}(S::SecondOrderTensor{dim, T}, ::Colon, j::Int)
     idx2(i,j) = compute_index(get_base(S), i, j)
     ex1 = Expr(:tuple, [:(get_data(S)[$(idx2(i,1))]) for i in 1:dim]...)
@@ -73,40 +79,4 @@ end
         else          return Vec{dim, T}($ex3)
         end
     end
-end
-
-
-############
-# setindex #
-############
-
-@inline function setindex{dim}(S::Tensor{1, dim}, v, i::Int)
-    @boundscheck checkbounds(S, i)
-    t = typeof(S)(setindex(tovector(S), v, i))
-    return t
-end
-
-@inline function setindex{dim}(S::Tensor{2, dim}, v, i::Int, j::Int)
-    @boundscheck checkbounds(S, i, j)
-    t = typeof(S)(setindex(tomatrix(S), v, i, j))
-    return t
-end
-
-@inline function setindex{dim}(S::Tensor{4, dim}, v, i::Int, j::Int, k::Int, l::Int)
-    @boundscheck checkbounds(S, i, j)
-    lower_order = Tensor{2,dim}
-    I = compute_index(lower_order, i, j)
-    J = compute_index(lower_order, k, l)
-    t = typeof(S)(setindex(tomatrix(S), v, I, J))
-    return t
-end
-
-
-@inline function setindex{dim}(S::SymmetricTensor{2, dim}, v, i::Int, j::Int)
-    @boundscheck checkbounds(S, i, j)
-    if i < j
-        i, j  = j,i
-    end
-    t = typeof(S)(sym_mat_set_index(get_data(S), v, Val{i}, Val{j}))
-    return t
 end

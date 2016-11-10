@@ -5,7 +5,6 @@ module ContMechTensors
 import Base.@pure
 
 using StaticArrays
-import StaticArrays.setindex
 
 immutable InternalError <: Exception end
 
@@ -13,7 +12,7 @@ export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOr
 
 export otimes, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
 export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric
-export setindex, tdot, dotdot
+export tdot, dotdot
 
 @deprecate extract_components(tensor) Array(tensor)
 

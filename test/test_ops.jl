@@ -1,3 +1,10 @@
+function _permutedims{dim}(S::FourthOrderTensor{dim}, idx::NTuple{4,Int})
+    sort([idx...]) == [1,2,3,4] || throw(ArgumentError("Missing index."))
+    neworder = sortperm([idx...])
+    f = (i,j,k,l) -> S[[i,j,k,l][neworder]...]
+    return Tensor{4,dim}(f)
+end
+
 @testset "tensor operations" begin;
 for T in (Float32, Float64)
 for dim in (1,2,3)
@@ -214,20 +221,18 @@ end # of testset
     @test AA[i,j,k,l] ≈ majortranspose(AA)[k,l,i,j]
     @test AA_sym[i,j,k,l] ≈ majortranspose(AA_sym)[k,l,i,j]
     @test typeof(majortranspose(AA_sym)) <: Tensor{4,dim}
-end # of testset
 
-@testset "permutedims" begin
-    @test permutedims(AA,(1,2,3,4)) ≈ AA
-    @test permutedims(AA_sym,(1,2,3,4)) ≈ AA_sym
-    @test permutedims(AA,(2,1,4,3)) ≈ minortranspose(AA)
-    @test permutedims(AA_sym,(2,1,4,3)) ≈ minortranspose(AA_sym)
-    @test permutedims(AA,(3,4,1,2)) ≈ majortranspose(AA)
-    @test permutedims(AA_sym,(3,4,1,2)) ≈ majortranspose(AA_sym)
-    @test permutedims(permutedims(AA,(1,4,2,3)),(1,3,4,2)) ≈ AA
-    @test permutedims(permutedims(AA_sym,(1,4,2,3)),(1,3,4,2)) ≈ AA_sym
-    @test typeof(permutedims(AA,(1,4,3,2))) <: Tensor{4,dim}
-    @test typeof(permutedims(AA_sym,(1,4,3,2))) <: Tensor{4,dim}
-    @test_throws ArgumentError permutedims(AA,(1,1,2,3))
+    @test _permutedims(AA,(1,2,3,4)) ≈ AA
+    @test _permutedims(AA_sym,(1,2,3,4)) ≈ AA_sym
+    @test _permutedims(AA,(2,1,4,3)) ≈ minortranspose(AA)
+    @test _permutedims(AA_sym,(2,1,4,3)) ≈ minortranspose(AA_sym)
+    @test _permutedims(AA,(3,4,1,2)) ≈ majortranspose(AA)
+    @test _permutedims(AA_sym,(3,4,1,2)) ≈ majortranspose(AA_sym)
+    @test _permutedims(_permutedims(AA,(1,4,2,3)),(1,3,4,2)) ≈ AA
+    @test _permutedims(_permutedims(AA_sym,(1,4,2,3)),(1,3,4,2)) ≈ AA_sym
+    @test typeof(_permutedims(AA,(1,4,3,2))) <: Tensor{4,dim}
+    @test typeof(_permutedims(AA_sym,(1,4,3,2))) <: Tensor{4,dim}
+    @test_throws ArgumentError _permutedims(AA,(1,1,2,3))
 end # of testset
 
 @testset "cross product" begin
