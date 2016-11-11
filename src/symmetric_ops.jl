@@ -221,7 +221,7 @@ julia> Φ ⋅ diagm(Tensor{2,3}, Λ) ⋅ inv(Φ) # Same as A
 ```
 """
 function Base.eig{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
-    S_m = convert(Tensor{2,dim,T}, S)
+    S_m = convert(Tensor{2,dim}, S)
     λ, ϕ = eig(tomatrix(S_m))
     Λ = Tensor{1, dim}(λ)
     Φ = Tensor{2, dim}(ϕ)

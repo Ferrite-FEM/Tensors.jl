@@ -73,6 +73,7 @@ end
     return n*n
 end
 @pure n_components{order, dim}(::Type{Tensor{order, dim}}) = dim^order
+@pure n_components{order, dim}(::Type{SymmetricTensor{order, dim}}) = ((dim+1) * dim) ÷ 2
 
 @pure get_base{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = SymmetricTensor{order, dim}
 @pure get_base{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}) = SymmetricTensor{order, dim}
@@ -134,16 +135,10 @@ end
 @inline (Tt::Type{Vec{dim}}){dim}(data) = Tensor{1, dim}(data)
 
 # General fallbacks
-@inline function (Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}}){order, dim, T}(data)
-    t1 = get_base(Tt)(data)
-    return convert(Tt, t1)
-end
-
-@inline function (Tt::Union{Type{Tensor{order, dim, T, M}}, Type{SymmetricTensor{order, dim, T, M}}}){order, dim, T, M}(data)
-    t1 = get_base(Tt)(data)
-    return convert(Tt, t1)
-end
-
+@inline          (Tt::Type{Tensor{order, dim, T}}){order, dim, T}(data::Union{AbstractArray, Tuple, Function}) = convert(Tensor{order, dim, T}, Tensor{order, dim}(data))
+@inline (Tt::Type{SymmetricTensor{order, dim, T}}){order, dim, T}(data::Union{AbstractArray, Tuple, Function}) = convert(SymmetricTensor{order, dim, T}, SymmetricTensor{order, dim}(data))
+#@inline          (Tt::Type{Tensor{order, dim, T, M}}){order, dim, T, M}(data::Union{AbstractArray, Tuple, Function}) = Tensor{order, dim, T}(data)
+#@inline (Tt::Type{SymmetricTensor{order, dim, T, M}}){order, dim, T, M}(data::Union{AbstractArray, Tuple, Function}) = SymmetricTensor{order, dim, T}(data)
 
 ###############
 # Simple Math #
@@ -277,9 +272,9 @@ end
             throw(ArgumentError("wrong number of vector elements, expected $($n) or $($m), got $(length(data))"))
         end
         if length(data) == $m
-            return SymmetricTensor{order, dim}(to_tuple(NTuple{$m}, data))
+            return SymmetricTensor{order, dim}(SVector{$m}(data))
         end
-        S = Tensor{order, dim}(to_tuple(NTuple{$n}, data))
+        S = Tensor{order, dim}(SVector{$n}(data))
         return convert(SymmetricTensor{order, dim}, S)
     end
 end
