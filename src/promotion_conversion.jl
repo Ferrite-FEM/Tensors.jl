@@ -80,7 +80,7 @@ end
     return quote
         $(Expr(:meta, :inline))
         v = $exp
-        Tensor{order, dim1, T1, $N}(v)
+        Tensor{order, dim1}(v)
     end
 end
 
@@ -109,7 +109,7 @@ end
     return quote
         $(Expr(:meta, :inline))
         v = $exp
-        SymmetricTensor{order, dim1, T1, $N}(v)
+        SymmetricTensor{order, dim1}(v)
     end
 end
 
@@ -117,19 +117,18 @@ end
 # Converting general data to a (symmetric) tensor. We leave the type of data unspecified to allow anything
 # that fulfil the contract of having a getindex and length.
 @generated function Base.convert{order, dim, T}(Tt::Union{Type{Tensor{order, dim, T}}, Type{SymmetricTensor{order, dim, T}}}, data)
-    N = n_components(get_main_type(get_type(Tt)){order, dim})
+    N = n_components(get_base(get_type(Tt)))
     return quote
         @assert length(data) == $N
         Tv = promote_type(T, eltype(data))
-        get_main_type(Tt){order,dim,Tv, $N}(to_tuple(NTuple{$N, Tv}, data))
+        get_base(Tt)(to_tuple(NTuple{$N, Tv}, data))
     end
 end
 
 # Conversions to a type where the element type of the tensor is unspecified
 # calls the conversions to a type where T = eltype(data)
-function Base.convert{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}, data)
-    convert(get_main_type(Tt){order, dim, eltype(data)}, data)
-end
+Base.convert{order, dim}(Tt::Type{Tensor{order, dim}}, data) = convert(Tensor{order, dim, eltype(data)}, data)
+Base.convert{order, dim}(Tt::Type{SymmetricTensor{order, dim}}, data) = convert(SymmetricTensor{order, dim, eltype(data)}, data)
 
 # SymmetricTensor -> Tensor
 # We unroll the creation by calling the compute_index function
@@ -151,7 +150,7 @@ end
     return quote
             $(Expr(:meta, :inline))
             v = $exp
-            Tensor{order, dim, promote_type(T1, T2), M1}(v)
+            Tensor{order, dim}(v)
         end
 end
 
@@ -218,7 +217,7 @@ Base.issymmetric(::SymmetricTensors) = true
     return quote
             $(Expr(:meta, :inline))
             if issymmetric(t)
-                return SymmetricTensor{2, dim, promote_type(T1, T2), M1}($exp)
+                return SymmetricTensor{2, dim}($exp)
             else
                 throw(InexactError())
             end
@@ -236,7 +235,7 @@ end
     return quote
             $(Expr(:meta, :inline))
             if issymmetric(t)
-                return SymmetricTensor{4, dim, promote_type(T1, T2), M1}($exp)
+                return SymmetricTensor{4, dim}($exp)
             else
                 throw(InexactError())
             end

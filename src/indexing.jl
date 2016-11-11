@@ -15,16 +15,21 @@ end
     return dim*(j-1) + i
 end
 
-
-@inline function compute_index{dim}(T::Union{Type{SymmetricTensor{4, dim}}, Type{Tensor{4, dim}}},
-                                    i::Int, j::Int, k::Int, l::Int)
-    lower_order = get_main_type(T){2, dim}
+@inline function compute_index{dim}(T::Type{Tensor{4, dim}}, i::Int, j::Int, k::Int, l::Int)
+    lower_order = Tensor{2, dim}
     I = compute_index(lower_order, i, j)
     J = compute_index(lower_order, k, l)
     n = n_components(lower_order)
     return (J-1) * n + I
 end
 
+@inline function compute_index{dim}(T::Type{SymmetricTensor{4, dim}}, i::Int, j::Int, k::Int, l::Int)
+    lower_order = SymmetricTensor{2, dim}
+    I = compute_index(lower_order, i, j)
+    J = compute_index(lower_order, k, l)
+    n = n_components(lower_order)
+    return (J-1) * n + I
+end
 
 ###########################
 # getindex general tensor #
@@ -61,9 +66,9 @@ end
     ex3 = Expr(:tuple, [:(get_data(S)[$(idx2(i,3))]) for i in 1:dim]...)
     return quote
         @boundscheck checkbounds(S,Colon(),j)
-        if     j == 1 return Vec{dim, T}($ex1)
-        elseif j == 2 return Vec{dim, T}($ex2)
-        else          return Vec{dim, T}($ex3)
+        if     j == 1 return Vec{dim}($ex1)
+        elseif j == 2 return Vec{dim}($ex2)
+        else          return Vec{dim}($ex3)
         end
     end
 end
@@ -74,9 +79,9 @@ end
     ex3 = Expr(:tuple, [:(get_data(S)[$(idx2(3,j))]) for j in 1:dim]...)
     return quote
         @boundscheck checkbounds(S,i,Colon())
-        if     i == 1 return Vec{dim, T}($ex1)
-        elseif i == 2 return Vec{dim, T}($ex2)
-        else          return Vec{dim, T}($ex3)
+        if     i == 1 return Vec{dim}($ex1)
+        elseif i == 2 return Vec{dim}($ex2)
+        else          return Vec{dim}($ex3)
         end
     end
 end

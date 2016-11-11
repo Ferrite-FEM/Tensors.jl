@@ -5,8 +5,6 @@ using ContMechTensors
 
 using Base.Test
 
-import ContMechTensors: n_independent_components, ArgumentError, get_data
-
 @testset "constructors and simple math ops." begin
 for T in (Float32, Float64)
     for dim in (1,2,3)

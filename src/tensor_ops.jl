@@ -27,18 +27,15 @@ julia> A ⊡ B
 @inline dcontract{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim}) = tovector(S1) ⋅ tovector(S2)
 
 @inline function dcontract{dim, T1, T2, M}(S1::Tensor{4, dim, T1, M}, S2::Tensor{4, dim, T2})
-    Tv = typeof(zero(T1) * zero(T2))
-    Tensor{4, dim, Tv, M}(tomatrix(S1) * tomatrix(S2))
+    Tensor{4, dim}(tomatrix(S1) * tomatrix(S2))
 end
 
 @inline function dcontract{dim, T1, T2, M}(S1::Tensor{4, dim, T1}, S2::Tensor{2, dim, T2, M})
-    Tv = typeof(zero(T1) * zero(T2))
-    Tensor{2, dim, Tv, M}(tomatrix(S1) * tovector(S2))
+    Tensor{2, dim}(tomatrix(S1) * tovector(S2))
 end
 
 @inline function dcontract{dim,T1,T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{4, dim, T2})
-    Tv = typeof(zero(T1)*zero(T2))
-    Tensor{2, dim, Tv, M}(tomatrix(S2)' * tovector(S1))
+    Tensor{2, dim}(tomatrix(S2)' * tovector(S1))
 end
 
 const ⊡ = dcontract
@@ -54,7 +51,6 @@ const ⊡ = dcontract
 
 @inline dcontract{dim}(S1::Tensor{4, dim}, S2::SymmetricTensor{4, dim}) = dcontract(promote(S1, S2)...)
 @inline dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::Tensor{4, dim}) = dcontract(promote(S1, S2)...)
-
 
 """
 Computes the norm of a tensor
@@ -118,15 +114,11 @@ julia> A ⊗ B
 ```
 """
 @inline function otimes{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
-    N = n_components(Tensor{4, dim})
-    Tv = typeof(zero(T1)*zero(T2))
-    Tensor{4, dim, Tv, N}(tovector(S1) * tovector(S2)')
+    Tensor{4, dim}(tovector(S1) * tovector(S2)')
 end
 
 @inline function otimes{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2})
-    N = n_components(Tensor{2, dim})
-    Tv = typeof(zero(T1)*zero(T2))
-    Tensor{2, dim, Tv, N}(tovector(v1) * tovector(v2)')
+    Tensor{2, dim}(tovector(v1) * tovector(v2)')
 end
 
 const ⊗ = otimes
@@ -173,18 +165,15 @@ julia> A ⋅ B
 @inline Base.dot{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2}) = tovector(v1) ⋅ tovector(v2)
 
 @inline function Base.dot{dim, T1, T2}(S1::Tensor{2, dim, T1}, v2::Vec{dim, T2})
-    Tv = typeof(zero(T1) * zero(T2))
-    return Vec{dim, Tv}(tomatrix(S1) * tovector(v2))
+    return Vec{dim}(tomatrix(S1) * tovector(v2))
 end
 
 @inline function Base.dot{dim, T1, T2}(v1::Vec{dim, T1}, S2::Tensor{2, dim, T2})
-    Tv = typeof(zero(T1) * zero(T2))
-    return Vec{dim, Tv}(tomatrix(S2)' * tovector(v1))
+    return Vec{dim}(tomatrix(S2)' * tovector(v1))
 end
 
 @inline function Base.dot{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
-    Tv = typeof(zero(T1) * zero(T2))
-    return Tensor{2, dim, Tv, M}(tomatrix(S1) * tomatrix(S2))
+    return Tensor{2, dim}(tomatrix(S1) * tomatrix(S2))
 end
 
 @inline function Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
@@ -236,8 +225,7 @@ julia> A'⋅B
 @inline tdot{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2}) = dot(v1, v2)
 
 @inline function tdot{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
-    Tv = typeof(zero(T1) * zero(T2))
-    return Tensor{2, dim, Tv, M}(tomatrix(S1)' * tomatrix(S2))
+    return Tensor{2, dim}(tomatrix(S1)' * tomatrix(S2))
 end
 
 @inline tdot{dim, T1, T2, M}(S1::SymmetricTensor{2, dim, T1, M}, S2::SymmetricTensor{2, dim, T2, M}) = dot(S1,S2)
@@ -296,7 +284,7 @@ julia> trace(A)
 ```
 """
 @generated function Base.trace{dim, T}(S::SecondOrderTensor{dim, T})
-    idx(i,j) = compute_index(get_lower_order_tensor(S), i, j)
+    idx(i,j) = compute_index(get_base(S), i, j)
     exp = Expr(:call)
     push!(exp.args, :+)
     for i in 1:dim
@@ -306,12 +294,10 @@ julia> trace(A)
 end
 vol(S::SecondOrderTensor) = trace(S)
 
-
 ########
 # Mean #
 ########
 Base.mean(S::SecondOrderTensor) = trace(S) / 3
-
 
 """
 Computes the determinant of a second order tensor.
@@ -334,7 +320,7 @@ julia> det(A)
 ```
 """
 @gen_code function Base.det{dim, T}(t::SecondOrderTensor{dim, T})
-    idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
+    idx(i,j) = compute_index(get_base(t), i, j)
     @code :($(Expr(:meta, :inline)))
     @code :(v = get_data(t))
     if dim == 1
@@ -348,7 +334,6 @@ julia> det(A)
     end
     @code :(return d)
 end
-
 
 """
 Computes the inverse of a second order tensor.
@@ -374,35 +359,33 @@ julia> inv(A)
 ```
 """
 @gen_code function Base.inv{dim, T}(t::Tensor{2, dim, T})
-    idx(i,j) = compute_index(get_lower_order_tensor(t), i, j)
+    idx(i,j) = compute_index(get_base(t), i, j)
     @code :($(Expr(:meta, :inline)))
     @code :(dinv = 1 / det(t))
     @code :(v = get_data(t))
     if dim == 1
-        @code :(return  typeof(t)((dinv,)))
+        @code :(return get_base(typeof(t))((dinv,)))
     elseif dim == 2
-        @code :(return typeof(t)((v[$(idx(2,2))] * dinv, -v[$(idx(2,1))] * dinv,
-                                 -v[$(idx(1,2))] * dinv, v[$(idx(1,1))] * dinv)))
+        @code :(return get_base(typeof(t))((v[$(idx(2,2))] * dinv, -v[$(idx(2,1))] * dinv,
+                                           -v[$(idx(1,2))] * dinv, v[$(idx(1,1))] * dinv)))
     else
-        @code :(return typeof(t)((  (v[$(idx(2,2))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,2))]) * dinv,
-                                   -(v[$(idx(2,1))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,1))]) * dinv,
-                                    (v[$(idx(2,1))]*v[$(idx(3,2))] - v[$(idx(2,2))]*v[$(idx(3,1))]) * dinv,
+        @code :(return get_base(typeof(t))((  (v[$(idx(2,2))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,2))]) * dinv,
+                                             -(v[$(idx(2,1))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,1))]) * dinv,
+                                              (v[$(idx(2,1))]*v[$(idx(3,2))] - v[$(idx(2,2))]*v[$(idx(3,1))]) * dinv,
 
-                                   -(v[$(idx(1,2))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,2))]) * dinv,
-                                    (v[$(idx(1,1))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,1))]) * dinv,
-                                   -(v[$(idx(1,1))]*v[$(idx(3,2))] - v[$(idx(1,2))]*v[$(idx(3,1))]) * dinv,
+                                             -(v[$(idx(1,2))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,2))]) * dinv,
+                                              (v[$(idx(1,1))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,1))]) * dinv,
+                                             -(v[$(idx(1,1))]*v[$(idx(3,2))] - v[$(idx(1,2))]*v[$(idx(3,1))]) * dinv,
 
-                                    (v[$(idx(1,2))]*v[$(idx(2,3))] - v[$(idx(1,3))]*v[$(idx(2,2))]) * dinv,
-                                   -(v[$(idx(1,1))]*v[$(idx(2,3))] - v[$(idx(1,3))]*v[$(idx(2,1))]) * dinv,
-                                    (v[$(idx(1,1))]*v[$(idx(2,2))] - v[$(idx(1,2))]*v[$(idx(2,1))]) * dinv)))
+                                              (v[$(idx(1,2))]*v[$(idx(2,3))] - v[$(idx(1,3))]*v[$(idx(2,2))]) * dinv,
+                                             -(v[$(idx(1,1))]*v[$(idx(2,3))] - v[$(idx(1,3))]*v[$(idx(2,1))]) * dinv,
+                                              (v[$(idx(1,1))]*v[$(idx(2,2))] - v[$(idx(1,2))]*v[$(idx(2,1))]) * dinv)))
     end
 end
-
 
 #######
 # Dev #
 #######
-
 """
 Computes the deviatoric part of a second order tensor.
 
@@ -429,11 +412,10 @@ julia> trace(dev(A))
     f = (i,j) -> i == j ? :((get_data(S)[$(compute_index(Tensor{2, dim}, i, j))] - tr/3)) :
                            :(get_data(S)[$(compute_index(Tensor{2, dim}, i, j))])
     exp = tensor_create(Tensor{2, dim, T}, f)
-    Tv = typeof(zero(T) * 1 / 3)
     return quote
         $(Expr(:meta, :inline))
         tr = trace(S)
-        Tensor{2, dim, $Tv, M}($exp)
+        Tensor{2, dim}($exp)
     end
 end
 
@@ -475,8 +457,7 @@ Computes the minor transpose of a fourth order tensor.
 minortranspose(::FourthOrderTensor)
 ```
 """
-@generated function minortranspose{dim, T, M}(t::Tensor{4, dim, T, M})
-    N = n_components(Tensor{4, dim})
+@generated function minortranspose{dim, T, N}(t::Tensor{4, dim, T, N})
     rows = Int(N^(1/4))
     exps = Expr[]
     for l in 1:rows, k in 1:rows, j in 1:rows, i in 1:rows
@@ -484,9 +465,9 @@ minortranspose(::FourthOrderTensor)
     end
     exp = Expr(:tuple, exps...)
     return quote
-            $(Expr(:meta, :inline))
-            Tensor{4, dim, T, M}($exp)
-        end
+        $(Expr(:meta, :inline))
+        Tensor{4, dim}($exp)
+    end
 end
 ##############################
 minortranspose(S::SymmetricTensor{4}) = S
@@ -508,13 +489,12 @@ majortranspose(::FourthOrderTensor)
     end
     exp = Expr(:tuple, exps...)
     return quote
-            $(Expr(:meta, :inline))
-            Tensor{4, dim, T, $N}($exp)
-        end
+        $(Expr(:meta, :inline))
+        Tensor{4, dim}($exp)
+    end
 end
 
 Base.ctranspose(S::AllTensors) = transpose(S)
-
 
 """
 Computes the symmetric part of a second or fourth order tensor.
@@ -557,9 +537,9 @@ julia> symmetric(A)
     end
     exp = Expr(:tuple, exps...)
     return quote
-            $(Expr(:meta, :inline))
-            SymmetricTensor{2, dim, T, $N}($exp)
-        end
+        $(Expr(:meta, :inline))
+        SymmetricTensor{2, dim}($exp)
+    end
 end
 
 """
@@ -569,9 +549,7 @@ Computes the minor symmetric part of a fourth order tensor, returns a `Symmetric
 minorsymmetric(::FourthOrderTensor)
 ```
 """
-@generated function minorsymmetric{dim, T}(t::Tensor{4, dim, T})
-    N = n_components(Tensor{4, dim})
-    M = n_components(SymmetricTensor{4,dim})
+@generated function minorsymmetric{dim, T, N}(t::Tensor{4, dim, T, N})
     rows = Int(N^(1/4))
     exps = Expr[]
     for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
@@ -587,9 +565,9 @@ minorsymmetric(::FourthOrderTensor)
     end
     exp = Expr(:tuple, exps...)
     return quote
-            $(Expr(:meta, :inline))
-            SymmetricTensor{4, dim, T, $M}($exp)
-        end
+        $(Expr(:meta, :inline))
+        SymmetricTensor{4, dim}($exp)
+    end
 end
 
 @inline minorsymmetric(t::SymmetricTensors) = t
@@ -618,11 +596,10 @@ majorsymmetric(::FourthOrderTensor)
     end
     exp = Expr(:tuple, exps...)
     return quote
-            $(Expr(:meta, :inline))
-            Tensor{4, dim, T, $N}($exp)
-        end
+        $(Expr(:meta, :inline))
+        Tensor{4, dim}($exp)
+    end
 end
-
 
 """
 Computes the skew-symmetric (anti-symmetric) part of a second order tensor, returns a `Tensor{2}`
@@ -633,7 +610,6 @@ skew(::SecondOrderTensor)
 """
 @inline skew(S1::Tensor{2}) = (S1 - S1.') / 2
 @inline skew{dim,T}(S1::SymmetricTensor{2,dim,T}) = zero(Tensor{2,dim,T})
-
 
 """
 Computes the cross product between two `Vec` vectors, returns a `Vec{3}`. For dimensions 1 and 2 the `Vec`'s
@@ -666,11 +642,11 @@ julia> a × b
 ```
 """
 function Base.cross{T}(u::Vec{3, T}, v::Vec{3, T})
-    @inbounds w = Vec{3, T}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
+    @inbounds w = Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
     return w
 end
 function Base.cross{T}(u::Vec{2, T}, v::Vec{2, T})
-    @inbounds w = Vec{3, T}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
+    @inbounds w = Vec{3}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
     return w
 end
 function Base.cross{T}(::Vec{1, T}, ::Vec{1, T})
