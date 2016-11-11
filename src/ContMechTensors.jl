@@ -73,7 +73,6 @@ end
     return n*n
 end
 @pure n_components{order, dim}(::Type{Tensor{order, dim}}) = dim^order
-@pure n_components{order, dim}(::Type{SymmetricTensor{order, dim}}) = ((dim+1) * dim) ÷ 2
 
 @pure get_base{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = SymmetricTensor{order, dim}
 @pure get_base{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}) = SymmetricTensor{order, dim}
@@ -96,12 +95,6 @@ get_type{X}(::Type{Type{X}}) = X
 Base.size{dim}(::Vec{dim}) = (dim,)
 Base.size{dim}(::SecondOrderTensor{dim}) = (dim, dim)
 Base.size{dim}(::FourthOrderTensor{dim}) = (dim, dim, dim, dim)
-
-Base.similar(t::AbstractTensor) = t
-
-# Ambiguity fix
-Base.fill(t::AbstractTensor, v::Integer)  = one(typeof(t)) * v
-Base.fill(t::AbstractTensor, v::Number) = one(typeof(t)) * v
 
 #########################
 # Internal constructors #
@@ -198,12 +191,12 @@ end
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
         @generated function Base.diagm{order, dim, T}(Tt::Type{$(TensorType){order, dim}}, v::AbstractVector{T})
-            if order == 1
-                f = (i) -> :(v[$i])
-            elseif order == 2
+            if order == 2
                 f = (i,j) -> i == j ? :(v[$i]) : :($(zero(T)))
             elseif order == 4
                 f = (i,j,k,l) -> i == k && j == l ? :(v[$i]) : :($(zero(T)))
+            else
+                throw(ArgumentError("diagm not defined for Vec's"))
             end
             exp = tensor_create(get_type(Tt),f)
             return quote
@@ -214,12 +207,12 @@ for TensorType in (SymmetricTensor, Tensor)
         end
 
         @generated function Base.diagm{order, dim, T}(Tt::Type{$(TensorType){order, dim}}, v::T)
-            if order == 1
-                f = (i) -> :(v)
-            elseif order == 2
+            if order == 2
                 f = (i,j) -> i == j ? :(v) : :($(zero(T)))
             elseif order == 4
                 f = (i,j,k,l) -> i == k && j == l ? :(v) : :($(zero(T)))
+            else
+                throw(ArgumentError("diagm not defined for Vec's"))
             end
             exp = tensor_create(get_type(Tt),f)
             return quote
