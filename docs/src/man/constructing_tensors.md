@@ -21,7 +21,7 @@ julia> zero(Tensor{1, 2})
  0.0
 ```
 
-By default, a tensor of `Float64s` is created but by explicitly giving the `T` parameter, this can be changed:
+By default, a tensor of `Float64`s is created but by explicitly giving the `T` parameter, this can be changed:
 
 ```jldoctest
 julia> zero(SymmetricTensor{4, 2, Float32})
@@ -43,6 +43,26 @@ julia> zero(SymmetricTensor{4, 2, Float32})
  0.0  0.0
 ```
 
+## Constant tensors
+
+A tensor filled with ones is created using the function `ones`, applied to the type of tensor that should be created:
+
+```jldoctest
+julia> ones(Tensor{2,2})
+2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+ 1.0  1.0
+ 1.0  1.0
+```
+
+By default, a tensor of `Float64`s is created but by explicitly giving the `T` parameter, this can be changed:
+
+```jldoctest
+julia> ones(Vec{3,Float32})
+3-element ContMechTensors.Tensor{1,3,Float32,3}:
+ 1.0
+ 1.0
+ 1.0
+```
 
 ## Random tensors
 
@@ -56,6 +76,16 @@ julia> rand(Tensor{2, 3})
  0.566237  0.854147  0.246837
 ```
 
+By specifying the type, `T`, a tensor of different type can be obtained:
+
+```jldoctest
+julia> rand(SymmetricTensor{2,3,Float32})
+3×3 ContMechTensors.SymmetricTensor{2,3,Float32,6}:
+ 0.0107703  0.305865  0.2082
+ 0.305865   0.405684  0.257278
+ 0.2082     0.257278  0.958491
+```
+
 ## Identity tensors
 
 An identity tensor is created using the function `one`, applied to the type of tensor that should be created:
@@ -66,6 +96,8 @@ julia> one(SymmetricTensor{2, 2})
  1.0  0.0
  0.0  1.0
 ```
+
+The identity tensor is only defined for tensors of order 2 and 4.
 
 ## From arrays / tuples
 

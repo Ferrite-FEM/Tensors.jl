@@ -73,7 +73,6 @@ end
     return n*n
 end
 @pure n_components{order, dim}(::Type{Tensor{order, dim}}) = dim^order
-@pure n_components{order, dim}(::Type{SymmetricTensor{order, dim}}) = ((dim+1) * dim) ÷ 2
 
 @pure get_base{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = SymmetricTensor{order, dim}
 @pure get_base{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}) = SymmetricTensor{order, dim}
@@ -96,12 +95,6 @@ get_type{X}(::Type{Type{X}}) = X
 Base.size{dim}(::Vec{dim}) = (dim,)
 Base.size{dim}(::SecondOrderTensor{dim}) = (dim, dim)
 Base.size{dim}(::FourthOrderTensor{dim}) = (dim, dim, dim, dim)
-
-Base.similar(t::AbstractTensor) = t
-
-# Ambiguity fix
-Base.fill(t::AbstractTensor, v::Integer)  = one(typeof(t)) * v
-Base.fill(t::AbstractTensor, v::Number) = one(typeof(t)) * v
 
 #########################
 # Internal constructors #
@@ -175,8 +168,8 @@ end
 # Basic constructors #
 ######################
 
-# zero, rand
-for op in (:zero, :rand)
+# zero, rand, ones
+for op in (:zero, :rand, :ones)
     for TensorType in (SymmetricTensor, Tensor)
         @eval begin
             @inline Base.$op{order, dim}(Tt::Type{$TensorType{order, dim}}) = Base.$op($TensorType{order, dim, Float64})
@@ -190,20 +183,20 @@ for op in (:zero, :rand)
     # Special case for Vec
     @eval @inline Base.$op{dim}(Tt::Type{Vec{dim}}) = Base.$op(Vec{dim, Float64})
 
-    # zero or rand of a
+    # zero, rand or ones of a tensor
     @eval @inline Base.$op(t::AllTensors) = $op(typeof(t))
 end
 
-# diagm, one
+# diagm
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
         @generated function Base.diagm{order, dim, T}(Tt::Type{$(TensorType){order, dim}}, v::AbstractVector{T})
-            if order == 1
-                f = (i) -> :(v[$i])
-            elseif order == 2
+            if order == 2
                 f = (i,j) -> i == j ? :(v[$i]) : :($(zero(T)))
             elseif order == 4
                 f = (i,j,k,l) -> i == k && j == l ? :(v[$i]) : :($(zero(T)))
+            else
+                throw(ArgumentError("diagm only defined for tensors of order 2 and 4"))
             end
             exp = tensor_create(get_type(Tt),f)
             return quote
@@ -214,12 +207,12 @@ for TensorType in (SymmetricTensor, Tensor)
         end
 
         @generated function Base.diagm{order, dim, T}(Tt::Type{$(TensorType){order, dim}}, v::T)
-            if order == 1
-                f = (i) -> :(v)
-            elseif order == 2
+            if order == 2
                 f = (i,j) -> i == j ? :(v) : :($(zero(T)))
             elseif order == 4
                 f = (i,j,k,l) -> i == k && j == l ? :(v) : :($(zero(T)))
+            else
+                throw(ArgumentError("diagm only defined for tensors of order 2 and 4"))
             end
             exp = tensor_create(get_type(Tt),f)
             return quote
@@ -227,11 +220,18 @@ for TensorType in (SymmetricTensor, Tensor)
                 $($TensorType){order, dim}($exp)
             end
         end
+    end
+end
 
-        @inline Base.one{order, dim}(Tt::Type{$(TensorType){order, dim}}) = one($TensorType{order, dim, Float64})
-        @inline Base.one{order, dim, T, M}(Tt::Type{$(TensorType){order, dim, T, M}}) = one($TensorType{order, dim, T})
-        @inline Base.one{order, dim, T}(Tt::Type{$(TensorType){order, dim, T}}) = diagm($(TensorType){order, dim}, one(T))
-        @inline Base.one(t::$TensorType) = one(typeof(t))
+# one
+for TensorType in (SymmetricTensor, Tensor)
+    for order in (2,4)
+        @eval begin
+            @inline Base.one{dim}(Tt::Type{$(TensorType){$order, dim}}) = one($TensorType{$order, dim, Float64})
+            @inline Base.one{dim, T, M}(Tt::Type{$(TensorType){$order, dim, T, M}}) = one($TensorType{$order, dim, T})
+            @inline Base.one{dim, T}(Tt::Type{$(TensorType){$order, dim, T}}) = diagm($(TensorType){$order, dim}, one(T))
+            @inline Base.one{dim, T}(Tt::$TensorType{$order, dim, T}) = one($TensorType{$order, dim, T})
+        end
     end
 end
 

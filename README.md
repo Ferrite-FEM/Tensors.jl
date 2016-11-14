@@ -1,10 +1,10 @@
 # ContMechTensors
 
-*Efficient computations with symmetric and unsymmetric tensors in Julia.*
+*Efficient computations with symmetric and non-symmetric tensors in Julia.*
 
-| **Documentation**                                                               | **Build Status**                                                |
-|:-------------------------------------------------------------------------------:|:---------------------------------------------------------------:|
-| [![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] |
+| **Documentation**                                                               | **Build Status**                                                                                |
+|:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
+| [![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] |
 
 ## Introduction
 
@@ -47,3 +47,6 @@ Contributions are very welcome, as are feature requests and suggestions. Please 
 [appveyor-url]: https://ci.appveyor.com/project/KristofferC/contmechtensors-jl/branch/master
 
 [issues-url]: https://github.com/KristofferC/ContMechTensors.jl/issues
+
+[codecov-img]: https://codecov.io/gh/KristofferC/ContMechTensors.jl/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/KristofferC/ContMechTensors.jl

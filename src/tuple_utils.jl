@@ -1,12 +1,3 @@
-
-function inline_body(T)
-    if T == Float64 || T == Float32
-        return Expr(:meta, :inline)
-    else
-        return Expr(:tuple)
-    end
-end
-
 @generated function mat_get_index{N}(t::NTuple{N}, i::Int, j::Int)
     rows = Int(sqrt(N))
     return quote
@@ -15,21 +6,6 @@ end
         return v
     end
 end
-
-function tupexpr_mat(f,N)
-    ex = Expr(:tuple, [f(i,j) for i=1:Int(sqrt(N)), j = 1:Int(sqrt(N))]...)
-    return quote
-        @inbounds return $ex
-    end
-end
-
-function tupexpr(f,N)
-    ex = Expr(:tuple, [f(i) for i=1:Int(N)]...)
-    return quote
-        @inbounds return $ex
-    end
-end
-
 
 tensor_create{order, dim}(::Type{Tensor{order, dim}}, f) = tensor_create(Tensor{order, dim, Float64}, f)
 function tensor_create{order, dim, T}(::Type{Tensor{order, dim, T}}, f)
