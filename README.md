@@ -1,6 +1,6 @@
 # ContMechTensors
 
-*Efficient computations with symmetric and unsymmetric tensors in Julia.*
+*Efficient computations with symmetric and non-symmetric tensors in Julia.*
 
 | **Documentation**                                                               | **Build Status**                                                                                |
 |:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
