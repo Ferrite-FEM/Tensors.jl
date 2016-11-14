@@ -168,8 +168,8 @@ end
 # Basic constructors #
 ######################
 
-# zero, rand
-for op in (:zero, :rand)
+# zero, rand, ones
+for op in (:zero, :rand, :ones)
     for TensorType in (SymmetricTensor, Tensor)
         @eval begin
             @inline Base.$op{order, dim}(Tt::Type{$TensorType{order, dim}}) = Base.$op($TensorType{order, dim, Float64})
@@ -183,22 +183,8 @@ for op in (:zero, :rand)
     # Special case for Vec
     @eval @inline Base.$op{dim}(Tt::Type{Vec{dim}}) = Base.$op(Vec{dim, Float64})
 
-    # zero or rand of a
+    # zero, rand or ones of a tensor
     @eval @inline Base.$op(t::AllTensors) = $op(typeof(t))
-end
-
-# ones
-for TensorType in (SymmetricTensor, Tensor)
-    @eval begin
-        @inline Base.ones{order, dim, T, M}(Tt::Type{$TensorType{order, dim, T, M}}) = ones($TensorType{order, dim, T})
-        @inline Base.ones{order, dim}(Tt::Type{$TensorType{order, dim}}) = ones($TensorType{order, dim, Float64})
-        @generated function Base.ones{order, dim, T}(Tt::Type{$TensorType{order, dim, T}})
-            N = n_components(get_base(get_type(Tt)))
-            return quote
-                $($TensorType){order, dim}(ones(SVector{$N, T}))
-            end
-        end
-    end
 end
 
 # diagm
