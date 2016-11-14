@@ -47,9 +47,12 @@ include("symmetric_tuple_linalg.jl")
 
 include("indexing.jl")
 include("promotion_conversion.jl")
-include("tensor_ops.jl")
+include("tensor_products.jl")
+include("transpose.jl")
+include("symmetric.jl")
+include("math_ops.jl")
+include("special_ops.jl")
 include("tensor_ops_errors.jl")
-include("symmetric_ops.jl")
 
 ##############################
 # Utility/Accessor Functions #
