@@ -21,7 +21,7 @@ for T in (Float32, Float64)
             # Simple math #
             ###############
             t = rand(Tensor{order, dim, T})
-            t_one = one(Tensor{order, dim, T})
+            t_ones = ones(Tensor{order, dim, T})
 
             @test (@inferred t + t) == 2*t
             @test (@inferred -t) == zero(t) - t
