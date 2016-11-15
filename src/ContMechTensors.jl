@@ -42,9 +42,6 @@ typealias SymmetricTensors{dim, T} Union{SymmetricTensor{2, dim, T}, SymmetricTe
 typealias Tensors{dim, T} Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T}}
 
 include("utilities.jl")
-include("tuple_utils.jl")
-include("symmetric_tuple_linalg.jl")
-
 include("indexing.jl")
 include("promotion_conversion.jl")
 include("tensor_products.jl")

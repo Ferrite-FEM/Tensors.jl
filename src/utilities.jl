@@ -22,14 +22,41 @@ macro code(e)
   isa(e, Expr) || error("can't generate code from non-expressions")
   return Expr(:escape, :(code = __append_code(code, $e)))
 end
-#########################################################################################
 
-function is_diagonal_index(dim::Int, i::Int)
-    if dim == 1
-        return true
-    elseif dim == 2
-        return i in (1,3)
-    else
-        return i in (1,4,6)
+#######################################################################################
+tensor_create{order, dim}(::Type{Tensor{order, dim}}, f) = tensor_create(Tensor{order, dim, Float64}, f)
+function tensor_create{order, dim, T}(::Type{Tensor{order, dim, T}}, f)
+    if order == 1
+        ex = Expr(:tuple, [f(i) for i=1:dim]...)
+    elseif order == 2
+        ex = Expr(:tuple, [f(i,j) for i=1:dim, j=1:dim]...)
+    elseif order == 4
+        ex = Expr(:tuple, [f(i,j,k,l) for i=1:dim, j=1:dim, k = 1:dim, l = 1:dim]...)
+    end
+    return quote
+        $ex
     end
 end
+
+tensor_create{order, dim}(::Type{SymmetricTensor{order, dim}}, f) = tensor_create(SymmetricTensor{order, dim, Float64}, f)
+function tensor_create{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}, f)
+    expr = Any[]
+    if order == 2
+        for i in 1:dim, j in i:dim
+            push!(expr, f(j, i))
+        end
+    elseif order == 4
+        for k in 1:dim, l in k:dim, i in 1:dim, j in i:dim
+            push!(expr, f(j, i, l, k))
+        end
+    end
+    return quote
+        $(Expr(:tuple, expr...))
+    end
+end
+
+@generated function to_tuple{N}(::Type{NTuple{N}},  data::AbstractArray)
+    return Expr(:tuple, [:(data[$i]) for i=1:N]...)
+end
+
+@inline to_tuple{N}(::Type{NTuple{N}},  data::NTuple{N}) = data
