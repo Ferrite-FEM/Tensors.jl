@@ -33,26 +33,22 @@ function tensor_create{order, dim, T}(::Type{Tensor{order, dim, T}}, f)
     elseif order == 4
         ex = Expr(:tuple, [f(i,j,k,l) for i=1:dim, j=1:dim, k = 1:dim, l = 1:dim]...)
     end
-    return quote
-        $ex
-    end
+    return :($ex)
 end
 
 tensor_create{order, dim}(::Type{SymmetricTensor{order, dim}}, f) = tensor_create(SymmetricTensor{order, dim, Float64}, f)
 function tensor_create{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}, f)
-    expr = Any[]
+    ex = Expr(:tuple)
     if order == 2
         for i in 1:dim, j in i:dim
-            push!(expr, f(j, i))
+            push!(ex.args, f(j, i))
         end
     elseif order == 4
         for k in 1:dim, l in k:dim, i in 1:dim, j in i:dim
-            push!(expr, f(j, i, l, k))
+            push!(ex.args, f(j, i, l, k))
         end
     end
-    return quote
-        $(Expr(:tuple, expr...))
-    end
+    return :($ex)
 end
 
 @generated function to_tuple{N}(::Type{NTuple{N}},  data::AbstractArray)

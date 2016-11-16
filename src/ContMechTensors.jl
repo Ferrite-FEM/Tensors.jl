@@ -100,9 +100,10 @@ Base.size{dim}(::FourthOrderTensor{dim}) = (dim, dim, dim, dim)
 # Internal constructors #
 #########################
 function _constructor_check{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}})
-    !(order in (1,2,4)) && throw(ArgumentError("tensors only supported for order 1,2 and 4"))
-    !(dim in (1,2,3)) && throw(ArgumentError("tensors only supported for dim 1,2 and 3"))
+    !(order in (1,2,4)) && throw(ArgumentError("tensors only supported for order 1, 2 and 4"))
+    !(dim in (1,2,3)) && throw(ArgumentError("tensors only supported for dim 1, 2 and 3"))
     order == 1 && Tt <: SymmetricTensor && throw(ArgumentError("symmetric tensors only supported for order 2 and 4"))
+    return nothing
 end
 
 for TensorType in (SymmetricTensor, Tensor)
