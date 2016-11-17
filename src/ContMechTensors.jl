@@ -263,7 +263,7 @@ Base.convert{dim, T}(::Type{SVector{dim, T}}, f::Function) = SVector{dim, T}(ntu
         if length(data) != $n
             throw(ArgumentError("wrong number of vector elements, expected $($n), got $(length(data))"))
         end
-        Tensor{order, dim}(to_tuple(NTuple{$n}, data))
+        Tensor{order, dim}(SVector{$n}(data))
     end
 end
 
