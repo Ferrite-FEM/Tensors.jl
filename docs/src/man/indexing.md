@@ -41,15 +41,15 @@ julia> Tensor{2, 2}((i,j) -> i == 1 && j == 2 ? 1.0 : 0.0)
  0.0  0.0
 ```
 
-For symmetric tensors, note that you should only set the lower triangular part of the tensor:
+For symmetric tensors, note that you should only set the upper triangular part of the tensor:
 
 ```jldoctest
-julia> SymmetricTensor{2, 2}((i,j) -> i == 1 && j == 2 ? 1.0 : 0.0)
+julia> SymmetricTensor{2, 2}((i,j) -> i == 2 && j == 1 ? 1.0 : 0.0)
 2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
  0.0  0.0
  0.0  0.0
 
-julia> SymmetricTensor{2, 2}((i,j) -> i == 2 && j == 1 ? 1.0 : 0.0)
+julia> SymmetricTensor{2, 2}((i,j) -> i == 1 && j == 2 ? 1.0 : 0.0)
 2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
  0.0  1.0
  1.0  0.0

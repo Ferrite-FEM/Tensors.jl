@@ -3,12 +3,12 @@
 ############
 
 @inline function compute_index{dim}(::Type{SymmetricTensor{2, dim}}, i::Int, j::Int)
-    if i < j
+    if i > j
         i, j = j, i
     end
-    # We are skipping triangle over the diagonal = (j-1) * j / 2 indices
-    skipped_indicies = div((j-1) * j, 2)
-    return dim*(j-1) + i - skipped_indicies
+    # We are skipping triangle under the diagonal = (i-1) * i / 2 indices
+    skipped_indicies = div((i-1) * i, 2)
+    return dim*(i-1) + j - skipped_indicies
 end
 
 @inline function compute_index{dim}(::Type{Tensor{2, dim}}, i::Int, j::Int)

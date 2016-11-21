@@ -137,7 +137,7 @@ julia> SymmetricTensor{2,2,Float64}((i,j) -> i + j)
  3.0  4.0
 ```
 
-For symmetric tensors, the function is only called for the lower triangular part.
+For symmetric tensors, the function is only called for the upper triangular part.
 
 ## Diagonal tensors
 
