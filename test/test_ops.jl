@@ -48,12 +48,12 @@ i,j,k,l = rand(1:dim,4)
     @test dcontract(convert(Tensor, AA_sym), convert(Tensor, A_sym)) ≈ dcontract(AA_sym, A_sym)
     # Type tests
     @test isa(dcontract(AA, A), Tensor{2, dim, T})
-    @test isa(dcontract(AA_sym, A), Tensor{2, dim, T})
+    @test isa(dcontract(AA_sym, A), SymmetricTensor{2, dim, T})
     @test isa(dcontract(AA, A_sym), Tensor{2, dim, T})
     @test isa(dcontract(AA_sym, A_sym), SymmetricTensor{2, dim, T})
     @test isa(dcontract(A, AA), Tensor{2, dim, T})
     @test isa(dcontract(A_sym, AA), Tensor{2, dim, T})
-    @test isa(dcontract(A, AA_sym), Tensor{2, dim, T})
+    @test isa(dcontract(A, AA_sym), SymmetricTensor{2, dim, T})
     @test isa(dcontract(A_sym, AA_sym), SymmetricTensor{2, dim, T})
 
     # 2 - 2

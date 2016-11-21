@@ -53,6 +53,7 @@ for dim in (1,2,3)
 
         SUITE["dcontract"]["dim $dim - order 4 2 - $T"]       = @benchmarkable dcontract($V4, $V2)
         SUITE["dcontract"]["dim $dim - order 4sym 2 - $T"]    = @benchmarkable dcontract($V4sym, $V2)
+        SUITE["dcontract"]["dim $dim - order 2 4sym - $T"]    = @benchmarkable dcontract($V2, $V4sym)
         SUITE["dcontract"]["dim $dim - order 2 4 - $T"]       = @benchmarkable dcontract($V2, $V4)
         SUITE["dcontract"]["dim $dim - order 4 2sym - $T"]    = @benchmarkable dcontract($V4, $V2sym)
         SUITE["dcontract"]["dim $dim - order 4sym 2sym - $T"] = @benchmarkable dcontract($V4, $V2sym)
