@@ -66,10 +66,6 @@ for T in (Float32, Float64), dim in (1,2,3)
     @test isa(diagm(Tensor{2, dim}, v), Tensor{2, dim, T})
     @test diagm(SymmetricTensor{2, dim}, v) == diagm(vv)
     @test isa(diagm(SymmetricTensor{2, dim}, v), SymmetricTensor{2, dim, T})
-    @test diagm(Tensor{4, dim}, T(1)) == one(Tensor{4, dim, T})
-    @test isa(diagm(Tensor{4, dim}, T(1)), Tensor{4, dim, T})
-    @test diagm(SymmetricTensor{4, dim}, T(1)) == one(SymmetricTensor{4, dim, T})
-    @test isa(diagm(SymmetricTensor{4, dim}, T(1)), SymmetricTensor{4, dim, T})
 
     # one
     @test one(Tensor{2, dim, T}) == diagm(Tensor{2, dim}, one(T)) == eye(T, dim, dim)
@@ -94,10 +90,18 @@ for T in (Float32, Float64), dim in (1,2,3)
         for k in 1:dim, l in 1:dim
             if i == k && j == l
                 @test II[i,j,k,l] == T(1)
-                # @test II_sym[i,j,k,l] == T(1)
+                if i == l && j == k
+                    @test II_sym[i,j,k,l] == T(1)
+                else
+                    @test II_sym[i,j,k,l] == T(1) / 2
+                end
             else
                 @test II[i,j,k,l] == T(0)
-                # @test II_sym[i,j,k,l] == T(0)
+                if i == l && j == k
+                    @test II_sym[i,j,k,l] == T(1) / 2
+                else
+                    @test II_sym[i,j,k,l] == T(0)
+                end
             end
         end
     end
@@ -371,20 +375,33 @@ end
 
 for T in (Float32, Float64)
     for dim in (1,2,3)
-        # Identities with second order and first order
+        # Identities with identity tensor
         II = one(Tensor{4, dim, T})
         I = one(Tensor{2, dim, T})
+        AA = rand(Tensor{4, dim, T})
         A = rand(Tensor{2, dim, T})
-        #II_sym = one(SymmetricTensor{4, dim})
-        #A_sym = rand(SymmetricTensor{2, dim})
-        #I_sym = one(SymmetricTensor{2, dim})
+        II_sym = one(SymmetricTensor{4, dim, T})
+        I_sym = one(SymmetricTensor{2, dim, T})
+        AA_sym = rand(SymmetricTensor{4, dim, T})
+        A_sym = rand(SymmetricTensor{2, dim, T})
 
+        @test II ⊡ AA ≈ AA
+        @test AA ⊡ II ≈ AA
         @test II ⊡ A ≈ A
         @test A ⊡ II ≈ A
-        @test II ⊡ A ⊡ A ≈ (trace(A.' ⋅ A))
+        @test II ⊡ A ⊡ A ≈ (trace(A' ⋅ A))
 
-        #@test II_sym ⊡ A_sym ≈ A_sym
-        #@test A_sym ⊡ II_sym ≈ A_sym
+        @test II ⊡ AA_sym ≈ AA_sym
+        @test AA_sym ⊡ II ≈ AA_sym
+        @test II ⊡ A_sym ≈ A_sym
+        @test A_sym ⊡ II ≈ A_sym
+        @test II ⊡ A_sym ⊡ A_sym ≈ (trace(A_sym' ⋅ A_sym))
+
+        @test II_sym ⊡ AA_sym ≈ AA_sym
+        @test AA_sym ⊡ II_sym ≈ AA_sym
+        @test II_sym ⊡ A_sym ≈ A_sym
+        @test A_sym ⊡ II_sym ≈ A_sym
+        @test II_sym ⊡ A_sym ⊡ A_sym ≈ (trace(A_sym' ⋅ A_sym))
     end
 end
 end # of testset

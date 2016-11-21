@@ -88,7 +88,16 @@ julia> rand(SymmetricTensor{2,3,Float32})
 
 ## Identity tensors
 
-An identity tensor is created using the function `one`, applied to the type of tensor that should be created:
+Identity tensors can be created for orders 2 and 4. The components of the second order identity tensor ``\mathbf{I}`` are defined as ``I_{ij} = \delta_{ij}``, where ``\delta_{ij}`` is the Kronecker delta. The fourth order identity tensor ``\mathsf{I}`` is the resulting tensor from taking the derivative of a second order tensor ``\mathbf{A}`` with itself:
+
+$\mathsf{I} = \frac{\partial \mathbf{A}}{\partial \mathbf{A}} \Leftrightarrow I_{ijkl} = \frac{\partial A_{ij}}{\partial A_{kl}} = \delta_{ik} \delta_{jl}$
+
+The symmetric fourth order tensor, ``\mathsf{I}^\text{sym}``, is the resulting tensor from taking the derivative of a symmetric second order tensor ``\mathbf{A}^\text{sym}`` with itself:
+
+$\mathsf{I}^\text{sym} = \frac{\partial \mathbf{A}^\text{sym}}{\partial \mathbf{A}^\text{sym}} \Leftrightarrow I^\text{sym}_{ijkl} = \frac{\partial A^\text{sym}_{ij}}{\partial A^\text{sym}_{kl}} = \frac{1}{2} (\delta_{ik} \delta_{jl} + \delta_{il} \delta_{jk})$
+
+
+Identity tensors are created using the function `one`, applied to the type of tensor that should be created:
 
 ```jldoctest
 julia> one(SymmetricTensor{2, 2})
@@ -96,8 +105,6 @@ julia> one(SymmetricTensor{2, 2})
  1.0  0.0
  0.0  1.0
 ```
-
-The identity tensor is only defined for tensors of order 2 and 4.
 
 ## From arrays / tuples
 
@@ -134,7 +141,7 @@ For symmetric tensors, the function is only called for the lower triangular part
 
 ## Diagonal tensors
 
-A diagonal tensor can be created by either giving a number or a vector that should appear on the diagonal:
+A diagonal second order tensor can be created by either giving a number or a vector that should appear on the diagonal:
 
 ```jldoctest
 julia> diagm(Tensor{2,2}, 2.0)
