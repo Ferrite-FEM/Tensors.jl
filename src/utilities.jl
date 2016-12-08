@@ -12,11 +12,11 @@ end
 function tensor_create{order, dim}(::Type{SymmetricTensor{order, dim}}, f)
     ex = Expr(:tuple)
     if order == 2
-        for i in 1:dim, j in i:dim
+        for j in 1:dim, i in j:dim
             push!(ex.args, f(i, j))
         end
     elseif order == 4
-        for k in 1:dim, l in k:dim, i in 1:dim, j in i:dim
+        for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
             push!(ex.args, f(i, j, k, l))
         end
     end

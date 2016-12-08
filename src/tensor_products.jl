@@ -45,7 +45,7 @@ const ⊡ = dcontract
 @generated function dcontract{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
     idx2(i,j) = compute_index(SymmetricTensor{2, dim}, i, j)
     ex = Expr[]
-    for i in 1:dim, j in i:dim
+    for j in 1:dim, i in j:dim
         if i == j
             push!(ex, :(get_data(S1)[$(idx2(i, j))] * get_data(S2)[$(idx2(i, j))]))
         else
@@ -63,9 +63,9 @@ end
     idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
     idx2(i,j) = compute_index(Tensor{2, dim}, i, j)
     exps = Expr(:tuple)
-    for k in 1:dim, l in k:dim
+    for l in 1:dim, k in l:dim
         exps_ele = Expr[]
-        for i in 1:dim, j in 1:dim
+        for j in 1:dim, i in 1:dim
             push!(exps_ele, :(data2[$(idx2(i, j))] * data4[$(idx4(i, j, k, l))]))
         end
         push!(exps.args, reduce((ex1,ex2) -> :(+($ex1, $ex2)), exps_ele))
@@ -83,9 +83,9 @@ end
     idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
     idx2(k,l) = compute_index(Tensor{2, dim}, k, l)
     exps = Expr(:tuple)
-    for i in 1:dim, j in i:dim
+    for j in 1:dim, i in j:dim
         exps_ele = Expr[]
-        for k in 1:dim, l in 1:dim
+        for l in 1:dim, k in 1:dim
             push!(exps_ele, :(data4[$(idx4(i, j, k, l))] * data2[$(idx2(k, l))]))
         end
         push!(exps.args, reduce((ex1,ex2) -> :(+($ex1, $ex2)), exps_ele))
@@ -103,9 +103,9 @@ end
     idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
     idx2(i,j) = compute_index(SymmetricTensor{2, dim}, i, j)
     exps = Expr(:tuple)
-    for k in 1:dim, l in k:dim
+    for l in 1:dim, k in l:dim
         exps_ele = Expr[]
-        for i in 1:dim, j in i:dim
+        for j in 1:dim, i in j:dim
             if i == j
                 push!(exps_ele, :(data2[$(idx2(i, j))] * data4[$(idx4(i, j, k, l))]))
             else
@@ -127,9 +127,9 @@ end
     idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
     idx2(k,l) = compute_index(SymmetricTensor{2, dim}, k, l)
     exps = Expr(:tuple)
-    for i in 1:dim, j in i:dim
+    for j in 1:dim, i in j:dim
         exps_ele = Expr[]
-        for k in 1:dim, l in k:dim
+        for l in 1:dim, k in l:dim
             if k == l
                 push!(exps_ele, :(data4[$(idx4(i, j, k, l))] * data2[$(idx2(k, l))]))
             else
@@ -150,9 +150,9 @@ end
 @generated function dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::SymmetricTensor{4, dim})
     idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
     exps = Expr(:tuple)
-    for k in 1:dim, l in k:dim, i in 1:dim, j in i:dim
+    for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
         exps_ele = Expr[]
-        for m in 1:dim, n in m:dim
+        for n in 1:dim, m in n:dim
             if m == n
                 push!(exps_ele, :(data1[$(idx4(i, j, m, n))] * data2[$(idx4(m, n, k, l))]))
             else
@@ -370,7 +370,7 @@ julia> tdot(A)
 @generated function tdot{dim}(S1::Tensor{2, dim})
     idx(i,j) = compute_index(Tensor{2, dim}, i, j)
     ex = Expr(:tuple)
-    for i in 1:dim, j in i:dim
+    for j in 1:dim, i in j:dim
         exps_ele = Expr[]
         for k in 1:dim
             push!(exps_ele, :(get_data(S1)[$(idx(k,i))] * get_data(S1)[$(idx(k,j))]))

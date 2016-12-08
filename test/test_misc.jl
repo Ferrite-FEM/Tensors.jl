@@ -174,9 +174,9 @@ for T in (Float32, Float64)
             end
         end
 
-        for i in 1:dim, j in i:dim
+        for j in 1:dim, i in j:dim
             @test Af_sym[i,j] == T(fij(i, j))
-            for k in 1:dim, l in k:dim
+            for l in 1:dim, k in l:dim
                  @test AAf_sym[i,j,k,l] == T(fijkl(i,j,k,l))
             end
         end

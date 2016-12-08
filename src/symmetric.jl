@@ -26,15 +26,13 @@ julia> symmetric(A)
 @inline symmetric(S1::SymmetricTensors) = S1
 
 @generated function symmetric{dim, T}(t::Tensor{2, dim, T})
-    N = n_components(SymmetricTensor{2, dim})
-    rows = Int(div(sqrt(1 + 8*N), 2))
     exps = Expr[]
-    for row in 1:rows, col in row:rows
-        if row == col
-            push!(exps, :(get_data(t)[$(compute_index(Tensor{2, dim}, row, col))]))
+    for j in 1:dim, i in j:dim
+        if i == j
+            push!(exps, :(get_data(t)[$(compute_index(Tensor{2, dim}, i, j))]))
         else
-            I = compute_index(Tensor{2, dim}, row, col)
-            J = compute_index(Tensor{2, dim}, col, row)
+            I = compute_index(Tensor{2, dim}, i, j)
+            J = compute_index(Tensor{2, dim}, j, i)
             push!(exps, :((get_data(t)[$I] + get_data(t)[$J])/2))
         end
     end
@@ -52,10 +50,9 @@ Computes the minor symmetric part of a fourth order tensor, returns a `Symmetric
 minorsymmetric(::FourthOrderTensor)
 ```
 """
-@generated function minorsymmetric{dim, T, N}(t::Tensor{4, dim, T, N})
-    rows = Int(N^(1/4))
+@generated function minorsymmetric{dim}(t::Tensor{4, dim})
     exps = Expr[]
-    for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
+    for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
         if i == j && k == l
             push!(exps, :(data[$(compute_index(Tensor{4, dim}, i, j, k, l))]))
         else
@@ -85,11 +82,9 @@ Computes the major symmetric part of a fourth order tensor, returns a `Tensor{4}
 majorsymmetric(::FourthOrderTensor)
 ```
 """
-@generated function majorsymmetric{dim, T}(t::FourthOrderTensor{dim, T})
-    N = n_components(Tensor{4, dim})
-    rows = Int(N^(1/4))
+@generated function majorsymmetric{dim}(t::FourthOrderTensor{dim})
     exps = Expr[]
-    for l in 1:rows, k in 1:rows, j in 1:rows, i in 1:rows
+    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
         if i == j == k == l || i == k && j == l
             push!(exps, :(data[$(compute_index(get_base(t), i, j, k, l))]))
         else
@@ -132,9 +127,7 @@ end
 end
 
 function isminorsymmetric{dim}(t::Tensor{4, dim})
-    N = n_components(Tensor{4, dim})
-    rows = Int(N^(1/4))
-    @inbounds for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
+    @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
         if t[i,j,k,l] != t[j,i,k,l] || t[i,j,k,l] != t[i,j,l,k]
             return false
         end
@@ -145,9 +138,7 @@ end
 isminorsymmetric(::SymmetricTensor{4}) = true
 
 function ismajorsymmetric{dim}(t::FourthOrderTensor{dim})
-    N = n_components(Tensor{4, dim})
-    rows = Int(N^(1/4))
-    @inbounds for k in 1:rows, l in k:rows, i in 1:rows, j in i:rows
+    @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
         if t[i,j,k,l] != t[k,l,i,j]
             return false
         end

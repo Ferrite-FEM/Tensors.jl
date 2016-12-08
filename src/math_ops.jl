@@ -28,7 +28,7 @@ julia> norm(A)
 @generated function Base.norm{dim}(S::SymmetricTensor{4, dim})
     idx(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
     ex = Expr[]
-    for k in 1:dim, l in k:dim, i in 1:dim, j in i:dim
+    for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
         if i == j && k == l
              push!(ex, :(data[$(idx(i,j,k,l))] * data[$(idx(i,j,k,l))]))
         elseif i == j || k == l

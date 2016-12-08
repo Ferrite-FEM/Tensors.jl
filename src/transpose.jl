@@ -37,10 +37,9 @@ Computes the minor transpose of a fourth order tensor.
 minortranspose(::FourthOrderTensor)
 ```
 """
-@generated function minortranspose{dim, T, N}(t::Tensor{4, dim, T, N})
-    rows = Int(N^(1/4))
+@generated function minortranspose{dim}(t::Tensor{4, dim})
     exps = Expr[]
-    for l in 1:rows, k in 1:rows, j in 1:rows, i in 1:rows
+    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
         push!(exps, :(get_data(t)[$(compute_index(Tensor{4, dim}, j, i, l, k))]))
     end
     exp = Expr(:tuple, exps...)
@@ -60,11 +59,9 @@ Computes the major transpose of a fourth order tensor.
 majortranspose(::FourthOrderTensor)
 ```
 """
-@generated function majortranspose{dim, T}(t::FourthOrderTensor{dim, T})
-    N = n_components(Tensor{4, dim})
-    rows = Int(N^(1/4))
+@generated function majortranspose{dim}(t::FourthOrderTensor{dim})
     exps = Expr[]
-    for l in 1:rows, k in 1:rows, j in 1:rows, i in 1:rows
+    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
         push!(exps, :(get_data(t)[$(compute_index(get_base(t), k, l, i, j))]))
     end
     exp = Expr(:tuple, exps...)
