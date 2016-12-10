@@ -4,7 +4,7 @@ This section contain a few demos of applying `ContMechTensors` to continuum mech
 
 ## Creating the linear elasticity tensor
 
-The linear elasticity tensor $\mathbf{C}$ can be defined from the Lame parameters $\lambda$ and $\mu$ by the expression
+The linear elasticity tensor $\mathbf{C}$ can be defined from the Lamé parameters $\lambda$ and $\mu$ by the expression
 
 $ \mathbf{C}_{ijkl} = \lambda \delta_{ij}\delta_{kl} + \mu(\delta_{ij}\delta_{jl} + \delta_{il}\delta_{jk}),$
 
@@ -29,13 +29,13 @@ C = SymmetricTensor{4, dim}(f)
 
 For a deformation gradient $\mathbf{F} = \mathbf{I} + \nabla \otimes \mathbf{u}$, where $\mathbf{u}$ is the deformation from the reference to the current configuration, the right Cauchy-Green deformation tensor is defined by $\mathbf{C} = \mathbf{F}^T \cdot \mathbf{F}$. The Second Piola Krichoff stress tensor $\mathbf{S}$ is derived from the Helmholtz free energy $\Psi$ by the relation $\mathbf{S} = 2 \frac{\partial \Psi}{\partial \mathbf{C}}$.
 
-We can define the energy for a material with the
+We can define potential energy of the material as
 
 $\Psi(\mathbf{C}) = 1/2 \mu (\mathrm{tr}(\hat{\mathbf{C}}) - 3) + K_b(J-1)^2,$
 
 where $\hat{\mathbf{C}} = \mathrm{det}(\mathbf{C})^{-1/3} \mathbf{C}$ and $J = \det(\mathbf{F}) = \sqrt{\det(\mathbf{C})}$ and the shear and bulk modulus are given by $\mu$ and $K_b$ respectively.
 
-This free energy function can be implemented as:
+This free energy function can be implemented in `ContMechTensors` as:
 
 ```julia
 function Ψ(C, μ, Kb)
@@ -64,19 +64,7 @@ end
 
 ### Automatic differentiation
 
-For some material models it can be cumbersome to compute the analytical expression for the Second Piola Kirchoff tensor. We can then use Automatic Differentiation (AD) to compute it. Here, the AD package (`ForwardDiff.jl`)[https://github.com/JuliaDiff/ForwardDiff.jl] is used. Unfortunately we have to here do a bit of juggling between tensors and standard Julia `Array`s due to `ForwardDiff` expecting the input to be of `Array` type.
-
-```julia
-using ForwardDiff
-
-function S_AD{dim}(C::SymmetricTensor{2,dim}, μ, Kb)
-    Ψvec = Cvec -> Ψ(SymmetricTensor{2,dim}(Cvec), μ, Kb)
-    ∂Ψ∂C = C -> symmetric(Tensor{2,dim}(ForwardDiff.gradient(Ψvec, vec(C))))
-    return 2 * ∂Ψ∂C(C)
-end
-```
-
-We can compare the results from the analytical and AD functions and they are obviously equal:
+For some material models it can be cumbersome to compute the analytical expression for the Second Piola Kirchoff tensor. We can then instead use Automatic Differentiation (AD). Below is an example which computes the Second Piola Kirchoff tensor using AD and compares it to the analytical answer.
 
 ```@meta
 DocTestSetup = quote
@@ -105,15 +93,6 @@ DocTestSetup = quote
         invC = inv(C)
         return μ * det(C)^(-1/3)*(I - 1/3*trace(C)*invC) + Kb*(J-1)*J*invC
     end
-
-    using ForwardDiff
-
-    function S_AD{dim}(C::SymmetricTensor{2,dim}, μ, Kb)
-        Ψvec = Cvec -> Ψ(SymmetricTensor{2,dim}(Cvec), μ, Kb)
-        ∂Ψ∂C = C -> symmetric(Tensor{2,dim}(ForwardDiff.gradient(Ψvec, vec(C))))
-        return 2 * ∂Ψ∂C(C)
-    end
-
 end
 ```
 
@@ -126,7 +105,7 @@ julia> F = one(Tensor{2,3}) + rand(Tensor{2,3});
 
 julia> C = tdot(F);
 
-julia> S_AD(C, μ, Kb)
+julia> S_AD = 2 * ContMechTensors.gradient(C -> Ψ(C, μ, Kb), C)
 3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
   4.30534e11  -2.30282e11  -8.52861e10
  -2.30282e11   4.38793e11  -2.64481e11

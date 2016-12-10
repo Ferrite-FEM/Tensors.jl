@@ -50,6 +50,7 @@ include("symmetric.jl")
 include("math_ops.jl")
 include("special_ops.jl")
 include("tensor_ops_errors.jl")
+include("automatic_differentiation.jl")
 
 ##############################
 # Utility/Accessor Functions #

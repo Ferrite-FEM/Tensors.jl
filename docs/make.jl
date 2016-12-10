@@ -4,6 +4,7 @@ makedocs(
     modules = [ContMechTensors],
     format = :html,
     sitename = "ContMechTensors.jl",
+    doctest = true,
     strict = true,
     pages = Any[
         "Home" => "index.md",
@@ -13,6 +14,7 @@ makedocs(
             "man/binary_operators.md",
             "man/other_operators.md",
             "man/storing_tensors.md",
+            "man/automatic_differentiation.md",
             ],
         "Demos" => "demos.md"
     ]
