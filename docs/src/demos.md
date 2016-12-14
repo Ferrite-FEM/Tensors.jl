@@ -105,7 +105,7 @@ julia> F = one(Tensor{2,3}) + rand(Tensor{2,3});
 
 julia> C = tdot(F);
 
-julia> S_AD = 2 * ContMechTensors.gradient(C -> Ψ(C, μ, Kb), C)
+julia> S_AD = 2 * gradient(C -> Ψ(C, μ, Kb), C)
 3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
   4.30534e11  -2.30282e11  -8.52861e10
  -2.30282e11   4.38793e11  -2.64481e11

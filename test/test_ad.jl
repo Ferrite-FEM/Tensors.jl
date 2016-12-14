@@ -49,32 +49,50 @@ for dim in 1:3
         II_sym = one(SymmetricTensor{4, dim, T})
 
         # Gradient of scalars
-        @test ∇(norm, v) ≈ v / norm(v)
-        @test ∇(norm, A) ≈ A / norm(A)
-        @test ∇(norm, A_sym) ≈ A_sym / norm(A_sym)
-        @test ∇(v -> 3*v, v) ≈ diagm(Tensor{2, dim}, 3.0)
+        @test ∇(norm, v) ≈ ∇(norm, v, :all)[1] ≈ v / norm(v)
+        @test ∇(norm, v, :all)[2] ≈ norm(v)
+        @test ∇(norm, A) ≈ ∇(norm, A, :all)[1] ≈ A / norm(A)
+        @test ∇(norm, A, :all)[2] ≈ norm(A)
+        @test ∇(norm, A_sym) ≈ ∇(norm, A_sym, :all)[1] ≈ A_sym / norm(A_sym)
+        @test ∇(norm, A_sym, :all)[2] ≈ norm(A_sym)
+        @test ∇(v -> 3*v, v) ≈ ∇(v -> 3*v, v, :all)[1] ≈ diagm(Tensor{2, dim}, 3.0)
+        @test ∇(v -> 3*v, v, :all)[2] ≈ 3*v
         # https://en.wikipedia.org/wiki/Tensor_derivative_(continuum_mechanics)#Derivatives_of_the_invariants_of_a_second-order_tensor
         I1, DI1 = A -> trace(A), A -> one(A)
         I2, DI2 = A -> 1/2 * (trace(A)^2 - trace(A⋅A)), A -> I1(A) * one(A) - A'
         I3, DI3 = A -> det(A), A -> det(A) * inv(A)'
 
-        @test ∇(I1, A) ≈ DI1(A)
-        @test ∇(I2, A) ≈ DI2(A)
-        @test ∇(I3, A) ≈ DI3(A)
-        @test ∇(I1, A_sym) ≈ DI1(A_sym)
-        @test ∇(I2, A_sym) ≈ DI2(A_sym)
-        @test ∇(I3, A_sym) ≈ DI3(A_sym)
+        @test ∇(I1, A) ≈ ∇(I1, A, :all)[1] ≈ DI1(A)
+        @test ∇(I1, A, :all)[2] ≈ I1(A)
+        @test ∇(I2, A) ≈ ∇(I2, A, :all)[1] ≈ DI2(A)
+        @test ∇(I2, A, :all)[2] ≈ I2(A)
+        @test ∇(I3, A) ≈ ∇(I3, A, :all)[1] ≈ DI3(A)
+        @test ∇(I3, A, :all)[2] ≈ I3(A)
+        @test ∇(I1, A_sym) ≈ ∇(I1, A_sym, :all)[1] ≈ DI1(A_sym)
+        @test ∇(I1, A_sym, :all)[2] ≈ I1(A_sym)
+        @test ∇(I2, A_sym) ≈ ∇(I2, A_sym, :all)[1] ≈ DI2(A_sym)
+        @test ∇(I2, A_sym, :all)[2] ≈ I2(A_sym)
+        @test ∇(I3, A_sym) ≈ ∇(I3, A_sym, :all)[1] ≈ DI3(A_sym)
+        @test ∇(I3, A_sym, :all)[2] ≈ I3(A_sym)
 
         # Gradient of second order tensors
-        @test ∇(identity, A) ≈ II
-        @test ∇(identity, A_sym) ≈ II_sym
-        @test ∇(transpose, A) ⊡ B ≈ B'
-        @test ∇(transpose, A_sym) ⊡ B_sym ≈ B_sym'
-        @test ∇(inv, A) ⊡ B ≈ - inv(A) ⋅ B ⋅ inv(A)
-        @test ∇(inv, A_sym) ⊡ B_sym ≈ - inv(A_sym) ⋅ B_sym ⋅ inv(A_sym)
+        @test ∇(identity, A) ≈ ∇(identity, A, :all)[1] ≈ II
+        @test ∇(identity, A, :all)[2] ≈ A
+        @test ∇(identity, A_sym) ≈ ∇(identity, A_sym, :all)[1] ≈ II_sym
+        @test ∇(identity, A_sym, :all)[2] ≈ A_sym
+        @test ∇(transpose, A) ⊡ B ≈ ∇(transpose, A, :all)[1] ⊡ B ≈ B'
+        @test ∇(transpose, A, :all)[2] ≈ A'
+        @test ∇(transpose, A_sym) ⊡ B_sym ≈ ∇(transpose, A_sym, :all)[1] ⊡ B_sym ≈ B_sym'
+        @test ∇(transpose, A_sym, :all)[2] ≈ A_sym'
+        @test ∇(inv, A) ⊡ B ≈ ∇(inv, A, :all)[1] ⊡ B ≈ - inv(A) ⋅ B ⋅ inv(A)
+        @test ∇(inv, A, :all)[2] ≈ inv(A)
+        @test ∇(inv, A_sym) ⊡ B_sym ≈ ∇(inv, A_sym, :all)[1] ⊡ B_sym ≈ - inv(A_sym) ⋅ B_sym ⋅ inv(A_sym)
+        @test ∇(inv, A_sym, :all)[2] ≈ inv(A_sym)
 
         # Hessians of scalars
-        @test Δ(norm, A).data ≈ vec(ForwardDiff.hessian(x -> sqrt(sumabs2(x)), A.data))
+        @test Δ(norm, A).data ≈ Δ(norm, A, :all)[1].data ≈ vec(ForwardDiff.hessian(x -> sqrt(sumabs2(x)), A.data))
+        @test Δ(norm, A, :all)[2].data ≈ vec(ForwardDiff.gradient(x -> sqrt(sumabs2(x)), A.data))
+        @test Δ(norm, A, :all)[3] ≈ norm(A)
     end
 end
 end # testset
