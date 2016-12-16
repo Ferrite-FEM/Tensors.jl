@@ -478,4 +478,5 @@ end  # of testset
     @test_throws Exception A*B
     @test_throws Exception A'*B
     @test_throws Exception A.'*B
+    @test_throws Exception A\B
 end # of testset

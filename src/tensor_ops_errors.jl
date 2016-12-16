@@ -14,3 +14,8 @@ end
 function Base.At_mul_B(S1::AbstractTensor, S2::AbstractTensor)
     error("Don't use `A.'*B`, use `tdot(A,B)` (or `A.'⋅B`) instead.")
 end
+
+# Remove `\` as infix operator between tensors
+function Base.:\(S1::AbstractTensor, S2::AbstractTensor)
+    error("Don't use `A\\B`, use `inv(A) ⋅ B` instead.")
+end
