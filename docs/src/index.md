@@ -18,8 +18,6 @@ Supports Automatic Differentiation to easily compute first and second order deri
 Pkg.add("ContMechTensors")
 ```
 
-The package has no dependencies other than Julia (`0.5` and up) itself.
-
 ## Manual Outline
 
 ```@contents
