@@ -1,11 +1,10 @@
 # specialized methods
 """
-Computes a special dot product between two vectors and a symmetric fourth order tensor
-such that ``a_k C_{ikjl} b_l``.
-
 ```julia
 dotdot(::Vec, ::SymmetricFourthOrderTensor, ::Vec)
 ```
+Computes a special dot product between two vectors and a symmetric fourth order tensor
+such that ``a_k C_{ikjl} b_l``.
 """
 @generated function dotdot{dim}(v1::Vec{dim}, S::SymmetricTensor{4, dim}, v2::Vec{dim})
     idx(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)

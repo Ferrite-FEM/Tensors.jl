@@ -1,15 +1,14 @@
 # dcontract, dot, tdot, otimes, cross
 """
-Computes the double contraction between two tensors.
-The symbol `⊡`, written `\\boxdot`, is overloaded for double contraction.
-The reason `:` is not used is because it does not have the same precedence as multiplication.
-
 ```julia
 dcontract(::SecondOrderTensor, ::SecondOrderTensor)
 dcontract(::SecondOrderTensor, ::FourthOrderTensor)
 dcontract(::FourthOrderTensor, ::SecondOrderTensor)
 dcontract(::FourthOrderTensor, ::FourthOrderTensor)
 ```
+Computes the double contraction between two tensors.
+The symbol `⊡`, written `\\boxdot`, is overloaded for double contraction.
+The reason `:` is not used is because it does not have the same precedence as multiplication.
 
 **Example:**
 
@@ -181,13 +180,12 @@ end
 @inline dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::Tensor{4, dim}) = dcontract(promote(S1, S2)...)
 
 """
-Computes the open product between two tensors.
-The symbol `⊗`, written `\\otimes`, is overloaded for tensor products.
-
 ```julia
 otimes(::Vec, ::Vec)
 otimes(::SecondOrderTensor, ::SecondOrderTensor)
 ```
+Computes the open product between two tensors.
+The symbol `⊗`, written `\\otimes`, is overloaded for tensor products.
 
 **Example:**
 
@@ -235,15 +233,14 @@ end
 @inline otimes{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = otimes(promote(S1, S2)...)
 
 """
-Computes the dot product (single contraction) between two tensors.
-The symbol `⋅`, written `\\cdot`, is overloaded for single contraction.
-
 ```julia
 dot(::Vec, ::Vec)
 dot(::Vec, ::SecondOrderTensor)
 dot(::SecondOrderTensor, ::Vec)
 dot(::SecondOrderTensor, ::SecondOrderTensor)
 ```
+Computes the dot product (single contraction) between two tensors.
+The symbol `⋅`, written `\\cdot`, is overloaded for single contraction.
 
 **Example:**
 
@@ -298,14 +295,13 @@ Base.dot{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = dot(promote(S1,
 Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = dot(promote(S1, S2)...)
 
 """
-Computes the transpose-dot product (single contraction) between two tensors.
-
 ```julia
 tdot(::Vec, ::Vec)
 tdot(::Vec, ::SecondOrderTensor)
 tdot(::SecondOrderTensor, ::Vec)
 tdot(::SecondOrderTensor, ::SecondOrderTensor)
 ```
+Computes the transpose-dot product (single contraction) between two tensors.
 
 **Example:**
 
@@ -344,12 +340,11 @@ end
 @inline tdot{dim, T1, T2, M1, M2}(S1::Tensor{2, dim, T1, M1}, S2::SymmetricTensor{2, dim, T2, M2}) = tdot(promote(S1,S2)...)
 
 """
-Computes the transpose-dot of a second order tensor with itself.
-Returns a `SymmetricTensor`
-
 ```julia
 tdot(::SecondOrderTensor)
 ```
+Computes the transpose-dot of a second order tensor with itself.
+Returns a `SymmetricTensor`.
 
 **Example:**
 
@@ -387,12 +382,11 @@ end
 @inline tdot{dim}(S1::SymmetricTensor{2,dim}) = tdot(convert(Tensor{2,dim}, S1))
 
 """
-Computes the cross product between two `Vec` vectors, returns a `Vec{3}`. For dimensions 1 and 2 the `Vec`'s
-are expanded to 3D first. The infix operator × (written `\\times`) can also be used
-
 ```julia
 cross(::Vec, ::Vec)
 ```
+Computes the cross product between two `Vec` vectors, returns a `Vec{3}`. For dimensions 1 and 2 the `Vec`'s
+are expanded to 3D first. The infix operator × (written `\\times`) can also be used.
 
 **Example:**
 

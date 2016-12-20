@@ -1,12 +1,11 @@
 # norm, det, inv, eig, trace, dev
 """
-Computes the norm of a tensor
-
 ```julia
 norm(::Vec)
 norm(::SecondOrderTensor)
 norm(::FourthOrderTensor)
 ```
+Computes the norm of a tensor.
 
 **Example:**
 
@@ -46,11 +45,10 @@ julia> norm(A)
 end
 
 """
-Computes the determinant of a second order tensor.
-
 ```julia
 det(::SecondOrderTensor)
 ```
+Computes the determinant of a second order tensor.
 
 **Example:**
 
@@ -90,11 +88,10 @@ julia> det(A)
 end
 
 """
-Computes the inverse of a second order tensor.
-
 ```julia
 inv(::SecondOrderTensor)
 ```
+Computes the inverse of a second order tensor.
 
 **Example:**
 
@@ -178,11 +175,10 @@ end
 end
 
 """
-Computes the eigenvalues and eigenvectors of a symmetric second order tensor.
-
 ```julia
 eig(::SymmetricSecondOrderTensor)
 ```
+Computes the eigenvalues and eigenvectors of a symmetric second order tensor.
 
 **Example:**
 
@@ -223,12 +219,11 @@ function Base.eig{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
 end
 
 """
-Computes the trace of a second order tensor.
-The synonym `vol` can also be used.
-
 ```julia
 trace(::SecondOrderTensor)
 ```
+Computes the trace of a second order tensor.
+The synonym `vol` can also be used.
 
 **Example:**
 
@@ -253,11 +248,10 @@ vol(S::SecondOrderTensor) = trace(S)
 Base.mean(S::SecondOrderTensor) = trace(S) / 3
 
 """
-Computes the deviatoric part of a second order tensor.
-
 ```julia
 dev(::SecondOrderTensor)
 ```
+Computes the deviatoric part of a second order tensor.
 
 **Example:**
 

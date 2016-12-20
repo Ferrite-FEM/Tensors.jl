@@ -1,13 +1,12 @@
 # transpose, majortranspose, minortranspose
 """
-Computes the transpose of a tensor.
-For a fourth order tensor, the transpose is the minor transpose
-
 ```julia
 transpose(::Vec)
 transpose(::SecondOrderTensor)
 transpose(::FourthOrderTensor)
 ```
+Computes the transpose of a tensor.
+For a fourth order tensor, the transpose is the minor transpose.
 
 **Example:**
 
@@ -31,11 +30,10 @@ end
 Base.transpose(S::SymmetricTensor{2}) = S
 
 """
-Computes the minor transpose of a fourth order tensor.
-
 ```julia
 minortranspose(::FourthOrderTensor)
 ```
+Computes the minor transpose of a fourth order tensor.
 """
 @generated function minortranspose{dim}(t::Tensor{4, dim})
     exps = Expr[]
@@ -53,11 +51,10 @@ minortranspose(S::SymmetricTensor{4}) = S
 Base.transpose(S::FourthOrderTensor) = minortranspose(S)
 
 """
-Computes the major transpose of a fourth order tensor.
-
 ```julia
 majortranspose(::FourthOrderTensor)
 ```
+Computes the major transpose of a fourth order tensor.
 """
 @generated function majortranspose{dim}(t::FourthOrderTensor{dim})
     exps = Expr[]

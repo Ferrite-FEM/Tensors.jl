@@ -1,13 +1,12 @@
 # symmetric, skew-symmetric and symmetric checks
 """
-Computes the symmetric part of a second or fourth order tensor.
-For a fourth order tensor, the symmetric part is the same as the minor symmetric part.
-Returns a `SymmetricTensor`.
-
 ```julia
 symmetric(::SecondOrderTensor)
 symmetric(::FourthOrderTensor)
 ```
+Computes the symmetric part of a second or fourth order tensor.
+For a fourth order tensor, the symmetric part is the same as the minor symmetric part.
+Returns a `SymmetricTensor`.
 
 **Example:**
 
@@ -44,11 +43,10 @@ julia> symmetric(A)
 end
 
 """
-Computes the minor symmetric part of a fourth order tensor, returns a `SymmetricTensor{4}`
-
 ```julia
 minorsymmetric(::FourthOrderTensor)
 ```
+Computes the minor symmetric part of a fourth order tensor, returns a `SymmetricTensor{4}`.
 """
 @generated function minorsymmetric{dim}(t::Tensor{4, dim})
     exps = Expr[]
@@ -76,11 +74,10 @@ end
 @inline symmetric(t::Tensor{4}) = minorsymmetric(t)
 
 """
-Computes the major symmetric part of a fourth order tensor, returns a `Tensor{4}`
-
 ```julia
 majorsymmetric(::FourthOrderTensor)
 ```
+Computes the major symmetric part of a fourth order tensor, returns a `Tensor{4}`.
 """
 @generated function majorsymmetric{dim}(t::FourthOrderTensor{dim})
     exps = Expr[]
@@ -102,11 +99,10 @@ majorsymmetric(::FourthOrderTensor)
 end
 
 """
-Computes the skew-symmetric (anti-symmetric) part of a second order tensor, returns a `Tensor{2}`
-
 ```julia
 skew(::SecondOrderTensor)
 ```
+Computes the skew-symmetric (anti-symmetric) part of a second order tensor, returns a `Tensor{2}`.
 """
 @inline skew(S1::Tensor{2}) = (S1 - S1.') / 2
 @inline skew{dim,T}(S1::SymmetricTensor{2,dim,T}) = zero(Tensor{2,dim,T})

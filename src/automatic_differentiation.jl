@@ -288,13 +288,12 @@ end
 end
 
 """
-Computes the gradient of the input function. If the (pseudo)-keyword `all`
-is given, the value of the function is also returned as a second output argument
-
 ```julia
 gradient(f::Function, v::Union{SecondOrderTensor, Vec})
 gradient(f::Function, v::Union{SecondOrderTensor, Vec}, :all)
 ```
+Computes the gradient of the input function. If the (pseudo)-keyword `all`
+is given, the value of the function is also returned as a second output argument.
 
 **Example:**
 
@@ -321,14 +320,13 @@ function Base.gradient{F}(f::F, v::Union{SecondOrderTensor, Vec}, ::Symbol)
 end
 
 """
-Computes the hessian of the input function. If the (pseudo)-keyword `all`
-is given, the lower order results (gradient and value) of the function is
-also returned as a second and third output argument.
-
 ```julia
 hessian(f::Function, v::Union{SecondOrderTensor, Vec})
 hessian(f::Function, v::Union{SecondOrderTensor, Vec}, :all)
 ```
+Computes the hessian of the input function. If the (pseudo)-keyword `all`
+is given, the lower order results (gradient and value) of the function is
+also returned as a second and third output argument.
 
 **Example:**
 
