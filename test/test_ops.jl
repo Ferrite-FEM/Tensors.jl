@@ -94,24 +94,12 @@ end # of testset
     @test dot(a, B) ≈ Array(B)' * Array(a)
     @test dot(a, B_sym) ≈ Array(B_sym)' * Array(a)
 
-    @test tdot(a, b) ≈ tdot(b, a) ≈ dot(a,b) ≈ dot(b,a) ≈ sum(Array(a) .* Array(b))
-    @test tdot(A, b) ≈ tdot(b, A) ≈ dot(b,A) ≈ Array(A)' * Array(b)
-    @test tdot(A_sym, b) ≈ tdot(b, A_sym) ≈ dot(A_sym, b) ≈ Array(A_sym)' * Array(b)
-    @test tdot(a, B) ≈ tdot(B, a) ≈ dot(a, B) ≈ Array(B)' * Array(a)
-    @test tdot(a, B_sym) ≈ tdot(B_sym, a) ≈ dot(a, B_sym) ≈ Array(B_sym)' * Array(a)
-
     # Type tests
     @test isa(dot(a, b), T)
     @test isa(dot(A, b), Vec{dim, T})
     @test isa(dot(A_sym, b), Vec{dim, T})
     @test isa(dot(b, A), Vec{dim, T})
     @test isa(dot(b, A_sym), Vec{dim, T})
-
-    @test isa(tdot(a, b), T)
-    @test isa(tdot(A, b), Vec{dim, T})
-    @test isa(tdot(A_sym, b), Vec{dim, T})
-    @test isa(tdot(a, B), Vec{dim, T})
-    @test isa(tdot(a, B_sym), Vec{dim, T})
 
     # 2 - 2
     # Value tests
@@ -120,12 +108,14 @@ end # of testset
     @test dot(A, B_sym) ≈ Array(A) * Array(B_sym)
     @test dot(A_sym, B_sym) ≈ Array(A_sym) * Array(B_sym)
 
-    @test tdot(A, B) ≈ Array(A)' * Array(B)
-    @test tdot(A_sym, B) ≈ Array(A_sym)' * Array(B)
-    @test tdot(A, B_sym) ≈ Array(A)' * Array(B_sym)
-    @test tdot(A_sym, B_sym) ≈ Array(A_sym)' * Array(B_sym)
     @test tdot(A) ≈ Array(A)' * Array(A)
     @test tdot(A_sym) ≈ Array(A_sym)' * Array(A_sym)
+    @test dott(A) ≈ Array(A) * Array(A)'
+    @test dott(A_sym) ≈ Array(A_sym) * Array(A_sym)'
+    @test tdot(A) ≈ dott(transpose(A))
+    @test tdot(transpose(A)) ≈ dott(A)
+    @test tdot(A_sym) ≈ dott(transpose(A_sym))
+    @test tdot(transpose(A_sym)) ≈ dott(A_sym)
 
     # Type tests
     @test isa(dot(A, B), Tensor{2, dim, T})
@@ -133,12 +123,10 @@ end # of testset
     @test isa(dot(A, B_sym), Tensor{2, dim, T})
     @test isa(dot(A_sym, B_sym), Tensor{2, dim, T})
 
-    @test isa(tdot(A, B), Tensor{2, dim, T})
-    @test isa(tdot(A_sym, B), Tensor{2, dim, T})
-    @test isa(tdot(A, B_sym), Tensor{2, dim, T})
-    @test isa(tdot(A_sym, B_sym), Tensor{2, dim, T})
     @test isa(tdot(A), SymmetricTensor{2, dim, T})
     @test isa(tdot(A_sym), SymmetricTensor{2, dim, T})
+    @test isa(dott(A), SymmetricTensor{2, dim, T})
+    @test isa(dott(A_sym), SymmetricTensor{2, dim, T})
 end # of testset
 
 @testset "symmetric/skew-symmetric" begin

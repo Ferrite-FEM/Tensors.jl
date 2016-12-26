@@ -296,51 +296,6 @@ Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = dot(promote(S1,
 
 """
 ```julia
-tdot(::Vec, ::Vec)
-tdot(::Vec, ::SecondOrderTensor)
-tdot(::SecondOrderTensor, ::Vec)
-tdot(::SecondOrderTensor, ::SecondOrderTensor)
-```
-Computes the transpose-dot product (single contraction) between two tensors.
-
-**Example:**
-
-```jldoctest
-julia> A = rand(Tensor{2,2})
-2×2 ContMechTensors.Tensor{2,2,Float64,4}:
- 0.590845  0.566237
- 0.766797  0.460085
-
-julia> B = rand(Tensor{2,2})
-2×2 ContMechTensors.Tensor{2,2,Float64,4}:
- 0.794026  0.200586
- 0.854147  0.298614
-
-julia> tdot(A,B)
-2×2 ContMechTensors.Tensor{2,2,Float64,4}:
- 1.1241    0.347492
- 0.842587  0.250967
-
-julia> A'⋅B
-2×2 ContMechTensors.Tensor{2,2,Float64,4}:
- 1.1241    0.347492
- 0.842587  0.250967
-```
-"""
-@inline tdot{dim, T1, T2}(v1::Vec{dim, T1}, S2::SecondOrderTensor{dim, T2}) = dot(v1, S2)
-@inline tdot{dim, T1, T2}(S1::SecondOrderTensor{dim, T1}, v2::Vec{dim, T2}) = dot(v2, S1)
-@inline tdot{dim, T1, T2}(v1::Vec{dim, T1}, v2::Vec{dim, T2}) = dot(v1, v2)
-
-@inline function tdot{dim, T1, T2, M}(S1::Tensor{2, dim, T1, M}, S2::Tensor{2, dim, T2, M})
-    return Tensor{2, dim}(tomatrix(S1)' * tomatrix(S2))
-end
-
-@inline tdot{dim, T1, T2, M}(S1::SymmetricTensor{2, dim, T1, M}, S2::SymmetricTensor{2, dim, T2, M}) = dot(S1,S2)
-@inline tdot{dim, T1, T2, M1, M2}(S1::SymmetricTensor{2, dim, T1, M1}, S2::Tensor{2, dim, T2, M2}) = dot(S1,S2)
-@inline tdot{dim, T1, T2, M1, M2}(S1::Tensor{2, dim, T1, M1}, S2::SymmetricTensor{2, dim, T2, M2}) = tdot(promote(S1,S2)...)
-
-"""
-```julia
 tdot(::SecondOrderTensor)
 ```
 Computes the transpose-dot of a second order tensor with itself.
@@ -383,10 +338,35 @@ end
 
 """
 ```julia
+dott(::SecondOrderTensor)
+```
+Computes the dot-transpose of a second order tensor with itself.
+Returns a `SymmetricTensor`.
+
+**Example:**
+
+```jldoctest
+julia> A = rand(Tensor{2,3})
+3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> dott(A)
+3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+ 0.601011  0.878275  0.777051
+ 0.878275  1.30763   1.18611
+ 0.777051  1.18611   1.11112
+```
+"""
+@inline dott(S::SecondOrderTensor) = tdot(transpose(S))
+
+"""
+```julia
 cross(::Vec, ::Vec)
 ```
 Computes the cross product between two `Vec` vectors, returns a `Vec{3}`. For dimensions 1 and 2 the `Vec`'s
-are expanded to 3D first. The infix operator × (written `\\times`) can also be used.
+are expanded to 3D first. The infix operator `×` (written `\\times`) can also be used.
 
 **Example:**
 

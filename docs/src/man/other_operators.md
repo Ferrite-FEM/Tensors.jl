@@ -12,12 +12,15 @@ Pages = ["other_operators.md"]
 ```
 
 ## Transpose-dot
-The product between the transpose of a tensor with a second tensor.
+The dot product between the transpose of a tensor with itself. Results in a symmetric tensor.
 
-$\mathbf{A} = \mathbf{B}^\text{T} \cdot \mathbf{C} \Leftrightarrow A_{ij} = B_{ki}^\text{T} C_{kj} = B_{ik} C_{kj}$
+$\mathbf{A} = \mathbf{B}^\text{T} \cdot \mathbf{B} \Leftrightarrow A_{ij} = B_{ki}^\text{T} B_{kj} = B_{ik} B_{kj}$
+
+$\mathbf{A} = \mathbf{B} \cdot \mathbf{B}^\text{T} \Leftrightarrow A_{ij} = B_{ik} B_{jk}^\text{T} = B_{ik} B_{kj}$
 
 ```@docs
 tdot
+dott
 ```
 
 ## Norm

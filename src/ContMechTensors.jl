@@ -9,7 +9,7 @@ export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOr
 
 export otimes, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
 export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric
-export tdot, dotdot
+export tdot, dott, dotdot
 export hessian#, gradient
 
 @deprecate extract_components(tensor) Array(tensor)
