@@ -19,3 +19,9 @@ end
 function Base.:\(S1::AbstractTensor, S2::AbstractTensor)
     error("Don't use `A\\B`, use `inv(A) ⋅ B` instead.")
 end
+
+# Remove + and - between number and Tensor (issue #75)
+Base.:+(n::Number, T::AbstractTensor) = throw(MethodError(+, (n, T)))
+Base.:+(T::AbstractTensor, n::Number) = throw(MethodError(+, (T, n)))
+Base.:-(n::Number, T::AbstractTensor) = throw(MethodError(-, (n, T)))
+Base.:-(T::AbstractTensor, n::Number) = throw(MethodError(-, (T, n)))

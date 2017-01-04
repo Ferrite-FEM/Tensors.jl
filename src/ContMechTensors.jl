@@ -140,16 +140,12 @@ end
 # Simple Math #
 ###############
 
-# op(Number, Tensor): *, /, +, -
+# op(Number, Tensor): *, /
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
         @inline Base.:*{order, dim, T, N}(n::Number, t::$TensorType{order, dim, T, N}) = $TensorType{order, dim}(n * tovector(t))
         @inline Base.:*{order, dim, T, N}(t::$TensorType{order, dim, T, N}, n::Number) = $TensorType{order, dim}(tovector(t) * n)
         @inline Base.:/{order, dim, T, N}(t::$TensorType{order, dim, T, N}, n::Number) = $TensorType{order, dim}(tovector(t) / n)
-        @inline Base.:+{order, dim, T, N}(n::Number, t::$TensorType{order, dim, T, N}) = $TensorType{order, dim}(n + tovector(t))
-        @inline Base.:+{order, dim, T, N}(t::$TensorType{order, dim, T, N}, n::Number) = $TensorType{order, dim}(tovector(t) + n)
-        @inline Base.:-{order, dim, T, N}(n::Number, t::$TensorType{order, dim, T, N}) = $TensorType{order, dim}(n - tovector(t))
-        @inline Base.:-{order, dim, T, N}(t::$TensorType{order, dim, T, N}, n::Number) = $TensorType{order, dim}(tovector(t) - n)
 
         # Unary -, +
         @inline Base.:-{order, dim, T, N}(t::$TensorType{order, dim, T, N}) = $TensorType{order, dim}(-tovector(t))
