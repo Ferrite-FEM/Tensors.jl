@@ -26,8 +26,6 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4)
         # Vec
         if order == 1
             @eval begin
-                N = ContMechTensors.n_components(Tensor{$order, $dim})
-
                 t = @inferred $(op)(Vec{$dim})
                 @test isa(t, Tensor{$order, $dim, Float64})
                 @test isa(t, Vec{$dim, Float64})
@@ -36,6 +34,19 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4)
                 @test isa(t, Tensor{$order, $dim, $T})
                 @test isa(t, Vec{$dim, $T})
             end
+        end
+    end
+    for TensorType in (Tensor, SymmetricTensor), (func, el) in ((:zeros, :zero), (:ones, :one))
+        TensorType == SymmetricTensor && order == 1 && continue
+        order == 1 && func == :ones && continue # one not supported for Vec's
+        @eval begin
+            N = ContMechTensors.n_components($TensorType{$order, $dim})
+            tens_arr1 = $func($TensorType{$order, $dim}, 1)
+            tens_arr2 = $func($TensorType{$order, $dim, $T}, 2, 2)
+            tens_arr3 = $func($TensorType{$order, $dim, $T, N}, 3, 3, 3)
+            @test tens_arr1[1] == tens_arr2[1, 1] == tens_arr3[1, 1, 1] == $el($TensorType{$order, $dim, $T})
+            @test eltype(tens_arr1) == $TensorType{$order, $dim, Float64, N}
+            @test eltype(tens_arr2) == eltype(tens_arr3) == $TensorType{$order, $dim, $T, N}
         end
     end
 end
