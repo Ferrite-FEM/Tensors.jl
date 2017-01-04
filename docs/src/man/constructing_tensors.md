@@ -10,7 +10,7 @@ end
 Tensors can be created in multiple ways but they usually include running a function on tensor types of which there are two kinds, `Tensor{order, dim, T}` for non-symmetric tensors and `SymmetricTensor{order, dim, T}` for symmetric tensors.
 The parameter `order` is an integer of value 1, 2 or 4, excluding 1 for symmetric tensors. The second parameter `dim` is an integer which corresponds to the dimension of the tensor and can be 1, 2 or 3. The last parameter `T` is the number type that the tensors contain, i.e. `Float64` or `Float32`.
 
-## Zero tensors
+## [Zero tensors](@id zero_tensors)
 
 A tensor with only zeros is created using the function `zero`, applied to the type of tensor that should be created:
 
@@ -21,7 +21,7 @@ julia> zero(Tensor{1, 2})
  0.0
 ```
 
-By default, a tensor of `Float64`s is created but by explicitly giving the `T` parameter, this can be changed:
+By default, a tensor of `Float64`s is created, but by explicitly giving the `T` parameter this can be changed:
 
 ```jldoctest
 julia> zero(SymmetricTensor{4, 2, Float32})
@@ -43,6 +43,15 @@ julia> zero(SymmetricTensor{4, 2, Float32})
  0.0  0.0
 ```
 
+A Julia `Array` with zeroed tensors can be created with `zeroes`, with the tensor type and dimensions of the array as arguments:
+
+```jldoctest
+julia> zeros(Tensor{2,2}, 2, 3)
+2×3 Array{ContMechTensors.Tensor{2,2,Float64,4},2}:
+ [0.0 0.0; 0.0 0.0]  [0.0 0.0; 0.0 0.0]  [0.0 0.0; 0.0 0.0]
+ [0.0 0.0; 0.0 0.0]  [0.0 0.0; 0.0 0.0]  [0.0 0.0; 0.0 0.0]
+```
+
 ## Constant tensors
 
 A tensor filled with ones is created using the function `ones`, applied to the type of tensor that should be created:
@@ -54,15 +63,20 @@ julia> ones(Tensor{2,2})
  1.0  1.0
 ```
 
-By default, a tensor of `Float64`s is created but by explicitly giving the `T` parameter, this can be changed:
+By default, a tensor of `Float64`s is created, but by explicitly giving the `T` parameter this can be changed, like for [zero](@ref zero_tensors).
 
-```jldoctest
-julia> ones(Vec{3,Float32})
-3-element ContMechTensors.Tensor{1,3,Float32,3}:
- 1.0
- 1.0
- 1.0
-```
+!!! note
+    The function `ones` has double meaning: it can create a tensor filled with ones
+    (as described above) or create a Julia `Array` with [identity tensors](@ref identity_tensors).
+    Thus, to create an `Array` with tensors filled with ones, instead use array comprehension:
+
+    ```jldoctest
+    julia> [ones(Tensor{2,2}) for i in 1:2, j in 1:3]
+    2×3 Array{ContMechTensors.Tensor{2,2,Float64,4},2}:
+     [1.0 1.0; 1.0 1.0]  [1.0 1.0; 1.0 1.0]  [1.0 1.0; 1.0 1.0]
+     [1.0 1.0; 1.0 1.0]  [1.0 1.0; 1.0 1.0]  [1.0 1.0; 1.0 1.0]
+    ```
+
 
 ## Random tensors
 
@@ -86,7 +100,7 @@ julia> rand(SymmetricTensor{2,3,Float32})
  0.2082     0.257278  0.958491
 ```
 
-## Identity tensors
+## [Identity tensors](@id identity_tensors)
 
 Identity tensors can be created for orders 2 and 4. The components of the second order identity tensor ``\mathbf{I}`` are defined as ``I_{ij} = \delta_{ij}``, where ``\delta_{ij}`` is the Kronecker delta. The fourth order identity tensor ``\mathsf{I}`` is the resulting tensor from taking the derivative of a second order tensor ``\mathbf{A}`` with itself:
 
@@ -104,6 +118,15 @@ julia> one(SymmetricTensor{2, 2})
 2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
  1.0  0.0
  0.0  1.0
+```
+
+A Julia `Array` with identity tensors can be created with `ones`, with the tensor type and dimensions of the array as arguments:
+
+```jldoctest
+julia> ones(Tensor{2,2}, 2, 2)
+2×2 Array{ContMechTensors.Tensor{2,2,Float64,4},2}:
+ [1.0 0.0; 0.0 1.0]  [1.0 0.0; 0.0 1.0]
+ [1.0 0.0; 0.0 1.0]  [1.0 0.0; 0.0 1.0]
 ```
 
 ## From arrays / tuples
