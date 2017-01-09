@@ -129,6 +129,12 @@ julia> ones(Tensor{2,2}, 2, 2)
  [1.0 0.0; 0.0 1.0]  [1.0 0.0; 0.0 1.0]
 ```
 
+## Base vectors
+
+```@docs
+basevec
+```
+
 ## From arrays / tuples
 
 Tensors can also be created from a tuple or an array with the same number of elements as the number of independent indices in the tensor. For example, a first order tensor (vector) in two dimensions is here created from a vector of length two:

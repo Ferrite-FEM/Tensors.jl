@@ -112,6 +112,24 @@ for T in (Float32, Float64), dim in (1,2,3)
 end
 end # of testset
 
+@testset "base vectors" begin
+for T in (Float32, Float64), dim in (1,2,3)
+    eᵢ_func(i) = Vec{dim, T}(j->j==i ? one(T) : zero(T))
+
+    a = rand(Vec{dim, T})
+    for i in 1:dim
+        @test eᵢ(a, i) == eᵢ(typeof(a), i) == eᵢ(a)[i] == eᵢ(typeof(a))[i] == eᵢ_func(i)
+    end
+
+    b = zero(a)
+    for i in 1:dim
+        @test a[i] == eᵢ(a, i) ⋅ a
+        b += eᵢ(a, i) * a[i]
+    end
+    @test a ≈ b
+end
+end # of testset
+
 @testset "simple math" begin
 for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Tensor, SymmetricTensor)
     TensorType == SymmetricTensor && order == 1 && continue
