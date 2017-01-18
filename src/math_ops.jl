@@ -26,17 +26,20 @@ julia> norm(A)
 
 @generated function Base.norm{dim}(S::SymmetricTensor{4, dim})
     idx(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
-    ex = Expr[]
+    ex1, ex2 = Expr[], Expr[]
     for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
         if i == j && k == l
-             push!(ex, :(data[$(idx(i,j,k,l))] * data[$(idx(i,j,k,l))]))
+             push!(ex1, :(data[$(idx(i,j,k,l))]))
+             push!(ex2, :(data[$(idx(i,j,k,l))]))
         elseif i == j || k == l
-             push!(ex, :(2 * data[$(idx(i,j,k,l))] * data[$(idx(i,j,k,l))]))
+             push!(ex1, :(2 * data[$(idx(i,j,k,l))]))
+             push!(ex2, :(    data[$(idx(i,j,k,l))]))
         else
-             push!(ex, :(4 * data[$(idx(i,j,k,l))] * data[$(idx(i,j,k,l))]))
+             push!(ex1, :(4 * data[$(idx(i,j,k,l))]))
+             push!(ex2, :(    data[$(idx(i,j,k,l))]))
         end
     end
-    exp = reduce((ex1, ex2) -> :(+($ex1, $ex2)), ex)
+    exp = make_muladd_exp(ex1, ex2)
     return quote
       $(Expr(:meta, :inline))
       data = get_data(S)

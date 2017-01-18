@@ -22,3 +22,23 @@ function tensor_create{order, dim}(::Type{SymmetricTensor{order, dim}}, f)
     end
     return ex
 end
+
+# create recursive muladd exp from two expression arrays
+function make_muladd_exp(ex1, ex2)
+    N = length(ex1)
+    ex = Expr(:call)
+    exn = Expr(:call, :*, ex1[1], ex2[1])
+
+    if N == 1 # return only the multiplication
+        return exn
+    end
+
+    for i in 2:N
+        ex = Expr(:call, :muladd)
+        push!(ex.args, ex1[i])
+        push!(ex.args, ex2[i])
+        push!(ex.args, exn)
+        exn = ex
+    end
+    return ex
+end
