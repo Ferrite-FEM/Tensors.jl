@@ -144,6 +144,12 @@ where ``\lambda_i`` are the eigenvalues and ``\mathbf{v}_i`` are the correspondi
 eig
 ```
 
+## Rotations
+
+```@docs
+rotate
+```
+
 ## Special operations
 
 For computing a special dot product between two vectors $\mathbf{a}$ and $\mathbf{b}$ with a fourth order symmetric tensor $\mathbf{C}$ such that $a_k C_{ikjl} b_l$ there is `dotdot(a, C, b)`. This function is useful because it is the expression for the tangent matrix in continuum mechanics when the displacements are approximated by scalar shape functions.

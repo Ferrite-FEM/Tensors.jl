@@ -233,5 +233,23 @@ end # of testset
     AAT = Tensor{4, dim, T}((i,j,k,l) -> AA_sym[i,l,k,j])
     @test AAT ⊡ (b ⊗ a) ≈ dotdot(a, AA_sym, b)
 end # of testset
+
+@testset "rotation" begin
+    x = eᵢ(Vec{3}, 1)
+    y = eᵢ(Vec{3}, 2)
+    z = eᵢ(Vec{3}, 3)
+
+    @test rotate(z, z, rand()) ≈ z
+    @test rotate(2*z, y, π/2) ≈ 2*x
+    @test rotate(3*z, y, π) ≈ -3*z
+    @test rotate(x+y+z, z, π/4) ≈ Vec{3}((0.0,√2,1.0))
+
+    a = rand(Vec{3})
+    b = rand(Vec{3})
+    @test rotate(a, b, 0) ≈ a
+    @test rotate(a, b, π) ≈ rotate(a, b, -π)
+    @test rotate(a, b, π/2) ≈ rotate(a, -b, -π/2)
+end # of testset
+
 end
 end # of testset

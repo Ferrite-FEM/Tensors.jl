@@ -283,3 +283,42 @@ julia> trace(dev(A))
         $Tt($exp)
     end
 end
+
+# http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+"""
+Rotate a three dimensional vector `x` around another vector `u` a total of `θ` radians.
+
+```julia
+rotate(x::Vec{3}, u::Vec{3}, θ::Number)
+```
+
+**Example:**
+
+```jldoctest
+julia> x = Vec{3}((0.0, 0.0, 1.0))
+3-element ContMechTensors.Tensor{1,3,Float64,3}:
+ 0.0
+ 0.0
+ 1.0
+
+julia> u = Vec{3}((0.0, 1.0, 0.0))
+3-element ContMechTensors.Tensor{1,3,Float64,3}:
+ 0.0
+ 1.0
+ 0.0
+
+julia> rotate(x, u, π/2)
+3-element ContMechTensors.Tensor{1,3,Float64,3}:
+ 1.0
+ 0.0
+ 6.12323e-17
+```
+"""
+function rotate(x::Vec{3}, u::Vec{3}, θ::Number)
+    ux = u ⋅ x
+    u² = u ⋅ u
+    c = cos(θ)
+    s = sin(θ)
+    (u * ux * (1 - c) + u² * x * c + sqrt(u²) * (u × x) * s) / u²
+end
+

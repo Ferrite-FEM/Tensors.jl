@@ -12,6 +12,8 @@ export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric
 export tdot, dott, dotdot
 export hessian#, gradient
 export basevec, eᵢ
+export rotate
+
 
 @deprecate extract_components(tensor) Array(tensor)
 
