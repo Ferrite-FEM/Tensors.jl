@@ -5,7 +5,7 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4)
         for TensorType in (Tensor, SymmetricTensor)
             TensorType == SymmetricTensor && order == 1 && continue
             @eval begin
-                N = ContMechTensors.n_components($TensorType{$order, $dim})
+                N = Tensors.n_components($TensorType{$order, $dim})
 
                 t = @inferred $(op)($TensorType{$order, $dim})
                 @test isa(t, $TensorType{$order, $dim, Float64})
@@ -40,7 +40,7 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4)
         TensorType == SymmetricTensor && order == 1 && continue
         order == 1 && func == :ones && continue # one not supported for Vec's
         @eval begin
-            N = ContMechTensors.n_components($TensorType{$order, $dim})
+            N = Tensors.n_components($TensorType{$order, $dim})
             tens_arr1 = $func($TensorType{$order, $dim}, 1)
             tens_arr2 = $func($TensorType{$order, $dim, $T}, 2, 2)
             tens_arr3 = $func($TensorType{$order, $dim, $T, N}, 3, 3, 3)
@@ -442,7 +442,7 @@ for dim in (1,2,3), order in (1,2,4)
     @test isa(convert(tens_wide, At), tens_wide)
 
     if order != 1
-        M = ContMechTensors.n_components(SymmetricTensor{order, dim})
+        M = Tensors.n_components(SymmetricTensor{order, dim})
         sym = SymmetricTensor{order, dim, T, M}
         sym_wide = SymmetricTensor{order, dim, WIDE_T, M}
 

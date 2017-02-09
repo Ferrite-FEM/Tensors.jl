@@ -205,7 +205,7 @@ julia> A = rand(SymmetricTensor{2, 2});
 julia> B = rand(SymmetricTensor{2, 2});
 
 julia> A ⊗ B
-2×2×2×2 ContMechTensors.SymmetricTensor{4,2,Float64,9}:
+2×2×2×2 Tensors.SymmetricTensor{4,2,Float64,9}:
 [:, :, 1, 1] =
  0.271839  0.352792
  0.352792  0.260518
@@ -256,22 +256,22 @@ The symbol `⋅`, written `\\cdot`, is overloaded for single contraction.
 
 ```jldoctest
 julia> A = rand(Tensor{2, 2})
-2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+2×2 Tensors.Tensor{2,2,Float64,4}:
  0.590845  0.566237
  0.766797  0.460085
 
 julia> B = rand(Tensor{1, 2})
-2-element ContMechTensors.Tensor{1,2,Float64,2}:
+2-element Tensors.Tensor{1,2,Float64,2}:
  0.794026
  0.854147
 
 julia> dot(A, B)
-2-element ContMechTensors.Tensor{1,2,Float64,2}:
+2-element Tensors.Tensor{1,2,Float64,2}:
  0.952796
  1.00184
 
 julia> A ⋅ B
-2-element ContMechTensors.Tensor{1,2,Float64,2}:
+2-element Tensors.Tensor{1,2,Float64,2}:
  0.952796
  1.00184
 ```
@@ -315,13 +315,13 @@ Returns a `SymmetricTensor`.
 
 ```jldoctest
 julia> A = rand(Tensor{2,3})
-3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+3×3 Tensors.Tensor{2,3,Float64,9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
 
 julia> tdot(A)
-3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
  1.2577   1.36435   0.48726
  1.36435  1.57172   0.540229
  0.48726  0.540229  0.190334
@@ -358,13 +358,13 @@ Returns a `SymmetricTensor`.
 
 ```jldoctest
 julia> A = rand(Tensor{2,3})
-3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+3×3 Tensors.Tensor{2,3,Float64,9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
 
 julia> dott(A)
-3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
  0.601011  0.878275  0.777051
  0.878275  1.30763   1.18611
  0.777051  1.18611   1.11112
@@ -383,19 +383,19 @@ are expanded to 3D first. The infix operator `×` (written `\\times`) can also b
 
 ```jldoctest
 julia> a = rand(Vec{3})
-3-element ContMechTensors.Tensor{1,3,Float64,3}:
+3-element Tensors.Tensor{1,3,Float64,3}:
  0.590845
  0.766797
  0.566237
 
 julia> b = rand(Vec{3})
-3-element ContMechTensors.Tensor{1,3,Float64,3}:
+3-element Tensors.Tensor{1,3,Float64,3}:
  0.460085
  0.794026
  0.854147
 
 julia> a × b
-3-element ContMechTensors.Tensor{1,3,Float64,3}:
+3-element Tensors.Tensor{1,3,Float64,3}:
   0.20535
  -0.24415
   0.116354

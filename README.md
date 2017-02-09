@@ -1,4 +1,4 @@
-# ContMechTensors
+# Tensors
 
 *Efficient computations with symmetric and non-symmetric tensors with support for automatic differentiation.*
 
@@ -19,7 +19,7 @@ Supports Automatic Differentiation to easily compute first and second order deri
 The package is registered in `METADATA.jl` and so can be installed with `Pkg.add`.
 
 ```julia
-julia> Pkg.add("ContMechTensors")
+julia> Pkg.add("Tensors")
 ```
 
 ## Documentation
@@ -36,18 +36,18 @@ The package is tested against Julia `0.5`, and `0.6-dev` on Linux, OS X, and Win
 Contributions are very welcome, as are feature requests and suggestions. Please open an [issue][issues-url] if you encounter any problems.
 
 [docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
-[docs-latest-url]: https://kristofferc.github.io/ContMechTensors.jl/latest/
+[docs-latest-url]: https://kristofferc.github.io/Tensors.jl/latest/
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://kristofferc.github.io/ContMechTensors.jl/stable
+[docs-stable-url]: https://kristofferc.github.io/Tensors.jl/stable
 
-[travis-img]: https://travis-ci.org/KristofferC/ContMechTensors.jl.svg?branch=master
-[travis-url]: https://travis-ci.org/KristofferC/ContMechTensors.jl
+[travis-img]: https://travis-ci.org/KristofferC/Tensors.jl.svg?branch=master
+[travis-url]: https://travis-ci.org/KristofferC/Tensors.jl
 
 [appveyor-img]: https://ci.appveyor.com/api/projects/status/xe0ghtyas12wv555/branch/master?svg=true
-[appveyor-url]: https://ci.appveyor.com/project/KristofferC/contmechtensors-jl/branch/master
+[appveyor-url]: https://ci.appveyor.com/project/KristofferC/Tensors-jl/branch/master
 
-[issues-url]: https://github.com/KristofferC/ContMechTensors.jl/issues
+[issues-url]: https://github.com/KristofferC/Tensors.jl/issues
 
-[codecov-img]: https://codecov.io/gh/KristofferC/ContMechTensors.jl/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/KristofferC/ContMechTensors.jl
+[codecov-img]: https://codecov.io/gh/KristofferC/Tensors.jl/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/KristofferC/Tensors.jl

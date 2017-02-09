@@ -1,6 +1,6 @@
 __precompile__()
 
-module ContMechTensors
+module Tensors
 
 import Base.@pure
 using StaticArrays
@@ -43,7 +43,7 @@ typealias AllTensors{dim, T} Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T}
 typealias SecondOrderTensor{dim, T} Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T}}
 typealias FourthOrderTensor{dim, T} Union{SymmetricTensor{4, dim, T}, Tensor{4, dim, T}}
 typealias SymmetricTensors{dim, T} Union{SymmetricTensor{2, dim, T}, SymmetricTensor{4, dim, T}}
-typealias Tensors{dim, T} Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T}}
+typealias NonSymmetricTensors{dim, T} Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T}}
 
 include("utilities.jl")
 include("indexing.jl")
@@ -314,7 +314,7 @@ julia> eᵢ(Vec{2, Float64})
 ([1.0,0.0],[0.0,1.0])
 
 julia> eᵢ(Vec{2, Float64}, 2)
-2-element ContMechTensors.Tensor{1,2,Float64,2}:
+2-element Tensors.Tensor{1,2,Float64,2}:
  0.0
  1.0
 ```

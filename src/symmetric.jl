@@ -12,12 +12,12 @@ Returns a `SymmetricTensor`.
 
 ```jldoctest
 julia> A = rand(Tensor{2,2})
-2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+2×2 Tensors.Tensor{2,2,Float64,4}:
  0.590845  0.566237
  0.766797  0.460085
 
 julia> symmetric(A)
-2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
+2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
  0.590845  0.666517
  0.666517  0.460085
 ```

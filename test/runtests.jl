@@ -1,4 +1,4 @@
-using ContMechTensors
+using Tensors
 using Base.Test
 
 include("test_misc.jl")

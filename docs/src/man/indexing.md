@@ -1,7 +1,7 @@
 ```@meta
 DocTestSetup = quote
     srand(1234)
-    using ContMechTensors
+    using Tensors
 end
 ```
 
@@ -27,7 +27,7 @@ Slicing will produce a `Tensor` of lower order.
 julia> A = rand(Tensor{2, 2});
 
 julia> A[:, 1]
-2-element ContMechTensors.Tensor{1,2,Float64,2}:
+2-element Tensors.Tensor{1,2,Float64,2}:
  0.590845
  0.766797
 ```
@@ -36,7 +36,7 @@ Since `Tensor`s are immutable there is no `setindex!` function defined on them. 
 
 ```jldoctest
 julia> Tensor{2, 2}((i,j) -> i == 1 && j == 2 ? 1.0 : 0.0)
-2×2 ContMechTensors.Tensor{2,2,Float64,4}:
+2×2 Tensors.Tensor{2,2,Float64,4}:
  0.0  1.0
  0.0  0.0
 ```
@@ -45,12 +45,12 @@ For symmetric tensors, note that you should only set the lower triangular part o
 
 ```jldoctest
 julia> SymmetricTensor{2, 2}((i,j) -> i == 1 && j == 2 ? 1.0 : 0.0)
-2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
+2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
  0.0  0.0
  0.0  0.0
 
 julia> SymmetricTensor{2, 2}((i,j) -> i == 2 && j == 1 ? 1.0 : 0.0)
-2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
+2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
  0.0  1.0
  1.0  0.0
 ```

@@ -1,7 +1,7 @@
 ```@meta
 DocTestSetup = quote
     srand(1234)
-    using ContMechTensors
+    using Tensors
 end
 ```
 

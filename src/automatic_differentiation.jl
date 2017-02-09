@@ -301,7 +301,7 @@ is given, the value of the function is also returned as a second output argument
 julia> A = rand(SymmetricTensor{2, 2});
 
 julia> ∇f = gradient(norm, A)
-2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
+2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
  0.434906  0.56442
  0.56442   0.416793
 
@@ -334,7 +334,7 @@ also returned as a second and third output argument.
 julia> A = rand(SymmetricTensor{2, 2});
 
 julia> ∇∇f = hessian(norm, A)
-2×2×2×2 ContMechTensors.SymmetricTensor{4,2,Float64,9}:
+2×2×2×2 Tensors.SymmetricTensor{4,2,Float64,9}:
 [:, :, 1, 1] =
   0.596851  -0.180684
  -0.180684  -0.133425

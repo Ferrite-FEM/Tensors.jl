@@ -16,4 +16,4 @@ git:
   depth: 99999
 
 after_success:
-  - julia -e 'include(Pkg.dir("ContMechTensors", "test", "coverage.jl"))'
+  - julia -e 'include(Pkg.dir("Tensors", "test", "coverage.jl"))'

@@ -1,6 +1,6 @@
 # Demos
 
-This section contain a few demos of applying `ContMechTensors` to continuum mechanics.
+This section contain a few demos of applying `Tensors` to continuum mechanics.
 
 ## Creating the linear elasticity tensor
 
@@ -13,7 +13,7 @@ where $\delta_{ij} = 1$ if $i = j$ otherwise $0$. It can also be computed in ter
 The code below creates the elasticity tensor for given parameters $E$ and $\nu$ and dimension $\texttt{dim}$. Note the similarity between the mathematical formula and the code.
 
 ```julia
-using ContMechTensors
+using Tensors
 E = 200e9
 ν = 0.3
 dim = 2
@@ -35,7 +35,7 @@ $\Psi(\mathbf{C}) = 1/2 \mu (\mathrm{tr}(\hat{\mathbf{C}}) - 3) + K_b(J-1)^2,$
 
 where $\hat{\mathbf{C}} = \mathrm{det}(\mathbf{C})^{-1/3} \mathbf{C}$ and $J = \det(\mathbf{F}) = \sqrt{\det(\mathbf{C})}$ and the shear and bulk modulus are given by $\mu$ and $K_b$ respectively.
 
-This free energy function can be implemented in `ContMechTensors` as:
+This free energy function can be implemented in `Tensors` as:
 
 ```julia
 function Ψ(C, μ, Kb)
@@ -69,7 +69,7 @@ For some material models it can be cumbersome to compute the analytical expressi
 ```@meta
 DocTestSetup = quote
     srand(1234)
-    using ContMechTensors
+    using Tensors
     E = 200e9
     ν = 0.3
     dim = 2
@@ -106,13 +106,13 @@ julia> F = one(Tensor{2,3}) + rand(Tensor{2,3});
 julia> C = tdot(F);
 
 julia> S_AD = 2 * gradient(C -> Ψ(C, μ, Kb), C)
-3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
   4.30534e11  -2.30282e11  -8.52861e10
  -2.30282e11   4.38793e11  -2.64481e11
  -8.52861e10  -2.64481e11   7.85515e11
 
 julia> S(C, μ, Kb)
-3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
   4.30534e11  -2.30282e11  -8.52861e10
  -2.30282e11   4.38793e11  -2.64481e11
  -8.52861e10  -2.64481e11   7.85515e11

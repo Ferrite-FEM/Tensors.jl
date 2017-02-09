@@ -1,4 +1,4 @@
-# ContMechTensors
+# Tensors
 
 *Efficient computations with symmetric and non-symmetric tensors in Julia.*
 
@@ -12,10 +12,10 @@ Supports Automatic Differentiation to easily compute first and second order deri
 
 ## Installation
 
-`ContMechTensors` is a registered package and so can be installed via
+`Tensors` is a registered package and so can be installed via
 
 ```julia
-Pkg.add("ContMechTensors")
+Pkg.add("Tensors")
 ```
 
 ## Manual Outline

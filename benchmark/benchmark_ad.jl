@@ -1,5 +1,5 @@
-const ∇ = ContMechTensors.gradient
-const Δ = ContMechTensors.hessian
+const ∇ = Tensors.gradient
+const Δ = Tensors.hessian
 
 function Ψ(C, μ, Kb)
     detC = det(C)

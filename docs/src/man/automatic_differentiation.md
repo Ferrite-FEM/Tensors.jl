@@ -1,7 +1,7 @@
 ```@meta
 DocTestSetup = quote
     srand(1234)
-    using ContMechTensors
+    using Tensors
 end
 ```
 
@@ -11,13 +11,13 @@ end
 Pages = ["automatic_differentiation.md"]
 ```
 
-`ContMechTensors` supports forward mode automatic differentiation (AD) of tensorial functions to compute first order derivatives (gradients) and second order derivatives (Hessians).
+`Tensors` supports forward mode automatic differentiation (AD) of tensorial functions to compute first order derivatives (gradients) and second order derivatives (Hessians).
 It does this by exploiting the `Dual` number defined in `ForwardDiff.jl`.
 While `ForwardDiff.jl` can itself be used to differentiate tensor functions it is a bit awkward because `ForwardDiff.jl` is written to work with standard Julia `Array`s. One therefore has to send the input argument as an `Array` to `ForwardDiff.jl`, convert it to a `Tensor` and then convert the output `Array` to a `Tensor` again. This can also be inefficient since these `Array`s are allocated on the heap so one needs to preallocate which can be annoying.
 
-Instead, it is simpler to use `ContMechTensors` own AD API to do the differentiation. This does not require any conversions and everything will be stack allocated so there is no need to preallocate.
+Instead, it is simpler to use `Tensors` own AD API to do the differentiation. This does not require any conversions and everything will be stack allocated so there is no need to preallocate.
 
-The API for AD in `ContMechTensors` is `gradient(f, A)` and `hessian(f, A)` where `f` is a function and `A` is a first or second order tensor. For `gradient` the function can return a scalar, vector (in case the input is a vector) or a second order tensor. For `hessian` the function should return a scalar.
+The API for AD in `Tensors` is `gradient(f, A)` and `hessian(f, A)` where `f` is a function and `A` is a first or second order tensor. For `gradient` the function can return a scalar, vector (in case the input is a vector) or a second order tensor. For `hessian` the function should return a scalar.
 
 When evaluating the function with dual numbers, the value (value and gradient in the case of hessian) is obtained automatically, along with the gradient. To obtain the lower order results `gradient` and `hessian` accepts a third arguement, a `Symbol`. Note that the symbol is only used to dispatch to the correct function, and thus it can be any symbol. In the examples the symbol `:all` is used to obtain all the lower order derivatives and values.
 
@@ -38,12 +38,12 @@ $f(\mathbf{x}) = |\mathbf{x}| \quad \Rightarrow \quad \partial f / \partial \mat
 julia> x = rand(Vec{2});
 
 julia> gradient(norm, x)
-2-element ContMechTensors.Tensor{1,2,Float64,2}:
+2-element Tensors.Tensor{1,2,Float64,2}:
  0.61036
  0.792124
 
 julia> x / norm(x)
-2-element ContMechTensors.Tensor{1,2,Float64,2}:
+2-element Tensors.Tensor{1,2,Float64,2}:
  0.61036
  0.792124
 ```
@@ -56,12 +56,12 @@ $f(\mathbf{A}) = \det \mathbf{A} \quad \Rightarrow \quad \partial f / \partial \
 julia> A = rand(SymmetricTensor{2,2});
 
 julia> gradient(det, A)
-2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
+2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
   0.566237  -0.766797
  -0.766797   0.590845
 
 julia> inv(A)' * det(A)
-2×2 ContMechTensors.SymmetricTensor{2,2,Float64,3}:
+2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
   0.566237  -0.766797
  -0.766797   0.590845
 ```

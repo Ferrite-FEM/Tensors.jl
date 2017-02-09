@@ -1,9 +1,9 @@
-using Documenter, ContMechTensors
+using Documenter, Tensors
 
 makedocs(
-    modules = [ContMechTensors],
+    modules = [Tensors],
     format = :html,
-    sitename = "ContMechTensors.jl",
+    sitename = "Tensors.jl",
     doctest = true,
     strict = true,
     pages = Any[
@@ -21,7 +21,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/KristofferC/ContMechTensors.jl.git",
+    repo = "github.com/KristofferC/Tensors.jl.git",
     target = "build",
     julia = "0.5",
     deps = nothing,

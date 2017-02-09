@@ -11,7 +11,7 @@ Computes the norm of a tensor.
 
 ```jldoctest
 julia> A = rand(Tensor{2,3})
-3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+3×3 Tensors.Tensor{2,3,Float64,9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
@@ -57,7 +57,7 @@ Computes the determinant of a second order tensor.
 
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
-3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
  0.590845  0.766797  0.566237
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147
@@ -100,13 +100,13 @@ Computes the inverse of a second order tensor.
 
 ```jldoctest
 julia> A = rand(Tensor{2,3})
-3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+3×3 Tensors.Tensor{2,3,Float64,9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
 
 julia> inv(A)
-3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+3×3 Tensors.Tensor{2,3,Float64,9}:
   19.7146   -19.2802    7.30384
    6.73809  -10.7687    7.55198
  -68.541     81.4917  -38.8361
@@ -187,7 +187,7 @@ Computes the eigenvalues and eigenvectors of a symmetric second order tensor.
 
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
-3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
  0.590845  0.766797  0.566237
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147
@@ -195,19 +195,19 @@ julia> A = rand(SymmetricTensor{2,3})
 julia> Λ, Φ = eig(A);
 
 julia> Λ
-3-element ContMechTensors.Tensor{1,3,Float64,3}:
+3-element Tensors.Tensor{1,3,Float64,3}:
  -0.312033
   0.15636
   2.06075
 
 julia> Φ
-3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+3×3 Tensors.Tensor{2,3,Float64,9}:
   0.492843  -0.684993  0.536554
  -0.811724  -0.139855  0.567049
   0.313385   0.715     0.624952
 
 julia> Φ ⋅ diagm(Tensor{2,3}, Λ) ⋅ inv(Φ) # Same as A
-3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+3×3 Tensors.Tensor{2,3,Float64,9}:
  0.590845  0.766797  0.566237
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147
@@ -232,7 +232,7 @@ The synonym `vol` can also be used.
 
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
-3×3 ContMechTensors.SymmetricTensor{2,3,Float64,6}:
+3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
  0.590845  0.766797  0.566237
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147
@@ -262,7 +262,7 @@ Computes the deviatoric part of a second order tensor.
 julia> A = rand(Tensor{2,3});
 
 julia> dev(A)
-3×3 ContMechTensors.Tensor{2,3,Float64,9}:
+3×3 Tensors.Tensor{2,3,Float64,9}:
  0.0469421  0.460085   0.200586
  0.766797   0.250123   0.298614
  0.566237   0.854147  -0.297065
@@ -296,19 +296,19 @@ rotate(x::Vec{3}, u::Vec{3}, θ::Number)
 
 ```jldoctest
 julia> x = Vec{3}((0.0, 0.0, 1.0))
-3-element ContMechTensors.Tensor{1,3,Float64,3}:
+3-element Tensors.Tensor{1,3,Float64,3}:
  0.0
  0.0
  1.0
 
 julia> u = Vec{3}((0.0, 1.0, 0.0))
-3-element ContMechTensors.Tensor{1,3,Float64,3}:
+3-element Tensors.Tensor{1,3,Float64,3}:
  0.0
  1.0
  0.0
 
 julia> rotate(x, u, π/2)
-3-element ContMechTensors.Tensor{1,3,Float64,3}:
+3-element Tensors.Tensor{1,3,Float64,3}:
  1.0
  0.0
  6.12323e-17
