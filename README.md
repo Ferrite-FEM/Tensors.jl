@@ -35,6 +35,13 @@ The package is tested against Julia `0.5`, and `0.6-dev` on Linux, OS X, and Win
 
 Contributions are very welcome, as are feature requests and suggestions. Please open an [issue][issues-url] if you encounter any problems.
 
+## Related packages
+
+Both the packages below provide a convenience macro to provide einstein summation notation for standard Julia `Array`'s:
+
+* [Einsum.jl](https://github.com/ahwillia/Einsum.jl)
+* [TensorOperations.jl](https://github.com/Jutho/TensorOperations.jl)
+
 [docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
 [docs-latest-url]: https://kristofferc.github.io/Tensors.jl/latest/
 
