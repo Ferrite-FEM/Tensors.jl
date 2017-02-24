@@ -24,170 +24,82 @@ julia> A ⊡ B
 1.9732018397544984
 ```
 """
-@inline dcontract{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim}) = tovector(S1) ⋅ tovector(S2)
-
-@inline function dcontract{dim}(S1::Tensor{4, dim}, S2::Tensor{4, dim})
-    Tensor{4, dim}(tomatrix(S1) * tomatrix(S2))
-end
-
-@inline function dcontract{dim}(S1::Tensor{4, dim}, S2::Tensor{2, dim})
-    Tensor{2, dim}(tomatrix(S1) * tovector(S2))
-end
-
-@inline function dcontract{dim}(S1::Tensor{2, dim}, S2::Tensor{4, dim})
-    Tensor{2, dim}(tomatrix(S2)' * tovector(S1))
-end
-
-const ⊡ = dcontract
-
-# Specialized methods for symmetric tensors
-@generated function dcontract{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
-    idx2(i,j) = compute_index(SymmetricTensor{2, dim}, i, j)
+@generated function dcontract{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
+    idxS1(i, j) = compute_index(get_base(S1), i, j)
+    idxS2(i, j) = compute_index(get_base(S2), i, j)
     ex1, ex2 = Expr[], Expr[]
-    for j in 1:dim, i in j:dim
-        if i == j
-            push!(ex1, :(get_data(S1)[$(idx2(i, j))]))
-            push!(ex2, :(get_data(S2)[$(idx2(i, j))]))
-        else
-            push!(ex1, :(2 * get_data(S1)[$(idx2(i, j))]))
-            push!(ex2, :(    get_data(S2)[$(idx2(i, j))]))
-        end
+    for j in 1:dim, i in 1:dim
+        push!(ex1, :(get_data(S1)[$(idxS1(i, j))]))
+        push!(ex2, :(get_data(S2)[$(idxS2(i, j))]))
     end
     exp = make_muladd_exp(ex1, ex2)
     return quote
         $(Expr(:meta, :inline))
-        $exp
+        @inbounds return $exp
     end
 end
 
-@generated function dcontract{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{4, dim})
-    idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
-    idx2(i,j) = compute_index(Tensor{2, dim}, i, j)
+@generated function dcontract{dim}(S1::SecondOrderTensor{dim}, S2::FourthOrderTensor{dim})
+    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
+    idxS1(i, j) = compute_index(get_base(S1), i, j)
+    idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
     exps = Expr(:tuple)
-    for l in 1:dim, k in l:dim
+    for l in 1:dim, k in 1:dim
         ex1, ex2 = Expr[], Expr[]
         for j in 1:dim, i in 1:dim
-            push!(ex1, :(data2[$(idx2(i, j))]))
-            push!(ex2, :(data4[$(idx4(i, j, k, l))]))
+            push!(ex1, :(get_data(S1)[$(idxS1(i, j))]))
+            push!(ex2, :(get_data(S2)[$(idxS2(i, j, k, l))]))
         end
         push!(exps.args, make_muladd_exp(ex1, ex2))
     end
+    expr = remove_duplicates(TensorType, exps)
     quote
         $(Expr(:meta, :inline))
-        data2 = get_data(S1)
-        data4 = get_data(S2)
-        @inbounds r = $exps
-        SymmetricTensor{2, dim}(r)
+        @inbounds return $TensorType($expr)
     end
 end
 
-@generated function dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::Tensor{2, dim})
-    idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
-    idx2(k,l) = compute_index(Tensor{2, dim}, k, l)
+@generated function dcontract{dim}(S1::FourthOrderTensor{dim}, S2::SecondOrderTensor{dim})
+    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
+    idxS1(i, j, k, l) = compute_index(get_base(S1), i, j, k, l)
+    idxS2(i, j) = compute_index(get_base(S2), i, j)
     exps = Expr(:tuple)
-    for j in 1:dim, i in j:dim
+    for j in 1:dim, i in 1:dim
         ex1, ex2 = Expr[], Expr[]
         for l in 1:dim, k in 1:dim
-            push!(ex1, :(data4[$(idx4(i, j, k, l))]))
-            push!(ex2, :(data2[$(idx2(k, l))]))
+            push!(ex1, :(get_data(S1)[$(idxS1(i, j, k, l))]))
+            push!(ex2, :(get_data(S2)[$(idxS2(k, l))]))
         end
         push!(exps.args, make_muladd_exp(ex1, ex2))
     end
+    expr = remove_duplicates(TensorType, exps)
     quote
         $(Expr(:meta, :inline))
-        data2 = get_data(S2)
-        data4 = get_data(S1)
-        @inbounds r = $exps
-        SymmetricTensor{2, dim}(r)
+        @inbounds return $TensorType($expr)
     end
 end
 
-@generated function dcontract{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{4, dim})
-    idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
-    idx2(i,j) = compute_index(SymmetricTensor{2, dim}, i, j)
+@generated function dcontract{dim}(S1::FourthOrderTensor{dim}, S2::FourthOrderTensor{dim})
+    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
+    idxS1(i, j, k, l) = compute_index(get_base(S1), i, j, k, l)
+    idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
     exps = Expr(:tuple)
-    for l in 1:dim, k in l:dim
+    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
         ex1, ex2 = Expr[], Expr[]
-        for j in 1:dim, i in j:dim
-            if i == j
-                push!(ex1, :(data2[$(idx2(i, j))]))
-                push!(ex2, :(data4[$(idx4(i, j, k, l))]))
-            else
-                push!(ex1, :(2 * data2[$(idx2(i, j))]))
-                push!(ex2, :(    data4[$(idx4(i, j, k, l))]))
-            end
+        for n in 1:dim, m in 1:dim
+            push!(ex1, :(get_data(S1)[$(idxS1(i, j, m, n))]))
+            push!(ex2, :(get_data(S2)[$(idxS2(m, n, k, l))]))
         end
         push!(exps.args, make_muladd_exp(ex1, ex2))
     end
+    expr = remove_duplicates(TensorType, exps)
     quote
         $(Expr(:meta, :inline))
-        data2 = get_data(S1)
-        data4 = get_data(S2)
-        @inbounds r = $exps
-        SymmetricTensor{2, dim}(r)
+        @inbounds return $TensorType($expr)
     end
 end
 
-@generated function dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::SymmetricTensor{2, dim})
-    idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
-    idx2(k,l) = compute_index(SymmetricTensor{2, dim}, k, l)
-    exps = Expr(:tuple)
-    for j in 1:dim, i in j:dim
-        ex1, ex2 = Expr[], Expr[]
-        for l in 1:dim, k in l:dim
-            if k == l
-                push!(ex1, :(data4[$(idx4(i, j, k, l))]))
-                push!(ex2, :(data2[$(idx2(k, l))]))
-            else
-                push!(ex1, :(2 * data4[$(idx4(i, j, k, l))]))
-                push!(ex2, :(    data2[$(idx2(k, l))]))
-            end
-        end
-        push!(exps.args, make_muladd_exp(ex1, ex2))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        data2 = get_data(S2)
-        data4 = get_data(S1)
-        @inbounds r = $exps
-        SymmetricTensor{2, dim}(r)
-    end
-end
-
-@generated function dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::SymmetricTensor{4, dim})
-    idx4(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
-    exps = Expr(:tuple)
-    for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
-        ex1, ex2 = Expr[], Expr[]
-        for n in 1:dim, m in n:dim
-            if m == n
-                push!(ex1, :(data1[$(idx4(i, j, m, n))]))
-                push!(ex2, :(data2[$(idx4(m, n, k, l))]))
-            else
-                push!(ex1, :(2 * data1[$(idx4(i, j, m, n))]))
-                push!(ex2, :(    data2[$(idx4(m, n, k, l))]))
-            end
-        end
-        push!(exps.args, make_muladd_exp(ex1, ex2))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        data2 = get_data(S2)
-        data1 = get_data(S1)
-        @inbounds r = $exps
-        SymmetricTensor{4, dim}(r)
-    end
-end
-
-# Promotion
-@inline dcontract{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = dcontract(promote(S1, S2)...)
-@inline dcontract{dim}(S1::Tensor{4, dim}, S2::SymmetricTensor{2, dim}) = dcontract(S1, convert(Tensor, S2))
-
-@inline dcontract{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = dcontract(promote(S1, S2)...)
-@inline dcontract{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{4, dim}) = dcontract(convert(Tensor, S1), S2)
-
-@inline dcontract{dim}(S1::Tensor{4, dim}, S2::SymmetricTensor{4, dim}) = dcontract(promote(S1, S2)...)
-@inline dcontract{dim}(S1::SymmetricTensor{4, dim}, S2::Tensor{4, dim}) = dcontract(promote(S1, S2)...)
+const ⊡ = dcontract
 
 """
 ```julia
@@ -327,25 +239,24 @@ julia> tdot(A)
  0.48726  0.540229  0.190334
 ```
 """
-@generated function tdot{dim}(S1::Tensor{2, dim})
-    idx(i,j) = compute_index(Tensor{2, dim}, i, j)
+@generated function tdot{dim}(S1::SecondOrderTensor{dim})
+    TensorType = getreturntype(tdot, get_base(S1))
+    idxS1(i,j) = compute_index(get_base(S1), i, j)
     ex = Expr(:tuple)
-    for j in 1:dim, i in j:dim
+    for j in 1:dim, i in 1:dim
         ex1, ex2 = Expr[], Expr[]
         for k in 1:dim
-            push!(ex1, :(get_data(S1)[$(idx(k,i))]))
-            push!(ex2, :(get_data(S1)[$(idx(k,j))]))
+            push!(ex1, :(get_data(S1)[$(idxS1(k,i))]))
+            push!(ex2, :(get_data(S1)[$(idxS1(k,j))]))
         end
         push!(ex.args, make_muladd_exp(ex1, ex2))
     end
+    expr = remove_duplicates(TensorType, ex)
     return quote
         $(Expr(:meta, :inline))
-        @inbounds r = $ex
-        SymmetricTensor{2, dim}(r)
+        @inbounds return $TensorType($expr)
     end
 end
-
-@inline tdot{dim}(S1::SymmetricTensor{2,dim}) = tdot(convert(Tensor{2,dim}, S1))
 
 """
 ```julia

@@ -45,10 +45,10 @@ typealias FourthOrderTensor{dim, T} Union{SymmetricTensor{4, dim, T}, Tensor{4, 
 typealias SymmetricTensors{dim, T} Union{SymmetricTensor{2, dim, T}, SymmetricTensor{4, dim, T}}
 typealias NonSymmetricTensors{dim, T} Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T}}
 
-include("utilities.jl")
 include("indexing.jl")
 include("promotion_conversion.jl")
 include("tensor_products.jl")
+include("utilities.jl")
 include("transpose.jl")
 include("symmetric.jl")
 include("math_ops.jl")
