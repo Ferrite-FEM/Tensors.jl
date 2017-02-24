@@ -24,9 +24,17 @@ julia> A'
 """
 @inline Base.transpose(S::Vec) = S
 
-@inline function Base.transpose(S::Tensor{2})
-    typeof(S)(tomatrix(S).')
+@generated function Base.transpose{dim}(S::Tensor{2, dim})
+    expr = Expr(:tuple)
+    for j in 1:dim, i in 1:dim
+        push!(expr.args, :(get_data(S)[$(compute_index(Tensor{2, dim}, j, i))]))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Tensor{2, dim}($expr)
+    end
 end
+
 Base.transpose(S::SymmetricTensor{2}) = S
 
 """
@@ -35,15 +43,14 @@ minortranspose(::FourthOrderTensor)
 ```
 Computes the minor transpose of a fourth order tensor.
 """
-@generated function minortranspose{dim}(t::Tensor{4, dim})
-    exps = Expr[]
+@generated function minortranspose{dim}(S::Tensor{4, dim})
+    expr = Expr(:tuple)
     for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
-        push!(exps, :(get_data(t)[$(compute_index(Tensor{4, dim}, j, i, l, k))]))
+        push!(expr.args, :(get_data(S)[$(compute_index(Tensor{4, dim}, j, i, l, k))]))
     end
-    exp = Expr(:tuple, exps...)
     return quote
         $(Expr(:meta, :inline))
-        Tensor{4, dim}($exp)
+        @inbounds return Tensor{4, dim}($expr)
     end
 end
 
@@ -56,15 +63,14 @@ majortranspose(::FourthOrderTensor)
 ```
 Computes the major transpose of a fourth order tensor.
 """
-@generated function majortranspose{dim}(t::FourthOrderTensor{dim})
-    exps = Expr[]
+@generated function majortranspose{dim}(S::FourthOrderTensor{dim})
+    expr = Expr(:tuple)
     for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
-        push!(exps, :(get_data(t)[$(compute_index(get_base(t), k, l, i, j))]))
+        push!(expr.args, :(get_data(S)[$(compute_index(get_base(S), k, l, i, j))]))
     end
-    exp = Expr(:tuple, exps...)
     return quote
         $(Expr(:meta, :inline))
-        Tensor{4, dim}($exp)
+        @inbounds return Tensor{4, dim}($expr)
     end
 end
 
