@@ -47,6 +47,7 @@ typealias NonSymmetricTensors{dim, T} Union{Tensor{2, dim, T}, Tensor{4, dim, T}
 
 include("indexing.jl")
 include("promotion_conversion.jl")
+include("basic_operations.jl")
 include("tensor_products.jl")
 include("utilities.jl")
 include("transpose.jl")
@@ -138,37 +139,6 @@ end
 @inline (Tt::Type{SymmetricTensor{order, dim, T}}){order, dim, T}(data::Union{AbstractArray, Tuple, Function}) = convert(SymmetricTensor{order, dim, T}, SymmetricTensor{order, dim}(data))
 #@inline          (Tt::Type{Tensor{order, dim, T, M}}){order, dim, T, M}(data::Union{AbstractArray, Tuple, Function}) = Tensor{order, dim, T}(data)
 #@inline (Tt::Type{SymmetricTensor{order, dim, T, M}}){order, dim, T, M}(data::Union{AbstractArray, Tuple, Function}) = SymmetricTensor{order, dim, T}(data)
-
-###############
-# Simple Math #
-###############
-
-# op(Number, Tensor): *, /
-for TensorType in (SymmetricTensor, Tensor)
-    @eval begin
-        @inline Base.:*{order, dim, T, N}(n::Number, t::$TensorType{order, dim, T, N}) = $TensorType{order, dim}(n * tovector(t))
-        @inline Base.:*{order, dim, T, N}(t::$TensorType{order, dim, T, N}, n::Number) = $TensorType{order, dim}(tovector(t) * n)
-        @inline Base.:/{order, dim, T, N}(t::$TensorType{order, dim, T, N}, n::Number) = $TensorType{order, dim}(tovector(t) / n)
-
-        # Unary -, +
-        @inline Base.:-{order, dim, T, N}(t::$TensorType{order, dim, T, N}) = $TensorType{order, dim}(-tovector(t))
-        @inline Base.:+{order, dim, T, N}(t::$TensorType{order, dim, T, N}) = $TensorType{order, dim}(+tovector(t))
-    end
-end
-
-# Binary op(Tensor, Tensor): +, -, .+, .-, .*, ./
-for op in (:+, :-, :.+, :.-, :.*, :./)
-    for TensorType in (SymmetricTensor, Tensor)
-        @eval begin
-            @inline function Base.$op{order, dim, T1, T2, N}(t1::$TensorType{order, dim, T1, N}, t2::$TensorType{order, dim, T2, N})
-                $TensorType{order, dim}($op(tovector(t1), tovector(t2)))
-            end
-        end
-    end
-    @eval begin
-        Base.$op{order, dim}(t1::AbstractTensor{order, dim}, t2::AbstractTensor{order, dim}) = $op(promote(t1, t2)...)
-    end
-end
 
 ######################
 # Basic constructors #
