@@ -68,24 +68,8 @@ end
 
 # check symmetry and return
 remove_duplicates{order, dim}(::Type{Tensor{order, dim}}, ex) = ex # do nothing if return type is a Tensor
-
-function remove_duplicates{dim}(::Type{SymmetricTensor{2, dim}}, ex)
-    if dim == 2
-        ex.args = ex.args[[1, 2, 4]]
-    elseif dim == 3
-        ex.args = ex.args[[1, 2, 3, 5, 6, 9]]
-    end
-    return ex
-end
-
-function remove_duplicates{dim}(::Type{SymmetricTensor{4, dim}}, ex)
-    if dim == 2
-        ex.args = ex.args[[1, 2, 4, 5, 6, 8, 13, 14, 16]]
-    elseif dim == 3
-        ex.args = ex.args[[ 1,  2,  3,  5,  6,  9, 10, 11, 12, 14, 15, 18,
-                           19, 20, 21, 23, 24, 27, 37, 38, 39, 41, 42, 45,
-                           46, 47, 48, 50, 51, 54, 73, 74, 75, 77, 78, 81]]
-    end
+function remove_duplicates{order, dim}(::Type{SymmetricTensor{order, dim}}, ex)
+    ex.args = ex.args[SYMMETRIC_INDICES[order][dim]]
     return ex
 end
 
