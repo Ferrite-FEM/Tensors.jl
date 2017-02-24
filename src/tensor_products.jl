@@ -135,24 +135,33 @@ julia> A ⊗ B
  0.654957  0.48365
 ```
 """
-@inline function otimes{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
-    Tensor{4, dim}(tovector(S1) * tovector(S2)')
+@generated function otimes{dim}(S1::Vec{dim}, S2::Vec{dim})
+    exps = Expr(:tuple)
+    for j in 1:dim, i in 1:dim
+        push!(exps.args, :(get_data(S1)[$i] * get_data(S2)[$j]))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Tensor{2, dim}($exps)
+    end
 end
 
-@inline function otimes{dim}(v1::Vec{dim}, v2::Vec{dim})
-    Tensor{2, dim}(tovector(v1) * tovector(v2)')
+@generated function otimes{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
+    TensorType = getreturntype(otimes, get_base(S1), get_base(S2))
+    idxS1(i, j) = compute_index(get_base(S1), i, j)
+    idxS2(i, j) = compute_index(get_base(S2), i, j)
+    exps = Expr(:tuple)
+    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
+        push!(exps.args, :(get_data(S1)[$(idxS1(i, j))] * get_data(S2)[$(idxS2(k, l))]))
+    end
+    expr = remove_duplicates(TensorType, exps)
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($expr)
+    end
 end
 
 const ⊗ = otimes
-
-# Specialized methods for symmetric tensors
-@inline function otimes{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
-    SymmetricTensor{4, dim}(tovector(S1) * tovector(S2)')
-end
-
-# Promotion
-@inline otimes{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = otimes(promote(S1, S2)...)
-@inline otimes{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = otimes(promote(S1, S2)...)
 
 """
 ```julia

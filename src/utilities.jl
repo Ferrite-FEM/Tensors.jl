@@ -90,22 +90,26 @@ function remove_duplicates{dim}(::Type{SymmetricTensor{4, dim}}, ex)
 end
 
 # return types
-# 4-4
+# double contraction
 getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{Tensor{4, dim}}) = Tensor{4, dim}
 getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{SymmetricTensor{4, dim}}) = Tensor{4, dim}
 getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{Tensor{4, dim}}) = Tensor{4, dim}
 getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{SymmetricTensor{4, dim}}) = SymmetricTensor{4, dim}
-
-# 4-2
 getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{Tensor{2, dim}}) = Tensor{2, dim}
 getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{SymmetricTensor{2, dim}}) = Tensor{2, dim}
 getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{Tensor{2, dim}}) = SymmetricTensor{2, dim}
 getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{SymmetricTensor{2, dim}}) = SymmetricTensor{2, dim}
-
-# 2-4
 getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{2, dim}}, ::Type{Tensor{4, dim}}) = Tensor{2, dim}
 getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{2, dim}}, ::Type{SymmetricTensor{4, dim}}) = SymmetricTensor{2, dim}
 getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{2, dim}}, ::Type{Tensor{4, dim}}) = Tensor{2, dim}
 getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{2, dim}}, ::Type{SymmetricTensor{4, dim}}) = SymmetricTensor{2, dim}
 
+# otimes
+getreturntype{dim}(::typeof(otimes), ::Type{Tensor{1, dim}}, ::Type{Tensor{1, dim}}) = Tensor{2, dim}
+getreturntype{dim}(::typeof(otimes), ::Type{Tensor{2, dim}}, ::Type{Tensor{2, dim}}) = Tensor{4, dim}
+getreturntype{dim}(::typeof(otimes), ::Type{SymmetricTensor{2, dim}}, ::Type{Tensor{2, dim}}) = Tensor{4, dim}
+getreturntype{dim}(::typeof(otimes), ::Type{Tensor{2, dim}}, ::Type{SymmetricTensor{2, dim}}) = Tensor{4, dim}
+getreturntype{dim}(::typeof(otimes), ::Type{SymmetricTensor{2, dim}}, ::Type{SymmetricTensor{2, dim}}) = SymmetricTensor{4, dim}
+
+# dot
 getreturntype{dim}(::typeof(tdot), ::Union{Type{Tensor{2, dim}}, Type{SymmetricTensor{2, dim}}}) = SymmetricTensor{2, dim}
