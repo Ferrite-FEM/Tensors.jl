@@ -197,33 +197,70 @@ julia> A ⋅ B
  1.00184
 ```
 """
-@inline Base.dot{dim}(v1::Vec{dim}, v2::Vec{dim}) = tovector(v1) ⋅ tovector(v2)
-
-@inline function Base.dot{dim}(S1::Tensor{2, dim}, v2::Vec{dim})
-    return Vec{dim}(tomatrix(S1) * tovector(v2))
+@generated function Base.dot{dim}(S1::Vec{dim}, S2::Vec{dim})
+    ex1, ex2 = Expr[], Expr[]
+    for i in 1:dim
+        push!(ex1, :(get_data(S1)[$i]))
+        push!(ex2, :(get_data(S2)[$i]))
+    end
+    exp = make_muladd_exp(ex1, ex2)
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $exp
+    end
 end
 
-@inline function Base.dot{dim}(v1::Vec{dim}, S2::Tensor{2, dim})
-    return Vec{dim}(tomatrix(S2)' * tovector(v1))
+@generated function Base.dot{dim}(S1::SecondOrderTensor{dim}, S2::Vec{dim})
+    idxS1(i, j) = compute_index(get_base(S1), i, j)
+    exps = Expr(:tuple)
+    for i in 1:dim
+        ex1, ex2 = Expr[], Expr[]
+        for j in 1:dim
+            push!(ex1, :(get_data(S1)[$(idxS1(i, j))]))
+            push!(ex2, :(get_data(S2)[$j]))
+        end
+        push!(exps.args, make_muladd_exp(ex1, ex2))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Vec{dim}($exps)
+    end
 end
 
-@inline function Base.dot{dim}(S1::Tensor{2, dim}, S2::Tensor{2, dim})
-    return Tensor{2, dim}(tomatrix(S1) * tomatrix(S2))
+@generated function Base.dot{dim}(S1::Vec{dim}, S2::SecondOrderTensor{dim})
+    idxS2(i, j) = compute_index(get_base(S2), i, j)
+    exps = Expr(:tuple)
+    for j in 1:dim
+        ex1, ex2 = Expr[], Expr[]
+        for i in 1:dim
+            push!(ex1, :(get_data(S1)[$i]))
+            push!(ex2, :(get_data(S2)[$(idxS2(i, j))]))
+        end
+        push!(exps.args, make_muladd_exp(ex1, ex2))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Vec{dim}($exps)
+    end
 end
 
-@inline function Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
-    S1_t = convert(Tensor{2, dim}, S1)
-    S2_t = convert(Tensor{2, dim}, S2)
-    return Tensor{2, dim}(tomatrix(S1_t) * tomatrix(S2_t))
+@generated function Base.dot{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
+    idxS1(i, j) = compute_index(get_base(S1), i, j)
+    idxS2(i, j) = compute_index(get_base(S2), i, j)
+    exps = Expr(:tuple)
+    for j in 1:dim, i in 1:dim
+        ex1, ex2 = Expr[], Expr[]
+        for k in 1:dim
+            push!(ex1, :(get_data(S1)[$(idxS1(i, k))]))
+            push!(ex2, :(get_data(S2)[$(idxS2(k, j))]))
+        end
+        push!(exps.args, make_muladd_exp(ex1, ex2))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Tensor{2, dim}($exps)
+    end
 end
-
-@inline Base.dot{dim}(S1::SymmetricTensor{2, dim}, v2::Vec{dim}) = dot(convert(Tensor{2, dim}, S1), v2)
-
-@inline Base.dot{dim}(v2::Vec{dim}, S1::SymmetricTensor{2, dim}) = dot(S1, v2)
-
-# Promotion
-Base.dot{dim}(S1::Tensor{2, dim}, S2::SymmetricTensor{2, dim}) = dot(promote(S1, S2)...)
-Base.dot{dim}(S1::SymmetricTensor{2, dim}, S2::Tensor{2, dim}) = dot(promote(S1, S2)...)
 
 """
 ```julia
@@ -249,7 +286,6 @@ julia> tdot(A)
 ```
 """
 @generated function tdot{dim}(S1::SecondOrderTensor{dim})
-    TensorType = getreturntype(tdot, get_base(S1))
     idxS1(i,j) = compute_index(get_base(S1), i, j)
     ex = Expr(:tuple)
     for j in 1:dim, i in 1:dim
@@ -260,10 +296,10 @@ julia> tdot(A)
         end
         push!(ex.args, make_muladd_exp(ex1, ex2))
     end
-    expr = remove_duplicates(TensorType, ex)
+    expr = remove_duplicates(SymmetricTensor{2, dim}, ex)
     return quote
         $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
+        @inbounds return SymmetricTensor{2, dim}($expr)
     end
 end
 
