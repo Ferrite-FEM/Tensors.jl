@@ -19,7 +19,6 @@ such that ``a_k C_{ikjl} b_l``.
     end
     return quote
         $(Expr(:meta, :inline))
-        @inbounds r = $exps
-        Tensor{2, dim}(r)
+        @inbounds return Tensor{2, dim}($exps)
     end
 end

@@ -22,28 +22,18 @@ julia> norm(A)
 """
 @inline Base.norm(v::Vec) = sqrt(dot(v, v))
 @inline Base.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
-@inline Base.norm{dim, T}(S::Tensor{4, dim, T}) = sqrt(sumabs2(tovector(S)))
 
-@generated function Base.norm{dim}(S::SymmetricTensor{4, dim})
-    idx(i,j,k,l) = compute_index(SymmetricTensor{4, dim}, i, j, k, l)
+@generated function Base.norm{dim}(S::FourthOrderTensor{dim})
+    idx(i,j,k,l) = compute_index(get_base(S), i, j, k, l)
     ex1, ex2 = Expr[], Expr[]
-    for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
-        if i == j && k == l
-             push!(ex1, :(data[$(idx(i,j,k,l))]))
-             push!(ex2, :(data[$(idx(i,j,k,l))]))
-        elseif i == j || k == l
-             push!(ex1, :(2 * data[$(idx(i,j,k,l))]))
-             push!(ex2, :(    data[$(idx(i,j,k,l))]))
-        else
-             push!(ex1, :(4 * data[$(idx(i,j,k,l))]))
-             push!(ex2, :(    data[$(idx(i,j,k,l))]))
-        end
+    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
+        push!(ex1, :(get_data(S)[$(idx(i,j,k,l))]))
+        push!(ex2, :(get_data(S)[$(idx(i,j,k,l))]))
     end
     exp = make_muladd_exp(ex1, ex2)
     return quote
       $(Expr(:meta, :inline))
-      data = get_data(S)
-      sqrt($exp)
+      @inbounds return sqrt($exp)
     end
 end
 
@@ -142,7 +132,7 @@ julia> inv(A)
     return quote
         $(Expr(:meta, :inline))
         dinv = 1 / det(t)
-        $ex
+        @inbounds return $ex
     end
 end
 
@@ -173,7 +163,7 @@ end
     return quote
         $(Expr(:meta, :inline))
         dinv = 1 / det(t)
-        $ex
+        @inbounds return $ex
     end
 end
 
@@ -214,8 +204,7 @@ julia> Φ ⋅ diagm(Tensor{2,3}, Λ) ⋅ inv(Φ) # Same as A
 ```
 """
 function Base.eig{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
-    S_m = convert(Tensor{2,dim}, S)
-    λ, ϕ = eig(tomatrix(S_m))
+    λ, ϕ = eig(Array(S))
     Λ = Tensor{1, dim}(λ)
     Φ = Tensor{2, dim}(ϕ)
     return Λ, Φ
@@ -245,6 +234,7 @@ julia> trace(A)
     idx(i,j) = compute_index(get_base(S), i, j)
     ex = Expr[:(get_data(S)[$(idx(i,i))]) for i in 1:dim]
     exp = reduce((ex1, ex2) -> :(+($ex1, $ex2)), ex)
+    @inbounds return exp
 end
 vol(S::SecondOrderTensor) = trace(S)
 
