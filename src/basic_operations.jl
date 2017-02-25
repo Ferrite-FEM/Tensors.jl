@@ -23,8 +23,7 @@
         @inbounds return $TensorType($expr)
     end
 end
-
-@inline Base.map{order, dim, T1, T2}(f, S1::AbstractTensor{order, dim, T1}, S2::AbstractTensor{order, dim, T2}) = _map(f, promote(S1, S2)...)
+@inline Base.map{order, dim, T1, T2}(f, S1::AbstractTensor{order, dim, T1}, S2::AbstractTensor{order, dim, T2}) = ((SS1, SS2) = promote(S1, S2); _map(f, SS1, SS2))
 @inline Base.map{order, dim, T, N}(f, S1::Tensor{order, dim, T, N}, S2::Tensor{order, dim, T, N}) = _map(f ,S1, S2)
 @inline Base.map{order, dim, T, N}(f, S1::SymmetricTensor{order, dim, T, N}, S2::SymmetricTensor{order, dim, T, N}) = _map(f ,S1, S2)
 @generated function _map{T <: AllTensors}(f, S1::T, S2::T)
