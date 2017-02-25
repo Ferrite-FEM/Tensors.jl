@@ -4,3 +4,4 @@
 *.jld
 docs/build/
 docs/site/
+benchmark/*.md
