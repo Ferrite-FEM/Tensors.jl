@@ -154,32 +154,6 @@ end
 ######################
 
 
-# one (identity tensor)
-for TensorType in (SymmetricTensor, Tensor)
-    @eval begin
-        @inline Base.one{order, dim}(Tt::Type{$(TensorType){order, dim}}) = one($TensorType{order, dim, Float64})
-        @inline Base.one{order, dim, T, M}(Tt::Type{$(TensorType){order, dim, T, M}}) = one($TensorType{order, dim, T})
-        @inline Base.one{order, dim, T}(Tt::$TensorType{order, dim, T}) = one($TensorType{order, dim, T})
-
-        @generated function Base.one{order, dim, T}(Tt::Type{$(TensorType){order, dim, T}})
-            !(order in (2,4)) && throw(ArgumentError("`one` only defined for order 2 and 4"))
-            δ = (i,j) -> i == j ? :($(one(T))) : :($(zero(T)))
-            if order == 2
-                f = (i,j) -> δ(i,j)
-            elseif order == 4 && $TensorType == Tensor
-                f = (i,j,k,l) -> δ(i,k) * δ(j,l)
-            else # order == 4 && TensorType == SymmetricTensor
-                f = (i,j,k,l) -> (δ(i,k) * δ(j,l) + δ(i,l) * δ(j,k)) / 2
-            end
-            exp = tensor_create(get_base(get_type(Tt)), f)
-            return quote
-                $(Expr(:meta, :inline))
-                $($TensorType){order, dim}($exp)
-            end
-        end
-    end
-end
-
 # Tensor from function
 @generated function (Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}){order, dim}(f::Function)
     _constructor_check(get_base(get_type(Tt)))
