@@ -41,11 +41,8 @@ end
 @generated function Base.fill{T <: AbstractTensor}(el::Union{Number, Function}, S::Type{T})
     TensorType = get_base(get_type(S))
     N = n_components(TensorType)
-    expr = Expr(:tuple)
     ele = el <: Number ? :(el) : :(el())
-    for i in 1:N
-        push!(expr.args, ele)
-    end
+    expr = Expr(:tuple, [ele for i in 1:N]...)
     quote
         $(Expr(:meta, :inline))
         @inbounds return $TensorType($expr)

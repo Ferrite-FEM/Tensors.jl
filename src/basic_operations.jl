@@ -17,10 +17,7 @@
 @generated function Base.map{T <: AbstractTensor}(f, S::T)
     TensorType = get_base(S)
     N = n_components(TensorType)
-    expr = Expr(:tuple)
-    for i in 1:N
-        push!(expr.args, :(f(get_data(S)[$i])))
-    end
+    expr = Expr(:tuple, [:(f(get_data(S)[$i])) for i in 1:N]...)
     quote
         $(Expr(:meta, :inline))
         @inbounds return $TensorType($expr)
@@ -33,10 +30,7 @@ end
 @generated function _map{T <: AllTensors}(f, S1::T, S2::T)
     TensorType = get_base(S1)
     N = n_components(TensorType)
-    expr = Expr(:tuple)
-    for i in 1:N
-        push!(expr.args, :(f(get_data(S1)[$i], get_data(S2)[$i])))
-    end
+    expr = Expr(:tuple, [:(f(get_data(S1)[$i], get_data(S2)[$i])) for i in 1:N]...)
     quote
         $(Expr(:meta, :inline))
         @inbounds return $TensorType($expr)
