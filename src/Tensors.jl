@@ -149,51 +149,53 @@ end
 #@inline          (Tt::Type{Tensor{order, dim, T, M}}){order, dim, T, M}(data::Union{AbstractArray, Tuple, Function}) = Tensor{order, dim, T}(data)
 #@inline (Tt::Type{SymmetricTensor{order, dim, T, M}}){order, dim, T, M}(data::Union{AbstractArray, Tuple, Function}) = SymmetricTensor{order, dim, T}(data)
 
-######################
-# Basic constructors #
-######################
-
+############################################
+# Type constructors e.g. Tensor{2, 3}(arg) #
+############################################
 
 # Tensor from function
-@generated function (Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}){order, dim}(f::Function)
-    _constructor_check(get_base(get_type(Tt)))
+@generated function (S::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}){order, dim}(f::Function)
+    TensorType = get_base(get_type(S))
     if order == 1
-        exp = tensor_create(get_base(get_type(Tt)), (i) -> :(f($i)))
+        exp = tensor_create(TensorType, (i) -> :(f($i)))
     elseif order == 2
-        exp = tensor_create(get_base(get_type(Tt)), (i,j) -> :(f($i, $j)))
+        exp = tensor_create(TensorType, (i,j) -> :(f($i, $j)))
     elseif order == 4
-        exp = tensor_create(get_base(get_type(Tt)), (i,j,k,l) -> :(f($i, $j, $k, $l)))
+        exp = tensor_create(TensorType, (i,j,k,l) -> :(f($i, $j, $k, $l)))
     end
-
-    return :(get_base(Tt)($exp))
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($exp)
+    end
 end
-Base.convert{dim, T}(::Type{SVector{dim, T}}, f::Function) = SVector{dim, T}(ntuple(f, Val{dim}))
 
 # Tensor from AbstractArray
-@generated function (Tt::Type{Tensor{order, dim}}){order, dim}(data::AbstractArray)
-    _constructor_check(get_base(get_type(Tt)))
-    n = n_components(Tensor{order,dim})
+@generated function (::Type{Tensor{order, dim}}){order, dim}(data::AbstractArray)
+    N = n_components(Tensor{order,dim})
+    exp = Expr(:tuple, [:(data[$i]) for i in 1:N]...)
     return quote
-        if length(data) != $n
-            throw(ArgumentError("wrong number of vector elements, expected $($n), got $(length(data))"))
+        if length(data) != $N
+            throw(ArgumentError("wrong number of elements, expected $($N), got $(length(data))"))
         end
-        Tensor{order, dim}(SVector{$n}(data))
+        Tensor{order, dim}($exp)
     end
 end
 
 # SymmetricTensor from AbstractArray
-@generated function (Tt::Type{SymmetricTensor{order, dim}}){order, dim}(data::AbstractArray)
-    _constructor_check(get_base(get_type(Tt)))
-    n = n_components(Tensor{order,dim})
-    m = n_components(SymmetricTensor{order,dim})
+@generated function (::Type{SymmetricTensor{order, dim}}){order, dim}(data::AbstractArray)
+    N = n_components(Tensor{order,dim})
+    expN = Expr(:tuple, [:(data[$i]) for i in 1:N]...)
+    M = n_components(SymmetricTensor{order,dim})
+    expM = Expr(:tuple, [:(data[$i]) for i in 1:M]...)
     return quote
-        if length(data) != $n && length(data) != $m
-            throw(ArgumentError("wrong number of vector elements, expected $($n) or $($m), got $(length(data))"))
+        L = length(data)
+        if L != $N && L != $M
+            throw(ArgumentError("wrong number of vector elements, expected $($N) or $($M), got $L"))
         end
-        if length(data) == $m
-            return SymmetricTensor{order, dim}(SVector{$m}(data))
+        if L == $M
+            @inbounds return SymmetricTensor{order, dim}($expM)
         end
-        S = Tensor{order, dim}(SVector{$n}(data))
+        @inbounds S = Tensor{order, dim}($expN)
         return convert(SymmetricTensor{order, dim}, S)
     end
 end
