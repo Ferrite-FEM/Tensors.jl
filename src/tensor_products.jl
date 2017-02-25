@@ -27,11 +27,8 @@ julia> A ⊡ B
 @generated function dcontract{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
     idxS1(i, j) = compute_index(get_base(S1), i, j)
     idxS2(i, j) = compute_index(get_base(S2), i, j)
-    ex1, ex2 = Expr[], Expr[]
-    for j in 1:dim, i in 1:dim
-        push!(ex1, :(get_data(S1)[$(idxS1(i, j))]))
-        push!(ex2, :(get_data(S2)[$(idxS2(i, j))]))
-    end
+    ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))]) for i in 1:dim, j in 1:dim][:]
+    ex2 = Expr[:(get_data(S2)[$(idxS2(i, j))]) for i in 1:dim, j in 1:dim][:]
     exp = make_muladd_exp(ex1, ex2)
     return quote
         $(Expr(:meta, :inline))
@@ -45,11 +42,8 @@ end
     idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
     exps = Expr(:tuple)
     for l in 1:dim, k in 1:dim
-        ex1, ex2 = Expr[], Expr[]
-        for j in 1:dim, i in 1:dim
-            push!(ex1, :(get_data(S1)[$(idxS1(i, j))]))
-            push!(ex2, :(get_data(S2)[$(idxS2(i, j, k, l))]))
-        end
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))])       for i in 1:dim, j in 1:dim][:]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(i, j, k, l))]) for i in 1:dim, j in 1:dim][:]
         push!(exps.args, make_muladd_exp(ex1, ex2))
     end
     expr = remove_duplicates(TensorType, exps)
@@ -65,11 +59,8 @@ end
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     exps = Expr(:tuple)
     for j in 1:dim, i in 1:dim
-        ex1, ex2 = Expr[], Expr[]
-        for l in 1:dim, k in 1:dim
-            push!(ex1, :(get_data(S1)[$(idxS1(i, j, k, l))]))
-            push!(ex2, :(get_data(S2)[$(idxS2(k, l))]))
-        end
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, k, l))]) for k in 1:dim, l in 1:dim][:]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(k, l))])       for k in 1:dim, l in 1:dim][:]
         push!(exps.args, make_muladd_exp(ex1, ex2))
     end
     expr = remove_duplicates(TensorType, exps)
@@ -85,11 +76,8 @@ end
     idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
     exps = Expr(:tuple)
     for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
-        ex1, ex2 = Expr[], Expr[]
-        for n in 1:dim, m in 1:dim
-            push!(ex1, :(get_data(S1)[$(idxS1(i, j, m, n))]))
-            push!(ex2, :(get_data(S2)[$(idxS2(m, n, k, l))]))
-        end
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, m, n))]) for m in 1:dim, n in 1:dim][:]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(m, n, k, l))]) for m in 1:dim, n in 1:dim][:]
         push!(exps.args, make_muladd_exp(ex1, ex2))
     end
     expr = remove_duplicates(TensorType, exps)
@@ -136,10 +124,7 @@ julia> A ⊗ B
 ```
 """
 @generated function otimes{dim}(S1::Vec{dim}, S2::Vec{dim})
-    exps = Expr(:tuple)
-    for j in 1:dim, i in 1:dim
-        push!(exps.args, :(get_data(S1)[$i] * get_data(S2)[$j]))
-    end
+    exps = Expr(:tuple, [:(get_data(S1)[$i] * get_data(S2)[$j]) for i in 1:dim, j in 1:dim]...)
     quote
         $(Expr(:meta, :inline))
         @inbounds return Tensor{2, dim}($exps)
@@ -198,11 +183,8 @@ julia> A ⋅ B
 ```
 """
 @generated function Base.dot{dim}(S1::Vec{dim}, S2::Vec{dim})
-    ex1, ex2 = Expr[], Expr[]
-    for i in 1:dim
-        push!(ex1, :(get_data(S1)[$i]))
-        push!(ex2, :(get_data(S2)[$i]))
-    end
+    ex1 = Expr[:(get_data(S1)[$i]) for i in 1:dim]
+    ex2 = Expr[:(get_data(S2)[$i]) for i in 1:dim]
     exp = make_muladd_exp(ex1, ex2)
     quote
         $(Expr(:meta, :inline))
@@ -214,11 +196,8 @@ end
     idxS1(i, j) = compute_index(get_base(S1), i, j)
     exps = Expr(:tuple)
     for i in 1:dim
-        ex1, ex2 = Expr[], Expr[]
-        for j in 1:dim
-            push!(ex1, :(get_data(S1)[$(idxS1(i, j))]))
-            push!(ex2, :(get_data(S2)[$j]))
-        end
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))]) for j in 1:dim]
+        ex2 = Expr[:(get_data(S2)[$j])             for j in 1:dim]
         push!(exps.args, make_muladd_exp(ex1, ex2))
     end
     quote
@@ -231,11 +210,8 @@ end
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     exps = Expr(:tuple)
     for j in 1:dim
-        ex1, ex2 = Expr[], Expr[]
-        for i in 1:dim
-            push!(ex1, :(get_data(S1)[$i]))
-            push!(ex2, :(get_data(S2)[$(idxS2(i, j))]))
-        end
+        ex1 = Expr[:(get_data(S1)[$i])             for i in 1:dim]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(i, j))]) for i in 1:dim]
         push!(exps.args, make_muladd_exp(ex1, ex2))
     end
     quote
@@ -249,11 +225,8 @@ end
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     exps = Expr(:tuple)
     for j in 1:dim, i in 1:dim
-        ex1, ex2 = Expr[], Expr[]
-        for k in 1:dim
-            push!(ex1, :(get_data(S1)[$(idxS1(i, k))]))
-            push!(ex2, :(get_data(S2)[$(idxS2(k, j))]))
-        end
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, k))]) for k in 1:dim]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(k, j))]) for k in 1:dim]
         push!(exps.args, make_muladd_exp(ex1, ex2))
     end
     quote
@@ -289,11 +262,8 @@ julia> tdot(A)
     idxS1(i,j) = compute_index(get_base(S1), i, j)
     ex = Expr(:tuple)
     for j in 1:dim, i in 1:dim
-        ex1, ex2 = Expr[], Expr[]
-        for k in 1:dim
-            push!(ex1, :(get_data(S1)[$(idxS1(k,i))]))
-            push!(ex2, :(get_data(S1)[$(idxS1(k,j))]))
-        end
+        ex1 = Expr[:(get_data(S1)[$(idxS1(k, i))]) for k in 1:dim]
+        ex2 = Expr[:(get_data(S1)[$(idxS1(k, j))]) for k in 1:dim]
         push!(ex.args, make_muladd_exp(ex1, ex2))
     end
     expr = remove_duplicates(SymmetricTensor{2, dim}, ex)
