@@ -11,10 +11,6 @@ end
 @eval @inline Base.$op(t::AllTensors) = $op(typeof(t))
 end
 
-# Array with zero/ones
-@inline Base.zeros{T <: AbstractTensor}(::Type{T}, dims...) = fill(zero(T), dims...)
-@inline Base.ones{T <: AbstractTensor}(::Type{T}, dims...) = fill(one(T), dims...)
-
 @generated function Base.fill{T <: AbstractTensor}(el::Union{Number, Function}, S::Type{T})
     TensorType = get_base(get_type(S))
     N = n_components(TensorType)
@@ -28,3 +24,22 @@ end
         @inbounds return $TensorType($expr)
     end
 end
+
+# Array with zero/ones
+@inline Base.zeros{T <: AbstractTensor}(::Type{T}, dims...) = fill(zero(T), dims...)
+@inline Base.ones{T <: AbstractTensor}(::Type{T}, dims...) = fill(one(T), dims...)
+
+
+# diagm
+@generated function Base.diagm{T <: SecondOrderTensor}(S::Type{T}, v::Union{AbstractVector, Tuple})
+    TensorType = get_base(get_type(S))
+    ET = eltype(get_type(S)) == Any ? eltype(v) : eltype(get_type(S)) # lol
+    f = (i,j) -> i == j ? :($ET(v[$i])) : :($(zero(ET)))
+    exp = tensor_create(TensorType, f)
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($exp)
+    end
+end
+@inline Base.diagm{dim, T <: Number}(::Type{Tensor{2, dim}}, v::T) = v * one(Tensor{2, dim, T})
+@inline Base.diagm{dim, T <: Number}(::Type{SymmetricTensor{2, dim}}, v::T) = v * one(SymmetricTensor{2, dim, T})

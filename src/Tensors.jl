@@ -81,20 +81,28 @@ end
 end
 @pure n_components{order, dim}(::Type{Tensor{order, dim}}) = dim^order
 
-@pure get_base{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = SymmetricTensor{order, dim}
-@pure get_base{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}) = SymmetricTensor{order, dim}
-@pure get_base{order, dim}(::Type{SymmetricTensor{order, dim}}) = SymmetricTensor{order, dim}
+@pure get_type{X}(::Type{Type{X}}) = X
+
 @pure get_base{order, dim, T, M}(::Type{Tensor{order, dim, T, M}}) = Tensor{order, dim}
 @pure get_base{order, dim, T}(::Type{Tensor{order, dim, T}}) = Tensor{order, dim}
 @pure get_base{order, dim}(::Type{Tensor{order, dim}}) = Tensor{order, dim}
+@pure get_base{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = SymmetricTensor{order, dim}
+@pure get_base{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}) = SymmetricTensor{order, dim}
+@pure get_base{order, dim}(::Type{SymmetricTensor{order, dim}}) = SymmetricTensor{order, dim}
+
+@pure Base.eltype{order, dim, T, M}(::Type{Tensor{order, dim, T, M}}) = T
+@pure Base.eltype{order, dim, T}(::Type{Tensor{order, dim, T}}) = T
+@pure Base.eltype{order, dim}(::Type{Tensor{order, dim}}) = Any
+@pure Base.eltype{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = T
+@pure Base.eltype{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}) = T
+@pure Base.eltype{order, dim}(::Type{SymmetricTensor{order, dim}}) = Any
+
 
 ############################
 # Abstract Array interface #
 ############################
 Base.linearindexing{T <: SymmetricTensor}(::Type{T}) = Base.LinearSlow()
 Base.linearindexing{T <: Tensor}(::Type{T}) = Base.LinearFast()
-
-get_type{X}(::Type{Type{X}}) = X
 
 ########
 # Size #
@@ -144,22 +152,7 @@ end
 ######################
 # Basic constructors #
 ######################
-# diagm
-for TensorType in (SymmetricTensor, Tensor)
-    @eval begin
-        @generated function Base.diagm{dim}(Tt::Type{$(TensorType){2, dim}}, v::Union{AbstractVector, Tuple})
-            f = (i,j) -> i == j ? :(v[$i]) : :($(zero(eltype(v))))
-            exp = tensor_create(get_type(Tt), f)
-            return quote
-                $(Expr(:meta, :inline))
-                @inbounds t = $exp
-                $($TensorType){2, dim}(t)
-            end
-        end
 
-        @inline Base.diagm{dim, T}(Tt::Type{$(TensorType){2, dim}}, v::T) = v * one($(TensorType){2, dim, T})
-    end
-end
 
 # one (identity tensor)
 for TensorType in (SymmetricTensor, Tensor)
