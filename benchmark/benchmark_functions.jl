@@ -3,6 +3,7 @@ SUITE["dcontract"] = BenchmarkGroup()
 SUITE["otimes"] = BenchmarkGroup()
 SUITE["other"] = BenchmarkGroup()
 SUITE["promotion"] = BenchmarkGroup()
+SUITE["constructors"] = BenchmarkGroup()
 
 
 for dim in (1,2,3)
@@ -62,4 +63,55 @@ for dim in (1,2,3)
         SUITE["promotion"]["dim $dim - order 2"] = @benchmarkable promote($V2, $V2sym)
         SUITE["promotion"]["dim $dim - order 4"] = @benchmarkable promote($V4, $V4sym)
     end
+end
+
+# constructors (only testing for dim = 3)
+for f in (:zero, :one, :ones, :rand)
+    dim = 3
+    for order in (2, 4)
+        TT = :(Tensor{$order, $dim})
+        TTS = :(SymmetricTensor{$order, $dim})
+        SUITE["constructors"]["$f(Tensor{$order, $dim})"] = @benchmarkable $(f)($TT)
+        SUITE["constructors"]["$f(SymmetricTensor{$order, $dim})"] = @benchmarkable $(f)($TTS)
+    end
+    if f != :one
+        SUITE["constructors"]["$f(Tensor{1, $dim})"] = @benchmarkable $(f)($(:(Tensor{1, $dim})))
+        SUITE["constructors"]["$f(Vec{$dim})"] = @benchmarkable $(f)($(:(Vec{$dim})))
+    end
+    for T in (Float32, Float64)
+        for order in (2, 4)
+            TT = :(Tensor{$order, $dim, $T})
+            TTS = :(SymmetricTensor{$order, $dim, $T})
+            SUITE["constructors"]["$f(Tensor{$order, $dim, $T})"] = @benchmarkable $(f)($TT)
+            SUITE["constructors"]["$f(SymmetricTensor{$order, $dim, $T})"] = @benchmarkable $(f)($TTS)
+        end
+        if f != :one
+            SUITE["constructors"]["$f(Tensor{1, $dim, $T})"] = @benchmarkable $(f)($(:(Tensor{1, $dim, $T})))
+            SUITE["constructors"]["$f(Vec{$dim, $T})"] =       @benchmarkable $(f)($(:(Vec{$dim, $T})))
+        end
+    end
+end
+
+# create from a Julia array
+for order in (1, 2, 4)
+    dim = 3
+    A = rand(Tensors.n_components(Tensor{order, dim}))
+    SUITE["constructors"]["Tensor{$order, $dim}(A::Array)"] = @benchmarkable Tensor{$order, $dim}($A)
+    if order != 1
+        As = rand(Tensors.n_components(SymmetricTensor{order, dim}))
+        SUITE["constructors"]["SymmetricTensor{$order, $dim}(A::Array)"] = @benchmarkable SymmetricTensor{$order, $dim}($As)
+    end
+end
+
+begin
+    dim = 3
+    f1 = (i) -> float(i)
+    f2 = (i, j) -> float(i)
+    f4 = (i, j, k, l) -> float(i)
+    SUITE["constructors"]["Tensor{1, $dim}(f::Function)"] = @benchmarkable Tensor{1, $dim}($f1)
+    SUITE["constructors"]["Vec{$dim}(f::Function)"] =       @benchmarkable Vec{$dim}($f1)
+    SUITE["constructors"]["Tensor{2, $dim}(f::Function)"] = @benchmarkable Tensor{2, $dim}($f2)
+    SUITE["constructors"]["Tensor{4, $dim}(f::Function)"] = @benchmarkable Tensor{4, $dim}($f4)
+    SUITE["constructors"]["SymmetricTensor{2, $dim}(f::Function)"] = @benchmarkable SymmetricTensor{2, $dim}($f2)
+    SUITE["constructors"]["SymmetricTensor{4, $dim}(f::Function)"] = @benchmarkable SymmetricTensor{4, $dim}($f4)
 end
