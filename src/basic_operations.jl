@@ -23,10 +23,9 @@
         @inbounds return $TensorType($expr)
     end
 end
-@inline Base.map{order, dim, T1, T2}(f, S1::AbstractTensor{order, dim, T1}, S2::AbstractTensor{order, dim, T2}) = ((SS1, SS2) = promote(S1, S2); _map(f, SS1, SS2))
-@inline Base.map{order, dim, T, N}(f, S1::Tensor{order, dim, T, N}, S2::Tensor{order, dim, T, N}) = _map(f ,S1, S2)
-@inline Base.map{order, dim, T, N}(f, S1::SymmetricTensor{order, dim, T, N}, S2::SymmetricTensor{order, dim, T, N}) = _map(f ,S1, S2)
-@generated function _map{T <: AllTensors}(f, S1::T, S2::T)
+
+@inline Base.map{order, dim, T1, T2}(f, S1::AbstractTensor{order, dim, T1}, S2::AbstractTensor{order, dim, T2}) = ((SS1, SS2) = promote(S1, S2); map(f, SS1, SS2))
+@generated function Base.map{T <: AllTensors}(f, S1::T, S2::T)
     TensorType = get_base(S1)
     N = n_components(TensorType)
     expr = Expr(:tuple, [:(f(get_data(S1)[$i], get_data(S2)[$i])) for i in 1:N]...)
