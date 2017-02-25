@@ -113,11 +113,10 @@ for TensorType in (SymmetricTensor, Tensor)
         end
     end
 end
-# # Special for Vec
-# @inline (Tt::Type{Vec{dim}}){dim}(data) = Tensor{1, dim}(data)
-# Base.convert{dim, T}(::Type{SVector{dim, T}}, f::Function) = SVector{dim, T}(ntuple(f, Val{dim}))
-Base.convert{dim, T}(::Type{NTuple{dim, T}}, f::Function) = Tensor{1, dim, T}(f)
-# Base.convert{dim, T}(::Type{Vec{dim, T}}, f::Function) = Tensor{1, dim, T}(f)
+# Special for Vec
+@inline (Tt::Type{Vec{dim}}){dim}(data) = Tensor{1, dim}(data)
+Base.convert{dim, T}(::Type{NTuple{dim, T}}, f::Function) = NTuple{dim, T}(ntuple(f, Val{dim}))
+
 
 # General fallbacks
 @inline          (Tt::Type{Tensor{order, dim, T}}){order, dim, T}(data::Union{AbstractArray, Tuple, Function}) = convert(Tensor{order, dim, T}, Tensor{order, dim}(data))
