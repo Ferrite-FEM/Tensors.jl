@@ -114,7 +114,7 @@ end # of testset
 
 @testset "base vectors" begin
 for T in (Float32, Float64), dim in (1,2,3)
-    eᵢ_func(i) = Vec{dim, T}(j->j==i ? one(T) : zero(T))
+    eᵢ_func(i) = Tensor{1, dim, T}(j->j==i ? one(T) : zero(T))
 
     a = rand(Vec{dim, T})
     for i in 1:dim

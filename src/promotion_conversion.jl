@@ -37,8 +37,20 @@ end
 @inline Base.convert{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}, t::SymmetricTensor{order, dim, T, M}) = t
 
 # Change element type
-@inline Base.convert{order, dim, T1}(::Type{Tensor{order, dim, T1}}, t::Tensor{order, dim}) = Tensor{order, dim}(convert(SVector{n_components(Tensor{order, dim}), T1}, tovector(t)))
-@inline Base.convert{order, dim, T1}(::Type{SymmetricTensor{order, dim, T1}}, t::SymmetricTensor{order, dim}) = SymmetricTensor{order, dim}(convert(SVector{n_components(SymmetricTensor{order, dim}), T1}, tovector(t)))
+@generated function Base.convert{order, dim, T1, T2, N}(::Type{Tensor{order, dim, T1}}, t::Tensor{order, dim, T2, N})
+    exp = Expr(:tuple, [:(T1(get_data(t)[$i])) for i in 1:N]...)
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Tensor{order, dim}($exp)
+    end
+end
+@generated function Base.convert{order, dim, T1, T2, N}(::Type{SymmetricTensor{order, dim, T1}}, t::SymmetricTensor{order, dim, T2, N})
+    exp = Expr(:tuple, [:(T1(get_data(t)[$i])) for i in 1:N]...)
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return SymmetricTensor{order, dim}($exp)
+    end
+end
 
 # Peel off the M but define these so that convert(typeof(...), ...) works
 @inline Base.convert{order, dim, T1, M}(::Type{Tensor{order, dim, T1, M}}, t::Tensor{order, dim}) = convert(Tensor{order, dim, T1}, t)

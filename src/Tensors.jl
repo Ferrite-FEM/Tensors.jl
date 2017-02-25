@@ -3,7 +3,6 @@ __precompile__()
 module Tensors
 
 import Base.@pure
-using StaticArrays
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
@@ -14,20 +13,17 @@ export hessian#, gradient
 export basevec, eᵢ
 export rotate
 
-
-@deprecate extract_components(tensor) Array(tensor)
-
 #########
 # Types #
 #########
 abstract AbstractTensor{order, dim, T <: Real} <: AbstractArray{T, order}
 
 immutable SymmetricTensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
-   data::SVector{M, T}
+   data::NTuple{M, T}
 end
 
 immutable Tensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
-   data::SVector{M, T}
+   data::NTuple{M, T}
 end
 
 ###############
@@ -61,18 +57,7 @@ include("automatic_differentiation.jl")
 ##############################
 # Utility/Accessor Functions #
 ##############################
-get_data(t::AbstractTensor) = t.data.data
-tovector(t::AbstractTensor) = t.data
-
-function tomatrix{dim}(t::Tensor{4, dim})
-    N = n_components(Tensor{2,dim})
-    return SMatrix{N, N}(tovector(t))
-end
-
-function tomatrix{dim}(t::Tensor{2, dim})
-    N = n_components(Tensor{1,dim})
-    return SMatrix{N, N}(tovector(t))
-end
+get_data(t::AbstractTensor) = t.data
 
 @pure n_components{dim}(::Type{SymmetricTensor{2, dim}}) = dim*dim - div((dim-1)*dim, 2)
 @pure function n_components{dim}(::Type{SymmetricTensor{4, dim}})
@@ -114,34 +99,25 @@ Base.size{dim}(::FourthOrderTensor{dim}) = (dim, dim, dim, dim)
 #########################
 # Internal constructors #
 #########################
-function _constructor_check{order, dim}(Tt::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}})
-    !(order in (1,2,4)) && throw(ArgumentError("tensors only supported for order 1, 2 and 4"))
-    !(dim in (1,2,3)) && throw(ArgumentError("tensors only supported for dim 1, 2 and 3"))
-    order == 1 && Tt <: SymmetricTensor && throw(ArgumentError("symmetric tensors only supported for order 2 and 4"))
-    return nothing
-end
-
 for TensorType in (SymmetricTensor, Tensor)
-    @eval begin
-        @inline (::Type{$TensorType{order, dim}}){order, dim, T <: Real, M}(t::NTuple{M, T}) = $TensorType{order, dim}(SVector{M,T}(t))
-        @inline (::Type{$TensorType{order, dim, T1}}){order, dim, T1 <: Real, T2 <: Real, M}(t::NTuple{M, T2}) = $TensorType{order, dim}(SVector{M,T1}(t))
-        @inline (::Type{$TensorType{order, dim, T1, M}}){order, dim, T1 <: Real, T2 <: Real, M}(t::NTuple{M, T2}) = $TensorType{order, dim}(SVector{M,T1}(t))
-
-        @inline (::Type{$TensorType{order, dim}}){order, dim, T <: Real, M}(t::SVector{M, T}) = _constructor_check($TensorType{order, dim})
-    end
-    for order in (2,4), dim in (1,2,3)
-        M = n_components(TensorType{order,dim})
-        @eval @inline (::Type{$TensorType{$order, $dim}}){T <: Real}(t::SVector{$M, T}) = $TensorType{$order, $dim, T, $M}(t)
-        @eval @inline (::Type{$TensorType{$order, $dim}}){T <: Real, Q}(t::SMatrix{Q, Q, T, $M}) = $TensorType{$order, $dim, T, $M}(t.data)
+    for order in (2, 4), dim in (1, 2, 3)
+        N = n_components(TensorType{order, dim})
+        @eval begin
+            @inline (::Type{$TensorType{$order, $dim}}){T <: Real}(t::NTuple{$N, T}) = $TensorType{$order, $dim, T, $N}(t)
+            @inline (::Type{$TensorType{$order, $dim, T1}}){T1 <: Real, T2 <: Real}(t::NTuple{$N, T2}) = $TensorType{$order, $dim, T1, $N}(t)
+        end
     end
     if TensorType == Tensor
-        for dim in (1,2,3)
-            @eval @inline (::Type{Tensor{1, $dim}}){T <: Real}(t::SVector{$dim, T}) = Tensor{1, $dim, T, $dim}(t)
+        for dim in (1, 2, 3)
+            @eval @inline (::Type{Tensor{1, $dim}}){T <: Real}(t::NTuple{$dim, T}) = Tensor{1, $dim, T, $dim}(t)
         end
     end
 end
-# Special for Vec
-@inline (Tt::Type{Vec{dim}}){dim}(data) = Tensor{1, dim}(data)
+# # Special for Vec
+# @inline (Tt::Type{Vec{dim}}){dim}(data) = Tensor{1, dim}(data)
+# Base.convert{dim, T}(::Type{SVector{dim, T}}, f::Function) = SVector{dim, T}(ntuple(f, Val{dim}))
+Base.convert{dim, T}(::Type{NTuple{dim, T}}, f::Function) = Tensor{1, dim, T}(f)
+# Base.convert{dim, T}(::Type{Vec{dim, T}}, f::Function) = Tensor{1, dim, T}(f)
 
 # General fallbacks
 @inline          (Tt::Type{Tensor{order, dim, T}}){order, dim, T}(data::Union{AbstractArray, Tuple, Function}) = convert(Tensor{order, dim, T}, Tensor{order, dim}(data))
