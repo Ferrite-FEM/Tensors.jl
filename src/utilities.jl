@@ -24,14 +24,16 @@ function tensor_create{order, dim}(::Type{SymmetricTensor{order, dim}}, f)
 end
 
 # reduced two expressions by summing the products
-function reducer(ex1i, ex2i)
+# madd = true uses muladd instructions which is faster
+# in some cases, like in double contraction
+function reducer(ex1i, ex2i, madd=false)
     ex1, ex2 = remove_duplicates(ex1i, ex2i)
     N = length(ex1)
     expr = :($(ex1[1]) * $(ex2[1]))
 
     for i in 2:N
-        expr = :($(expr) + $(ex1[i]) * $(ex2[i]))
-        # expr = :(muladd($(ex1[i]), $(ex2[i]), $expr)) # faster on some architectures!?
+        expr = madd ? :(muladd($(ex1[i]), $(ex2[i]), $expr)) :
+                      :($(expr) + $(ex1[i]) * $(ex2[i]))
     end
     return expr
 end
