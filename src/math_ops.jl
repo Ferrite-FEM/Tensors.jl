@@ -25,12 +25,11 @@ julia> norm(A)
 
 @generated function Base.norm{dim}(S::FourthOrderTensor{dim})
     idx(i,j,k,l) = compute_index(get_base(S), i, j, k, l)
-    ex1, ex2 = Expr[], Expr[]
+    ex = Expr[]
     for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
-        push!(ex1, :(get_data(S)[$(idx(i,j,k,l))]))
-        push!(ex2, :(get_data(S)[$(idx(i,j,k,l))]))
+        push!(ex, :(get_data(S)[$(idx(i,j,k,l))]))
     end
-    exp = make_muladd_exp(ex1, ex2)
+    exp = reducer(ex, ex)
     return quote
       $(Expr(:meta, :inline))
       @inbounds return sqrt($exp)
