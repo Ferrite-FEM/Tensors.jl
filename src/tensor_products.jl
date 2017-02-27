@@ -29,7 +29,7 @@ julia> A ⊡ B
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))]) for i in 1:dim, j in 1:dim][:]
     ex2 = Expr[:(get_data(S2)[$(idxS2(i, j))]) for i in 1:dim, j in 1:dim][:]
-    exp = reducer(ex1, ex2, true)
+    exp = reducer(ex1, ex2)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $exp
