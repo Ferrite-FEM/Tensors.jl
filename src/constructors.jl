@@ -82,7 +82,7 @@ The alias `eᵢ` can also be used, written `e\\_i<TAB>`.
 
 ```jldoctest
 julia> eᵢ(Vec{2, Float64})
-([1.0,0.0],[0.0,1.0])
+([1.0, 0.0], [0.0, 1.0])
 
 julia> eᵢ(Vec{2, Float64}, 2)
 2-element Tensors.Tensor{1,2,Float64,2}:

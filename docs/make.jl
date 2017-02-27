@@ -5,7 +5,7 @@ makedocs(
     format = :html,
     sitename = "Tensors.jl",
     doctest = true,
-    strict = true,
+    strict = VERSION.minor == 6, # only strict mode on release bot
     pages = Any[
         "Home" => "index.md",
         "Manual" => [
@@ -23,7 +23,7 @@ makedocs(
 deploydocs(
     repo = "github.com/KristofferC/Tensors.jl.git",
     target = "build",
-    julia = "0.5",
+    julia = "0.6", # deploy from release bot
     deps = nothing,
     make = nothing
 )
