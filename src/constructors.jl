@@ -7,18 +7,20 @@ for TensorType in (SymmetricTensor, Tensor)
 
         @generated function Base.one{order, dim, T}(S::Type{$(TensorType){order, dim, T}})
             !(order in (2,4)) && throw(ArgumentError("`one` only defined for order 2 and 4"))
-            δ = (i,j) -> i == j ? :($(one(T))) : :($(zero(T)))
+            δ = (i,j) -> i == j ? :(o) : :(z)
             ReturnTensor = get_base(get_type(S))
             if order == 2
-                f = (i,j) -> δ(i,j)
+                f = (i,j) -> :($(δ(i,j)))
             elseif order == 4 && $TensorType == Tensor
-                f = (i,j,k,l) -> δ(i,k) * δ(j,l)
+                f = (i,j,k,l) -> :($(δ(i,k)) * $(δ(j,l)))
             else # order == 4 && TensorType == SymmetricTensor
-                f = (i,j,k,l) -> (δ(i,k) * δ(j,l) + δ(i,l) * δ(j,k)) / 2
+                f = (i,j,k,l) -> :(($(δ(i,k)) * $(δ(j,l)) + $(δ(i,l))* $(δ(j,k))) / 2)
             end
             exp = tensor_create(ReturnTensor, f)
             return quote
                 $(Expr(:meta, :inline))
+                o = one(T)
+                z = zero(T)
                 $ReturnTensor($exp)
             end
         end
