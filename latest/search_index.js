@@ -445,7 +445,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Base.LinAlg.eig",
     "category": "Function",
-    "text": "eig(::SymmetricSecondOrderTensor)\n\nComputes the eigenvalues and eigenvectors of a symmetric second order tensor.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2,3})\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\njulia> Λ, Φ = eig(A);\n\njulia> Λ\n3-element Tensors.Tensor{1,3,Float64,3}:\n -0.312033\n  0.15636\n  2.06075\n\njulia> Φ\n3×3 Tensors.Tensor{2,3,Float64,9}:\n  0.492843  -0.684993  0.536554\n -0.811724  -0.139855  0.567049\n  0.313385   0.715     0.624952\n\njulia> Φ ⋅ diagm(Tensor{2,3}, Λ) ⋅ inv(Φ) # Same as A\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\n\n\n"
+    "text": "eig(::SymmetricSecondOrderTensor)\n\nComputes the eigenvalues and eigenvectors of a symmetric second order tensor.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2,3})\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\njulia> Λ, Φ = eig(A);\n\njulia> Λ\n3-element Tensors.Tensor{1,3,Float64,3}:\n -0.312033\n  0.15636\n  2.06075\n\njulia> Φ\n3×3 Tensors.Tensor{2,3,Float64,9}:\n  0.492843  -0.684993  -0.536554\n -0.811724  -0.139855  -0.567049\n  0.313385   0.715     -0.624952\n\njulia> Φ ⋅ diagm(Tensor{2,3}, Λ) ⋅ inv(Φ) # Same as A\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\n\n\n"
 },
 
 {
