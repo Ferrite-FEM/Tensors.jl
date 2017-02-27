@@ -15,11 +15,10 @@ such that ``a_k C_{ikjl} b_l``.
             push!(ex1, :(get_data(v1)[$k] * get_data(S)[$(idx(i,k,j,l))]))
             push!(ex2, :(get_data(v2)[$l]))
         end
-        push!(exps.args, make_muladd_exp(ex1, ex2))
+        push!(exps.args, reducer(ex1, ex2, true))
     end
     return quote
         $(Expr(:meta, :inline))
-        @inbounds r = $exps
-        Tensor{2, dim}(r)
+        @inbounds return Tensor{2, dim}($exps)
     end
 end

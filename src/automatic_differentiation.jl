@@ -226,17 +226,17 @@ end
 
 # Second order tensors
 @inline function _load{T}(v::Tensor{2, 1, T})
-    @inbounds v_dual = Tensor{2, 1}((Dual(v.data.data[1], one(T)),))
+    @inbounds v_dual = Tensor{2, 1}((Dual(get_data(v)[1], one(T)),))
     return v_dual
 end
 
 @inline function _load{T}(v::SymmetricTensor{2, 1, T})
-    @inbounds v_dual = SymmetricTensor{2, 1}((Dual(v.data.data[1], one(T)),))
+    @inbounds v_dual = SymmetricTensor{2, 1}((Dual(get_data(v)[1], one(T)),))
     return v_dual
 end
 
 @inline function _load{T}(v::Tensor{2, 2, T})
-    data = v.data.data
+    data = get_data(v)
     o = one(T)
     z = zero(T)
     @inbounds v_dual = Tensor{2, 2}((Dual(data[1], o, z, z, z),
@@ -247,7 +247,7 @@ end
 end
 
 @inline function _load{T}(v::SymmetricTensor{2, 2, T})
-    data = v.data.data
+    data = get_data(v)
     o = one(T)
     o2 = T(1/2)
     z = zero(T)
@@ -258,7 +258,7 @@ end
 end
 
 @inline function _load{T}(v::Tensor{2, 3, T})
-    data = v.data.data
+    data = get_data(v)
     o = one(T)
     z = zero(T)
     @inbounds v_dual = Tensor{2, 3}((Dual(data[1], o, z, z, z, z, z, z, z, z),
@@ -274,7 +274,7 @@ end
 end
 
 @inline function _load{T}(v::SymmetricTensor{2, 3, T})
-    data = v.data.data
+    data = get_data(v)
     o = one(T)
     o2 = T(1/2)
     z = zero(T)

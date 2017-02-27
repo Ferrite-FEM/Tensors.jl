@@ -23,22 +23,68 @@ function tensor_create{order, dim}(::Type{SymmetricTensor{order, dim}}, f)
     return ex
 end
 
-# create recursive muladd exp from two expression arrays
-function make_muladd_exp(ex1, ex2)
+# reduced two expressions by summing the products
+# madd = true uses muladd instructions which is faster
+# in some cases, like in double contraction
+function reducer(ex1i, ex2i, madd=false)
+    ex1, ex2 = remove_duplicates(ex1i, ex2i)
     N = length(ex1)
-    ex = Expr(:call)
-    exn = Expr(:call, :*, ex1[1], ex2[1])
-
-    if N == 1 # return only the multiplication
-        return exn
-    end
+    expr = :($(ex1[1]) * $(ex2[1]))
 
     for i in 2:N
-        ex = Expr(:call, :muladd)
-        push!(ex.args, ex1[i])
-        push!(ex.args, ex2[i])
-        push!(ex.args, exn)
-        exn = ex
+        expr = madd ? :(muladd($(ex1[i]), $(ex2[i]), $expr)) :
+                      :($(expr) + $(ex1[i]) * $(ex2[i]))
     end
+    return expr
+end
+
+function remove_duplicates(ex1in, ex2in)
+    ex1out, ex2out = Expr[], Expr[]
+    exout = Expr[]
+    factors = ones(Int, length(ex1in))
+
+    for (ex1ine, ex2ine) in zip(ex1in, ex2in)
+        prod = :($ex1ine * $ex2ine)
+        i = findfirst(exout, prod) # check if this product exist in the output
+        if i == 0 # this product does not exist yet
+            push!(ex1out, ex1ine)
+            push!(ex2out, ex2ine)
+            push!(exout, prod)
+        else # found a duplicate
+            factors[i] += 1
+        end
+    end
+    for i in 1:length(ex1out)
+        factors[i] != 1 && (ex1out[i] = :($(factors[i]) * $(ex1out[i])))
+    end
+    return ex1out, ex2out
+end
+
+# check symmetry and return
+remove_duplicates{order, dim}(::Type{Tensor{order, dim}}, ex) = ex # do nothing if return type is a Tensor
+function remove_duplicates{order, dim}(::Type{SymmetricTensor{order, dim}}, ex)
+    ex.args = ex.args[SYMMETRIC_INDICES[order][dim]]
     return ex
 end
+
+# return types
+# double contraction
+getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{Tensor{4, dim}}) = Tensor{4, dim}
+getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{SymmetricTensor{4, dim}}) = Tensor{4, dim}
+getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{Tensor{4, dim}}) = Tensor{4, dim}
+getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{SymmetricTensor{4, dim}}) = SymmetricTensor{4, dim}
+getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{Tensor{2, dim}}) = Tensor{2, dim}
+getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{SymmetricTensor{2, dim}}) = Tensor{2, dim}
+getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{Tensor{2, dim}}) = SymmetricTensor{2, dim}
+getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{SymmetricTensor{2, dim}}) = SymmetricTensor{2, dim}
+getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{2, dim}}, ::Type{Tensor{4, dim}}) = Tensor{2, dim}
+getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{2, dim}}, ::Type{SymmetricTensor{4, dim}}) = SymmetricTensor{2, dim}
+getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{2, dim}}, ::Type{Tensor{4, dim}}) = Tensor{2, dim}
+getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{2, dim}}, ::Type{SymmetricTensor{4, dim}}) = SymmetricTensor{2, dim}
+
+# otimes
+getreturntype{dim}(::typeof(otimes), ::Type{Tensor{1, dim}}, ::Type{Tensor{1, dim}}) = Tensor{2, dim}
+getreturntype{dim}(::typeof(otimes), ::Type{Tensor{2, dim}}, ::Type{Tensor{2, dim}}) = Tensor{4, dim}
+getreturntype{dim}(::typeof(otimes), ::Type{SymmetricTensor{2, dim}}, ::Type{Tensor{2, dim}}) = Tensor{4, dim}
+getreturntype{dim}(::typeof(otimes), ::Type{Tensor{2, dim}}, ::Type{SymmetricTensor{2, dim}}) = Tensor{4, dim}
+getreturntype{dim}(::typeof(otimes), ::Type{SymmetricTensor{2, dim}}, ::Type{SymmetricTensor{2, dim}}) = SymmetricTensor{4, dim}

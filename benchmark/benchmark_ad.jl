@@ -1,18 +1,21 @@
+import ForwardDiff: valtype
 const ∇ = Tensors.gradient
 const Δ = Tensors.hessian
 
 function Ψ(C, μ, Kb)
+    T = ForwardDiff.valtype(eltype(C))
     detC = det(C)
     J = sqrt(detC)
-    Ĉ = detC^(-1/3)*C
-    return 1/2*(μ * (trace(Ĉ)- 3) + Kb*(J-1)^2)
+    Ĉ = detC^(T(-1 / 3)) * C
+    return (T(μ) * (trace(Ĉ) - 3) / 2 + T(Kb) * (J - 1)^2)
 end
 
 function S(C, μ, Kb)
+    T = ForwardDiff.valtype(eltype(C))
     I = one(C)
     J = sqrt(det(C))
     invC = inv(C)
-    return μ * det(C)^(-1/3)*(I - 1/3*trace(C)*invC) + Kb*(J-1)*J*invC
+    return  T(μ) * det(C)^(T(-1/3)) * (I - trace(C) * invC / 3) + T(Kb) * (J - 1) * J * invC
 end
 
 const μ = 1e10;
@@ -30,6 +33,11 @@ for dim in (1,2,3)
         V2 = V2' ⋅ V2
         V2sym = symtensor_dict[(dim, 2, T)]
         V2sym = V2sym' ⋅ V2sym
+
+        @assert eltype(Ψ(V2)) == T
+        @assert eltype(S(V2)) == T
+        @assert eltype(∇(Ψ, V2)) == T
+        @assert eltype(Δ(Ψ, V2)) == T
 
         SUITE["gradient"]["dim $dim Ψ - sym - $T"] = @benchmarkable ∇(Ψ, $V2sym)
         SUITE["gradient"]["dim $dim Ψ - $T"] = @benchmarkable ∇(Ψ, $V2)
