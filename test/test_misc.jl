@@ -299,11 +299,11 @@ for T in (Float32, Float64), dim in (1,2,3)
     # norm
     for order in (1,2,4)
         t = rand(Tensor{order, dim, T})
-        @test norm(t) ≈ sqrt(sumabs2(Array(t)[:]))
+        @test norm(t) ≈ sqrt(sum(abs2, Array(t)[:]))
         @test isa(norm(t), T)
         if order != 1
             t_sym = rand(SymmetricTensor{order, dim, T})
-            @test norm(t_sym) ≈ sqrt(sumabs2(Array(t_sym)[:]))
+            @test norm(t_sym) ≈ sqrt(sum(abs2, Array(t_sym)[:]))
             @test isa(norm(t_sym), T)
         end
     end

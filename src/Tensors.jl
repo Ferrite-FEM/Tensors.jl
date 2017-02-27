@@ -3,6 +3,7 @@ __precompile__()
 module Tensors
 
 import Base.@pure
+using Compat
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
@@ -16,7 +17,7 @@ export rotate
 #########
 # Types #
 #########
-abstract AbstractTensor{order, dim, T <: Real} <: AbstractArray{T, order}
+@compat abstract type AbstractTensor{order, dim, T <: Real} <: AbstractArray{T, order} end
 
 immutable SymmetricTensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
    data::NTuple{M, T}
@@ -29,17 +30,17 @@ end
 ###############
 # Typealiases #
 ###############
-typealias Vec{dim, T, M} Tensor{1, dim, T, dim}
+@compat const Vec{dim, T, M} = Tensor{1, dim, T, dim}
 
-typealias AllTensors{dim, T} Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T},
-                                   SymmetricTensor{4, dim, T}, Tensor{4, dim, T},
-                                   Vec{dim, T}}
+@compat const AllTensors{dim, T} = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T},
+                                         SymmetricTensor{4, dim, T}, Tensor{4, dim, T},
+                                         Vec{dim, T}}
 
 
-typealias SecondOrderTensor{dim, T} Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T}}
-typealias FourthOrderTensor{dim, T} Union{SymmetricTensor{4, dim, T}, Tensor{4, dim, T}}
-typealias SymmetricTensors{dim, T} Union{SymmetricTensor{2, dim, T}, SymmetricTensor{4, dim, T}}
-typealias NonSymmetricTensors{dim, T} Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T}}
+@compat const SecondOrderTensor{dim, T}   = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T}}
+@compat const FourthOrderTensor{dim, T}   = Union{SymmetricTensor{4, dim, T}, Tensor{4, dim, T}}
+@compat const SymmetricTensors{dim, T}    = Union{SymmetricTensor{2, dim, T}, SymmetricTensor{4, dim, T}}
+@compat const NonSymmetricTensors{dim, T} = Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T}}
 
 include("indexing.jl")
 include("promotion_conversion.jl")
@@ -86,8 +87,8 @@ end
 ############################
 # Abstract Array interface #
 ############################
-Base.linearindexing{T <: SymmetricTensor}(::Type{T}) = Base.LinearSlow()
-Base.linearindexing{T <: Tensor}(::Type{T}) = Base.LinearFast()
+@compat Base.IndexStyle(::Type{<: SymmetricTensor}) = IndexCartesian()
+@compat Base.IndexStyle(::Type{<: Tensor}) = IndexLinear()
 
 ########
 # Size #
