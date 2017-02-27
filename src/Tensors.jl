@@ -42,18 +42,6 @@ end
 @compat const SymmetricTensors{dim, T}    = Union{SymmetricTensor{2, dim, T}, SymmetricTensor{4, dim, T}}
 @compat const NonSymmetricTensors{dim, T} = Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T}}
 
-include("indexing.jl")
-include("promotion_conversion.jl")
-include("constructors.jl")
-include("basic_operations.jl")
-include("tensor_products.jl")
-include("utilities.jl")
-include("transpose.jl")
-include("symmetric.jl")
-include("math_ops.jl")
-include("special_ops.jl")
-include("tensor_ops_errors.jl")
-include("automatic_differentiation.jl")
 
 ##############################
 # Utility/Accessor Functions #
@@ -175,5 +163,18 @@ end
         return convert(SymmetricTensor{order, dim}, S)
     end
 end
+
+include("indexing.jl")
+include("promotion_conversion.jl")
+include("constructors.jl")
+include("basic_operations.jl")
+include("tensor_products.jl")
+include("utilities.jl")
+include("transpose.jl")
+include("symmetric.jl")
+include("math_ops.jl")
+include("special_ops.jl")
+include("tensor_ops_errors.jl")
+include("automatic_differentiation.jl")
 
 end # module
