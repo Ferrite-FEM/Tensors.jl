@@ -69,6 +69,7 @@ end
 
 # return types
 # double contraction
+function dcontract end
 getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{Tensor{4, dim}}) = Tensor{4, dim}
 getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{SymmetricTensor{4, dim}}) = Tensor{4, dim}
 getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{Tensor{4, dim}}) = Tensor{4, dim}
@@ -83,6 +84,7 @@ getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{2, dim}}, ::Type{
 getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{2, dim}}, ::Type{SymmetricTensor{4, dim}}) = SymmetricTensor{2, dim}
 
 # otimes
+function otimes end
 getreturntype{dim}(::typeof(otimes), ::Type{Tensor{1, dim}}, ::Type{Tensor{1, dim}}) = Tensor{2, dim}
 getreturntype{dim}(::typeof(otimes), ::Type{Tensor{2, dim}}, ::Type{Tensor{2, dim}}) = Tensor{4, dim}
 getreturntype{dim}(::typeof(otimes), ::Type{SymmetricTensor{2, dim}}, ::Type{Tensor{2, dim}}) = Tensor{4, dim}
