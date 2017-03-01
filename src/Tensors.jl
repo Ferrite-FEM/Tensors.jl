@@ -113,68 +113,17 @@ Base.convert{dim, T}(::Type{NTuple{dim, T}}, f::Function) = NTuple{dim, T}(ntupl
 #@inline          (Tt::Type{Tensor{order, dim, T, M}}){order, dim, T, M}(data::Union{AbstractArray, Tuple, Function}) = Tensor{order, dim, T}(data)
 #@inline (Tt::Type{SymmetricTensor{order, dim, T, M}}){order, dim, T, M}(data::Union{AbstractArray, Tuple, Function}) = SymmetricTensor{order, dim, T}(data)
 
-############################################
-# Type constructors e.g. Tensor{2, 3}(arg) #
-############################################
-
-# Tensor from function
-@generated function (S::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}){order, dim}(f::Function)
-    TensorType = get_base(get_type(S))
-    if order == 1
-        exp = tensor_create(TensorType, (i) -> :(f($i)))
-    elseif order == 2
-        exp = tensor_create(TensorType, (i,j) -> :(f($i, $j)))
-    elseif order == 4
-        exp = tensor_create(TensorType, (i,j,k,l) -> :(f($i, $j, $k, $l)))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($exp)
-    end
-end
-
-# Tensor from AbstractArray
-@generated function (::Type{Tensor{order, dim}}){order, dim}(data::AbstractArray)
-    N = n_components(Tensor{order,dim})
-    exp = Expr(:tuple, [:(data[$i]) for i in 1:N]...)
-    return quote
-        if length(data) != $N
-            throw(ArgumentError("wrong number of elements, expected $($N), got $(length(data))"))
-        end
-        Tensor{order, dim}($exp)
-    end
-end
-
-# SymmetricTensor from AbstractArray
-@generated function (::Type{SymmetricTensor{order, dim}}){order, dim}(data::AbstractArray)
-    N = n_components(Tensor{order,dim})
-    expN = Expr(:tuple, [:(data[$i]) for i in 1:N]...)
-    M = n_components(SymmetricTensor{order,dim})
-    expM = Expr(:tuple, [:(data[$i]) for i in 1:M]...)
-    return quote
-        L = length(data)
-        if L != $N && L != $M
-            throw(ArgumentError("wrong number of vector elements, expected $($N) or $($M), got $L"))
-        end
-        if L == $M
-            @inbounds return SymmetricTensor{order, dim}($expM)
-        end
-        @inbounds S = Tensor{order, dim}($expN)
-        return convert(SymmetricTensor{order, dim}, S)
-    end
-end
-
 include("indexing.jl")
+include("utilities.jl")
+include("tensor_ops_errors.jl")
+include("automatic_differentiation.jl")
 include("promotion_conversion.jl")
 include("constructors.jl")
 include("basic_operations.jl")
 include("tensor_products.jl")
-include("utilities.jl")
 include("transpose.jl")
 include("symmetric.jl")
 include("math_ops.jl")
 include("special_ops.jl")
-include("tensor_ops_errors.jl")
-include("automatic_differentiation.jl")
 
 end # module
