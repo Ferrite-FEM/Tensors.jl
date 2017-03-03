@@ -22,6 +22,8 @@ julia> norm(A)
 """
 @inline Base.norm(v::Vec) = sqrt(dot(v, v))
 @inline Base.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
+
+# special case for Tensor{4, 3} since it is faster than unrolling
 @inline Base.norm(S::Tensor{4, 3}) = sqrt(mapreduce(abs2, +, S))
 
 @generated function Base.norm{dim}(S::FourthOrderTensor{dim})
