@@ -22,6 +22,7 @@ julia> norm(A)
 """
 @inline Base.norm(v::Vec) = sqrt(dot(v, v))
 @inline Base.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
+@inline Base.norm(S::Tensor{4, 3}) = sqrt(mapreduce(abs2, +, S))
 
 @generated function Base.norm{dim}(S::FourthOrderTensor{dim})
     idx(i,j,k,l) = compute_index(get_base(S), i, j, k, l)
