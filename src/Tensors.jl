@@ -20,11 +20,16 @@ export rotate
 @compat abstract type AbstractTensor{order, dim, T <: Real} <: AbstractArray{T, order} end
 
 immutable SymmetricTensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
-   data::NTuple{M, T}
+    data::NTuple{M, T}
+    (::Type{SymmetricTensor{order, dim, T, M}}){order, dim, T, M}(data::NTuple) = new{order, dim, T, M}(data)
 end
 
 immutable Tensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
-   data::NTuple{M, T}
+    data::NTuple{M, T}
+
+    # this is needed to make Vec{3, Float64}(f::Function) work properly
+    (::Type{Tensor{order, dim, T, M}}){order, dim, T, M}(data::NTuple) = new{order, dim, T, M}(data)
+    (::Type{Tensor{order, dim, T, M}}){order, dim, T, M}(f::Function) = new{order, dim, T, M}(NTuple{M, T}(ntuple(f, Val{M})))
 end
 
 ###############
@@ -104,8 +109,6 @@ for TensorType in (SymmetricTensor, Tensor)
 end
 # Special for Vec
 @inline (Tt::Type{Vec{dim}}){dim}(data) = Tensor{1, dim}(data)
-Base.convert{dim, T}(::Type{NTuple{dim, T}}, f::Function) = NTuple{dim, T}(ntuple(f, Val{dim}))
-
 
 # General fallbacks
 @inline          (Tt::Type{Tensor{order, dim, T}}){order, dim, T}(data::Union{AbstractArray, Tuple, Function}) = convert(Tensor{order, dim, T}, Tensor{order, dim}(data))
