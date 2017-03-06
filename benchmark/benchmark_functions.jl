@@ -7,7 +7,7 @@ SUITE["constructors"] = BenchmarkGroup()
 
 
 for dim in (1,2,3)
-    for T in (Float64, Float32)
+    for T in (Float64, Float32, dT)
         v1 = tensor_dict[(dim, 1, T)]
         V2 = tensor_dict[(dim, 2, T)]
         V4 = tensor_dict[(dim, 4, T)]
