@@ -19,7 +19,7 @@ const SIMDTypes = Union{Bool,
 const SIMD_CHUNKS = (1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 16, 17, 18, 20, 24, 32, 33, 34, 36, 40, 48, 64, 65, 66, 68, 72, 80, 96)
 
 # factors for the symmetric tensors
-function symmetric_factors(order, dim, T)
+#=Base.@pure=# function symmetric_factors(order, dim, T) # can we have @pure here? Then we don't need as many generated functions
     if order == 2
         dim == 1 && return SVec{1, T}((T(1),))
         dim == 2 && return SVec{3, T}((T(1),T(2),T(1)))
@@ -34,70 +34,12 @@ function symmetric_factors(order, dim, T)
 end
 
 # norm
-@inline function norm{dim, T <: SIMDTypes}(S::Union{Vec{dim, T}, Tensor{2, dim, T}, Tensor{4, dim, T}})
-    v = zero(T)
-    @inbounds @simd for i in 1:length(S)
-        v += S[i] * S[i]
-    end
-    return sqrt(v)
-end
-
-@inline function norm{T <: SIMDTypes}(S::Tensor{1, 1, T})
-    D = SVec{1, T}(get_data(S))
+@inline function norm{order, dim, T <: SIMDTypes, N}(S::Tensor{order, dim, T, N})
+    D = SVec{N, T}(get_data(S))
     DD = D * D
     sDD = sum(DD)
     return sqrt(sDD)
 end
-
-@inline function norm{T <: SIMDTypes}(S::Tensor{1, 2, T})
-    D = SVec{2, T}(get_data(S))
-    DD = D * D
-    sDD = sum(DD)
-    return sqrt(sDD)
-end
-
-@inline function norm{T <: SIMDTypes}(S::Tensor{1, 3, T})
-    D = SVec{3, T}(get_data(S))
-    DD = D * D
-    sDD = sum(DD)
-    return sqrt(sDD)
-end
-
-@inline function norm{T <: SIMDTypes}(S::Tensor{2, 1, T})
-    D = SVec{1, T}(get_data(S))
-    DD = D * D
-    sDD = sum(DD)
-    return sqrt(sDD)
-end
-
-@inline function norm{T <: SIMDTypes}(S::Tensor{2, 2, T})
-    D = SVec{4, T}(get_data(S))
-    DD = D * D
-    sDD = sum(DD)
-    return sqrt(sDD)
-end
-
-@inline function norm{T <: SIMDTypes}(S::Tensor{2, 3, T})
-    D = SVec{9, T}(get_data(S))
-    DD = D * D
-    sDD = sum(DD)
-    return sqrt(sDD)
-end
-
-@inline function norm{T <: SIMDTypes}(S::Tensor{4, 1, T})
-    D = SVec{1, T}(get_data(S))
-    DD = D * D
-    sDD = sum(DD)
-    return sqrt(sDD)
-end
-
-@inline function norm{T <: SIMDTypes}(S::Tensor{4, 2, T})
-    D = SVec{16, T}(get_data(S))
-    DD = D * D
-    sDD = sum(DD)
-    return sqrt(sDD)
-end
-
 @inline function norm{T <: SIMDTypes}(S::Tensor{4, 3, T})
     @inbounds begin
         D = get_data(S)
@@ -117,46 +59,51 @@ end
     end
 end
 
-# rely on fast dcontract
-@inline norm{dim, T <: SIMDTypes}(S::SymmetricTensor{2, dim, T}) = sqrt(dcontract(S, S))
+# rely on fast dcontract (this might be slower actually since dcontract assumes two different tensors)
+# Edit: no, the computer understands its the same #sosmart
+# @inline norm{dim, T <: SIMDTypes}(S::SymmetricTensor{2, dim, T}) = sqrt(dcontract(S, S))
 
-@inline function norm{T <: SIMDTypes}(S::SymmetricTensor{4, 1, T})
-    F = SVec{1, T}((T(1), ))
-    D = SVec{1, T}(get_data(S))
-    DD = D*D; FDD = F * DD; sFDD = sum(FDD)
-    return sqrt(sFDD)
+@generated function norm{order, dim, T <: SIMDTypes, N}(S::SymmetricTensor{order, dim, T, N})
+    F = symmetric_factors(order, dim, T)
+    return quote
+        $(Expr(:meta, :inline))
+        F = $F
+        D = SVec{N, T}(get_data(S))
+        DD = D * D; FDD = F * DD; sFDD = sum(FDD)
+        return sqrt(sFDD)
+    end
 end
-@inline function norm{T <: SIMDTypes}(S::SymmetricTensor{4, 2, T})
-    F = SVec{9, T}((T(1), T(2), T(1), T(2), T(4), T(2), T(1), T(2), T(1)))
-    D = SVec{9, T}(get_data(S))
-    DD = D * D; FDD = F * DD; sFDD = sum(FDD)
-    return sqrt(sFDD)
-end
-@inline function norm{T <: SIMDTypes}(S::SymmetricTensor{4, 3, T})
-    F = SVec{36, T}((T(1), T(2), T(2), T(1), T(2), T(1), T(2), T(4), T(4), T(2), T(4), T(2),
-                     T(2), T(4), T(4), T(2), T(4), T(2), T(1), T(2), T(2), T(1), T(2), T(1),
-                     T(2), T(4), T(4), T(2), T(4), T(2), T(1), T(2), T(2), T(1), T(2), T(1)))
-    D = SVec{36, T}(get_data(S))
-    DD = D * D; FDD = F * DD; sFDD = sum(FDD)
-    return sqrt(sFDD)
-end
+
+# This is the same if it is safe to have @pure on symmetric_factors
+# But like this we dont use a generated function.
+# @inline function norm{order, dim, T <: SIMDTypes, N}(S::SymmetricTensor{order, dim, T, N})
+#     F = symmetric_factors(order, dim, T)
+#     D = SVec{N, T}(get_data(S))
+#     DD = D * D; FDD = F * DD; sFDD = sum(FDD)
+#     return sqrt(sFDD)
+# end
 
 # dcontract
 @inline dcontract{dim, T <: SIMDTypes}(S1::SecondOrderTensor{dim, T}, S2::SecondOrderTensor{dim, T}) = dcontract(promote(S1, S2)...)
 
-@inline function dcontract{T <: SIMDTypes}(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T})
-    D1 = SVec{9, T}(get_data(S1))
-    D2 = SVec{9, T}(get_data(S2))
+@inline function dcontract{dim, T <: SIMDTypes, N}(S1::Tensor{2, dim, T, N}, S2::Tensor{2, dim, T, N})
+    D1 = SVec{N, T}(get_data(S1))
+    D2 = SVec{N, T}(get_data(S2))
     D1D2 = D1 * D2
     return sum(D1D2)
 end
 
-@inline function dcontract{T <: SIMDTypes}(S1::SymmetricTensor{2, 3, T}, S2::SymmetricTensor{2, 3, T})
-    D1 = SVec{6, T}(get_data(S1))
-    D2 = SVec{6, T}(get_data(S2))
-    F  = SVec{6, T}((T(1), T(2), T(2), T(1), T(2), T(1)))
-    D1D2 = D1 * D2; FD1D2 = F * D1D2
-    return sum(FD1D2)
+# this can also be a non-generated function if we can have @pure
+@generated function dcontract{T <: SIMDTypes}(S1::SymmetricTensor{2, dim, T, N}, S2::SymmetricTensor{2, dim, T, N})
+    F = symmetric_factors(2, dim, T)
+    return quote
+        $(Expr(:meta, :inline))
+        F = $F
+        D1 = SVec{N, T}(get_data(S1))
+        D2 = SVec{N, T}(get_data(S2))
+        D1D2 = D1 * D2; FD1D2 = F * D1D2
+        return sum(FD1D2)
+    end
 end
 
 @inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 1, T}, S2::Tensor{2, 1, T})
