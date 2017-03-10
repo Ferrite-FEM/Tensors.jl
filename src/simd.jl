@@ -1,18 +1,19 @@
-# This module contains explicit SIMD instructions for tensors.
-# Many of the methods defined outside this module will use SIMD-instructions
-# if julia is ran with -O3. Even if -O3 is enabled, the compiler is sometimes
-# thrown off guard, and therefore, in this module, explicit SIMD routines are
-# defined, that will enable SIMD-instructions even if julia is ran with
-# the default -O2.
-#
-# The module is organized as follows:
-# (1): + and - between tensors
-# (2): * and / between tensor and number
-# (3): dot
-# (4): dcontract
-# (5): otimes
-# (6): norm
+#=
+This module contains explicit SIMD instructions for tensors.
+Many of the methods defined outside this module will use SIMD-instructions
+if julia is ran with -O3. Even if -O3 is enabled, the compiler is sometimes
+thrown off guard, and therefore, explicit SIMD routines are
+defined. This will enable SIMD-instructions even if julia is ran with
+the default -O2.
 
+The module is organized as follows:
+(1): + and - between tensors
+(2): * and / between tensor and number
+(3): dot
+(4): dcontract
+(5): otimes
+(6): norm
+=#
 module ExplicitSIMD
 
 using Tensors
@@ -33,7 +34,7 @@ const SIMDTypes = Union{Bool,
 const SIMD_CHUNKS = (1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 16, 17, 18, 20, 24, 32, 33, 34, 36, 40, 48, 64, 65, 66, 68, 72, 80, 96)
 
 # factors for the symmetric tensors
-function symmetric_factors(order, dim, T)
+Base.@pure function symmetric_factors(order, dim, T)
     if order == 2
         dim == 1 && return SVec{1, T}((T(1),))
         dim == 2 && return SVec{3, T}((T(1),T(2),T(1)))
@@ -137,7 +138,7 @@ end
 ##########################################
 # (2): * and / between tensor and number #
 ##########################################
-@generated function Base.:*{T <: SIMDTypes, TT <: AllSIMDTensors}(n::T, S::TT)
+@generated function Base.:*{dim, T <: SIMDTypes}(n::T, S::AllTensors{dim, T})
     TensorType = get_base(S)
     N = n_components(TensorType)
     return quote
@@ -161,7 +162,7 @@ end
         end
     end
 end
-@generated function Base.:*{TT <: AllSIMDTensors, T <: SIMDTypes}(S::TT, n::T)
+@generated function Base.:*{dim, T <: SIMDTypes}(S::AllTensors{dim, T}, n::T)
     TensorType = get_base(S)
     N = n_components(TensorType)
     return quote
@@ -185,7 +186,7 @@ end
         end
     end
 end
-@generated function Base.:/{TT <: AllSIMDTensors, T <: SIMDTypes}(S::TT, n::T)
+@generated function Base.:/{dim, T <: SIMDTypes}(S::AllTensors{dim, T}, n::T)
     TensorType = get_base(S)
     N = n_components(TensorType)
     return quote
@@ -214,7 +215,7 @@ end
 # (3): dot #
 ############
 # 2-1
-@inline function dot{T <: SIMDTypes, N}(S1::Tensor{2, 1, T, N}, S2::Vec{1, T})
+@inline function Base.dot{T <: SIMDTypes, N}(S1::Tensor{2, 1, T, N}, S2::Vec{1, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -223,7 +224,7 @@ end
         return Tensor{1, 1}(r)
     end
 end
-@inline function dot{T <: SIMDTypes, N}(S1::Tensor{2, 2, T, N}, S2::Vec{2, T})
+@inline function Base.dot{T <: SIMDTypes, N}(S1::Tensor{2, 2, T, N}, S2::Vec{2, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -234,7 +235,7 @@ end
         return Tensor{1, 2}(r)
     end
 end
-@inline function dot{T <: SIMDTypes, N}(S1::Tensor{2, 3, T, N}, S2::Vec{3, T})
+@inline function Base.dot{T <: SIMDTypes, N}(S1::Tensor{2, 3, T, N}, S2::Vec{3, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -248,16 +249,16 @@ end
 end
 
 # 2-2
-@inline function dot{T <: SIMDTypes, N}(S1::Tensor{2, 1, T, N}, S2::Tensor{2, 1, T, N})
+@inline function Base.dot{T <: SIMDTypes}(S1::Tensor{2, 1, T}, S2::Tensor{2, 1, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
-        D11 = SVec{2, T}((D1[1], ))
+        D11 = SVec{1, T}((D1[1], ))
         r1 = D11 * D2[1]
         return Tensor{2, 1}((r1,))
     end
 end
-@inline function dot{T <: SIMDTypes, N}(S1::Tensor{2, 2, T, N}, S2::Tensor{2, 2, T, N})
+@inline function Base.dot{T <: SIMDTypes}(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -268,7 +269,7 @@ end
         return Tensor{2, 2}((r12, r34))
     end
 end
-@inline function dot{T <: SIMDTypes, N}(S1::Tensor{2, 3, T, N}, S2::Tensor{2, 3, T, N})
+@inline function Base.dot{T <: SIMDTypes}(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -289,27 +290,23 @@ end
 # (4): dcontract #
 ##################
 # 2-2
-@inline function dcontract{dim, T <: SIMDTypes, N}(S1::Tensor{2, dim, T, N}, S2::Tensor{2, dim, T, N})
+@inline function Tensors.dcontract{dim, T <: SIMDTypes, N}(S1::Tensor{2, dim, T, N}, S2::Tensor{2, dim, T, N})
     D1 = SVec{N, T}(get_data(S1))
     D2 = SVec{N, T}(get_data(S2))
     D1D2 = D1 * D2
     return sum(D1D2)
 end
 # 2s-2s
-@generated function dcontract{dim, T <: SIMDTypes, N}(S1::SymmetricTensor{2, dim, T, N}, S2::SymmetricTensor{2, dim, T, N})
+@inline function Tensors.dcontract{dim, T <: SIMDTypes, N}(S1::SymmetricTensor{2, dim, T, N}, S2::SymmetricTensor{2, dim, T, N})
     F = symmetric_factors(2, dim, T)
-    return quote
-        $(Expr(:meta, :inline))
-        F = $F
-        D1 = SVec{N, T}(get_data(S1))
-        D2 = SVec{N, T}(get_data(S2))
-        D1D2 = D1 * D2; FD1D2 = F * D1D2
-        return sum(FD1D2)
-    end
+    D1 = SVec{N, T}(get_data(S1))
+    D2 = SVec{N, T}(get_data(S2))
+    D1D2 = D1 * D2; FD1D2 = F * D1D2
+    return sum(FD1D2)
 end
 
 # 4-2
-@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 1, T}, S2::Tensor{2, 1, T})
+@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 1, T}, S2::Tensor{2, 1, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -318,7 +315,7 @@ end
         return Tensor{2, 1}(r)
     end
 end
-@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{2, 2, T})
+@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -332,7 +329,7 @@ end
         return Tensor{2, 2}(r)
     end
 end
-@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4,3,T}, S2::Tensor{2,3,T})
+@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4,3,T}, S2::Tensor{2,3,T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -348,7 +345,7 @@ end
         r1 = D11 * D2[1]; r2 = D12 * D2[2]; r3 = D13 * D2[3]
         r4 = D14 * D2[4]; r5 = D15 * D2[5]; r6 = D16 * D2[6]
         r7 = D17 * D2[7]; r8 = D18 * D2[8]; r9 = D19 * D2[9]
-        r12 = r1 + r2; r34 = r3 + r4; r56 + r5 + r6; r78 = r7 + r8
+        r12 = r1 + r2; r34 = r3 + r4; r56 = r5 + r6; r78 = r7 + r8
         r1234 = r12 + r34; r5678 = r56 + r78; r12345678 = r1234 + r5678
         r = r12345678 + r9
         return Tensor{2, 3}(r)
@@ -356,7 +353,7 @@ end
 end
 
 # 4-4
-@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 1, T}, S2::Tensor{4, 1, T})
+@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 1, T}, S2::Tensor{4, 1, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -365,7 +362,7 @@ end
         return Tensor{4, 1}((r1, ))
     end
 end
-@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{4, 2, T})
+@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{4, 2, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -384,7 +381,7 @@ end
         return Tensor{4, 2}((r1, r2, r3, r4))
     end
 end
-@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
+@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -458,7 +455,7 @@ end
 ###############
 # (5): otimes #
 ###############
-@inline function otimes{T <: SIMDTypes}(S1::Vec{1, T}, S2::Vec{1, T})
+@inline function Tensors.otimes{T <: SIMDTypes}(S1::Vec{1, T}, S2::Vec{1, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -467,7 +464,7 @@ end
         return Tensor{2, 1}((r1, ))
     end
 end
-@inline function otimes{T <: SIMDTypes}(S1::Vec{2, T}, S2::Vec{2, T})
+@inline function Tensors.otimes{T <: SIMDTypes}(S1::Vec{2, T}, S2::Vec{2, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -477,7 +474,7 @@ end
         return Tensor{2, 2}((r1, r2))
     end
 end
-@inline function otimes{T <: SIMDTypes}(S1::Vec{3, T}, S2::Vec{3, T})
+@inline function Tensors.otimes{T <: SIMDTypes}(S1::Vec{3, T}, S2::Vec{3, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -486,7 +483,7 @@ end
         return Tensor{2, 3}((r1, r2, r3))
     end
 end
-@inline function otimes{T <: SIMDTypes}(S1::Tensor{2, 1, T}, S2::Tensor{2, 1, T})
+@inline function Tensors.otimes{T <: SIMDTypes}(S1::Tensor{2, 1, T}, S2::Tensor{2, 1, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -495,7 +492,7 @@ end
         return Tensor{4, 1}((r1[1], ))
     end
 end
-@inline function otimes{T <: SIMDTypes}(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T})
+@inline function Tensors.otimes{T <: SIMDTypes}(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -504,7 +501,7 @@ end
         return Tensor{4, 2}((r1, r2, r3, r4))
     end
 end
-@inline function otimes{T <: SIMDTypes}(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T})
+@inline function Tensors.otimes{T <: SIMDTypes}(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -515,7 +512,7 @@ end
         return Tensor{4, 3}((r1, r2, r3, r4, r5, r6, r7, r8, r9))
     end
 end
-@inline function otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 3, T}, S2::SymmetricTensor{2, 3, T})
+@inline function Tensors.otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 3, T}, S2::SymmetricTensor{2, 3, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
@@ -529,7 +526,8 @@ end
 #############
 # (6): norm #
 #############
-@inline function Base.norm{order, dim, T <: SIMDTypes, N}(S::Tensor{order, dim, T, N})
+# order 1 and order 2 norms rely on dot and dcontract respectively
+@inline function Base.norm{dim, T <: SIMDTypes, N}(S::Tensor{4, dim, T, N})
     @inbounds begin
         D = SVec{N, T}(get_data(S))
         DD = D * D
@@ -550,15 +548,11 @@ end
         end
     end
 end
-@generated function Base.norm{order, dim, T <: SIMDTypes, N}(S::SymmetricTensor{order, dim, T, N})
-    F = symmetric_factors(order, dim, T)
-    return quote
-        $(Expr(:meta, :inline))
-        F = $F
-        D = SVec{N, T}(get_data(S))
-        DD = D * D; FDD = F * DD; r = sum(FDD)
-        return sqrt(r)
-    end
+@inline function Base.norm{dim, T <: SIMDTypes, N}(S::SymmetricTensor{4, dim, T, N})
+    F = symmetric_factors(4, dim, T)
+    D = SVec{N, T}(get_data(S))
+    DD = D * D; FDD = F * DD; r = sum(FDD)
+    return sqrt(r)
 end
 
 end # module

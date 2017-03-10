@@ -24,7 +24,7 @@ end
         if length(data) != $N
             throw(ArgumentError("wrong number of elements, expected $($N), got $(length(data))"))
         end
-        println("BAD DISPATCH")
+        # println("BAD DISPATCH")
         Tensor{order, dim}($exp)
     end
 end
@@ -36,7 +36,7 @@ end
     M = n_components(SymmetricTensor{order,dim})
     expM = Expr(:tuple, [:(data[$i]) for i in 1:M]...)
     return quote
-        println("BAD DISPATCH")
+        # println("BAD DISPATCH")
         L = length(data)
         if L != $N && L != $M
             throw(ArgumentError("wrong number of vector elements, expected $($N) or $($M), got $L"))
