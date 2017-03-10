@@ -5,8 +5,8 @@ function _permutedims{dim}(S::FourthOrderTensor{dim}, idx::NTuple{4,Int})
     return Tensor{4,dim}(f)
 end
 
-@testset "tensor operations" begin;
-for T in (Float32, Float64), dim in (1,2,3)
+@testset "tensor operations" begin
+for T in (Float32, Float64, F64), dim in (1,2,3)
 AA = rand(Tensor{4, dim, T})
 BB = rand(Tensor{4, dim, T})
 A = rand(Tensor{2, dim, T})
