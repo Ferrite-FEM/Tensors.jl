@@ -1,5 +1,5 @@
 @testset "basic constructors: rand, zero, ones" begin
-for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4)
+for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
     for op in (:rand, :zero, :ones)
         # Tensor, SymmetricTensor
         for TensorType in (Tensor, SymmetricTensor)
@@ -53,7 +53,7 @@ end
 end # of testset
 
 @testset "diagm, one" begin
-for T in (Float32, Float64), dim in (1,2,3)
+for T in (Float32, Float64, F64), dim in (1,2,3)
     # diagm
     v = rand(T, dim)
     vt = (v...)
@@ -113,7 +113,7 @@ end
 end # of testset
 
 @testset "base vectors" begin
-for T in (Float32, Float64), dim in (1,2,3)
+for T in (Float32, Float64, F64), dim in (1,2,3)
     eᵢ_func(i) = Tensor{1, dim, T}(j->j==i ? one(T) : zero(T))
 
     a = rand(Vec{dim, T})
@@ -162,7 +162,7 @@ end
 end # of testset
 
 @testset "create with a function" begin
-for T in (Float32, Float64)
+for T in (Float32, Float64, F64)
     for dim in (1,2,3)
         fi = (i) -> cos(i)
         fij = (i,j) -> cos(i) + sin(j)
@@ -236,7 +236,7 @@ end
 end # of testset
 
 @testset "indexing" begin
-for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4)
+for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
     if order == 1
         data = rand(T, dim)
         vec = Tensor{order, dim, T}(data)
@@ -295,7 +295,7 @@ end
 end # of testset
 
 @testset "norm, trace, det, inv, eig" begin
-for T in (Float32, Float64), dim in (1,2,3)
+for T in (Float32, Float64, F64), dim in (1,2,3)
     # norm
     for order in (1,2,4)
         t = rand(Tensor{order, dim, T})
@@ -346,7 +346,7 @@ end # of testset
 
 # https://en.wikiversity.org/wiki/Continuum_mechanics/Tensor_algebra_identities
 @testset "tensor identities" begin
-for T in (Float32, Float64)
+for T in (Float32, Float64, F64)
     for dim in (1,2,3)
         # Identities with second order and first order
         A = rand(Tensor{2, dim, T})
@@ -386,7 +386,7 @@ for T in (Float32, Float64)
     end
 end
 
-for T in (Float32, Float64)
+for T in (Float32, Float64, F64)
     for dim in (1,2,3)
         # Identities with identity tensor
         II = one(Tensor{4, dim, T})
