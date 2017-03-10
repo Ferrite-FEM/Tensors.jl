@@ -47,6 +47,34 @@ function symmetric_factors(order, dim, T)
     end
 end
 
+# Tensor from SVec (Note: This needs to be two separate methods in order to dispatch correctly)
+@generated function (::Type{Tensor{order, dim}}){order, dim, N, T}(r::SVec{N, T})
+    return quote
+        $(Expr(:meta, :inline))
+        Tensor{$order, $dim}($(Expr(:tuple, [:(r[$i]) for i in 1:N]...)))
+    end
+end
+@generated function (::Type{SymmetricTensor{order, dim}}){order, dim, N, T}(r::SVec{N, T})
+    return quote
+        $(Expr(:meta, :inline))
+        SymmetricTensor{$order, $dim}($(Expr(:tuple, [:(r[$i]) for i in 1:N]...)))
+    end
+end
+
+# constructor from several SVecs which happens in dot and dcontract
+@generated function (::Type{Tensor{order, dim}}){order, dim, M, N, T}(r::NTuple{M, SVec{N, T}})
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return Tensor{$order, $dim}($(Expr(:tuple, [:(r[$j][$i]) for i in 1:N, j in 1:M]...)))
+    end
+end
+@generated function (::Type{SymmetricTensor{order, dim}}){order, dim, M, N, T}(r::NTuple{M, SVec{N, T}})
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return SymmetricTensor{$order, $dim}($(Expr(:tuple, [:(r[$j][$i]) for i in 1:N, j in 1:M]...)))
+    end
+end
+
 ################################
 # (1): + and - between tensors #
 ################################
@@ -60,7 +88,7 @@ end
             D1 = SVec{$N, $T}(get_data(S1))
             D2 = SVec{$N, $T}(get_data(S2))
             r = D1 + D2
-            return $TensorType($(Expr(:tuple, [:(r[$i]) for i in 1:N]...)))
+            return $TensorType(r)
         end
     end
 end
@@ -88,7 +116,7 @@ end
             D1 = SVec{$N, $T}(get_data(S1))
             D2 = SVec{$N, $T}(get_data(S2))
             r = D1 - D2
-            return $TensorType($(Expr(:tuple, [:(r[$i]) for i in 1:N]...)))
+            return $TensorType(r)
         end
     end
 end
@@ -118,7 +146,7 @@ end
         @inbounds begin
             D = SVec{$N, T}(get_data(S))
             r = n * D
-            return $TensorType($(Expr(:tuple, [:(r[$i]) for i in 1:N]...)))
+            return $TensorType(r)
         end
     end
 end
@@ -142,7 +170,7 @@ end
         @inbounds begin
             D = SVec{$N, T}(get_data(S))
             r = D * n
-            return $TensorType($(Expr(:tuple, [:(r[$i]) for i in 1:N]...)))
+            return $TensorType(r)
         end
     end
 end
@@ -166,7 +194,7 @@ end
         @inbounds begin
             D = SVec{$N, T}(get_data(S))
             r = D / n
-            return $TensorType($(Expr(:tuple, [:(r[$i]) for i in 1:N]...)))
+            return $TensorType(r)
         end
     end
 end
@@ -193,7 +221,7 @@ end
         D2 = get_data(S2)
         D11 = SVec{1, T}((D1[1],))
         r = D11 * D2[1]
-        return Tensor{1, 1}((r[1], ))
+        return Tensor{1, 1}(r)
     end
 end
 @inline function dot{T <: SIMDTypes, N}(S1::Tensor{2, 2, T, N}, S2::Vec{2, T})
@@ -204,7 +232,7 @@ end
         D12 = SVec{2, T}((D1[3], D1[4]))
         r1 = D11 * D2[1]; r2 = D12 * D2[2]
         r = r1 + r2
-        return Tensor{1, 2}((r[1], r[2]))
+        return Tensor{1, 2}(r)
     end
 end
 @inline function dot{T <: SIMDTypes, N}(S1::Tensor{2, 3, T, N}, S2::Vec{3, T})
@@ -216,7 +244,7 @@ end
         D13 = SVec{3, T}((D1[7], D1[8], D1[9]))
         r1 = D11 * D2[1]; r2 = D12 * D2[2]; r3 = D13 * D2[3]
         r12 = r1 + r2; r = r12 + r3
-        return Tensor{1, 3}((r[1], r[2], r[3]))
+        return Tensor{1, 3}(r)
     end
 end
 
@@ -226,8 +254,8 @@ end
         D1 = get_data(S1)
         D2 = get_data(S2)
         D11 = SVec{2, T}((D1[1], ))
-        r = D11 * D2[1]
-        return Tensor{2, 1}((r[1], ))
+        r1 = D11 * D2[1]
+        return Tensor{2, 1}((r1,))
     end
 end
 @inline function dot{T <: SIMDTypes, N}(S1::Tensor{2, 2, T, N}, S2::Tensor{2, 2, T, N})
@@ -238,8 +266,7 @@ end
         D12 = SVec{2, T}((D1[3], D1[4]))
         r1 = D11 * D2[1]; r2 = D12 * D2[2]; r12 = r1 + r2
         r3 = D11 * D2[3]; r4 = D12 * D2[4]; r34 = r3 + r4
-        return Tensor{2, 2}((r12[1], r12[2],
-                             r34[1], r34[2]))
+        return Tensor{2, 2}((r12, r34))
     end
 end
 @inline function dot{T <: SIMDTypes, N}(S1::Tensor{2, 3, T, N}, S2::Tensor{2, 3, T, N})
@@ -255,9 +282,7 @@ end
         r45 = r4 + r5; r456 = r45 + r6
         r7 = D11 * D2[7]; r8 = D12 * D2[8]; r9 = D13 * D2[9]
         r78 = r7 + r8; r789 = r78 + r9
-        return Tensor{2, 3}((r123[1], r123[2], r123[3],
-                             r456[1], r456[2], r456[3],
-                             r789[1], r789[2], r789[3]))
+        return Tensor{2, 3}((r123, r456, r789))
     end
 end
 
@@ -291,7 +316,7 @@ end
         D2 = get_data(S2)
         D11 = SVec{1, T}((D1[1], ))
         r  = D11 * D2[1]
-        return Tensor{2, 1}((r[1], ))
+        return Tensor{2, 1}(r)
     end
 end
 @inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{2, 2, T})
@@ -305,7 +330,7 @@ end
         r1 = D11 * D2[1]; r2 = D12 * D2[2]
         r3 = D13 * D2[3]; r4 = D14 * D2[4]
         r12 = r1 + r2; r34 = r3 + r4; r = r12 + r34
-        return Tensor{2, 2}((r[1], r[2], r[3], r[4]))
+        return Tensor{2, 2}(r)
     end
 end
 @inline function dcontract{T <: SIMDTypes}(S1::Tensor{4,3,T}, S2::Tensor{2,3,T})
@@ -327,7 +352,7 @@ end
         r12 = r1 + r2; r34 = r3 + r4; r56 + r5 + r6; r78 = r7 + r8
         r1234 = r12 + r34; r5678 = r56 + r78; r12345678 = r1234 + r5678
         r = r12345678 + r9
-        return Tensor{2, 3}((r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9]))
+        return Tensor{2, 3}(r)
     end
 end
 
@@ -338,7 +363,7 @@ end
         D2 = get_data(S2)
         D11 = SVec{1, T}((D1[1], ))
         r1  = D11 * D2[1]
-        return Tensor{4, 1}((r1[1], ))
+        return Tensor{4, 1}((r1, ))
     end
 end
 @inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{4, 2, T})
@@ -357,10 +382,7 @@ end
         r312 = r31 + r32; r334 = r33 + r34; r3 = r312 + r334
         r41 = D11 * D2[13]; r42 = D12 * D2[14]; r43 = D13 * D2[15]; r44 = D14 * D2[16]
         r412 = r41 + r42; r434 = r43 + r44; r4 = r412 + r434
-        return Tensor{4, 2}((r1[1],  r1[2],  r1[3],  r1[4],
-                             r2[1],  r2[2],  r2[3],  r2[4],
-                             r3[1],  r3[2],  r3[3],  r3[4],
-                             r4[1],  r4[2],  r4[3],  r4[4]))
+        return Tensor{4, 2}((r1, r2, r3, r4))
     end
 end
 @inline function dcontract2{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
@@ -430,15 +452,7 @@ end
         r912 = r91 + r92; r934 = r93 + r94; r956 = r95 + r96; r978 = r97 + r98
         r91234 = r912 + r934; r95678 = r956 + r978; r912345678 = r91234 + r95678
         r9 = r912345678 + r99
-        return Tensor{4, 3}((r1[1], r1[2], r1[3], r1[4], r1[5], r1[6], r1[7], r1[8], r1[9],
-                             r2[1], r2[2], r2[3], r2[4], r2[5], r2[6], r2[7], r2[8], r2[9],
-                             r3[1], r3[2], r3[3], r3[4], r3[5], r3[6], r3[7], r3[8], r3[9],
-                             r4[1], r4[2], r4[3], r4[4], r4[5], r4[6], r4[7], r4[8], r4[9],
-                             r5[1], r5[2], r5[3], r5[4], r5[5], r5[6], r5[7], r5[8], r5[9],
-                             r6[1], r6[2], r6[3], r6[4], r6[5], r6[6], r6[7], r6[8], r6[9],
-                             r7[1], r7[2], r7[3], r7[4], r7[5], r7[6], r7[7], r7[8], r7[9],
-                             r8[1], r8[2], r8[3], r8[4], r8[5], r8[6], r8[7], r8[8], r8[9],
-                             r9[1], r9[2], r9[3], r9[4], r9[5], r9[6], r9[7], r9[8], r9[9]))
+        return Tensor{4, 3}((r1, r2, r3, r4, r5, r6, r7, r8, r9))
     end
 end
 
@@ -451,7 +465,7 @@ end
         D2 = get_data(S2)
         D11 = SVec{1, T}((D1[1], ))
         r1 = D11 * D2[1]
-        return Tensor{2, 1}((r1[1], ))
+        return Tensor{2, 1}((r1, ))
     end
 end
 @inline function otimes{T <: SIMDTypes}(S1::Vec{2, T}, S2::Vec{2, T})
@@ -461,7 +475,7 @@ end
         D11 = SVec{2, T}((D1[1], D1[2]))
         r1 = D11 * D2[1]
         r2 = D11 * D2[2]
-        return Tensor{2, 2}((r1[1], r1[2], r2[1], r2[2]))
+        return Tensor{2, 2}((r1, r2))
     end
 end
 @inline function otimes{T <: SIMDTypes}(S1::Vec{3, T}, S2::Vec{3, T})
@@ -470,9 +484,7 @@ end
         D2 = get_data(S2)
         D11 = SVec{3, T}((D1[1], D1[2], D1[3]))
         r1 = D11 * D2[1]; r2 = D11 * D2[2]; r3 = D11 * D2[3]
-        return Tensor{2, 3}((r1[1], r1[2], r1[3],
-                             r2[1], r2[2], r2[3],
-                             r3[1], r3[2], r3[3]))
+        return Tensor{2, 3}((r1, r2, r3))
     end
 end
 @inline function otimes{T <: SIMDTypes}(S1::Tensor{2, 1, T}, S2::Tensor{2, 1, T})
@@ -490,10 +502,7 @@ end
         D2 = get_data(S2)
         D11 = SVec{4, T}(D1)
         r1 = D11 * D2[1]; r2 = D11 * D2[2]; r3 = D11 * D2[3]; r4 = D11 * D2[4]
-        return Tensor{4, 2}((r1[1], r1[2], r1[3], r1[4],
-                             r2[1], r2[2], r2[3], r2[4],
-                             r3[1], r3[2], r3[3], r3[4],
-                             r4[1], r4[2], r4[3], r4[4]))
+        return Tensor{4, 2}((r1, r2, r3, r4))
     end
 end
 @inline function otimes{T <: SIMDTypes}(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T})
@@ -504,15 +513,7 @@ end
         r1 = D11 * D2[1]; r2 = D11 * D2[2]; r3 = D11 * D2[3]
         r4 = D11 * D2[4]; r5 = D11 * D2[5]; r6 = D11 * D2[6]
         r7 = D11 * D2[7]; r8 = D11 * D2[8]; r9 = D11 * D2[9]
-        return Tensor{4, 3}((r1[1], r1[2], r1[3], r1[4], r1[5], r1[6], r1[7], r1[8], r1[9],
-                             r2[1], r2[2], r2[3], r2[4], r2[5], r2[6], r2[7], r2[8], r2[9],
-                             r3[1], r3[2], r3[3], r3[4], r3[5], r3[6], r3[7], r3[8], r3[9],
-                             r4[1], r4[2], r4[3], r4[4], r4[5], r4[6], r4[7], r4[8], r4[9],
-                             r5[1], r5[2], r5[3], r5[4], r5[5], r5[6], r5[7], r5[8], r5[9],
-                             r6[1], r6[2], r6[3], r6[4], r6[5], r6[6], r6[7], r6[8], r6[9],
-                             r7[1], r7[2], r7[3], r7[4], r7[5], r7[6], r7[7], r7[8], r7[9],
-                             r8[1], r8[2], r8[3], r8[4], r8[5], r8[6], r8[7], r8[8], r8[9],
-                             r9[1], r9[2], r9[3], r9[4], r9[5], r9[6], r9[7], r9[8], r9[9]))
+        return Tensor{4, 3}((r1, r2, r3, r4, r5, r6, r7, r8, r9))
     end
 end
 @inline function otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 3, T}, S2::SymmetricTensor{2, 3, T})
@@ -522,12 +523,7 @@ end
         D11 = SVec{6, T}(D1)
         r1 = D11 * D2[1]; r2 = D11 * D2[2]; r3 = D11 * D2[3]
         r4 = D11 * D2[4]; r5 = D11 * D2[5]; r6 = D11 * D2[6]
-        return SymmetricTensor{4, 3}((r1[1], r1[2], r1[3], r1[4], r1[5], r1[6],
-                                      r2[1], r2[2], r2[3], r2[4], r2[5], r2[6],
-                                      r3[1], r3[2], r3[3], r3[4], r3[5], r3[6],
-                                      r4[1], r4[2], r4[3], r4[4], r4[5], r4[6],
-                                      r5[1], r5[2], r5[3], r5[4], r5[5], r5[6],
-                                      r6[1], r6[2], r6[3], r6[4], r6[5], r6[6]))
+        return SymmetricTensor{4, 3}((r1, r2, r3, r4, r5, r6))
     end
 end
 
