@@ -462,6 +462,15 @@ end
         return Tensor{4, 3}((r1, r2, r3, r4, r5, r6, r7, r8, r9))
     end
 end
+@inline function Tensors.otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 2, T}, S2::SymmetricTensor{2, 2, T})
+    @inbounds begin
+        D1 = get_data(S1)
+        D2 = get_data(S2)
+        D11 = SVec{3, T}(D1)
+        r1 = D11 * D2[1]; r2 = D11 * D2[2]; r3 = D11 * D2[3]
+        return SymmetricTensor{4, 2}((r1, r2, r3))
+    end
+end
 @inline function Tensors.otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 3, T}, S2::SymmetricTensor{2, 3, T})
     @inbounds begin
         D1 = get_data(S1)
@@ -477,7 +486,7 @@ end
 # (6): norm #
 #############
 # order 1 and order 2 norms rely on dot and dcontract respectively
-@inline function Base.norm{dim, T <: SIMDTypes, N}(S::Tensor{4, dim, T, N})
+@inline function Base.norm{T <: SIMDTypes, N}(S::Tensor{4, 2, T, N})
     @inbounds begin
         D = SVec{N, T}(get_data(S))
         DD = D * D
