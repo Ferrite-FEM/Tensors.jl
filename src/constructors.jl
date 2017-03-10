@@ -108,10 +108,11 @@ end
 @generated function Base.diagm{T <: SecondOrderTensor}(S::Type{T}, v::Union{AbstractVector, Tuple})
     TensorType = get_base(get_type(S))
     ET = eltype(get_type(S)) == Any ? eltype(v) : eltype(get_type(S)) # lol
-    f = (i,j) -> i == j ? :($ET(v[$i])) : :($(zero(ET)))
+    f = (i,j) -> i == j ? :($ET(v[$i])) : :(o)
     exp = tensor_create(TensorType, f)
     return quote
         $(Expr(:meta, :inline))
+        o = zero($ET)
         @inbounds return $TensorType($exp)
     end
 end
