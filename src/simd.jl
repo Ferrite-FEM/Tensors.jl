@@ -60,8 +60,7 @@ end
         SymmetricTensor{$order, $dim}($(Expr(:tuple, [:(r[$i]) for i in 1:N]...)))
     end
 end
-
-# constructor from several SVecs which happens in dot and dcontract
+# constructor from several SVecs which happens in dot, dcontract and otimes
 @generated function (::Type{Tensor{order, dim}}){order, dim, M, N, T}(r::NTuple{M, SVec{N, T}})
     return quote
         $(Expr(:meta, :inline))
@@ -385,7 +384,7 @@ end
         return Tensor{4, 2}((r1, r2, r3, r4))
     end
 end
-@inline function dcontract2{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
+@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
     @inbounds begin
         D1 = get_data(S1)
         D2 = get_data(S2)
