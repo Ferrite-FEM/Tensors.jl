@@ -215,15 +215,6 @@ end
 # (3): dot #
 ############
 # 2-1
-@inline function Base.dot{T <: SIMDTypes, N}(S1::Tensor{2, 1, T, N}, S2::Vec{1, T})
-    @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{1, T}((D1[1],))
-        r = D11 * D2[1]
-        return Tensor{1, 1}(r)
-    end
-end
 @inline function Base.dot{T <: SIMDTypes, N}(S1::Tensor{2, 2, T, N}, S2::Vec{2, T})
     @inbounds begin
         D1 = get_data(S1)
@@ -249,15 +240,6 @@ end
 end
 
 # 2-2
-@inline function Base.dot{T <: SIMDTypes}(S1::Tensor{2, 1, T}, S2::Tensor{2, 1, T})
-    @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{1, T}((D1[1], ))
-        r1 = D11 * D2[1]
-        return Tensor{2, 1}((r1,))
-    end
-end
 @inline function Base.dot{T <: SIMDTypes}(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
         D1 = get_data(S1)
@@ -310,15 +292,6 @@ end
 end
 
 # 4-2
-@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 1, T}, S2::Tensor{2, 1, T})
-    @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{1, T}((D1[1], ))
-        r  = D11 * D2[1]
-        return Tensor{2, 1}(r)
-    end
-end
 @inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
         D1 = get_data(S1)
@@ -357,15 +330,6 @@ end
 end
 
 # 4-4
-@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 1, T}, S2::Tensor{4, 1, T})
-    @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{1, T}((D1[1], ))
-        r1  = D11 * D2[1]
-        return Tensor{4, 1}((r1, ))
-    end
-end
 @inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{4, 2, T})
     @inbounds begin
         D1 = get_data(S1)
@@ -459,15 +423,6 @@ end
 ###############
 # (5): otimes #
 ###############
-@inline function Tensors.otimes{T <: SIMDTypes}(S1::Vec{1, T}, S2::Vec{1, T})
-    @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{1, T}((D1[1], ))
-        r1 = D11 * D2[1]
-        return Tensor{2, 1}((r1, ))
-    end
-end
 @inline function Tensors.otimes{T <: SIMDTypes}(S1::Vec{2, T}, S2::Vec{2, T})
     @inbounds begin
         D1 = get_data(S1)
@@ -485,15 +440,6 @@ end
         D11 = SVec{3, T}((D1[1], D1[2], D1[3]))
         r1 = D11 * D2[1]; r2 = D11 * D2[2]; r3 = D11 * D2[3]
         return Tensor{2, 3}((r1, r2, r3))
-    end
-end
-@inline function Tensors.otimes{T <: SIMDTypes}(S1::Tensor{2, 1, T}, S2::Tensor{2, 1, T})
-    @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{1, T}(D1)
-        r1 = D11 * D2[1]
-        return Tensor{4, 1}((r1[1], ))
     end
 end
 @inline function Tensors.otimes{T <: SIMDTypes}(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T})
