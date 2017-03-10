@@ -33,18 +33,18 @@ const SIMDTypes = Union{Bool,
 # SIMD sizes accepted by LLVM between 1 and 100
 const SIMD_CHUNKS = (1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 16, 17, 18, 20, 24, 32, 33, 34, 36, 40, 48, 64, 65, 66, 68, 72, 80, 96)
 
-# factors for the symmetric tensors
-Base.@pure function symmetric_factors(order, dim, T)
+# factors for the symmetric tensors, return a quote
+function symmetric_factors(order, dim, T)
     if order == 2
-        dim == 1 && return SVec{1, T}((T(1),))
-        dim == 2 && return SVec{3, T}((T(1),T(2),T(1)))
-        dim == 3 && return SVec{6, T}((T(1),T(2),T(2),T(1),T(2),T(1)))
+        dim == 1 && return :(SVec{1, T}((T(1),)))
+        dim == 2 && return :(SVec{3, T}((T(1),T(2),T(1))))
+        dim == 3 && return :(SVec{6, T}((T(1),T(2),T(2),T(1),T(2),T(1))))
     elseif order == 4
-        dim == 1 && return SVec{1, T}((T(1),))
-        dim == 2 && return SVec{9, T}((T(1),T(2),T(1),T(2),T(4),T(2),T(1),T(2),T(1)))
-        dim == 3 && return SVec{36,T}((T(1),T(2),T(2),T(1),T(2),T(1),T(2),T(4),T(4),T(2),T(4),T(2),
-                                       T(2),T(4),T(4),T(2),T(4),T(2),T(1),T(2),T(2),T(1),T(2),T(1),
-                                       T(2),T(4),T(4),T(2),T(4),T(2),T(1),T(2),T(2),T(1),T(2),T(1)))
+        dim == 1 && return :(SVec{1, T}((T(1),)))
+        dim == 2 && return :(SVec{9, T}((T(1),T(2),T(1),T(2),T(4),T(2),T(1),T(2),T(1))))
+        dim == 3 && return :(SVec{36,T}((T(1),T(2),T(2),T(1),T(2),T(1),T(2),T(4),T(4),T(2),T(4),T(2),
+                                         T(2),T(4),T(4),T(2),T(4),T(2),T(1),T(2),T(2),T(1),T(2),T(1),
+                                         T(2),T(4),T(4),T(2),T(4),T(2),T(1),T(2),T(2),T(1),T(2),T(1))))
     end
 end
 
@@ -297,12 +297,16 @@ end
     return sum(D1D2)
 end
 # 2s-2s
-@inline function Tensors.dcontract{dim, T <: SIMDTypes, N}(S1::SymmetricTensor{2, dim, T, N}, S2::SymmetricTensor{2, dim, T, N})
+@generated function Tensors.dcontract{dim, T <: SIMDTypes, N}(S1::SymmetricTensor{2, dim, T, N}, S2::SymmetricTensor{2, dim, T, N})
     F = symmetric_factors(2, dim, T)
-    D1 = SVec{N, T}(get_data(S1))
-    D2 = SVec{N, T}(get_data(S2))
-    D1D2 = D1 * D2; FD1D2 = F * D1D2
-    return sum(FD1D2)
+    return quote
+        $(Expr(:meta, :inline))
+        F = $F
+        D1 = SVec{N, T}(get_data(S1))
+        D2 = SVec{N, T}(get_data(S2))
+        D1D2 = D1 * D2; FD1D2 = F * D1D2
+        return sum(FD1D2)
+    end
 end
 
 # 4-2
@@ -548,11 +552,15 @@ end
         end
     end
 end
-@inline function Base.norm{dim, T <: SIMDTypes, N}(S::SymmetricTensor{4, dim, T, N})
+@generated function Base.norm{dim, T <: SIMDTypes, N}(S::SymmetricTensor{4, dim, T, N})
     F = symmetric_factors(4, dim, T)
-    D = SVec{N, T}(get_data(S))
-    DD = D * D; FDD = F * DD; r = sum(FDD)
-    return sqrt(r)
+    return quote
+        $(Expr(:meta, :inline))
+        F = $F
+        D = SVec{N, T}(get_data(S))
+        DD = D * D; FDD = F * DD; r = sum(FDD)
+        return sqrt(r)
+    end
 end
 
 end # module
