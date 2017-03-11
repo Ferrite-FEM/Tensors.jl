@@ -1,10 +1,15 @@
 using Tensors
 using BenchmarkTools
+using ForwardDiff
 using JLD
 
 include("generate_report.jl")
 
 const SUITE = BenchmarkGroup()
+const ALL_DIMENSIONS = true
+const MIXED_SYM_NONSYM = true
+
+const dT = ForwardDiff.Dual{4, Float64}
 
 function create_tensors()
     tensor_dict = Dict{Tuple{Int, Int, DataType}, AbstractTensor}()
@@ -18,6 +23,12 @@ function create_tensors()
                 else
                     symtensor_dict[(dim, order, T)] = rand(Tensor{order, dim, T})
                 end
+            end
+            tensor_dict[(dim, order, dT)] = Tensor{order, dim, dT}(([ForwardDiff.Dual(rand(5)...) for i in 1:length(rand(Tensor{order, dim}))]...))
+            if order != 1
+                symtensor_dict[(dim, order, dT)] = SymmetricTensor{order, dim, dT}(([ForwardDiff.Dual(rand(5)...) for i in 1:length(rand(SymmetricTensor{order, dim}).data)]...))
+            else
+                symtensor_dict[(dim, order, dT)] = Tensor{order, dim, dT}(([ForwardDiff.Dual(rand(5)...) for i in 1:length(rand(Tensor{order, dim}).data)]...))
             end
         end
     end

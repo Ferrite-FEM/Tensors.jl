@@ -6,8 +6,8 @@ SUITE["promotion"] = BenchmarkGroup()
 SUITE["constructors"] = BenchmarkGroup()
 
 
-for dim in (1,2,3)
-    for T in (Float64, Float32)
+for dim in (ALL_DIMENSIONS ? (1,2,3) : 3)
+    for T in (Float64, Float32, dT)
         v1 = tensor_dict[(dim, 1, T)]
         V2 = tensor_dict[(dim, 2, T)]
         V4 = tensor_dict[(dim, 4, T)]
@@ -20,35 +20,35 @@ for dim in (1,2,3)
         SUITE["dot"]["dim $dim - order 2sym 1 - $T"]          = @benchmarkable dot($V2sym, $v1)
         SUITE["dot"]["dim $dim - order 2 2 - $T"]             = @benchmarkable dot($V2, $V2)
         SUITE["dot"]["dim $dim - order 2sym 2sym - $T"]       = @benchmarkable dot($V2sym, $V2sym)
-        SUITE["dot"]["dim $dim - order 2sym 2 - $T"]          = @benchmarkable dot($V2sym, $V2)
+        MIXED_SYM_NONSYM && (SUITE["dot"]["dim $dim - order 2sym 2 - $T"]          = @benchmarkable dot($V2sym, $V2))
 
         # dcontract
         SUITE["dcontract"]["dim $dim - order 2 2 - $T"]       = @benchmarkable dcontract($V2, $V2)
         SUITE["dcontract"]["dim $dim - order 2sym 2sym - $T"] = @benchmarkable dcontract($V2sym, $V2sym)
-        SUITE["dcontract"]["dim $dim - order 2sym 2 - $T"]    = @benchmarkable dcontract($V2sym, $V2)
+        MIXED_SYM_NONSYM && (SUITE["dcontract"]["dim $dim - order 2sym 2 - $T"]    = @benchmarkable dcontract($V2sym, $V2))
 
         SUITE["dcontract"]["dim $dim - order 4 2 - $T"]       = @benchmarkable dcontract($V4, $V2)
-        SUITE["dcontract"]["dim $dim - order 4sym 2 - $T"]    = @benchmarkable dcontract($V4sym, $V2)
-        SUITE["dcontract"]["dim $dim - order 2 4sym - $T"]    = @benchmarkable dcontract($V2, $V4sym)
+        MIXED_SYM_NONSYM && (SUITE["dcontract"]["dim $dim - order 4sym 2 - $T"]    = @benchmarkable dcontract($V4sym, $V2))
+        MIXED_SYM_NONSYM && (SUITE["dcontract"]["dim $dim - order 2 4sym - $T"]    = @benchmarkable dcontract($V2, $V4sym))
         SUITE["dcontract"]["dim $dim - order 2 4 - $T"]       = @benchmarkable dcontract($V2, $V4)
-        SUITE["dcontract"]["dim $dim - order 4 2sym - $T"]    = @benchmarkable dcontract($V4, $V2sym)
+        MIXED_SYM_NONSYM && (SUITE["dcontract"]["dim $dim - order 4 2sym - $T"]    = @benchmarkable dcontract($V4, $V2sym))
         SUITE["dcontract"]["dim $dim - order 4sym 2sym - $T"] = @benchmarkable dcontract($V4, $V2sym)
 
         SUITE["dcontract"]["dim $dim - order 4 4 - $T"]       = @benchmarkable dcontract($V4, $V4)
-        SUITE["dcontract"]["dim $dim - order 4sym 4 - $T"]    = @benchmarkable dcontract($V4sym, $V4)
+        MIXED_SYM_NONSYM && (SUITE["dcontract"]["dim $dim - order 4sym 4 - $T"]    = @benchmarkable dcontract($V4sym, $V4))
         SUITE["dcontract"]["dim $dim - order 4sym 4sym - $T"] = @benchmarkable dcontract($V4sym, $V4sym)
 
         # otimes
         SUITE["otimes"]["dim $dim - order 1 1 - $T"]          = @benchmarkable otimes($v1, $v1)
         SUITE["otimes"]["dim $dim - order 2 2 - $T"]          = @benchmarkable otimes($V2, $V2)
         SUITE["otimes"]["dim $dim - order 2sym 2sym - $T"]    = @benchmarkable otimes($V2sym, $V2sym)
-        SUITE["otimes"]["dim $dim - order 2sym 2 - $T"]       = @benchmarkable otimes($V2sym, $V2)
+        MIXED_SYM_NONSYM && (SUITE["otimes"]["dim $dim - order 2sym 2 - $T"]       = @benchmarkable otimes($V2sym, $V2))
 
         # other
         for (i, V2t) in enumerate((V2, V2sym))
             symstr = i == 2 ? "sym" : ""
             for f in (norm, trace, vol, det, inv, transpose, symmetric, skew, eig, mean, dev)
-                i == 1 && f == eig && continue
+                (i == 1 || typeof(V2t) <: Tensor || T == dT) && f == eig && continue
                 SUITE["other"]["$f - dim $dim - order 2$(symstr) - $T"] = @benchmarkable $f($V2t)
             end
         end
