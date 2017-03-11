@@ -6,6 +6,10 @@ thrown off guard, and therefore, explicit SIMD routines are
 defined. This will enable SIMD-instructions even if julia is ran with
 the default -O2.
 
+The functions here are only defined for tensors of the same
+element type. Otherwise it does work. Promotion should take
+care of this before the tensors enter the functions here.
+
 The module is organized as follows:
 (1): + and - between tensors
 (2): * and / between tensor and number
@@ -138,6 +142,7 @@ end
 ##########################################
 # (2): * and / between tensor and number #
 ##########################################
+# note it is allowed with different eltypes, since it is promoted in SIMD.jl
 @generated function Base.:*{T1 <: SIMDTypes, T2 <: SIMDTypes}(n::T1, S::AllSIMDTensors{T2})
     TensorType = get_base(S)
     N = n_components(TensorType)
