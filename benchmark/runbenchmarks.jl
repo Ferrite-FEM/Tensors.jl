@@ -8,6 +8,7 @@ include("generate_report.jl")
 const SUITE = BenchmarkGroup()
 const ALL_DIMENSIONS = true
 const MIXED_SYM_NONSYM = true
+const MIXED_ELTYPES = true
 
 const dT = ForwardDiff.Dual{4, Float64}
 

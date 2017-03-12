@@ -27,7 +27,7 @@ S(C) = S(C, μ, Kb)
 SUITE["gradient"] = BenchmarkGroup(["ad"])
 SUITE["hessian"] = BenchmarkGroup(["ad"])
 
-for dim in (1,2,3)
+for dim in (ALL_DIMENSIONS ? (1,2,3) : (3,))
     for T in (Float64, Float32)
         V2 = tensor_dict[(dim, 2, T)]
         V2 = V2' ⋅ V2
@@ -39,14 +39,14 @@ for dim in (1,2,3)
         @assert eltype(∇(Ψ, V2)) == T
         @assert eltype(Δ(Ψ, V2)) == T
 
-        SUITE["gradient"]["dim $dim Ψ - sym - $T"] = @benchmarkable ∇(Ψ, $V2sym)
-        SUITE["gradient"]["dim $dim Ψ - $T"] = @benchmarkable ∇(Ψ, $V2)
-        SUITE["gradient"]["dim $dim Ψ - sym - $T - ana"] = @benchmarkable S($V2sym)
-        SUITE["gradient"]["dim $dim Ψ - $T - ana"] = @benchmarkable S($V2)
-        SUITE["gradient"]["dim $dim S - sym - $T"] = @benchmarkable ∇(S, $V2sym)
-        SUITE["gradient"]["dim $dim S - $T"] = @benchmarkable ∇(S, $V2)
+        SUITE["gradient"]["∇Ψ(SymmetricTensor{2, $dim, $T})"]       = @benchmarkable ∇(Ψ, $V2sym)
+        SUITE["gradient"]["∇Ψ(Tensor{2, $dim, $T})"]                = @benchmarkable ∇(Ψ, $V2)
+        SUITE["gradient"]["∇Ψ(SymmetricTensor{2, $dim, $T}) - ana"] = @benchmarkable S($V2sym)
+        SUITE["gradient"]["∇Ψ(Tensor{2, $dim, $T}) - ana"]          = @benchmarkable S($V2)
+        SUITE["gradient"]["∇S(SymmetricTensor{2, $dim, $T})"]       = @benchmarkable ∇(S, $V2sym)
+        SUITE["gradient"]["∇S(Tensor{2, $dim, $T})"]                = @benchmarkable ∇(S, $V2)
 
-        SUITE["hessian"]["dim $dim Ψ - sym - $T"] = @benchmarkable Δ(Ψ, $V2sym)
-        SUITE["hessian"]["dim $dim Ψ - $T"] = @benchmarkable Δ(Ψ, $V2)
+        SUITE["hessian"]["ΔΨ(SymmetricTensor{2, $dim, $T})"] = @benchmarkable Δ(Ψ, $V2sym)
+        SUITE["hessian"]["ΔΨ(Tensor{2, $dim, $T})"]          = @benchmarkable Δ(Ψ, $V2)
     end
 end
