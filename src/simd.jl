@@ -154,7 +154,7 @@ end
         $(Expr(:meta, :inline))
         @inbounds begin
             D = get_data(S); SV = tosimd(D)
-            r = n * D
+            r = n * SV
             return $TensorType(r)
         end
     end
