@@ -79,19 +79,30 @@ end
     end
 end
 
+# load Tensor into SVec
+@inline tosimd{T, N}(A::NTuple{N, T}) = SVec{N, T}(A)
+
+# load given range of linear indices into SVec
+@generated function tosimd{N, T, strt, stp}(D::NTuple{N, T}, ::Type{Val{strt}}, ::Type{Val{stp}})
+    expr = Expr(:tuple, [:(D[$i]) for i in strt:stp]...)
+    M = length(expr.args)
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return SVec{$M, T}($expr)
+    end
+end
+
 ################################
 # (1): + and - between tensors #
 ################################
 @generated function Base.:+{TT <: AllSIMDTensors}(S1::TT, S2::TT)
     TensorType = get_base(S1)
-    T = eltype(TT)
-    N = n_components(TensorType)
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D1 = SVec{$N, $T}(get_data(S1))
-            D2 = SVec{$N, $T}(get_data(S2))
-            r = D1 + D2
+            D1 = get_data(S1); SV1 = tosimd(D1)
+            D2 = get_data(S2); SV2 = tosimd(D2)
+            r = SV1 + SV2
             return $TensorType(r)
         end
     end
@@ -100,11 +111,9 @@ end
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D1 = get_data(S1)
-            D2 = get_data(S2)
-            D180 = SVec{80, T}($(Expr(:tuple, [:(D1[$i]) for i in 1:80]...)))
-            D280 = SVec{80, T}($(Expr(:tuple, [:(D2[$i]) for i in 1:80]...)))
-            r = D180 + D280
+            D1 = get_data(S1); SV180 = tosimd(D1, Val{1}, Val{80})
+            D2 = get_data(S2); SV280 = tosimd(D2, Val{1}, Val{80})
+            r = SV180 + SV280
             r81 = D1[81] + D2[81]
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
         end
@@ -112,14 +121,12 @@ end
 end
 @generated function Base.:-{TT <: AllSIMDTensors}(S1::TT, S2::TT)
     TensorType = get_base(S1)
-    T = eltype(TT)
-    N = n_components(TensorType)
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D1 = SVec{$N, $T}(get_data(S1))
-            D2 = SVec{$N, $T}(get_data(S2))
-            r = D1 - D2
+            D1 = get_data(S1); SV1 = tosimd(D1)
+            D2 = get_data(S2); SV2 = tosimd(D2)
+            r = SV1 - SV2
             return $TensorType(r)
         end
     end
@@ -128,11 +135,9 @@ end
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D1 = get_data(S1)
-            D2 = get_data(S2)
-            D180 = SVec{80, T}($(Expr(:tuple, [:(D1[$i]) for i in 1:80]...)))
-            D280 = SVec{80, T}($(Expr(:tuple, [:(D2[$i]) for i in 1:80]...)))
-            r = D180 - D280
+            D1 = get_data(S1); SV180 = tosimd(D1, Val{1}, Val{80})
+            D2 = get_data(S2); SV280 = tosimd(D2, Val{1}, Val{80})
+            r = SV180 - SV280
             r81 = D1[81] - D2[81]
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
         end
@@ -145,11 +150,10 @@ end
 # note it is allowed with different eltypes, since it is promoted in SIMD.jl
 @generated function Base.:*{T1 <: SIMDTypes, T2 <: SIMDTypes}(n::T1, S::AllSIMDTensors{T2})
     TensorType = get_base(S)
-    N = n_components(TensorType)
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D = SVec{$N, T2}(get_data(S))
+            D = get_data(S); SV = tosimd(D)
             r = n * D
             return $TensorType(r)
         end
@@ -159,22 +163,19 @@ end
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D = get_data(S)
-            D80 = SVec{80, T2}($(Expr(:tuple, [:(D[$i]) for i in 1:80]...)))
-            r = n * D80
-            r81 = n * D[81]
+            D = get_data(S); SV80 = tosimd(D, Val{1}, Val{80})
+            r = n * SV80; r81 = n * D[81]
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
         end
     end
 end
 @generated function Base.:*{T1 <: SIMDTypes, T2 <: SIMDTypes}(S::AllSIMDTensors{T1}, n::T2)
     TensorType = get_base(S)
-    N = n_components(TensorType)
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D = SVec{$N, T1}(get_data(S))
-            r = D * n
+            D = get_data(S); SV = tosimd(D)
+            r = SV * n
             return $TensorType(r)
         end
     end
@@ -183,22 +184,19 @@ end
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D = get_data(S)
-            D80 = SVec{80, T1}($(Expr(:tuple, [:(D[$i]) for i in 1:80]...)))
-            r = D80 * n
-            r81 = D[81] * n
+            D = get_data(S); SV80 = tosimd(D, Val{1}, Val{80})
+            r = SV80 * n; r81 = D * n
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
         end
     end
 end
 @generated function Base.:/{T1 <: SIMDTypes, T2 <: SIMDTypes}(S::AllSIMDTensors{T1}, n::T2)
     TensorType = get_base(S)
-    N = n_components(TensorType)
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D = SVec{$N, T1}(get_data(S))
-            r = D / n
+            D = get_data(S); SV = tosimd(D)
+            r = SV / n
             return $TensorType(r)
         end
     end
@@ -207,10 +205,8 @@ end
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D = get_data(S)
-            D80 = SVec{80, T1}($(Expr(:tuple, [:(D[$i]) for i in 1:80]...)))
-            r = D80 / n
-            r81 = D[81] / n
+            D = get_data(S); SV80 = tosimd(D, Val{1}, Val{80})
+            r = SV80 / n; r81 = D / n
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
         end
     end
@@ -220,24 +216,23 @@ end
 # (3): dot #
 ############
 # 2-1
+
 @inline function Base.dot{T <: SIMDTypes, N}(S1::Tensor{2, 2, T, N}, S2::Vec{2, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{2, T}((D1[1], D1[2]))
-        D12 = SVec{2, T}((D1[3], D1[4]))
-        r = fma(D12, D2[2], D11 * D2[1])
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1}, Val{2})
+        SV12 = tosimd(D1, Val{3}, Val{4})
+        r = fma(SV12, D2[2], SV11 * D2[1])
         return Tensor{1, 2}(r)
     end
 end
 @inline function Base.dot{T <: SIMDTypes}(S1::Tensor{2, 3, T}, S2::Vec{3, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{3, T}((D1[1], D1[2], D1[3]))
-        D12 = SVec{3, T}((D1[4], D1[5], D1[6]))
-        D13 = SVec{3, T}((D1[7], D1[8], D1[9]))
-        r = fma(D13, D2[3], fma(D12, D2[2], D11 * D2[1]))
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1}, Val{3})
+        SV12 = tosimd(D1, Val{4}, Val{6})
+        SV13 = tosimd(D1, Val{7}, Val{9})
+        r = fma(SV13, D2[3], fma(SV12, D2[2], SV11 * D2[1]))
         return Tensor{1, 3}(r)
     end
 end
@@ -245,25 +240,23 @@ end
 # 2-2
 @inline function Base.dot{T <: SIMDTypes}(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{2, T}((D1[1], D1[2]))
-        D12 = SVec{2, T}((D1[3], D1[4]))
-        r1 = fma(D12, D2[2], D11 * D2[1])
-        r2 = fma(D12, D2[4], D11 * D2[3])
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1}, Val{2})
+        SV12 = tosimd(D1, Val{3}, Val{4})
+        r1 = fma(SV12, D2[2], SV11 * D2[1])
+        r2 = fma(SV12, D2[4], SV11 * D2[3])
         return Tensor{2, 2}((r1, r2))
     end
 end
 @inline function Base.dot{T <: SIMDTypes}(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{3, T}((D1[1], D1[2], D1[3]))
-        D12 = SVec{3, T}((D1[4], D1[5], D1[6]))
-        D13 = SVec{3, T}((D1[7], D1[8], D1[9]))
-        r1 = fma(D13, D2[3], fma(D12, D2[2], D11 * D2[1]))
-        r2 = fma(D13, D2[6], fma(D12, D2[5], D11 * D2[4]))
-        r3 = fma(D13, D2[9], fma(D12, D2[8], D11 * D2[7]))
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1}, Val{3})
+        SV12 = tosimd(D1, Val{4}, Val{6})
+        SV13 = tosimd(D1, Val{7}, Val{9})
+        r1 = fma(SV13, D2[3], fma(SV12, D2[2], SV11 * D2[1]))
+        r2 = fma(SV13, D2[6], fma(SV12, D2[5], SV11 * D2[4]))
+        r3 = fma(SV13, D2[9], fma(SV12, D2[8], SV11 * D2[7]))
         return Tensor{2, 3}((r1, r2, r3))
     end
 end
@@ -273,10 +266,10 @@ end
 ##################
 # 2-2
 @inline function Tensors.dcontract{dim, T <: SIMDTypes, N}(S1::Tensor{2, dim, T, N}, S2::Tensor{2, dim, T, N})
-    D1 = SVec{N, T}(get_data(S1))
-    D2 = SVec{N, T}(get_data(S2))
-    D1D2 = D1 * D2
-    return sum(D1D2)
+    SV1 = tosimd(get_data(S1))
+    SV2 = tosimd(get_data(S2))
+    r = SV1 * SV2
+    return sum(r)
 end
 # 2s-2s
 @generated function Tensors.dcontract{dim, T <: SIMDTypes, N}(S1::SymmetricTensor{2, dim, T, N}, S2::SymmetricTensor{2, dim, T, N})
@@ -284,40 +277,38 @@ end
     return quote
         $(Expr(:meta, :inline))
         F = $F
-        D1 = SVec{N, T}(get_data(S1))
-        D2 = SVec{N, T}(get_data(S2))
-        D1D2 = D1 * D2; FD1D2 = F * D1D2
-        return sum(FD1D2)
+        SV1 = tosimd(get_data(S1))
+        SV2 = tosimd(get_data(S2))
+        SV1SV2 = SV1 * SV2; FSV1SV2 = F * SV1SV2
+        return sum(FSV1SV2)
     end
 end
 
 # 4-2
 @inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{4, T}((D1[1],  D1[2],  D1[3],  D1[4]))
-        D12 = SVec{4, T}((D1[5],  D1[6],  D1[7],  D1[8]))
-        D13 = SVec{4, T}((D1[9],  D1[10], D1[11], D1[12]))
-        D14 = SVec{4, T}((D1[13], D1[14], D1[15], D1[16]))
-        r = fma(D14, D2[4], fma(D13, D2[3], fma(D12, D2[2], D11 * D2[1])))
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1}, Val{4})
+        SV12 = tosimd(D1, Val{5}, Val{8})
+        SV13 = tosimd(D1, Val{9}, Val{12})
+        SV14 = tosimd(D1, Val{13}, Val{16})
+        r = fma(SV14, D2[4], fma(SV13, D2[3], fma(SV12, D2[2], SV11 * D2[1])))
         return Tensor{2, 2}(r)
     end
 end
 @inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{2, 3, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{9, T}((D1[1],  D1[2],  D1[3],  D1[4],  D1[5],  D1[6],  D1[7],  D1[8],  D1[9]))
-        D12 = SVec{9, T}((D1[10], D1[11], D1[12], D1[13], D1[14], D1[15], D1[16], D1[17], D1[18]))
-        D13 = SVec{9, T}((D1[19], D1[20], D1[21], D1[22], D1[23], D1[24], D1[25], D1[26], D1[27]))
-        D14 = SVec{9, T}((D1[28], D1[29], D1[30], D1[31], D1[32], D1[33], D1[34], D1[35], D1[36]))
-        D15 = SVec{9, T}((D1[37], D1[38], D1[39], D1[40], D1[41], D1[42], D1[43], D1[44], D1[45]))
-        D16 = SVec{9, T}((D1[46], D1[47], D1[48], D1[49], D1[50], D1[51], D1[52], D1[53], D1[54]))
-        D17 = SVec{9, T}((D1[55], D1[56], D1[57], D1[58], D1[59], D1[60], D1[61], D1[62], D1[63]))
-        D18 = SVec{9, T}((D1[64], D1[65], D1[66], D1[67], D1[68], D1[69], D1[70], D1[71], D1[72]))
-        D19 = SVec{9, T}((D1[73], D1[74], D1[75], D1[76], D1[77], D1[78], D1[79], D1[80], D1[81]))
-        r = fma(D19, D2[9],  fma(D18, D2[8],  fma(D17, D2[7],  fma(D16, D2[6],  fma(D15, D2[5],  fma(D14, D2[4],  fma(D13, D2[3],  fma(D12, D2[2],  D11 * D2[1]))))))))
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1},  Val{9})
+        SV12 = tosimd(D1, Val{10}, Val{18})
+        SV13 = tosimd(D1, Val{19}, Val{27})
+        SV14 = tosimd(D1, Val{28}, Val{36})
+        SV15 = tosimd(D1, Val{37}, Val{45})
+        SV16 = tosimd(D1, Val{46}, Val{54})
+        SV17 = tosimd(D1, Val{55}, Val{63})
+        SV18 = tosimd(D1, Val{64}, Val{72})
+        SV19 = tosimd(D1, Val{73}, Val{81})
+        r = fma(SV19, D2[9], fma(SV18, D2[8], fma(SV17, D2[7], fma(SV16, D2[6], fma(SV15, D2[5], fma(SV14, D2[4], fma(SV13, D2[3], fma(SV12, D2[2], SV11 * D2[1]))))))))
         return return Tensor{2, 3}(r)
     end
 end
@@ -325,41 +316,39 @@ end
 # 4-4
 @inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{4, 2, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{4, T}((D1[1],  D1[2],  D1[3],  D1[4]))
-        D12 = SVec{4, T}((D1[5],  D1[6],  D1[7],  D1[8]))
-        D13 = SVec{4, T}((D1[9],  D1[10], D1[11], D1[12]))
-        D14 = SVec{4, T}((D1[13], D1[14], D1[15], D1[16]))
-        r1 = fma(D14, D2[4],  fma(D13, D2[3],  fma(D12, D2[2],  D11 * D2[1])))
-        r2 = fma(D14, D2[8],  fma(D13, D2[7],  fma(D12, D2[6],  D11 * D2[5])))
-        r3 = fma(D14, D2[12], fma(D13, D2[11], fma(D12, D2[10], D11 * D2[9])))
-        r4 = fma(D14, D2[16], fma(D13, D2[15], fma(D12, D2[14], D11 * D2[13])))
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1},  Val{4})
+        SV12 = tosimd(D1, Val{5},  Val{8})
+        SV13 = tosimd(D1, Val{9},  Val{12})
+        SV14 = tosimd(D1, Val{13}, Val{16})
+        r1 = fma(SV14, D2[4],  fma(SV13, D2[3],  fma(SV12, D2[2],  SV11 * D2[1])))
+        r2 = fma(SV14, D2[8],  fma(SV13, D2[7],  fma(SV12, D2[6],  SV11 * D2[5])))
+        r3 = fma(SV14, D2[12], fma(SV13, D2[11], fma(SV12, D2[10], SV11 * D2[9])))
+        r4 = fma(SV14, D2[16], fma(SV13, D2[15], fma(SV12, D2[14], SV11 * D2[13])))
         return Tensor{4, 2}((r1, r2, r3, r4))
     end
 end
 @inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{9, T}((D1[1],  D1[2],  D1[3],  D1[4],  D1[5],  D1[6],  D1[7],  D1[8],  D1[9]))
-        D12 = SVec{9, T}((D1[10], D1[11], D1[12], D1[13], D1[14], D1[15], D1[16], D1[17], D1[18]))
-        D13 = SVec{9, T}((D1[19], D1[20], D1[21], D1[22], D1[23], D1[24], D1[25], D1[26], D1[27]))
-        D14 = SVec{9, T}((D1[28], D1[29], D1[30], D1[31], D1[32], D1[33], D1[34], D1[35], D1[36]))
-        D15 = SVec{9, T}((D1[37], D1[38], D1[39], D1[40], D1[41], D1[42], D1[43], D1[44], D1[45]))
-        D16 = SVec{9, T}((D1[46], D1[47], D1[48], D1[49], D1[50], D1[51], D1[52], D1[53], D1[54]))
-        D17 = SVec{9, T}((D1[55], D1[56], D1[57], D1[58], D1[59], D1[60], D1[61], D1[62], D1[63]))
-        D18 = SVec{9, T}((D1[64], D1[65], D1[66], D1[67], D1[68], D1[69], D1[70], D1[71], D1[72]))
-        D19 = SVec{9, T}((D1[73], D1[74], D1[75], D1[76], D1[77], D1[78], D1[79], D1[80], D1[81]))
-        r1 = fma(D19, D2[9],  fma(D18, D2[8],  fma(D17, D2[7],  fma(D16, D2[6],  fma(D15, D2[5],  fma(D14, D2[4],  fma(D13, D2[3],  fma(D12, D2[2],  D11 * D2[1] ))))))))
-        r2 = fma(D19, D2[18], fma(D18, D2[17], fma(D17, D2[16], fma(D16, D2[15], fma(D15, D2[14], fma(D14, D2[13], fma(D13, D2[12], fma(D12, D2[11], D11 * D2[10]))))))))
-        r3 = fma(D19, D2[27], fma(D18, D2[26], fma(D17, D2[25], fma(D16, D2[24], fma(D15, D2[23], fma(D14, D2[22], fma(D13, D2[21], fma(D12, D2[20], D11 * D2[19]))))))))
-        r4 = fma(D19, D2[36], fma(D18, D2[35], fma(D17, D2[34], fma(D16, D2[33], fma(D15, D2[32], fma(D14, D2[31], fma(D13, D2[30], fma(D12, D2[29], D11 * D2[28]))))))))
-        r5 = fma(D19, D2[45], fma(D18, D2[44], fma(D17, D2[43], fma(D16, D2[42], fma(D15, D2[41], fma(D14, D2[40], fma(D13, D2[39], fma(D12, D2[38], D11 * D2[37]))))))))
-        r6 = fma(D19, D2[54], fma(D18, D2[53], fma(D17, D2[52], fma(D16, D2[51], fma(D15, D2[50], fma(D14, D2[49], fma(D13, D2[48], fma(D12, D2[47], D11 * D2[46]))))))))
-        r7 = fma(D19, D2[63], fma(D18, D2[62], fma(D17, D2[61], fma(D16, D2[60], fma(D15, D2[59], fma(D14, D2[58], fma(D13, D2[57], fma(D12, D2[56], D11 * D2[55]))))))))
-        r8 = fma(D19, D2[72], fma(D18, D2[71], fma(D17, D2[70], fma(D16, D2[69], fma(D15, D2[68], fma(D14, D2[67], fma(D13, D2[66], fma(D12, D2[65], D11 * D2[64]))))))))
-        r9 = fma(D19, D2[81], fma(D18, D2[80], fma(D17, D2[79], fma(D16, D2[78], fma(D15, D2[77], fma(D14, D2[76], fma(D13, D2[75], fma(D12, D2[74], D11 * D2[73]))))))))
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1},  Val{9})
+        SV12 = tosimd(D1, Val{10}, Val{18})
+        SV13 = tosimd(D1, Val{19}, Val{27})
+        SV14 = tosimd(D1, Val{28}, Val{36})
+        SV15 = tosimd(D1, Val{37}, Val{45})
+        SV16 = tosimd(D1, Val{46}, Val{54})
+        SV17 = tosimd(D1, Val{55}, Val{63})
+        SV18 = tosimd(D1, Val{64}, Val{72})
+        SV19 = tosimd(D1, Val{73}, Val{81})
+        r1 = fma(SV19, D2[9],  fma(SV18, D2[8],  fma(SV17, D2[7],  fma(SV16, D2[6],  fma(SV15, D2[5],  fma(SV14, D2[4],  fma(SV13, D2[3],  fma(SV12, D2[2],  SV11 * D2[1] ))))))))
+        r2 = fma(SV19, D2[18], fma(SV18, D2[17], fma(SV17, D2[16], fma(SV16, D2[15], fma(SV15, D2[14], fma(SV14, D2[13], fma(SV13, D2[12], fma(SV12, D2[11], SV11 * D2[10]))))))))
+        r3 = fma(SV19, D2[27], fma(SV18, D2[26], fma(SV17, D2[25], fma(SV16, D2[24], fma(SV15, D2[23], fma(SV14, D2[22], fma(SV13, D2[21], fma(SV12, D2[20], SV11 * D2[19]))))))))
+        r4 = fma(SV19, D2[36], fma(SV18, D2[35], fma(SV17, D2[34], fma(SV16, D2[33], fma(SV15, D2[32], fma(SV14, D2[31], fma(SV13, D2[30], fma(SV12, D2[29], SV11 * D2[28]))))))))
+        r5 = fma(SV19, D2[45], fma(SV18, D2[44], fma(SV17, D2[43], fma(SV16, D2[42], fma(SV15, D2[41], fma(SV14, D2[40], fma(SV13, D2[39], fma(SV12, D2[38], SV11 * D2[37]))))))))
+        r6 = fma(SV19, D2[54], fma(SV18, D2[53], fma(SV17, D2[52], fma(SV16, D2[51], fma(SV15, D2[50], fma(SV14, D2[49], fma(SV13, D2[48], fma(SV12, D2[47], SV11 * D2[46]))))))))
+        r7 = fma(SV19, D2[63], fma(SV18, D2[62], fma(SV17, D2[61], fma(SV16, D2[60], fma(SV15, D2[59], fma(SV14, D2[58], fma(SV13, D2[57], fma(SV12, D2[56], SV11 * D2[55]))))))))
+        r8 = fma(SV19, D2[72], fma(SV18, D2[71], fma(SV17, D2[70], fma(SV16, D2[69], fma(SV15, D2[68], fma(SV14, D2[67], fma(SV13, D2[66], fma(SV12, D2[65], SV11 * D2[64]))))))))
+        r9 = fma(SV19, D2[81], fma(SV18, D2[80], fma(SV17, D2[79], fma(SV16, D2[78], fma(SV15, D2[77], fma(SV14, D2[76], fma(SV13, D2[75], fma(SV12, D2[74], SV11 * D2[73]))))))))
         return Tensor{4, 3}((r1, r2, r3, r4, r5, r6, r7, r8, r9))
     end
 end
@@ -369,59 +358,53 @@ end
 ###############
 @inline function Tensors.otimes{T <: SIMDTypes}(S1::Vec{2, T}, S2::Vec{2, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{2, T}((D1[1], D1[2]))
-        r1 = D11 * D2[1]
-        r2 = D11 * D2[2]
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV1 = tosimd(D1)
+        r1 = SV1 * D2[1]
+        r2 = SV1 * D2[2]
         return Tensor{2, 2}((r1, r2))
     end
 end
 @inline function Tensors.otimes{T <: SIMDTypes}(S1::Vec{3, T}, S2::Vec{3, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{3, T}((D1[1], D1[2], D1[3]))
-        r1 = D11 * D2[1]; r2 = D11 * D2[2]; r3 = D11 * D2[3]
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV1 = tosimd(D1)
+        r1 = SV1 * D2[1]; r2 = SV1 * D2[2]; r3 = SV1 * D2[3]
         return Tensor{2, 3}((r1, r2, r3))
     end
 end
 @inline function Tensors.otimes{T <: SIMDTypes}(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{4, T}(D1)
-        r1 = D11 * D2[1]; r2 = D11 * D2[2]; r3 = D11 * D2[3]; r4 = D11 * D2[4]
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV1 = tosimd(D1)
+        r1 = SV1 * D2[1]; r2 = SV1 * D2[2]; r3 = SV1 * D2[3]; r4 = SV1 * D2[4]
         return Tensor{4, 2}((r1, r2, r3, r4))
     end
 end
 @inline function Tensors.otimes{T <: SIMDTypes}(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{9, T}(D1)
-        r1 = D11 * D2[1]; r2 = D11 * D2[2]; r3 = D11 * D2[3]
-        r4 = D11 * D2[4]; r5 = D11 * D2[5]; r6 = D11 * D2[6]
-        r7 = D11 * D2[7]; r8 = D11 * D2[8]; r9 = D11 * D2[9]
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV1 = tosimd(D1)
+        r1 = SV1 * D2[1]; r2 = SV1 * D2[2]; r3 = SV1 * D2[3]
+        r4 = SV1 * D2[4]; r5 = SV1 * D2[5]; r6 = SV1 * D2[6]
+        r7 = SV1 * D2[7]; r8 = SV1 * D2[8]; r9 = SV1 * D2[9]
         return Tensor{4, 3}((r1, r2, r3, r4, r5, r6, r7, r8, r9))
     end
 end
 @inline function Tensors.otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 2, T}, S2::SymmetricTensor{2, 2, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{3, T}(D1)
-        r1 = D11 * D2[1]; r2 = D11 * D2[2]; r3 = D11 * D2[3]
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV1 = tosimd(D1)
+        r1 = SV1 * D2[1]; r2 = SV1 * D2[2]; r3 = SV1 * D2[3]
         return SymmetricTensor{4, 2}((r1, r2, r3))
     end
 end
 @inline function Tensors.otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 3, T}, S2::SymmetricTensor{2, 3, T})
     @inbounds begin
-        D1 = get_data(S1)
-        D2 = get_data(S2)
-        D11 = SVec{6, T}(D1)
-        r1 = D11 * D2[1]; r2 = D11 * D2[2]; r3 = D11 * D2[3]
-        r4 = D11 * D2[4]; r5 = D11 * D2[5]; r6 = D11 * D2[6]
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV1 = tosimd(D1)
+        r1 = SV1 * D2[1]; r2 = SV1 * D2[2]; r3 = SV1 * D2[3]
+        r4 = SV1 * D2[4]; r5 = SV1 * D2[5]; r6 = SV1 * D2[6]
         return SymmetricTensor{4, 3}((r1, r2, r3, r4, r5, r6))
     end
 end
@@ -432,9 +415,9 @@ end
 # order 1 and order 2 norms rely on dot and dcontract respectively
 @inline function Base.norm{T <: SIMDTypes, N}(S::Tensor{4, 2, T, N})
     @inbounds begin
-        D = SVec{N, T}(get_data(S))
-        DD = D * D
-        r = sum(DD)
+        SV = tosimd(get_data(S))
+        SVSV = SV * SV
+        r = sum(SVSV)
         return sqrt(r)
     end
 end
@@ -443,9 +426,9 @@ end
         $(Expr(:meta, :inline))
         @inbounds begin
             D = get_data(S)
-            D80 = SVec{80, T}($(Expr(:tuple, [:(D[$i]) for i in 1:80]...)))
-            D80D80 = D80 * D80
-            r80 = sum(D80D80)
+            SV80 = tosimd(D, Val{1}, Val{80})
+            SV80SV80 = SV80 * SV80
+            r80 = sum(SV80SV80)
             r = r80 + D[81] * D[81]
             return sqrt(r)
         end
@@ -456,8 +439,8 @@ end
     return quote
         $(Expr(:meta, :inline))
         F = $F
-        D = SVec{N, T}(get_data(S))
-        DD = D * D; FDD = F * DD; r = sum(FDD)
+        SV = tosimd(get_data(S))
+        SVSV = SV * SV; FSVSV = F * SVSV; r = sum(FSVSV)
         return sqrt(r)
     end
 end
