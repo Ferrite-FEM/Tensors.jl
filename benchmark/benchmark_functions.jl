@@ -128,8 +128,8 @@ for dim in (ALL_DIMENSIONS ? (1,2,3) : (3,))
     # https://github.com/KristofferC/Tensors.jl/pull/5#issuecomment-282518974
     if MIXED_ELTYPES
         n = 5
-        SUITE["promotion"]["Tensor{2, $dim, $T} * $Int"]          = @benchmarkable *($V2, $n)
-        SUITE["promotion"]["Tensor{2, $dim, $T} / $Int"]          = @benchmarkable /($V2, $n)
+        SUITE["promotion"]["Tensor{2, $dim, Float64} * $Int"]                     = @benchmarkable *($A64, $n)
+        SUITE["promotion"]["Tensor{2, $dim, Float64} / $Int"]                     = @benchmarkable /($A64, $n)
         SUITE["promotion"]["Tensor{2, $dim, Float32} + Tensor{2, $dim, Float64}"] = @benchmarkable +($A32, $A64)
         SUITE["promotion"]["Tensor{2, $dim, Float32} - Tensor{2, $dim, Float64}"] = @benchmarkable -($A32, $A64)
         SUITE["promotion"]["Tensor{2, $dim, Float32} ⋅ Tensor{2, $dim, Float64}"] = @benchmarkable dot($A32, $A64)
