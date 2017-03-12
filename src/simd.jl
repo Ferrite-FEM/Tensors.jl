@@ -185,7 +185,7 @@ end
         $(Expr(:meta, :inline))
         @inbounds begin
             D = get_data(S); SV80 = tosimd(D, Val{1}, Val{80})
-            r = SV80 * n; r81 = D * n
+            r = SV80 * n; r81 = D[81] * n
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
         end
     end
@@ -206,7 +206,7 @@ end
         $(Expr(:meta, :inline))
         @inbounds begin
             D = get_data(S); SV80 = tosimd(D, Val{1}, Val{80})
-            r = SV80 / n; r81 = D / n
+            r = SV80 / n; r81 = D[81] / n
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
         end
     end
