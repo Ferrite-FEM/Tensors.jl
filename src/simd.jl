@@ -148,7 +148,7 @@ end
 # (2): * and / between tensor and number #
 ##########################################
 # note it is allowed with different eltypes, since it is promoted in SIMD.jl
-@generated function Base.:*{T1 <: SIMDTypes, T2 <: SIMDTypes}(n::T1, S::AllSIMDTensors{T2})
+@generated function Base.:*{T <: SIMDTypes}(n::T, S::AllSIMDTensors{T})
     TensorType = get_base(S)
     return quote
         $(Expr(:meta, :inline))
@@ -159,7 +159,7 @@ end
         end
     end
 end
-@generated function Base.:*{T1 <: SIMDTypes, T2 <: SIMDTypes}(n::T1, S::Tensor{4, 3, T2})
+@generated function Base.:*{T <: SIMDTypes}(n::T, S::Tensor{4, 3, T})
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
@@ -169,7 +169,7 @@ end
         end
     end
 end
-@generated function Base.:*{T1 <: SIMDTypes, T2 <: SIMDTypes}(S::AllSIMDTensors{T1}, n::T2)
+@generated function Base.:*{T <: SIMDTypes}(S::AllSIMDTensors{T}, n::T)
     TensorType = get_base(S)
     return quote
         $(Expr(:meta, :inline))
@@ -180,7 +180,7 @@ end
         end
     end
 end
-@generated function Base.:*{T1 <: SIMDTypes, T2 <: SIMDTypes}(S::Tensor{4, 3, T1}, n::T2)
+@generated function Base.:*{T <: SIMDTypes}(S::Tensor{4, 3, T}, n::T)
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
@@ -190,7 +190,7 @@ end
         end
     end
 end
-@generated function Base.:/{T1 <: SIMDTypes, T2 <: SIMDTypes}(S::AllSIMDTensors{T1}, n::T2)
+@generated function Base.:/{T <: SIMDTypes}(S::AllSIMDTensors{T}, n::T)
     TensorType = get_base(S)
     return quote
         $(Expr(:meta, :inline))
@@ -201,7 +201,7 @@ end
         end
     end
 end
-@generated function Base.:/{T1 <: SIMDTypes, T2 <: SIMDTypes}(S::Tensor{4, 3, T1}, n::T2)
+@generated function Base.:/{T <: SIMDTypes}(S::Tensor{4, 3, T}, n::T)
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
