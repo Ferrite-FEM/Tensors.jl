@@ -4,6 +4,7 @@ module Tensors
 
 import Base.@pure
 using Compat
+import SIMD
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
