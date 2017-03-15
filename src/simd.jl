@@ -27,10 +27,7 @@ using Compat
 import SIMD
 @compat const SVec{N, T} = SIMD.Vec{N, T}
 
-const SIMDTypes = Union{Bool,
-                        Int8, Int16, Int32, Int64, Int128,
-                        UInt8, UInt16, UInt32, UInt64, UInt128,
-                        Float16, Float32, Float64}
+const SIMDTypes = Union{Float16, Float32, Float64}
 
 @compat const AllSIMDTensors{T <: SIMDTypes, dim} = AllTensors{dim, T} # T more useful so swapping
 
