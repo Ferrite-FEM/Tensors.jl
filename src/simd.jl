@@ -92,16 +92,12 @@ end
 ################################
 # (1): + and - between tensors #
 ################################
-@generated function Base.:+{TT <: AllSIMDTensors}(S1::TT, S2::TT)
-    TensorType = get_base(S1)
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds begin
-            D1 = get_data(S1); SV1 = tosimd(D1)
-            D2 = get_data(S2); SV2 = tosimd(D2)
-            r = SV1 + SV2
-            return $TensorType(r)
-        end
+@inline function Base.:+{TT <: AllSIMDTensors}(S1::TT, S2::TT)
+    @inbounds begin
+        D1 = get_data(S1); SV1 = tosimd(D1)
+        D2 = get_data(S2); SV2 = tosimd(D2)
+        r = SV1 + SV2
+        return get_base(TT)(r)
     end
 end
 @generated function Base.:+{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
@@ -116,16 +112,12 @@ end
         end
     end
 end
-@generated function Base.:-{TT <: AllSIMDTensors}(S1::TT, S2::TT)
-    TensorType = get_base(S1)
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds begin
-            D1 = get_data(S1); SV1 = tosimd(D1)
-            D2 = get_data(S2); SV2 = tosimd(D2)
-            r = SV1 - SV2
-            return $TensorType(r)
-        end
+@inline function Base.:-{TT <: AllSIMDTensors}(S1::TT, S2::TT)
+    @inbounds begin
+        D1 = get_data(S1); SV1 = tosimd(D1)
+        D2 = get_data(S2); SV2 = tosimd(D2)
+        r = SV1 - SV2
+        return get_base(TT)(r)
     end
 end
 @generated function Base.:-{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
@@ -144,16 +136,11 @@ end
 ##########################################
 # (2): * and / between tensor and number #
 ##########################################
-# note it is allowed with different eltypes, since it is promoted in SIMD.jl
-@generated function Base.:*{T <: SIMDTypes}(n::T, S::AllSIMDTensors{T})
-    TensorType = get_base(S)
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds begin
-            D = get_data(S); SV = tosimd(D)
-            r = n * SV
-            return $TensorType(r)
-        end
+@inline function Base.:*{T <: SIMDTypes}(n::T, S::AllSIMDTensors{T})
+    @inbounds begin
+        D = get_data(S); SV = tosimd(D)
+        r = n * SV
+        return get_base(typeof(S))(r)
     end
 end
 @generated function Base.:*{T <: SIMDTypes}(n::T, S::Tensor{4, 3, T})
@@ -166,15 +153,11 @@ end
         end
     end
 end
-@generated function Base.:*{T <: SIMDTypes}(S::AllSIMDTensors{T}, n::T)
-    TensorType = get_base(S)
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds begin
-            D = get_data(S); SV = tosimd(D)
-            r = SV * n
-            return $TensorType(r)
-        end
+@inline function Base.:*{T <: SIMDTypes}(S::AllSIMDTensors{T}, n::T)
+    @inbounds begin
+        D = get_data(S); SV = tosimd(D)
+        r = SV * n
+        return get_base(typeof(S))(r)
     end
 end
 @generated function Base.:*{T <: SIMDTypes}(S::Tensor{4, 3, T}, n::T)
@@ -187,15 +170,11 @@ end
         end
     end
 end
-@generated function Base.:/{T <: SIMDTypes}(S::AllSIMDTensors{T}, n::T)
-    TensorType = get_base(S)
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds begin
-            D = get_data(S); SV = tosimd(D)
-            r = SV / n
-            return $TensorType(r)
-        end
+@inline function Base.:/{T <: SIMDTypes}(S::AllSIMDTensors{T}, n::T)
+    @inbounds begin
+        D = get_data(S); SV = tosimd(D)
+        r = SV / n
+        return get_base(typeof(S))(r)
     end
 end
 @generated function Base.:/{T <: SIMDTypes}(S::Tensor{4, 3, T}, n::T)
@@ -409,7 +388,7 @@ end
 # (6): norm #
 #############
 # order 1 and order 2 norms rely on dot and dcontract respectively
-@inline function Base.norm{T <: SIMDTypes, N}(S::Tensor{4, 2, T, N})
+@inline function Base.norm{T <: SIMDTypes}(S::Tensor{4, 2, T})
     @inbounds begin
         SV = tosimd(get_data(S))
         SVSV = SV * SV
@@ -430,7 +409,7 @@ end
         end
     end
 end
-@generated function Base.norm{dim, T <: SIMDTypes, N}(S::SymmetricTensor{4, dim, T, N})
+@generated function Base.norm{dim, T <: SIMDTypes}(S::SymmetricTensor{4, dim, T})
     F = symmetric_factors(4, dim, T)
     return quote
         $(Expr(:meta, :inline))
