@@ -6,7 +6,7 @@ using JLD
 include("generate_report.jl")
 
 const SUITE = BenchmarkGroup()
-const ALL_DIMENSIONS = false
+const ALL_DIMENSIONS = true
 const MIXED_SYM_NONSYM = true
 const MIXED_ELTYPES = true
 
