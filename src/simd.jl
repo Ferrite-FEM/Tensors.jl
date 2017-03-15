@@ -216,13 +216,12 @@ end
 # (3): dot #
 ############
 # 2-1
-
 @inline function Base.dot{T <: SIMDTypes, N}(S1::Tensor{2, 2, T, N}, S2::Vec{2, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1}, Val{2})
         SV12 = tosimd(D1, Val{3}, Val{4})
-        r = fma(SV12, D2[2], SV11 * D2[1])
+        r = muladd(SV12, D2[2], SV11 * D2[1])
         return Tensor{1, 2}(r)
     end
 end
@@ -232,7 +231,7 @@ end
         SV11 = tosimd(D1, Val{1}, Val{3})
         SV12 = tosimd(D1, Val{4}, Val{6})
         SV13 = tosimd(D1, Val{7}, Val{9})
-        r = fma(SV13, D2[3], fma(SV12, D2[2], SV11 * D2[1]))
+        r = muladd(SV13, D2[3], muladd(SV12, D2[2], SV11 * D2[1]))
         return Tensor{1, 3}(r)
     end
 end
@@ -243,8 +242,8 @@ end
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1}, Val{2})
         SV12 = tosimd(D1, Val{3}, Val{4})
-        r1 = fma(SV12, D2[2], SV11 * D2[1])
-        r2 = fma(SV12, D2[4], SV11 * D2[3])
+        r1 = muladd(SV12, D2[2], SV11 * D2[1])
+        r2 = muladd(SV12, D2[4], SV11 * D2[3])
         return Tensor{2, 2}((r1, r2))
     end
 end
@@ -254,9 +253,9 @@ end
         SV11 = tosimd(D1, Val{1}, Val{3})
         SV12 = tosimd(D1, Val{4}, Val{6})
         SV13 = tosimd(D1, Val{7}, Val{9})
-        r1 = fma(SV13, D2[3], fma(SV12, D2[2], SV11 * D2[1]))
-        r2 = fma(SV13, D2[6], fma(SV12, D2[5], SV11 * D2[4]))
-        r3 = fma(SV13, D2[9], fma(SV12, D2[8], SV11 * D2[7]))
+        r1 = muladd(SV13, D2[3], muladd(SV12, D2[2], SV11 * D2[1]))
+        r2 = muladd(SV13, D2[6], muladd(SV12, D2[5], SV11 * D2[4]))
+        r3 = muladd(SV13, D2[9], muladd(SV12, D2[8], SV11 * D2[7]))
         return Tensor{2, 3}((r1, r2, r3))
     end
 end
@@ -292,7 +291,7 @@ end
         SV12 = tosimd(D1, Val{5}, Val{8})
         SV13 = tosimd(D1, Val{9}, Val{12})
         SV14 = tosimd(D1, Val{13}, Val{16})
-        r = fma(SV14, D2[4], fma(SV13, D2[3], fma(SV12, D2[2], SV11 * D2[1])))
+        r = muladd(SV14, D2[4], muladd(SV13, D2[3], muladd(SV12, D2[2], SV11 * D2[1])))
         return Tensor{2, 2}(r)
     end
 end
@@ -308,7 +307,7 @@ end
         SV17 = tosimd(D1, Val{55}, Val{63})
         SV18 = tosimd(D1, Val{64}, Val{72})
         SV19 = tosimd(D1, Val{73}, Val{81})
-        r = fma(SV19, D2[9], fma(SV18, D2[8], fma(SV17, D2[7], fma(SV16, D2[6], fma(SV15, D2[5], fma(SV14, D2[4], fma(SV13, D2[3], fma(SV12, D2[2], SV11 * D2[1]))))))))
+        r = muladd(SV19, D2[9], muladd(SV18, D2[8], muladd(SV17, D2[7], muladd(SV16, D2[6], muladd(SV15, D2[5], muladd(SV14, D2[4], muladd(SV13, D2[3], muladd(SV12, D2[2], SV11 * D2[1]))))))))
         return return Tensor{2, 3}(r)
     end
 end
@@ -321,10 +320,10 @@ end
         SV12 = tosimd(D1, Val{5},  Val{8})
         SV13 = tosimd(D1, Val{9},  Val{12})
         SV14 = tosimd(D1, Val{13}, Val{16})
-        r1 = fma(SV14, D2[4],  fma(SV13, D2[3],  fma(SV12, D2[2],  SV11 * D2[1])))
-        r2 = fma(SV14, D2[8],  fma(SV13, D2[7],  fma(SV12, D2[6],  SV11 * D2[5])))
-        r3 = fma(SV14, D2[12], fma(SV13, D2[11], fma(SV12, D2[10], SV11 * D2[9])))
-        r4 = fma(SV14, D2[16], fma(SV13, D2[15], fma(SV12, D2[14], SV11 * D2[13])))
+        r1 = muladd(SV14, D2[4],  muladd(SV13, D2[3],  muladd(SV12, D2[2],  SV11 * D2[1])))
+        r2 = muladd(SV14, D2[8],  muladd(SV13, D2[7],  muladd(SV12, D2[6],  SV11 * D2[5])))
+        r3 = muladd(SV14, D2[12], muladd(SV13, D2[11], muladd(SV12, D2[10], SV11 * D2[9])))
+        r4 = muladd(SV14, D2[16], muladd(SV13, D2[15], muladd(SV12, D2[14], SV11 * D2[13])))
         return Tensor{4, 2}((r1, r2, r3, r4))
     end
 end
@@ -340,15 +339,15 @@ end
         SV17 = tosimd(D1, Val{55}, Val{63})
         SV18 = tosimd(D1, Val{64}, Val{72})
         SV19 = tosimd(D1, Val{73}, Val{81})
-        r1 = fma(SV19, D2[9],  fma(SV18, D2[8],  fma(SV17, D2[7],  fma(SV16, D2[6],  fma(SV15, D2[5],  fma(SV14, D2[4],  fma(SV13, D2[3],  fma(SV12, D2[2],  SV11 * D2[1] ))))))))
-        r2 = fma(SV19, D2[18], fma(SV18, D2[17], fma(SV17, D2[16], fma(SV16, D2[15], fma(SV15, D2[14], fma(SV14, D2[13], fma(SV13, D2[12], fma(SV12, D2[11], SV11 * D2[10]))))))))
-        r3 = fma(SV19, D2[27], fma(SV18, D2[26], fma(SV17, D2[25], fma(SV16, D2[24], fma(SV15, D2[23], fma(SV14, D2[22], fma(SV13, D2[21], fma(SV12, D2[20], SV11 * D2[19]))))))))
-        r4 = fma(SV19, D2[36], fma(SV18, D2[35], fma(SV17, D2[34], fma(SV16, D2[33], fma(SV15, D2[32], fma(SV14, D2[31], fma(SV13, D2[30], fma(SV12, D2[29], SV11 * D2[28]))))))))
-        r5 = fma(SV19, D2[45], fma(SV18, D2[44], fma(SV17, D2[43], fma(SV16, D2[42], fma(SV15, D2[41], fma(SV14, D2[40], fma(SV13, D2[39], fma(SV12, D2[38], SV11 * D2[37]))))))))
-        r6 = fma(SV19, D2[54], fma(SV18, D2[53], fma(SV17, D2[52], fma(SV16, D2[51], fma(SV15, D2[50], fma(SV14, D2[49], fma(SV13, D2[48], fma(SV12, D2[47], SV11 * D2[46]))))))))
-        r7 = fma(SV19, D2[63], fma(SV18, D2[62], fma(SV17, D2[61], fma(SV16, D2[60], fma(SV15, D2[59], fma(SV14, D2[58], fma(SV13, D2[57], fma(SV12, D2[56], SV11 * D2[55]))))))))
-        r8 = fma(SV19, D2[72], fma(SV18, D2[71], fma(SV17, D2[70], fma(SV16, D2[69], fma(SV15, D2[68], fma(SV14, D2[67], fma(SV13, D2[66], fma(SV12, D2[65], SV11 * D2[64]))))))))
-        r9 = fma(SV19, D2[81], fma(SV18, D2[80], fma(SV17, D2[79], fma(SV16, D2[78], fma(SV15, D2[77], fma(SV14, D2[76], fma(SV13, D2[75], fma(SV12, D2[74], SV11 * D2[73]))))))))
+        r1 = muladd(SV19, D2[9],  muladd(SV18, D2[8],  muladd(SV17, D2[7],  muladd(SV16, D2[6],  muladd(SV15, D2[5],  muladd(SV14, D2[4],  muladd(SV13, D2[3],  muladd(SV12, D2[2],  SV11 * D2[1] ))))))))
+        r2 = muladd(SV19, D2[18], muladd(SV18, D2[17], muladd(SV17, D2[16], muladd(SV16, D2[15], muladd(SV15, D2[14], muladd(SV14, D2[13], muladd(SV13, D2[12], muladd(SV12, D2[11], SV11 * D2[10]))))))))
+        r3 = muladd(SV19, D2[27], muladd(SV18, D2[26], muladd(SV17, D2[25], muladd(SV16, D2[24], muladd(SV15, D2[23], muladd(SV14, D2[22], muladd(SV13, D2[21], muladd(SV12, D2[20], SV11 * D2[19]))))))))
+        r4 = muladd(SV19, D2[36], muladd(SV18, D2[35], muladd(SV17, D2[34], muladd(SV16, D2[33], muladd(SV15, D2[32], muladd(SV14, D2[31], muladd(SV13, D2[30], muladd(SV12, D2[29], SV11 * D2[28]))))))))
+        r5 = muladd(SV19, D2[45], muladd(SV18, D2[44], muladd(SV17, D2[43], muladd(SV16, D2[42], muladd(SV15, D2[41], muladd(SV14, D2[40], muladd(SV13, D2[39], muladd(SV12, D2[38], SV11 * D2[37]))))))))
+        r6 = muladd(SV19, D2[54], muladd(SV18, D2[53], muladd(SV17, D2[52], muladd(SV16, D2[51], muladd(SV15, D2[50], muladd(SV14, D2[49], muladd(SV13, D2[48], muladd(SV12, D2[47], SV11 * D2[46]))))))))
+        r7 = muladd(SV19, D2[63], muladd(SV18, D2[62], muladd(SV17, D2[61], muladd(SV16, D2[60], muladd(SV15, D2[59], muladd(SV14, D2[58], muladd(SV13, D2[57], muladd(SV12, D2[56], SV11 * D2[55]))))))))
+        r8 = muladd(SV19, D2[72], muladd(SV18, D2[71], muladd(SV17, D2[70], muladd(SV16, D2[69], muladd(SV15, D2[68], muladd(SV14, D2[67], muladd(SV13, D2[66], muladd(SV12, D2[65], SV11 * D2[64]))))))))
+        r9 = muladd(SV19, D2[81], muladd(SV18, D2[80], muladd(SV17, D2[79], muladd(SV16, D2[78], muladd(SV15, D2[77], muladd(SV14, D2[76], muladd(SV13, D2[75], muladd(SV12, D2[74], SV11 * D2[73]))))))))
         return Tensor{4, 3}((r1, r2, r3, r4, r5, r6, r7, r8, r9))
     end
 end
