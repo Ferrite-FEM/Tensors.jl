@@ -7,8 +7,13 @@
 @inline Base.:-{T <: AbstractTensor}(S::T) = map(-, S)
 
 # Binary
-@inline Base.:+(S1::AbstractTensor, S2::AbstractTensor) = map(+, S1, S2)
-@inline Base.:-(S1::AbstractTensor, S2::AbstractTensor) = map(-, S1, S2)
+@inline Base.:+{order, dim, T}(S1::Tensor{order, dim, T}, S2::Tensor{order, dim, T}) = map(+, S1, S2)
+@inline Base.:+{order, dim, T}(S1::SymmetricTensor{order, dim, T}, S2::SymmetricTensor{order, dim, T}) = map(+, S1, S2)
+@inline Base.:+(S1::AbstractTensor, S2::AbstractTensor) = +(promote(S1, S2)...)
+@inline Base.:-{order, dim, T}(S1::Tensor{order, dim, T}, S2::Tensor{order, dim, T}) = map(-, S1, S2)
+@inline Base.:-{order, dim, T}(S1::SymmetricTensor{order, dim, T}, S2::SymmetricTensor{order, dim, T}) = map(-, S1, S2)
+@inline Base.:-(S1::AbstractTensor, S2::AbstractTensor) = -(promote(S1, S2)...)
+
 @inline Base.:*(S::AbstractTensor, n::Number) = map(x->(x*n), S)
 @inline Base.:*(n::Number, S::AbstractTensor) = map(x->(n*x), S)
 @inline Base.:/(S::AbstractTensor, n::Number) = map(x->(x/n), S)
@@ -24,7 +29,6 @@
     end
 end
 
-@inline Base.map{order, dim, T1, T2}(f, S1::AbstractTensor{order, dim, T1}, S2::AbstractTensor{order, dim, T2}) = ((SS1, SS2) = promote(S1, S2); map(f, SS1, SS2))
 @generated function Base.map{T <: AllTensors}(f, S1::T, S2::T)
     TensorType = get_base(S1)
     N = n_components(TensorType)

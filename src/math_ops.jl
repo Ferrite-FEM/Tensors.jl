@@ -17,7 +17,7 @@ julia> A = rand(Tensor{2,3})
  0.566237  0.854147  0.246837
 
 julia> norm(A)
-1.7377443667834922
+1.7377443667834924
 ```
 """
 @inline Base.norm(v::Vec) = sqrt(dot(v, v))
