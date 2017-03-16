@@ -24,11 +24,11 @@ import SIMD
 
 const SIMDTypes = Union{Float16, Float32, Float64}
 
-@compat const AllSIMDTensors{T <: SIMDTypes} = Union{Vec{1, T}, Vec{2, T}, Vec{3, T},
-                                                     Tensor{2, 1, T}, Tensor{2, 2, T}, Tensor{2, 3, T},
-                                                     Tensor{4, 1, T}, Tensor{4, 2, T}, Tensor{4, 3, T},
-                                                     SymmetricTensor{2, 1, T}, SymmetricTensor{2, 2, T}, SymmetricTensor{2, 3, T},
-                                                     SymmetricTensor{4, 1, T}, SymmetricTensor{4, 2, T}, SymmetricTensor{4, 3, T}}
+@compat const AllSIMDTensors{T <: SIMDTypes} = Union{Tensor{1, 1, T, 1}, Tensor{1, 2, T, 2}, Tensor{1, 3, T, 3},
+                                                     Tensor{2, 1, T, 1}, Tensor{2, 2, T, 4}, Tensor{2, 3, T, 9},
+                                                     Tensor{4, 1, T, 1}, Tensor{4, 2, T, 16}, #=Tensor{4, 3, T, 81},=#
+                                                     SymmetricTensor{2, 1, T, 1}, SymmetricTensor{2, 2, T, 3}, SymmetricTensor{2, 3, T, 6},
+                                                     SymmetricTensor{4, 1, T, 1}, SymmetricTensor{4, 2, T, 9}, SymmetricTensor{4, 3, T, 36}}
 
 # SIMD sizes accepted by LLVM between 1 and 100
 const SIMD_CHUNKS = (1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 16, 17, 18, 20, 24, 32, 33, 34, 36, 40, 48, 64, 65, 66, 68, 72, 80, 96)
