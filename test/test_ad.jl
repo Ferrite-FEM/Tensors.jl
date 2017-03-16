@@ -20,10 +20,7 @@ const Kb = 1.66e11;
 Ψ(C) = Ψ(C, μ, Kb)
 S(C) = S(C, μ, Kb)
 
-@testset "AD" begin
-for dim in 1:3
-    println("Testing AD for dim = $dim")
-    @time begin
+@testset "AD: dim = $dim" for dim in 1:3
 
     F = one(Tensor{2,dim}) + rand(Tensor{2,dim});
     C = tdot(F);
@@ -96,6 +93,4 @@ for dim in 1:3
         @test Array(Δ(norm, A, :all)[2]) ≈ reshape(ForwardDiff.gradient(x -> sqrt(sum(abs2, x)), A), (dim, dim))
         @test Δ(norm, A, :all)[3] ≈ norm(A)
     end
-    end # @ time
-end
 end # testset

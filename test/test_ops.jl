@@ -5,11 +5,8 @@ function _permutedims{dim}(S::FourthOrderTensor{dim}, idx::NTuple{4,Int})
     return Tensor{4,dim}(f)
 end
 
-println("Testing Ops")
-@testset "tensor operations" begin
-for T in (Float32, Float64, F64), dim in (1,2,3)
-println("Testing $T, $dim")
-@time begin
+@testset "tensor operations: T = $T, dim = $dim" for T in (Float32, Float64, F64), dim in (1,2,3)
+
 AA = rand(Tensor{4, dim, T})
 BB = rand(Tensor{4, dim, T})
 A = rand(Tensor{2, dim, T})
@@ -253,6 +250,4 @@ end # of testset
     @test rotate(a, b, π) ≈ rotate(a, b, -π)
     @test rotate(a, b, π/2) ≈ rotate(a, -b, -π/2)
 end # of testset
-end
-end # @time
 end # of testset
