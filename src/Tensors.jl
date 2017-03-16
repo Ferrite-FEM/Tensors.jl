@@ -129,6 +129,8 @@ include("transpose.jl")
 include("symmetric.jl")
 include("math_ops.jl")
 include("special_ops.jl")
-include("simd.jl")
+if VERSION.minor > 5 # some weird dispatch on 0.5
+    include("simd.jl")
+end
 
 end # module
