@@ -40,6 +40,7 @@ for dim in 1:3
     @test Δ(Ψ, C) ⊡ b ≈ Δ(Ψ, C2) ⊡ b
 
     for T in (Float32, Float64)
+        srand(1234) # needed for getting "good" tensors for calculating det and friends
         A = rand(Tensor{2, dim, T})
         B = rand(Tensor{2, dim, T})
         A_sym = rand(SymmetricTensor{2, dim, T})

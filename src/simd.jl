@@ -36,15 +36,15 @@ const SIMD_CHUNKS = (1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 16, 17, 18, 20, 24, 32, 33,
 # factors for the symmetric tensors, return a quote
 function symmetric_factors(order, dim, T)
     if order == 2
-        dim == 1 && return :(SVec{1, T}((T(1),)))
-        dim == 2 && return :(SVec{3, T}((T(1),T(2),T(1))))
-        dim == 3 && return :(SVec{6, T}((T(1),T(2),T(2),T(1),T(2),T(1))))
+        dim == 1 && return :(SVec{1, $T}(($T(1),)))
+        dim == 2 && return :(SVec{3, $T}(($T(1),$T(2),$T(1))))
+        dim == 3 && return :(SVec{6, $T}(($T(1),$T(2),$T(2),$T(1),$T(2),$T(1))))
     elseif order == 4
-        dim == 1 && return :(SVec{1, T}((T(1),)))
-        dim == 2 && return :(SVec{9, T}((T(1),T(2),T(1),T(2),T(4),T(2),T(1),T(2),T(1))))
-        dim == 3 && return :(SVec{36,T}((T(1),T(2),T(2),T(1),T(2),T(1),T(2),T(4),T(4),T(2),T(4),T(2),
-                                         T(2),T(4),T(4),T(2),T(4),T(2),T(1),T(2),T(2),T(1),T(2),T(1),
-                                         T(2),T(4),T(4),T(2),T(4),T(2),T(1),T(2),T(2),T(1),T(2),T(1))))
+        dim == 1 && return :(SVec{1, $T}(($T(1),)))
+        dim == 2 && return :(SVec{9, $T}(($T(1),$T(2),$T(1),$T(2),$T(4),$T(2),$T(1),$T(2),$T(1))))
+        dim == 3 && return :(SVec{36,$T}(($T(1),$T(2),$T(2),$T(1),$T(2),$T(1),$T(2),$T(4),$T(4),$T(2),$T(4),$T(2),
+                                          $T(2),$T(4),$T(4),$T(2),$T(4),$T(2),$T(1),$T(2),$T(2),$T(1),$T(2),$T(1),
+                                          $T(2),$T(4),$T(4),$T(2),$T(4),$T(2),$T(1),$T(2),$T(2),$T(1),$T(2),$T(1))))
     end
 end
 
@@ -135,11 +135,29 @@ end
 ##########################################
 # (2): * and / between tensor and number #
 ##########################################
-@inline function Base.:*{T <: SIMDTypes}(n::T, S::AllSIMDTensors{T})
-    @inbounds begin
-        D = get_data(S); SV = tosimd(D)
-        r = n * SV
-        return get_base(typeof(S))(r)
+# remove this when we drop 0.5 support, this causes a weird dispatch for dual numbers
+# for some unexplainable reason, see https://github.com/KristofferC/Tensors.jl/pull/15
+if VERSION.minor > 5
+    @inline function Base.:*{T <: SIMDTypes}(n::T, S::AllSIMDTensors{T})
+        @inbounds begin
+            D = get_data(S); SV = tosimd(D)
+            r = n * SV
+            return get_base(typeof(S))(r)
+        end
+    end
+    @inline function Base.:*{T <: SIMDTypes}(S::AllSIMDTensors{T}, n::T)
+        @inbounds begin
+            D = get_data(S); SV = tosimd(D)
+            r = SV * n
+            return get_base(typeof(S))(r)
+        end
+    end
+    @inline function Base.:/{T <: SIMDTypes}(S::AllSIMDTensors{T}, n::T)
+        @inbounds begin
+            D = get_data(S); SV = tosimd(D)
+            r = SV / n
+            return get_base(typeof(S))(r)
+        end
     end
 end
 @generated function Base.:*{T <: SIMDTypes}(n::T, S::Tensor{4, 3, T})
@@ -152,13 +170,6 @@ end
         end
     end
 end
-@inline function Base.:*{T <: SIMDTypes}(S::AllSIMDTensors{T}, n::T)
-    @inbounds begin
-        D = get_data(S); SV = tosimd(D)
-        r = SV * n
-        return get_base(typeof(S))(r)
-    end
-end
 @generated function Base.:*{T <: SIMDTypes}(S::Tensor{4, 3, T}, n::T)
     return quote
         $(Expr(:meta, :inline))
@@ -167,13 +178,6 @@ end
             r = SV80 * n; r81 = D[81] * n
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
         end
-    end
-end
-@inline function Base.:/{T <: SIMDTypes}(S::AllSIMDTensors{T}, n::T)
-    @inbounds begin
-        D = get_data(S); SV = tosimd(D)
-        r = SV / n
-        return get_base(typeof(S))(r)
     end
 end
 @generated function Base.:/{T <: SIMDTypes}(S::Tensor{4, 3, T}, n::T)
