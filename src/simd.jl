@@ -1,6 +1,6 @@
 #=
-This module contains explicit SIMD instructions for tensors.
-Many of the methods defined outside this module will use SIMD-instructions
+This file contains explicit SIMD instructions for tensors.
+Many of the methods defined outside this file will use SIMD-instructions
 if julia is ran with -O3. Even if -O3 is enabled, the compiler is sometimes
 thrown off guard, and therefore, explicit SIMD routines are
 defined. This will enable SIMD-instructions even if julia is ran with
@@ -10,7 +10,7 @@ The functions here are only defined for tensors of the same
 element type. Otherwise it does work. Promotion should take
 care of this before the tensors enter the functions here.
 
-The module is organized as follows:
+The file is organized as follows:
 (1): + and - between tensors
 (2): * and / between tensor and number
 (3): dot
@@ -18,18 +18,17 @@ The module is organized as follows:
 (5): otimes
 (6): norm
 =#
-module ExplicitSIMD
-
-using Tensors
-using Tensors: AllTensors, get_data, n_components, get_base
-using Compat
 
 import SIMD
 @compat const SVec{N, T} = SIMD.Vec{N, T}
 
 const SIMDTypes = Union{Float16, Float32, Float64}
 
-@compat const AllSIMDTensors{T <: SIMDTypes, dim} = AllTensors{dim, T} # T more useful so swapping
+@compat const AllSIMDTensors{T <: SIMDTypes} = Union{Vec{1, T}, Vec{2, T}, Vec{3, T},
+                                                     Tensor{2, 1, T}, Tensor{2, 2, T}, Tensor{2, 3, T},
+                                                     Tensor{4, 1, T}, Tensor{4, 2, T}, Tensor{4, 3, T},
+                                                     SymmetricTensor{2, 1, T}, SymmetricTensor{2, 2, T}, SymmetricTensor{2, 3, T},
+                                                     SymmetricTensor{4, 1, T}, SymmetricTensor{4, 2, T}, SymmetricTensor{4, 3, T}}
 
 # SIMD sizes accepted by LLVM between 1 and 100
 const SIMD_CHUNKS = (1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 16, 17, 18, 20, 24, 32, 33, 34, 36, 40, 48, 64, 65, 66, 68, 72, 80, 96)
@@ -419,5 +418,3 @@ end
         return sqrt(r)
     end
 end
-
-end # module

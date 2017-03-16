@@ -7,9 +7,11 @@
 @inline Base.:-{T <: AbstractTensor}(S::T) = map(-, S)
 
 # Binary
-@inline Base.:+{T<:AbstractTensor}(S1::T, S2::T) = map(+, S1, S2)
+@inline Base.:+{order, dim, T}(S1::Tensor{order, dim, T}, S2::Tensor{order, dim, T}) = map(+, S1, S2)
+@inline Base.:+{order, dim, T}(S1::SymmetricTensor{order, dim, T}, S2::SymmetricTensor{order, dim, T}) = map(+, S1, S2)
 @inline Base.:+(S1::AbstractTensor, S2::AbstractTensor) = +(promote(S1, S2)...)
-@inline Base.:-{T<:AbstractTensor}(S1::T, S2::T) = map(-, S1, S2)
+@inline Base.:-{order, dim, T}(S1::Tensor{order, dim, T}, S2::Tensor{order, dim, T}) = map(-, S1, S2)
+@inline Base.:-{order, dim, T}(S1::SymmetricTensor{order, dim, T}, S2::SymmetricTensor{order, dim, T}) = map(-, S1, S2)
 @inline Base.:-(S1::AbstractTensor, S2::AbstractTensor) = -(promote(S1, S2)...)
 
 @inline Base.:*(S::AbstractTensor, n::Number) = map(x->(x*n), S)
