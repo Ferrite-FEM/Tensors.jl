@@ -5,8 +5,11 @@ function _permutedims{dim}(S::FourthOrderTensor{dim}, idx::NTuple{4,Int})
     return Tensor{4,dim}(f)
 end
 
+println("Testing Ops")
 @testset "tensor operations" begin
 for T in (Float32, Float64, F64), dim in (1,2,3)
+println("Testing $T, $dim")
+@time begin
 AA = rand(Tensor{4, dim, T})
 BB = rand(Tensor{4, dim, T})
 A = rand(Tensor{2, dim, T})
@@ -24,10 +27,10 @@ i,j,k,l = rand(1:dim,4)
 @testset "double contraction" begin
     # 4 - 4
     # Value tests
-    @test vec(dcontract(AA, BB)) ≈ vec(reshape(vec(AA), (dim^2, dim^2)) * reshape(vec(BB), (dim^2, dim^2)))
-    @test vec(dcontract(AA_sym, BB)) ≈ vec(reshape(vec(AA_sym), (dim^2, dim^2)) * reshape(vec(BB), (dim^2, dim^2)))
-    @test vec(dcontract(AA, BB_sym)) ≈ vec(reshape(vec(AA), (dim^2, dim^2)) * reshape(vec(BB_sym), (dim^2, dim^2)))
-    @test vec(dcontract(AA_sym, BB_sym)) ≈ vec(reshape(vec(AA_sym), (dim^2, dim^2)) * reshape(vec(BB_sym), (dim^2, dim^2)))
+    @test vec(dcontract(AA, BB)) ≈ vec(collect(reshape(vec(AA), (dim^2, dim^2))) * collect(reshape(vec(BB), (dim^2, dim^2))))
+    @test vec(dcontract(AA_sym, BB)) ≈ vec(collect(reshape(vec(AA_sym), (dim^2, dim^2))) * collect(reshape(vec(BB), (dim^2, dim^2))))
+    @test vec(dcontract(AA, BB_sym)) ≈ vec(collect(reshape(vec(AA), (dim^2, dim^2))) * collect(reshape(vec(BB_sym), (dim^2, dim^2))))
+    @test vec(dcontract(AA_sym, BB_sym)) ≈ vec(collect(reshape(vec(AA_sym), (dim^2, dim^2))) * collect(reshape(vec(BB_sym), (dim^2, dim^2))))
     @test dcontract(convert(Tensor, AA_sym), convert(Tensor, BB_sym)) ≈ dcontract(AA_sym, BB_sym)
     # Type tests
     @test isa(dcontract(AA, BB), Tensor{4, dim, T})
@@ -37,14 +40,14 @@ i,j,k,l = rand(1:dim,4)
 
     # 2 - 4
     # Value tests
-    @test dcontract(AA, A) ≈ reshape(reshape(vec(AA), (dim^2, dim^2)) * reshape(vec(A), (dim^2,)), dim, dim)
-    @test dcontract(AA_sym, A) ≈ reshape(reshape(vec(AA_sym), (dim^2, dim^2)) * reshape(vec(A), (dim^2,)), dim, dim)
-    @test dcontract(AA, A_sym) ≈ reshape(reshape(vec(AA), (dim^2, dim^2)) * reshape(vec(A_sym), (dim^2,)), dim, dim)
-    @test dcontract(AA_sym, A_sym) ≈ reshape(reshape(vec(AA_sym), (dim^2, dim^2)) * reshape(vec(A_sym), (dim^2,)), dim, dim)
-    @test dcontract(A, AA) ≈ reshape(reshape(vec(AA), (dim^2, dim^2))' * reshape(vec(A), (dim^2,)), dim, dim)
-    @test dcontract(A_sym, AA) ≈ reshape(reshape(vec(AA), (dim^2, dim^2))' * reshape(vec(A_sym), (dim^2,)), dim, dim)
-    @test dcontract(A, AA_sym) ≈ reshape(reshape(vec(AA_sym), (dim^2, dim^2))' * reshape(vec(A), (dim^2,)), dim, dim)
-    @test dcontract(A_sym, AA_sym) ≈ reshape(reshape(vec(AA_sym), (dim^2, dim^2))' * reshape(vec(A_sym), (dim^2,)), dim, dim)
+    @test dcontract(AA, A) ≈ reshape(collect(reshape(vec(AA), (dim^2, dim^2))) * collect(reshape(vec(A), (dim^2,))), dim, dim)
+    @test dcontract(AA_sym, A) ≈ reshape(collect(reshape(vec(AA_sym), (dim^2, dim^2))) * collect(reshape(vec(A), (dim^2,))), dim, dim)
+    @test dcontract(AA, A_sym) ≈ reshape(collect(reshape(vec(AA), (dim^2, dim^2))) * collect(reshape(vec(A_sym), (dim^2,))), dim, dim)
+    @test dcontract(AA_sym, A_sym) ≈ reshape(collect(reshape(vec(AA_sym), (dim^2, dim^2))) * collect(reshape(vec(A_sym), (dim^2,))), dim, dim)
+    @test dcontract(A, AA) ≈ reshape(collect(reshape(vec(AA), (dim^2, dim^2))') * collect(reshape(vec(A), (dim^2,))), dim, dim)
+    @test dcontract(A_sym, AA) ≈ reshape(collect(reshape(vec(AA), (dim^2, dim^2))') * collect(reshape(vec(A_sym), (dim^2,))), dim, dim)
+    @test dcontract(A, AA_sym) ≈ reshape(collect(reshape(vec(AA_sym), (dim^2, dim^2))') * collect(reshape(vec(A), (dim^2,))), dim, dim)
+    @test dcontract(A_sym, AA_sym) ≈ reshape(collect(reshape(vec(AA_sym), (dim^2, dim^2))') * collect(reshape(vec(A_sym), (dim^2,))), dim, dim)
     @test dcontract(convert(Tensor, AA_sym), convert(Tensor, A_sym)) ≈ dcontract(AA_sym, A_sym)
     # Type tests
     @test isa(dcontract(AA, A), Tensor{2, dim, T})
@@ -250,6 +253,6 @@ end # of testset
     @test rotate(a, b, π) ≈ rotate(a, b, -π)
     @test rotate(a, b, π/2) ≈ rotate(a, -b, -π/2)
 end # of testset
-
 end
+end # @time
 end # of testset
