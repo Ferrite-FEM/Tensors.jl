@@ -5,7 +5,8 @@ function _permutedims{dim}(S::FourthOrderTensor{dim}, idx::NTuple{4,Int})
     return Tensor{4,dim}(f)
 end
 
-@testset "tensor operations: T = $T, dim = $dim" for T in (Float32, Float64, F64), dim in (1,2,3)
+@testsection "tensor ops" begin
+for T in (Float32, Float64, F64), dim in (1,2,3)
 
 AA = rand(Tensor{4, dim, T})
 BB = rand(Tensor{4, dim, T})
@@ -21,7 +22,7 @@ B_sym = rand(SymmetricTensor{2, dim, T})
 
 i,j,k,l = rand(1:dim,4)
 
-@testset "double contraction" begin
+@testsection "double contraction" begin
     # 4 - 4
     # Value tests
     @test vec(dcontract(AA, BB)) ≈ vec(collect(reshape(vec(AA), (dim^2, dim^2))) * collect(reshape(vec(BB), (dim^2, dim^2))))
@@ -67,9 +68,9 @@ i,j,k,l = rand(1:dim,4)
     @test isa(dcontract(A_sym, B), T)
     @test isa(dcontract(A, B_sym), T)
     @test isa(dcontract(A_sym, B_sym), T)
-end # of testset
+end # of testsection
 
-@testset "outer product" begin
+@testsection "outer product" begin
     # Value tests
     @test otimes(a, b) ≈ Array(a) * Array(b)'
     @test reshape(vec(otimes(A, B)), dim^2, dim^2) ≈ vec(A) * vec(B)'
@@ -83,9 +84,9 @@ end # of testset
     @test isa(otimes(A_sym, B), Tensor{4, dim, T})
     @test isa(otimes(A, B_sym), Tensor{4, dim, T})
     @test isa(otimes(A_sym, B_sym), SymmetricTensor{4, dim, T})
-end # of testset
+end # of testsection
 
-@testset "dot products" begin
+@testsection "dot products" begin
     # 1 - 2
     # Value tests
     @test dot(a, b) ≈ sum(Array(a) .* Array(b))
@@ -127,9 +128,9 @@ end # of testset
     @test isa(tdot(A_sym), SymmetricTensor{2, dim, T})
     @test isa(dott(A), SymmetricTensor{2, dim, T})
     @test isa(dott(A_sym), SymmetricTensor{2, dim, T})
-end # of testset
+end # of testsection
 
-@testset "symmetric/skew-symmetric" begin
+@testsection "symmetric/skew-symmetric" begin
     if dim == 1 # non-symmetric tensors are symmetric
         @test issymmetric(A)
         @test issymmetric(AA)
@@ -184,9 +185,9 @@ end # of testset
     @test skew(A) ≈ -skew(A).'
     @test trace(skew(A)) ≈ 0.0
     @test trace(symmetric(A)) ≈ trace(A)
-end # of testset
+end # of testsection
 
-@testset "transpose" begin
+@testsection "transpose" begin
     @test transpose(a) ≈ a' ≈ a
     @test isa(transpose(a), Vec{dim, T})
     @test transpose(A) ≈ Array(A).'
@@ -212,9 +213,9 @@ end # of testset
     @test minortranspose(AA_sym) ≈ _permutedims(AA_sym,(2,1,4,3))
     @test majortranspose(AA) ≈ _permutedims(AA,(3,4,1,2))
     @test majortranspose(AA_sym) ≈ _permutedims(AA_sym,(3,4,1,2))
-end # of testset
+end # of testsection
 
-@testset "cross product" begin
+@testsection "cross product" begin
     @test a × a ≈ Vec{3, T}((0.0,0.0,0.0))
     @test a × b ≈ -b × a
     if dim == 2
@@ -227,14 +228,14 @@ end # of testset
         ad2 = Vec{3, T}((0.0,1.0,0.0))
         @test ad × ad2 ≈ Vec{3, T}((0.0, 0.0, 1.0))
     end
-end # of testset
+end # of testsection
 
-@testset "special" begin
+@testsection "special" begin
     AAT = Tensor{4, dim, T}((i,j,k,l) -> AA_sym[i,l,k,j])
     @test AAT ⊡ (b ⊗ a) ≈ dotdot(a, AA_sym, b)
-end # of testset
+end # of testsection
 
-@testset "rotation" begin
+@testsection "rotation" begin
     x = eᵢ(Vec{3}, 1)
     y = eᵢ(Vec{3}, 2)
     z = eᵢ(Vec{3}, 3)
@@ -249,5 +250,6 @@ end # of testset
     @test rotate(a, b, 0) ≈ a
     @test rotate(a, b, π) ≈ rotate(a, b, -π)
     @test rotate(a, b, π/2) ≈ rotate(a, -b, -π/2)
-end # of testset
-end # of testset
+end
+end # of testsection
+end # of testsection

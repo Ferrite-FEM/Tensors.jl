@@ -1,4 +1,4 @@
-@testset "basic constructors: rand, zero, ones" begin
+@testsection "constructors" begin
 for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
     for op in (:rand, :zero, :ones)
         # Tensor, SymmetricTensor
@@ -52,7 +52,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
 end
 end # of testset
 
-@testset "diagm, one" begin
+@testsection "diagm, one" begin
 for T in (Float32, Float64, F64), dim in (1,2,3)
     # diagm
     v = rand(T, dim)
@@ -112,7 +112,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
 end
 end # of testset
 
-@testset "base vectors" begin
+@testsection "base vectors" begin
 for T in (Float32, Float64, F64), dim in (1,2,3)
     eᵢ_func(i) = Tensor{1, dim, T}(j->j==i ? one(T) : zero(T))
 
@@ -130,7 +130,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
 end
 end # of testset
 
-@testset "simple math" begin
+@testsection "simple math" begin
 for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Tensor, SymmetricTensor)
     TensorType == SymmetricTensor && order == 1 && continue
     @eval begin
@@ -161,7 +161,7 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Te
 end
 end # of testset
 
-@testset "create with a function" begin
+@testsection "constrct func" begin
 for T in (Float32, Float64, F64)
     for dim in (1,2,3)
         fi = (i) -> cos(i)
@@ -204,7 +204,7 @@ for T in (Float32, Float64, F64)
 end
 end # of testset
 
-@testset "create from Array" begin
+@testsection "constrct Arr" begin
 for (T1, T2) in ((Float32, Float64), (Float64, Float32)), order in (1,2,4), dim in (1,2,3)
     At = rand(Tensor{order, dim})
     gen_data = rand(T1, size(At))
@@ -235,7 +235,7 @@ for (T1, T2) in ((Float32, Float64), (Float64, Float32)), order in (1,2,4), dim 
 end
 end # of testset
 
-@testset "indexing" begin
+@testsection "indexing" begin
 for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
     if order == 1
         data = rand(T, dim)
@@ -294,7 +294,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
 end
 end # of testset
 
-@testset "norm, trace, det, inv, eig" begin
+@testsection "norm, trace, det, inv, eig" begin
 for T in (Float32, Float64, F64), dim in (1,2,3)
     # norm
     for order in (1,2,4)
@@ -345,7 +345,7 @@ end
 end # of testset
 
 # https://en.wikiversity.org/wiki/Continuum_mechanics/Tensor_algebra_identities
-@testset "tensor identities" begin
+@testsection "tensor identities" begin
 for T in (Float32, Float64, F64)
     for dim in (1,2,3)
         # Identities with second order and first order
@@ -419,7 +419,7 @@ for T in (Float32, Float64, F64)
 end
 end # of testset
 
-@testset "promotion/conversion" begin
+@testsection "promotion/conversion" begin
 const T = Float32
 const WIDE_T = widen(T)
 for dim in (1,2,3), order in (1,2,4)
@@ -491,7 +491,7 @@ for dim in (1,2,3), order in (1,2,4)
 end
 end  # of testset
 
-@testset "exceptions" begin
+@testsection "exceptions" begin
     # normal multiplication
     A = rand(Tensor{2, 3})
     B = rand(Tensor{2, 3})
