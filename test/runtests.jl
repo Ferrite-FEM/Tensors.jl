@@ -19,6 +19,7 @@ include("test_ops.jl")
 include("test_ad.jl")
 
 print_timer()
+println()
 
 # Build the docs
 include("../docs/make.jl")
