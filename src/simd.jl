@@ -345,6 +345,21 @@ end
         return Tensor{4, 3}((r1, r2, r3, r4, r5, r6, r7, r8, r9))
     end
 end
+@inline function Tensors.dcontract{T <: SIMDTypes}(S1::SymmetricTensor{4, 3, T}, S2::Tensor{2, 3, T})
+    @inbounds begin
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1},  Val{6})
+        SV12 = tosimd(D1, Val{7}, Val{12})
+        SV13 = tosimd(D1, Val{13}, Val{18})
+        SV14 = tosimd(D1, Val{19}, Val{24})
+        SV15 = tosimd(D1, Val{25}, Val{30})
+        SV16 = tosimd(D1, Val{31}, Val{36})
+        D21 = D2[1]; D22 = D2[2] + D2[4]; D23 = D2[3] + D2[7]
+        D24 = D2[5]; D25 = D2[6] + D2[8]; D26 = D2[9]
+        r = muladd(SV16, D26, muladd(SV15, D25, muladd(SV14, D24, muladd(SV13, D23, muladd(SV12, D22, SV11 * D21)))))
+        return return SymmetricTensor{2, 3}(r)
+    end
+end
 @inline function Tensors.dcontract{T <: SIMDTypes}(S1::SymmetricTensor{4, 2, T}, S2::SymmetricTensor{4, 2, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
