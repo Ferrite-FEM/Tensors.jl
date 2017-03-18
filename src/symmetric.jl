@@ -24,21 +24,11 @@ julia> symmetric(A)
 """
 @inline symmetric(S1::SymmetricTensors) = S1
 
-@generated function symmetric{dim, T}(S::Tensor{2, dim, T})
-    idx(i, j) = compute_index(Tensor{2, dim}, i, j)
-    expr = Expr(:tuple)
-    for j in 1:dim, i in j:dim
-        if i == j
-            push!(expr.args, :(get_data(S)[$(idx(i, j))]))
-        else
-            push!(expr.args, :((get_data(S)[$(idx(i, j))] + get_data(S)[$(idx(j, i))])/2))
-        end
-    end
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return SymmetricTensor{2, dim}($expr)
-    end
+@inline function symmetric{dim}(S::Tensor{2, dim})
+    SymmetricTensor{2, dim}(@inline function(i, j) @inboundsret i == j ? S[i,j] : (S[i,j] + S[j,i]) / 2 end)
 end
+
+
 
 """
 ```julia
@@ -46,21 +36,16 @@ minorsymmetric(::FourthOrderTensor)
 ```
 Computes the minor symmetric part of a fourth order tensor, returns a `SymmetricTensor{4}`.
 """
-@generated function minorsymmetric{dim}(S::Tensor{4, dim})
-    idx(i, j, k, l) = compute_index(Tensor{4, dim}, i, j, k, l)
-    expr = Expr(:tuple)
-    for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
-        if i == j && k == l
-            push!(expr.args, :(get_data(S)[$(idx(i, j, k, l))]))
-        else
-            push!(expr.args, :((get_data(S)[$(idx(i, j, k, l))] + get_data(S)[$(idx(j, i, k, l))] +
-                                get_data(S)[$(idx(i, j, k, l))] + get_data(S)[$(idx(i, j, l, k))]) / 4))
+@inline function minorsymmetric{dim}(S::Tensor{4, dim})
+    SymmetricTensor{4, dim}(
+        @inline function(i, j, k, l)
+            @inbounds if i == j && k == l
+                return S[i,j,k,l]
+            else
+                return (S[i,j,k,l] + S[j,i,k,l] + S[i,j,k,l] + S[i,j,l,k]) / 4
+            end
         end
-    end
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return SymmetricTensor{4, dim}($expr)
-    end
+    )
 end
 
 @inline minorsymmetric(S::SymmetricTensors) = S
@@ -73,20 +58,16 @@ majorsymmetric(::FourthOrderTensor)
 ```
 Computes the major symmetric part of a fourth order tensor, returns a `Tensor{4}`.
 """
-@generated function majorsymmetric{dim}(S::FourthOrderTensor{dim})
-    idx(i, j, k, l) = compute_index(get_base(S), i, j, k, l)
-    expr = Expr(:tuple)
-    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
-        if i == j == k == l || i == k && j == l
-            push!(expr.args, :(get_data(S)[$(idx(i, j, k, l))]))
-        else
-            push!(expr.args, :((get_data(S)[$(idx(i, j, k, l))] + get_data(S)[$(idx(k, l, i, j))]) / 2))
+@inline function majorsymmetric{dim}(S::FourthOrderTensor{dim})
+    Tensor{4, dim}(
+        @inline function(i, j, k, l)
+            @inbounds if i == j == k == l || i == k && j == l
+                return S[i,j,k,l]
+            else
+                return (S[i,j,k,l] + S[k,l,i,j]) / 2
+            end
         end
-    end
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return Tensor{4, dim}($expr)
-    end
+    )
 end
 
 """
@@ -100,17 +81,10 @@ Computes the skew-symmetric (anti-symmetric) part of a second order tensor, retu
 
 # Symmetry checks
 @inline Base.issymmetric(t::Tensor{2, 1}) = true
-@inline function Base.issymmetric(t::Tensor{2, 2})
-    data = get_data(t)
-    @inbounds return data[2] == data[3]
-end
+@inline Base.issymmetric(t::Tensor{2, 2}) = @inboundsret t[1,2] == t[2,1]
+
 @inline function Base.issymmetric(t::Tensor{2, 3})
-    data = get_data(t)
-    @inbounds begin
-        return (data[2] == data[4] &&
-                data[3] == data[7] &&
-                data[6] == data[8])
-    end
+    return @inboundsret t[1,2] == t[2,1] && t[1,3] == t[3,1] && t[2,3] == t[3,2]
 end
 
 function isminorsymmetric{dim}(t::Tensor{4, dim})

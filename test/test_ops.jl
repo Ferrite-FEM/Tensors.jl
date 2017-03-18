@@ -7,7 +7,7 @@ end
 
 @testsection "tensor ops" begin
 for T in (Float32, Float64, F64), dim in (1,2,3)
-
+println(T)
 AA = rand(Tensor{4, dim, T})
 BB = rand(Tensor{4, dim, T})
 A = rand(Tensor{2, dim, T})
@@ -250,6 +250,14 @@ end # of testsection
     @test rotate(a, b, 0) ≈ a
     @test rotate(a, b, π) ≈ rotate(a, b, -π)
     @test rotate(a, b, π/2) ≈ rotate(a, -b, -π/2)
+<<<<<<< HEAD
 end
 end # of testsection
 end # of testsection
+=======
+end # of testset
+end
+println()
+end
+end # of testset
+>>>>>>> kc/simplify

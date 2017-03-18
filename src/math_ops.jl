@@ -263,17 +263,15 @@ julia> trace(dev(A))
 0.0
 ```
 """
-@generated function dev{dim}(S::SecondOrderTensor{dim})
-    Tt = get_base(S)
-    idx(i,j) = compute_index(Tt, i, j)
-    f = (i,j) -> i == j ? :((get_data(S)[$(idx(i,j))] - tr/3)) :
-                           :(get_data(S)[$(idx(i,j))])
-    exp = tensor_create(Tt, f)
-    return quote
-        $(Expr(:meta, :inline))
-        tr = trace(S)
-        $Tt($exp)
-    end
+@inline function dev(S::SecondOrderTensor)
+    Tt = get_base(typeof(S))
+    tr = trace(S) / 3
+    Tt(
+        @inline function(i, j)
+            @inbounds  v = i == j ? S[i,j] - tr : S[i,j]
+            v
+        end
+    )
 end
 
 # http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
