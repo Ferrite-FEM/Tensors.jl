@@ -16,14 +16,13 @@
     end
 end
 
-@generated function (::Type{Tensor{order, dim}}){order, dim}(data::AbstractArray)
-    N = n_components(Tensor{order,dim})
-    exp = Expr(:tuple, [:(data[$i]) for i in 1:N]...)
-    return quote
-        if length(data) != $N
-            throw(ArgumentError("wrong number of elements, expected $($N), got $(length(data))"))
-        end
-        Tensor{order, dim}($exp)
+# Applies the function f to all indices f(1), f(2), ... f(n_independent_components)
+@generated function apply_all{order, dim}(S::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}, f::Function)
+    TensorType = get_base(get_type(S))
+    exp = tensor_create_linear(TensorType, (i) -> :(f($i)))
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($exp)
     end
 end
 
@@ -37,7 +36,6 @@ function (T::Type{Tensor{order, dim}}){order, dim}(data::AbstractArray)
     length(data) != n_components(T) && throw(ArgumentError("wrong number of elements, expected $N, got $(length(data))"))
     return apply_all(T, @inline function(i) @inboundsret data[i]; end)
 end
-
 
 
 # SymmetricTensor from AbstractArray
