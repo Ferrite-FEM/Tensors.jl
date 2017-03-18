@@ -243,14 +243,14 @@ end
 # (4): dcontract #
 ##################
 # 2-2
-@inline function Tensors.dcontract{dim, T <: SIMDTypes, N}(S1::Tensor{2, dim, T, N}, S2::Tensor{2, dim, T, N})
+@inline function dcontract{dim, T <: SIMDTypes, N}(S1::Tensor{2, dim, T, N}, S2::Tensor{2, dim, T, N})
     SV1 = tosimd(get_data(S1))
     SV2 = tosimd(get_data(S2))
     r = SV1 * SV2
     return sum(r)
 end
 # 2s-2s
-@generated function Tensors.dcontract{dim, T <: SIMDTypes, N}(S1::SymmetricTensor{2, dim, T, N}, S2::SymmetricTensor{2, dim, T, N})
+@generated function dcontract{dim, T <: SIMDTypes, N}(S1::SymmetricTensor{2, dim, T, N}, S2::SymmetricTensor{2, dim, T, N})
     F = symmetric_factors(2, dim, T)
     return quote
         $(Expr(:meta, :inline))
@@ -263,7 +263,7 @@ end
 end
 
 # 4-2
-@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{2, 2, T})
+@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1}, Val{4})
@@ -274,7 +274,7 @@ end
         return Tensor{2, 2}(r)
     end
 end
-@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{2, 3, T})
+@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{2, 3, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1},  Val{9})
@@ -290,25 +290,24 @@ end
         return return Tensor{2, 3}(r)
     end
 end
-@inline function Tensors.dcontract{T <: SIMDTypes}(S1::SymmetricTensor{4, 3, T}, S2::SymmetricTensor{2, 3, T})
+@inline function dcontract{T <: SIMDTypes}(S1::SymmetricTensor{4, 3, T}, S2::SymmetricTensor{2, 3, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1},  Val{6})
-        SV12 = tosimd(D1, Val{7}, Val{12})
+        SV12 = tosimd(D1, Val{7},  Val{12})
         SV13 = tosimd(D1, Val{13}, Val{18})
         SV14 = tosimd(D1, Val{19}, Val{24})
         SV15 = tosimd(D1, Val{25}, Val{30})
         SV16 = tosimd(D1, Val{31}, Val{36})
-        D21 = D2[1] * T(1); D22 = D2[2] * T(2); D23 = D2[3] * T(2)
-        D24 = D2[4] * T(1); D25 = D2[5] * T(2); D26 = D2[6] * T(1)
-
+        D21 = D2[1]; D22 = D2[2] * T(2); D23 = D2[3] * T(2)
+        D24 = D2[4]; D25 = D2[5] * T(2); D26 = D2[6]
         r = muladd(SV16, D26, muladd(SV15, D25, muladd(SV14, D24, muladd(SV13, D23, muladd(SV12, D22, SV11 * D21)))))
         return SymmetricTensor{2, 3}(r)
     end
 end
 
 # 4-4
-@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{4, 2, T})
+@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{4, 2, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1},  Val{4})
@@ -322,7 +321,7 @@ end
         return Tensor{4, 2}((r1, r2, r3, r4))
     end
 end
-@inline function Tensors.dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
+@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1},  Val{9})
@@ -346,11 +345,65 @@ end
         return Tensor{4, 3}((r1, r2, r3, r4, r5, r6, r7, r8, r9))
     end
 end
+@inline function dcontract{T <: SIMDTypes}(S1::SymmetricTensor{4, 3, T}, S2::Tensor{2, 3, T})
+    @inbounds begin
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1},  Val{6})
+        SV12 = tosimd(D1, Val{7}, Val{12})
+        SV13 = tosimd(D1, Val{13}, Val{18})
+        SV14 = tosimd(D1, Val{19}, Val{24})
+        SV15 = tosimd(D1, Val{25}, Val{30})
+        SV16 = tosimd(D1, Val{31}, Val{36})
+        D21 = D2[1]; D22 = D2[2] + D2[4]; D23 = D2[3] + D2[7]
+        D24 = D2[5]; D25 = D2[6] + D2[8]; D26 = D2[9]
+        r = muladd(SV16, D26, muladd(SV15, D25, muladd(SV14, D24, muladd(SV13, D23, muladd(SV12, D22, SV11 * D21)))))
+        return return SymmetricTensor{2, 3}(r)
+    end
+end
+@inline function dcontract{T <: SIMDTypes}(S1::SymmetricTensor{4, 2, T}, S2::SymmetricTensor{4, 2, T})
+    @inbounds begin
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1},  Val{3})
+        SV12 = tosimd(D1, Val{4},  Val{6})
+        SV13 = tosimd(D1, Val{7},  Val{9})
+        D21  = D2[1]; D22 = D2[2] * T(2); D23 = D2[3]
+        D24  = D2[4]; D25 = D2[5] * T(2); D26 = D2[6]
+        D27  = D2[7]; D28 = D2[8] * T(2); D29 = D2[9]
+        r1 = muladd(SV13, D23, muladd(SV12, D22, SV11 * D21))
+        r2 = muladd(SV13, D26, muladd(SV12, D25, SV11 * D24))
+        r3 = muladd(SV13, D29, muladd(SV12, D28, SV11 * D27))
+        return SymmetricTensor{4, 2}((r1, r2, r3))
+    end
+end
+@inline function dcontract{T <: SIMDTypes}(S1::SymmetricTensor{4, 3, T}, S2::SymmetricTensor{4, 3, T})
+    @inbounds begin
+        D1 = get_data(S1); D2 = get_data(S2)
+        SV11 = tosimd(D1, Val{1},  Val{6})
+        SV12 = tosimd(D1, Val{7},  Val{12})
+        SV13 = tosimd(D1, Val{13}, Val{18})
+        SV14 = tosimd(D1, Val{19}, Val{24})
+        SV15 = tosimd(D1, Val{25}, Val{30})
+        SV16 = tosimd(D1, Val{31}, Val{36})
+        D21  = D2[1];  D22  = D2[2]  * T(2); D23  = D2[3]  * T(2); D24  = D2[4];  D25  = D2[5]  * T(2); D26  = D2[6]
+        D27  = D2[7];  D28  = D2[8]  * T(2); D29  = D2[9]  * T(2); D210 = D2[10]; D211 = D2[11] * T(2); D212 = D2[12]
+        D213 = D2[13]; D214 = D2[14] * T(2); D215 = D2[15] * T(2); D216 = D2[16]; D217 = D2[17] * T(2); D218 = D2[18]
+        D219 = D2[19]; D220 = D2[20] * T(2); D221 = D2[21] * T(2); D222 = D2[22]; D223 = D2[23] * T(2); D224 = D2[24]
+        D225 = D2[25]; D226 = D2[26] * T(2); D227 = D2[27] * T(2); D228 = D2[28]; D229 = D2[29] * T(2); D230 = D2[30]
+        D231 = D2[31]; D232 = D2[32] * T(2); D233 = D2[33] * T(2); D234 = D2[34]; D235 = D2[35] * T(2); D236 = D2[36]
+        r1 = muladd(SV16, D26,  muladd(SV15, D25,  muladd(SV14, D24,  muladd(SV13, D23,  muladd(SV12, D22,  SV11 * D21 )))))
+        r2 = muladd(SV16, D212, muladd(SV15, D211, muladd(SV14, D210, muladd(SV13, D29,  muladd(SV12, D28,  SV11 * D27 )))))
+        r3 = muladd(SV16, D218, muladd(SV15, D217, muladd(SV14, D216, muladd(SV13, D215, muladd(SV12, D214, SV11 * D213)))))
+        r4 = muladd(SV16, D224, muladd(SV15, D223, muladd(SV14, D222, muladd(SV13, D221, muladd(SV12, D220, SV11 * D219)))))
+        r5 = muladd(SV16, D230, muladd(SV15, D229, muladd(SV14, D228, muladd(SV13, D227, muladd(SV12, D226, SV11 * D225)))))
+        r6 = muladd(SV16, D236, muladd(SV15, D235, muladd(SV14, D234, muladd(SV13, D233, muladd(SV12, D232, SV11 * D231)))))
+        return SymmetricTensor{4, 3}((r1, r2, r3, r4, r5, r6))
+    end
+end
 
 ###############
 # (5): otimes #
 ###############
-@inline function Tensors.otimes{T <: SIMDTypes}(S1::Vec{2, T}, S2::Vec{2, T})
+@inline function otimes{T <: SIMDTypes}(S1::Vec{2, T}, S2::Vec{2, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV1 = tosimd(D1)
@@ -359,7 +412,7 @@ end
         return Tensor{2, 2}((r1, r2))
     end
 end
-@inline function Tensors.otimes{T <: SIMDTypes}(S1::Vec{3, T}, S2::Vec{3, T})
+@inline function otimes{T <: SIMDTypes}(S1::Vec{3, T}, S2::Vec{3, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV1 = tosimd(D1)
@@ -367,7 +420,7 @@ end
         return Tensor{2, 3}((r1, r2, r3))
     end
 end
-@inline function Tensors.otimes{T <: SIMDTypes}(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T})
+@inline function otimes{T <: SIMDTypes}(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV1 = tosimd(D1)
@@ -375,7 +428,7 @@ end
         return Tensor{4, 2}((r1, r2, r3, r4))
     end
 end
-@inline function Tensors.otimes{T <: SIMDTypes}(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T})
+@inline function otimes{T <: SIMDTypes}(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV1 = tosimd(D1)
@@ -385,7 +438,7 @@ end
         return Tensor{4, 3}((r1, r2, r3, r4, r5, r6, r7, r8, r9))
     end
 end
-@inline function Tensors.otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 2, T}, S2::SymmetricTensor{2, 2, T})
+@inline function otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 2, T}, S2::SymmetricTensor{2, 2, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV1 = tosimd(D1)
@@ -393,7 +446,7 @@ end
         return SymmetricTensor{4, 2}((r1, r2, r3))
     end
 end
-@inline function Tensors.otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 3, T}, S2::SymmetricTensor{2, 3, T})
+@inline function otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 3, T}, S2::SymmetricTensor{2, 3, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV1 = tosimd(D1)
