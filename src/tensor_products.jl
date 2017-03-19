@@ -313,14 +313,6 @@ julia> a × b
   0.116354
 ```
 """
-function Base.cross{T}(u::Vec{3, T}, v::Vec{3, T})
-    @inbounds w = Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
-    return w
-end
-function Base.cross{T}(u::Vec{2, T}, v::Vec{2, T})
-    @inbounds w = Vec{3}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
-    return w
-end
-function Base.cross{T}(::Vec{1, T}, ::Vec{1, T})
-    return zero(Vec{3,T})
-end
+@inline Base.cross{T}(u::Vec{3, T}, v::Vec{3, T}) = @inboundsret Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
+@inline Base.cross{T}(u::Vec{2, T}, v::Vec{2, T}) = @inboundsret Vec{3}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
+@inline Base.cross{T}( ::Vec{1, T},  ::Vec{1, T}) = @inboundsret zero(Vec{3,T})

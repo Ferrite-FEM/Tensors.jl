@@ -25,7 +25,7 @@ julia> A'
 @inline Base.transpose(S::Vec) = S
 
 @inline function Base.transpose{dim}(S::Tensor{2, dim})
-    Tensor{2, dim}(@inline function(i, j) @inbounds v = S[j,i]; v; end)
+    Tensor{2, dim}(@inline function(i, j) @inboundsret S[j,i]; end)
 end
 
 Base.transpose(S::SymmetricTensor{2}) = S

@@ -45,7 +45,6 @@ end
     M = n_components(SymmetricTensor{order,dim})
     expM = Expr(:tuple, [:(data[$i]) for i in 1:M]...)
     return quote
-        # println("BAD DISPATCH")
         L = length(data)
         if L != $N && L != $M
             throw(ArgumentError("wrong number of vector elements, expected $($N) or $($M), got $L"))
