@@ -1,9 +1,8 @@
-import ForwardDiff: valtype
 const ∇ = Tensors.gradient
 const Δ = Tensors.hessian
 
 function Ψ(C, μ, Kb)
-    T = ForwardDiff.valtype(eltype(C))
+    T = Tensors.valtype(eltype(C))
     detC = det(C)
     J = sqrt(detC)
     Ĉ = detC^(T(-1 / 3)) * C
@@ -11,7 +10,7 @@ function Ψ(C, μ, Kb)
 end
 
 function S(C, μ, Kb)
-    T = ForwardDiff.valtype(eltype(C))
+    T = Tensors.valtype(eltype(C))
     I = one(C)
     J = sqrt(det(C))
     invC = inv(C)

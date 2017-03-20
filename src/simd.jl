@@ -19,10 +19,7 @@ The file is organized as follows:
 (6): norm
 =#
 
-import SIMD
 @compat const SVec{N, T} = SIMD.Vec{N, T}
-
-const SIMDTypes = Union{Float16, Float32, Float64}
 
 @compat const AllSIMDTensors{T <: SIMDTypes} = Union{Tensor{1, 1, T, 1}, Tensor{1, 2, T, 2}, Tensor{1, 3, T, 3},
                                                      Tensor{2, 1, T, 1}, Tensor{2, 2, T, 4}, Tensor{2, 3, T, 9},

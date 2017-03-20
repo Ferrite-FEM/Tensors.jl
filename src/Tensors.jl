@@ -4,7 +4,12 @@ module Tensors
 
 import Base.@pure
 using Compat
-using ForwardDiff
+import SIMD
+const SIMDTypes = Union{Float16, Float32, Float64}
+
+import Calculus
+import NaNMath
+import SpecialFunctions
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
@@ -120,6 +125,9 @@ end
 include("indexing.jl")
 include("utilities.jl")
 include("tensor_ops_errors.jl")
+include("forwarddiff/partials.jl")
+include("forwarddiff/dual.jl")
+include("forwarddiff/ad_simd.jl")
 include("automatic_differentiation.jl")
 include("promotion_conversion.jl")
 include("constructors.jl")
@@ -130,5 +138,5 @@ include("symmetric.jl")
 include("math_ops.jl")
 include("special_ops.jl")
 include("simd.jl")
-include("ad_simd.jl")
+
 end # module

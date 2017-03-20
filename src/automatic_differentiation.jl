@@ -1,5 +1,3 @@
-import ForwardDiff: Dual, partials, value
-
 ######################
 # Extraction methods #
 ######################

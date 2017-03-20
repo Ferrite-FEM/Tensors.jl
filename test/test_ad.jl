@@ -1,3 +1,4 @@
+using ForwardDiff
 const ∇ = Tensors.gradient
 const Δ = Tensors.hessian
 
@@ -26,19 +27,23 @@ S(C) = S(C, μ, Kb)
         F = one(Tensor{2,dim}) + rand(Tensor{2,dim});
         C = tdot(F);
         C2 = F' ⋅ F;
-
-        @test 2∇(Ψ, C) ≈ S(C)
-        @test 2∇(Ψ, C2) ≈ S(C2)
-
         b = rand(SymmetricTensor{2, dim})
-        @test 2 * Δ(Ψ, C) ⊡ b ≈ ∇(S, C) ⊡ b
-        @test 2 * Δ(Ψ, C2) ⊡ b ≈ ∇(S, C2) ⊡ b
 
-        @test ∇(Ψ, C) ≈ ∇(Ψ, C2)
-        @test ∇(S, C) ⊡ b ≈ ∇(S, C2) ⊡ b
-        @test Δ(Ψ, C) ⊡ b ≈ Δ(Ψ, C2) ⊡ b
+
+        @testsection "contmech" begin
+            @test 2∇(Ψ, C) ≈ S(C)
+            @test 2∇(Ψ, C2) ≈ S(C2)
+
+            @test 2 * Δ(Ψ, C) ⊡ b ≈ ∇(S, C) ⊡ b
+            @test 2 * Δ(Ψ, C2) ⊡ b ≈ ∇(S, C2) ⊡ b
+
+            @test ∇(Ψ, C) ≈ ∇(Ψ, C2)
+            @test ∇(S, C) ⊡ b ≈ ∇(S, C2) ⊡ b
+            @test Δ(Ψ, C) ⊡ b ≈ Δ(Ψ, C2) ⊡ b
+        end
 
         for T in (Float32, Float64)
+            println("dim: $dim, T: $T")
             srand(1234) # needed for getting "good" tensors for calculating det and friends
             A = rand(Tensor{2, dim, T})
             B = rand(Tensor{2, dim, T})

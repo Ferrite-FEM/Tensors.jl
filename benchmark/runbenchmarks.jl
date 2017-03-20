@@ -1,6 +1,5 @@
 using Tensors
 using BenchmarkTools
-using ForwardDiff
 using JLD
 
 include("generate_report.jl")
@@ -10,7 +9,7 @@ const ALL_DIMENSIONS = true
 const MIXED_SYM_NONSYM = true
 const MIXED_ELTYPES = true
 
-const dT = ForwardDiff.Dual{4, Float64}
+const dT = Tensors.Dual{4, Float64}
 
 function create_tensors()
     tensor_dict = Dict{Tuple{Int, Int, DataType}, AbstractTensor}()
