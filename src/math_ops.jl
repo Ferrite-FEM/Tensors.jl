@@ -32,7 +32,7 @@ julia> norm(A)
     for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
         push!(ex, :(get_data(S)[$(idx(i,j,k,l))]))
     end
-    exp = reducer(ex, ex)
+    exp = reducer(ex, ex, true)
     return quote
       $(Expr(:meta, :inline))
       @inbounds return sqrt($exp)

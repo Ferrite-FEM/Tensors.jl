@@ -4,6 +4,7 @@ module Tensors
 
 import Base.@pure
 using Compat
+using ForwardDiff
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
@@ -129,5 +130,5 @@ include("symmetric.jl")
 include("math_ops.jl")
 include("special_ops.jl")
 include("simd.jl")
-
+include("ad_simd.jl")
 end # module

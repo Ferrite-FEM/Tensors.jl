@@ -29,7 +29,7 @@ julia> A ⊡ B
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))]) for i in 1:dim, j in 1:dim][:]
     ex2 = Expr[:(get_data(S2)[$(idxS2(i, j))]) for i in 1:dim, j in 1:dim][:]
-    exp = reducer(ex1, ex2)
+    exp = reducer(ex1, ex2, true)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $exp
@@ -171,7 +171,7 @@ julia> A ⋅ B
 @generated function Base.dot{dim}(S1::Vec{dim}, S2::Vec{dim})
     ex1 = Expr[:(get_data(S1)[$i]) for i in 1:dim]
     ex2 = Expr[:(get_data(S2)[$i]) for i in 1:dim]
-    exp = reducer(ex1, ex2)
+    exp = reducer(ex1, ex2, true)
     quote
         $(Expr(:meta, :inline))
         @inbounds return $exp
@@ -184,7 +184,7 @@ end
     for i in 1:dim
         ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))]) for j in 1:dim]
         ex2 = Expr[:(get_data(S2)[$j])             for j in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
+        push!(exps.args, reducer(ex1, ex2, true))
     end
     quote
         $(Expr(:meta, :inline))
@@ -198,7 +198,7 @@ end
     for j in 1:dim
         ex1 = Expr[:(get_data(S1)[$i])             for i in 1:dim]
         ex2 = Expr[:(get_data(S2)[$(idxS2(i, j))]) for i in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
+        push!(exps.args, reducer(ex1, ex2, true))
     end
     quote
         $(Expr(:meta, :inline))
@@ -213,7 +213,7 @@ end
     for j in 1:dim, i in 1:dim
         ex1 = Expr[:(get_data(S1)[$(idxS1(i, k))]) for k in 1:dim]
         ex2 = Expr[:(get_data(S2)[$(idxS2(k, j))]) for k in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
+        push!(exps.args, reducer(ex1, ex2, true))
     end
     quote
         $(Expr(:meta, :inline))
@@ -250,7 +250,7 @@ julia> tdot(A)
     for j in 1:dim, i in 1:dim
         ex1 = Expr[:(get_data(S1)[$(idxS1(k, i))]) for k in 1:dim]
         ex2 = Expr[:(get_data(S1)[$(idxS1(k, j))]) for k in 1:dim]
-        push!(ex.args, reducer(ex1, ex2))
+        push!(ex.args, reducer(ex1, ex2, true))
     end
     expr = remove_duplicates(SymmetricTensor{2, dim}, ex)
     return quote
