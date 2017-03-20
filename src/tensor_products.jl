@@ -123,27 +123,13 @@ julia> A ⊗ B
  0.654957  0.48365
 ```
 """
-@generated function otimes{dim}(S1::Vec{dim}, S2::Vec{dim})
-    exps = Expr(:tuple, [:(get_data(S1)[$i] * get_data(S2)[$j]) for i in 1:dim, j in 1:dim]...)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return Tensor{2, dim}($exps)
-    end
+@inline function otimes{dim}(S1::Vec{dim}, S2::Vec{dim})
+    return Tensor{2, dim}(@inline function(i,j) @inboundsret S1[i] * S2[j]; end)
 end
 
-@generated function otimes{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
-    TensorType = getreturntype(otimes, get_base(S1), get_base(S2))
-    idxS1(i, j) = compute_index(get_base(S1), i, j)
-    idxS2(i, j) = compute_index(get_base(S2), i, j)
-    exps = Expr(:tuple)
-    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
-        push!(exps.args, :(get_data(S1)[$(idxS1(i, j))] * get_data(S2)[$(idxS2(k, l))]))
-    end
-    expr = remove_duplicates(TensorType, exps)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
+@inline function otimes{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
+    TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
+    TensorType(@inline function(i,j,k,l) @inboundsret S1[i,j] * S2[k,l]; end)
 end
 
 const ⊗ = otimes
@@ -327,14 +313,6 @@ julia> a × b
   0.116354
 ```
 """
-function Base.cross{T}(u::Vec{3, T}, v::Vec{3, T})
-    @inbounds w = Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
-    return w
-end
-function Base.cross{T}(u::Vec{2, T}, v::Vec{2, T})
-    @inbounds w = Vec{3}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
-    return w
-end
-function Base.cross{T}(::Vec{1, T}, ::Vec{1, T})
-    return zero(Vec{3,T})
-end
+@inline Base.cross{T}(u::Vec{3, T}, v::Vec{3, T}) = @inboundsret Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
+@inline Base.cross{T}(u::Vec{2, T}, v::Vec{2, T}) = @inboundsret Vec{3}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
+@inline Base.cross{T}( ::Vec{1, T},  ::Vec{1, T}) = @inboundsret zero(Vec{3,T})

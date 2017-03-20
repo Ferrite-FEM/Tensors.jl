@@ -7,7 +7,7 @@ end
 
 @testsection "tensor ops" begin
 for T in (Float32, Float64, F64), dim in (1,2,3)
-
+println("T = $T, dim = $dim")
 AA = rand(Tensor{4, dim, T})
 BB = rand(Tensor{4, dim, T})
 A = rand(Tensor{2, dim, T})

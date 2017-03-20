@@ -16,18 +16,27 @@
     end
 end
 
-# Tensor from AbstractArray
-@generated function (::Type{Tensor{order, dim}}){order, dim}(data::AbstractArray)
-    N = n_components(Tensor{order,dim})
-    exp = Expr(:tuple, [:(data[$i]) for i in 1:N]...)
-    return quote
-        if length(data) != $N
-            throw(ArgumentError("wrong number of elements, expected $($N), got $(length(data))"))
-        end
-        # println("BAD DISPATCH")
-        Tensor{order, dim}($exp)
+# Applies the function f to all indices f(1), f(2), ... f(n_independent_components)
+@generated function apply_all{order, dim}(S::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}, f::Function)
+    TensorType = get_base(get_type(S))
+    exp = tensor_create_linear(TensorType, (i) -> :(f($i)))
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($exp)
     end
 end
+
+@inline function apply_all{order, dim}(S::Union{Tensor{order, dim}, SymmetricTensor{order, dim}}, f::Function)
+    apply_all(get_base(typeof(S)), f)
+end
+
+# Tensor from AbstractArray
+function (T::Type{Tensor{order, dim}}){order, dim}(data::AbstractArray)
+    N = n_components(T)
+    length(data) != n_components(T) && throw(ArgumentError("wrong number of elements, expected $N, got $(length(data))"))
+    return apply_all(T, @inline function(i) @inboundsret data[i]; end)
+end
+
 
 # SymmetricTensor from AbstractArray
 @generated function (::Type{SymmetricTensor{order, dim}}){order, dim}(data::AbstractArray)
@@ -36,7 +45,6 @@ end
     M = n_components(SymmetricTensor{order,dim})
     expM = Expr(:tuple, [:(data[$i]) for i in 1:M]...)
     return quote
-        # println("BAD DISPATCH")
         L = length(data)
         if L != $N && L != $M
             throw(ArgumentError("wrong number of vector elements, expected $($N) or $($M), got $L"))
@@ -91,16 +99,8 @@ end
 @eval @inline Base.$op(t::AllTensors) = $op(typeof(t))
 end
 
-@generated function Base.fill{T <: AbstractTensor}(el::Union{Number, Function}, S::Type{T})
-    TensorType = get_base(get_type(S))
-    N = n_components(TensorType)
-    ele = el <: Number ? :(el) : :(el())
-    expr = Expr(:tuple, [ele for i in 1:N]...)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
-end
+Base.fill{T <: AbstractTensor}(el::Number, S::Type{T}) = apply_all(get_base(T), i -> el)
+Base.fill{T <: AbstractTensor}(f::Function, S::Type{T}) = apply_all(get_base(T), i -> f())
 
 # Array with zero/ones
 @inline Base.zeros{T <: AbstractTensor}(::Type{T}, dims...) = fill(zero(T), dims...)

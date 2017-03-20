@@ -19,22 +19,12 @@
 @inline Base.:/(S::AbstractTensor, n::Number) = map(x->(x/n), S)
 
 # map implementations
-@generated function Base.map{T <: AbstractTensor}(f, S::T)
-    TensorType = get_base(S)
-    N = n_components(TensorType)
-    expr = Expr(:tuple, [:(f(get_data(S)[$i])) for i in 1:N]...)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
+@inline function Base.map{T <: AbstractTensor}(f, S::T)
+    return apply_all(S, @inline function(i) @inboundsret f(S.data[i]); end)
 end
 
-@generated function Base.map{T <: AllTensors}(f, S1::T, S2::T)
-    TensorType = get_base(S1)
-    N = n_components(TensorType)
-    expr = Expr(:tuple, [:(f(get_data(S1)[$i], get_data(S2)[$i])) for i in 1:N]...)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
+@inline Base.map{order, dim, T1, T2}(f, S1::AbstractTensor{order, dim, T1}, S2::AbstractTensor{order, dim, T2}) = ((SS1, SS2) = promote(S1, S2); map(f, SS1, SS2))
+
+@inline function Base.map{T <: AllTensors}(f, S1::T, S2::T)
+    return apply_all(S1, @inline function(i) @inboundsret f(S1.data[i], S2.data[i]); end)
 end

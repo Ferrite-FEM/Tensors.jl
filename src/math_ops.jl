@@ -58,28 +58,12 @@ julia> det(A)
 -0.1005427219925894
 ```
 """
-@generated function Base.det{dim}(t::SecondOrderTensor{dim})
-    idx(i,j) = compute_index(get_base(t), i, j)
-    if dim == 1
-        return quote
-            $(Expr(:meta, :inline))
-            get_data(t)[$(idx(1,1))]
-        end
-    elseif dim == 2
-        return quote
-            $(Expr(:meta, :inline))
-            v = get_data(t)
-            v[$(idx(1,1))] * v[$(idx(2,2))] - v[$(idx(1,2))] * v[$(idx(2,1))]
-        end
-    else # dim == 3
-        return quote
-            $(Expr(:meta, :inline))
-            v = get_data(t)
-            (v[$(idx(1,1))]*(v[$(idx(2,2))]*v[$(idx(3,3))]-v[$(idx(2,3))]*v[$(idx(3,2))]) -
-             v[$(idx(1,2))]*(v[$(idx(2,1))]*v[$(idx(3,3))]-v[$(idx(2,3))]*v[$(idx(3,1))]) +
-             v[$(idx(1,3))]*(v[$(idx(2,1))]*v[$(idx(3,2))]-v[$(idx(2,2))]*v[$(idx(3,1))]))
-        end
-    end
+@inline Base.det(t::SecondOrderTensor{1}) = @inboundsret t[1,1]
+@inline Base.det(t::SecondOrderTensor{2}) = @inboundsret (t[1,1] * t[2,2] - t[1,2] * t[2,1])
+@inline function Base.det(t::SecondOrderTensor{3})
+    @inboundsret (t[1,1] * (t[2,2]*t[3,3] - t[2,3]*t[3,2]) -
+                  t[1,2] * (t[2,1]*t[3,3] - t[2,3]*t[3,1]) +
+                  t[1,3] * (t[2,1]*t[3,2] - t[2,2]*t[3,1]))
 end
 
 """
@@ -263,17 +247,15 @@ julia> trace(dev(A))
 0.0
 ```
 """
-@generated function dev{dim}(S::SecondOrderTensor{dim})
-    Tt = get_base(S)
-    idx(i,j) = compute_index(Tt, i, j)
-    f = (i,j) -> i == j ? :((get_data(S)[$(idx(i,j))] - tr/3)) :
-                           :(get_data(S)[$(idx(i,j))])
-    exp = tensor_create(Tt, f)
-    return quote
-        $(Expr(:meta, :inline))
-        tr = trace(S)
-        $Tt($exp)
-    end
+@inline function dev(S::SecondOrderTensor)
+    Tt = get_base(typeof(S))
+    tr = trace(S) / 3
+    Tt(
+        @inline function(i, j)
+            @inbounds  v = i == j ? S[i,j] - tr : S[i,j]
+            v
+        end
+    )
 end
 
 # http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
