@@ -1,0 +1,3 @@
+ignore:
+  - "src/forwarddiff/dual.jl"
+  - "src/forwarddiff/partials.jl"
