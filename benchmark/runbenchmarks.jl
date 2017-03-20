@@ -1,5 +1,6 @@
 using Tensors
 using BenchmarkTools
+using ForwardDiff
 using JLD
 
 include("generate_report.jl")
