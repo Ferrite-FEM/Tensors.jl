@@ -35,6 +35,14 @@ The package is tested against Julia `0.5`, and `0.6-dev` on Linux, OS X, and Win
 
 Contributions are very welcome, as are feature requests and suggestions. Please open an [issue][issues-url] if you encounter any problems.
 
+### Things to work on
+
+If you are interested in contributing to Tensors.jl, here are a few topics that can get you started:
+
+* Implement support for third order tensors. These are more rarely used than first, second and fourth order tensors but are still useful in some applications. It would be good to support this.
+* Find a way to reduce code duplication without sacrificing performance or compilation time. Currently, there is quite a lot of code duplication in the implementation of different operators. It should be possible to have a higher level code generation framework that generates optimized functions from pretty much only the Einstein summation notation for the operation. 
+* Tensors.jl has been developed with mostly the application to continuum mecahnics in mind. For other fields, perhaps other tensor operations are useful. Implement these in a well performant manner and give good test coverage and documentation for the new functionalities.
+
 ## Related packages
 
 Both the packages below provide a convenience macro to provide einstein summation notation for standard Julia `Array`'s:
