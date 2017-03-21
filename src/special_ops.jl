@@ -22,3 +22,53 @@ such that ``a_k C_{ikjl} b_l``.
         @inbounds return Tensor{2, dim}($exps)
     end
 end
+
+
+function to_symmetric_form{dim,T,M}(A::SymmetricTensor{2,dim,T,M}, c::Real)
+    v = zeros(T, M)
+    for i in 1:dim, j in i:dim
+        idx, coef = _index_coef(dim, i, j, c)
+        v[idx] = coef * A[i,j]
+    end
+    return v
+end
+
+function to_symmetric_form{dim,T,M}(A::SymmetricTensor{4,dim,T,M}, c::Real)
+    n = Int(√M)
+    v = zeros(T, n, n)
+    for i in 1:dim, j in i:dim, k in 1:dim, l in k:dim
+        I, ci = _index_coef(dim, i, j, c)
+        J, cj = _index_coef(dim, k, l, c)
+        v[I,J] = ci * cj * A[i,j,k,l]
+    end
+    return v
+end
+
+# Get index and coefficient to reduce order of symmetric tensor
+#
+# Example
+# index:
+# [1 6 5
+#  ⋅ 2 4
+#  ⋅ ⋅ 3]
+#
+# coefficient:
+# [1  c  c
+#  ⋅  1  c
+#  ⋅  ⋅  1]
+#
+function _index_coef(dim::Int, i::Int, j::Int, c::Real) # i ≤ j ≤ dim is assumed
+    if i == j
+        (i, one(typeof(c)))
+    else
+        (_offdiagind(dim, i, j), c)
+    end
+end
+
+function _offdiagind(dim::Int, i::Int, j::Int) # i < j ≤ dim is assumed
+    count = dim + (j-1) - (i-1)
+    for idx in j+1:dim
+        count += idx-1
+    end
+    count
+end
