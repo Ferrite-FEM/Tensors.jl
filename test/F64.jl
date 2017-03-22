@@ -30,3 +30,7 @@ Base.promote{T <: Number}(a::T, b::F64) = F64(a), b
 Base.convert(::Type{F64}, a::F64) = a
 Base.convert(::Type{Float64}, a::F64) = a.x
 Base.convert{T <: Number}(::Type{F64}, a::T) = F64(a)
+
+# for testing of eigfact
+Base.acos(a::F64) = F64(acos(a.x))
+Base.cos(a::F64) = F64(cos(a.x))

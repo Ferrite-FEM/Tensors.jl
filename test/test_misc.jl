@@ -333,10 +333,12 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     @test inv(t_sym) ≈ inv(Array(t_sym))
     @test isa(inv(t_sym), SymmetricTensor{2, dim, T})
 
+    E = eigfact(t_sym)
     Λ, Φ = eig(t_sym)
     Λa, Φa = eig(Array(t_sym))
 
-    @test Λ ≈ Λa
+    @test Λ ≈ eigvals(t_sym) ≈ eigvals(E) ≈ Λa
+    @test Φ ≈ eigvecs(t_sym) ≈ eigvecs(E)
     for i in 1:dim
         # scale with first element of eigenvector to account for possible directions
         @test Φ[:, i]*Φ[1, i] ≈ Φa[:, i]*Φa[1, i]
