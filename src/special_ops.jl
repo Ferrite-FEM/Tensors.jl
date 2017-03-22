@@ -27,7 +27,7 @@ end
 function tovoigt{dim,T,M}(A::SymmetricTensor{2,dim,T,M}; offdiagscale::Real=1)
     v = zeros(T, M)
     for i in 1:dim, j in i:dim
-        idx, scale = _index_coef(dim, i, j, offdiagscale)
+        idx, scale = _index_scale(dim, i, j, offdiagscale)
         v[idx] = scale * A[i,j]
     end
     return v
@@ -37,14 +37,14 @@ function tovoigt{dim,T,M}(A::SymmetricTensor{4,dim,T,M}; offdiagscale::Real=1)
     n = Int(√M)
     v = zeros(T, n, n)
     for i in 1:dim, j in i:dim, k in 1:dim, l in k:dim
-        I, si = _index_coef(dim, i, j, offdiagscale)
-        J, sj = _index_coef(dim, k, l, offdiagscale)
+        I, si = _index_scale(dim, i, j, offdiagscale)
+        J, sj = _index_scale(dim, k, l, offdiagscale)
         v[I,J] = si * sj * A[i,j,k,l]
     end
     return v
 end
 
-# Get index and coefficient to reduce order of symmetric tensor
+# Get index and scale to reduce order of symmetric tensor
 #
 # Example
 # index:
@@ -52,16 +52,16 @@ end
 #  ⋅ 2 4
 #  ⋅ ⋅ 3]
 #
-# coefficient:
-# [1  c  c
-#  ⋅  1  c
-#  ⋅  ⋅  1]
+# scale:
+# [1 s s
+#  ⋅ 1 s
+#  ⋅ ⋅ 1]
 #
-function _index_coef(dim::Int, i::Int, j::Int, c::Real) # i ≤ j ≤ dim is assumed
+function _index_scale(dim::Int, i::Int, j::Int, s::Real) # i ≤ j ≤ dim is assumed
     if i == j
-        (i, one(typeof(c)))
+        (i, one(typeof(s)))
     else
-        (_offdiagind(dim, i, j), c)
+        (_offdiagind(dim, i, j), s)
     end
 end
 
