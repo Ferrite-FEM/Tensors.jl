@@ -9,10 +9,13 @@
 # Binary
 @inline Base.:+{order, dim, T}(S1::Tensor{order, dim, T}, S2::Tensor{order, dim, T}) = map(+, S1, S2)
 @inline Base.:+{order, dim, T}(S1::SymmetricTensor{order, dim, T}, S2::SymmetricTensor{order, dim, T}) = map(+, S1, S2)
-@inline Base.:+(S1::AbstractTensor, S2::AbstractTensor) = +(promote(S1, S2)...)
+@inline Base.:+{order, dim}(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) = +(promote(S1, S2)...)
 @inline Base.:-{order, dim, T}(S1::Tensor{order, dim, T}, S2::Tensor{order, dim, T}) = map(-, S1, S2)
 @inline Base.:-{order, dim, T}(S1::SymmetricTensor{order, dim, T}, S2::SymmetricTensor{order, dim, T}) = map(-, S1, S2)
-@inline Base.:-(S1::AbstractTensor, S2::AbstractTensor) = -(promote(S1, S2)...)
+@inline Base.:-{order, dim}(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) = -(promote(S1, S2)...)
+
+@inline Base.:+(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimension and order must match"))
+@inline Base.:-(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimension and order must match"))
 
 @inline Base.:*(S::AbstractTensor, n::Number) = map(x->(x*n), S)
 @inline Base.:*(n::Number, S::AbstractTensor) = map(x->(n*x), S)
