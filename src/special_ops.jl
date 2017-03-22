@@ -49,19 +49,21 @@ end
 # Example
 # index:
 # [1 6 5
-#  ⋅ 2 4
-#  ⋅ ⋅ 3]
+#  9 2 4
+#  8 7 3]
 #
 # scale:
 # [1 s s
-#  ⋅ 1 s
-#  ⋅ ⋅ 1]
+#  s 1 s
+#  s s 1]
 #
-function _index_scale(dim::Int, i::Int, j::Int, s::Real) # i ≤ j ≤ dim is assumed
+function _index_scale(dim::Int, i::Int, j::Int, s::Real) # i ≤ dim and j ≤ dim are assumed
     if i == j
         (i, one(typeof(s)))
-    else
+    elseif i < j
         (_offdiagind(dim, i, j), s)
+    else
+        (_offdiagind(dim, j, i) + sum(1:dim-1), s)
     end
 end
 
