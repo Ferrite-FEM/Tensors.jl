@@ -24,7 +24,7 @@ such that ``a_k C_{ikjl} b_l``.
 end
 
 
-function to_symmetric_form{dim,T,M}(A::SymmetricTensor{2,dim,T,M}, c::Real)
+function tovoigt{dim,T,M}(A::SymmetricTensor{2,dim,T,M}, c::Real)
     v = zeros(T, M)
     for i in 1:dim, j in i:dim
         idx, coef = _index_coef(dim, i, j, c)
@@ -33,7 +33,7 @@ function to_symmetric_form{dim,T,M}(A::SymmetricTensor{2,dim,T,M}, c::Real)
     return v
 end
 
-function to_symmetric_form{dim,T,M}(A::SymmetricTensor{4,dim,T,M}, c::Real)
+function tovoigt{dim,T,M}(A::SymmetricTensor{4,dim,T,M}, c::Real)
     n = Int(√M)
     v = zeros(T, n, n)
     for i in 1:dim, j in i:dim, k in 1:dim, l in k:dim
