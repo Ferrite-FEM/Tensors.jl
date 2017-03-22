@@ -253,18 +253,13 @@ end # of testsection
 end
 
 @testsection "tovoigt/fromvoigt" begin
-    A = rand(Tensor{4,3})
-    x = rand(Tensor{2,3})
-    @test tovoigt(A) * tovoigt(x) ≈ tovoigt(A ⊡ x)
+    @test tovoigt(AA) * tovoigt(A) ≈ tovoigt(AA ⊡ A)
+    @test tovoigt(AA_sym) * tovoigt(A_sym, offdiagscale=2) ≈ tovoigt(AA_sym ⊡ A_sym)
 
-    A_sym = symmetric(A)
-    x_sym = symmetric(x)
-    @test tovoigt(A_sym) * tovoigt(x_sym, offdiagscale=2) ≈ tovoigt(A_sym ⊡ x_sym)
-
-    @test fromvoigt(Tensor{4,3}, tovoigt(A)) ≈ A
-    @test fromvoigt(Tensor{2,3}, tovoigt(x)) ≈ x
-    @test fromvoigt(SymmetricTensor{4,3}, tovoigt(A_sym, offdiagscale=2), offdiagscale=2) ≈ A_sym
-    @test fromvoigt(SymmetricTensor{2,3}, tovoigt(x_sym, offdiagscale=2), offdiagscale=2) ≈ x_sym
+    @test fromvoigt(Tensor{2,dim}, tovoigt(A)) ≈ A
+    @test fromvoigt(Tensor{4,dim}, tovoigt(AA)) ≈ AA
+    @test fromvoigt(SymmetricTensor{2,dim}, tovoigt(A_sym, offdiagscale=2), offdiagscale=2) ≈ A_sym
+    @test fromvoigt(SymmetricTensor{4,dim}, tovoigt(AA_sym, offdiagscale=2), offdiagscale=2) ≈ AA_sym
 end
 end # of testsection
 end # of testsection
