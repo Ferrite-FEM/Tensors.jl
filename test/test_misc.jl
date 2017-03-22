@@ -500,6 +500,11 @@ end  # of testset
     @test_throws Exception A.'*B
     @test_throws Exception A\B
 
+    AA = rand(Tensor{4, 2})
+    A2 = rand(Tensor{2, 2})
+    @test_throws DimensionMismatch A + A2
+    @test_throws DimensionMismatch AA - A
+
     # issue 75
     @test_throws MethodError A+1
     @test_throws MethodError 1+A
