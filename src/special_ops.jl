@@ -24,22 +24,22 @@ such that ``a_k C_{ikjl} b_l``.
 end
 
 
-function tovoigt{dim,T,M}(A::SymmetricTensor{2,dim,T,M}, c::Real)
+function tovoigt{dim,T,M}(A::SymmetricTensor{2,dim,T,M}; offdiagscale::Real=1)
     v = zeros(T, M)
     for i in 1:dim, j in i:dim
-        idx, coef = _index_coef(dim, i, j, c)
-        v[idx] = coef * A[i,j]
+        idx, scale = _index_coef(dim, i, j, offdiagscale)
+        v[idx] = scale * A[i,j]
     end
     return v
 end
 
-function tovoigt{dim,T,M}(A::SymmetricTensor{4,dim,T,M}, c::Real)
+function tovoigt{dim,T,M}(A::SymmetricTensor{4,dim,T,M}; offdiagscale::Real=1)
     n = Int(√M)
     v = zeros(T, n, n)
     for i in 1:dim, j in i:dim, k in 1:dim, l in k:dim
-        I, ci = _index_coef(dim, i, j, c)
-        J, cj = _index_coef(dim, k, l, c)
-        v[I,J] = ci * cj * A[i,j,k,l]
+        I, si = _index_coef(dim, i, j, offdiagscale)
+        J, sj = _index_coef(dim, k, l, offdiagscale)
+        v[I,J] = si * sj * A[i,j,k,l]
     end
     return v
 end
