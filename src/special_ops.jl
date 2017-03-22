@@ -44,21 +44,21 @@ function tovoigt{dim,T,M}(A::SymmetricTensor{4,dim,T,M}; offdiagscale::Real=1)
     return v
 end
 
-function tovoigt{dim,T,M}(A::Tensor{2,dim,T,M}; offdiagscale::Real=1)
+function tovoigt{dim,T,M}(A::Tensor{2,dim,T,M})
     v = zeros(T, M)
     for i in 1:dim, j in 1:dim
-        idx, scale = _index_scale(dim, i, j, offdiagscale)
+        idx, scale = _index_scale(dim, i, j, 1)
         v[idx] = scale * A[i,j]
     end
     return v
 end
 
-function tovoigt{dim,T,M}(A::Tensor{4,dim,T,M}; offdiagscale::Real=1)
+function tovoigt{dim,T,M}(A::Tensor{4,dim,T,M})
     n = Int(√M)
     v = zeros(T, n, n)
     for i in 1:dim, j in 1:dim, k in 1:dim, l in 1:dim
-        I, si = _index_scale(dim, i, j, offdiagscale)
-        J, sj = _index_scale(dim, k, l, offdiagscale)
+        I, si = _index_scale(dim, i, j, 1)
+        J, sj = _index_scale(dim, k, l, 1)
         v[I,J] = si * sj * A[i,j,k,l]
     end
     return v
