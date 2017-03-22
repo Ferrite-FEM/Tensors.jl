@@ -64,6 +64,62 @@ function tovoigt{dim,T,M}(A::Tensor{4,dim,T,M})
     return v
 end
 
+@generated function fromvoigt{dim,T}(::Type{SymmetricTensor{2,dim}}, v::AbstractVector{T}; offdiagscale::Real=1)
+    nc = n_components(SymmetricTensor{2,dim})
+    exprs = Vector(nc)
+    for i in 1:dim, j in 1:i
+        ex = :((idx, scale) = _index_scale($dim, $j, $i, offdiagscale))
+        exprs[compute_index(SymmetricTensor{2,dim}, j, i)] = :($ex; v[idx] / scale)
+    end
+    return quote
+        @assert $nc == length(v)
+        SymmetricTensor{2,dim}($(Expr(:tuple, exprs...)))
+    end
+end
+
+@generated function fromvoigt{dim,T}(S::Type{SymmetricTensor{4,dim}}, v::AbstractMatrix{T}; offdiagscale::Real=1)
+    nc = n_components(SymmetricTensor{4,dim})
+    exprs = Vector(nc)
+    for i in 1:dim, j in 1:i, k in 1:dim, l in 1:k
+        ex_i = :((I, si) = _index_scale($dim, $j, $i, offdiagscale))
+        ex_j = :((J, sj) = _index_scale($dim, $l, $k, offdiagscale))
+        exprs[compute_index(SymmetricTensor{4,dim}, j, i, l, k)] =
+            :($ex_i; $ex_j; v[I,J] / si /sj)
+    end
+    return quote
+        @assert $nc == length(v)
+        SymmetricTensor{4,dim}($(Expr(:tuple, exprs...)))
+    end
+end
+
+@generated function fromvoigt{dim,T}(::Type{Tensor{2,dim}}, v::AbstractVector{T})
+    nc = n_components(Tensor{2,dim})
+    exprs = Vector(nc)
+    for i in 1:dim, j in 1:dim
+        ex = :((idx, scale) = _index_scale($dim, $j, $i, 1))
+        exprs[compute_index(Tensor{2,dim}, j, i)] = :($ex; v[idx] / scale)
+    end
+    return quote
+        @assert $nc == length(v)
+        Tensor{2,dim}($(Expr(:tuple, exprs...)))
+    end
+end
+
+@generated function fromvoigt{dim,T}(S::Type{Tensor{4,dim}}, v::AbstractMatrix{T})
+    nc = n_components(Tensor{4,dim})
+    exprs = Vector(nc)
+    for i in 1:dim, j in 1:dim, k in 1:dim, l in 1:dim
+        ex_i = :((I, si) = _index_scale($dim, $j, $i, 1))
+        ex_j = :((J, sj) = _index_scale($dim, $l, $k, 1))
+        exprs[compute_index(Tensor{4,dim}, j, i, l, k)] =
+            :($ex_i; $ex_j; v[I,J] / si /sj)
+    end
+    return quote
+        @assert $nc == length(v)
+        Tensor{4,dim}($(Expr(:tuple, exprs...)))
+    end
+end
+
 # Get index and scale to reduce order of symmetric tensor
 #
 # Example
