@@ -157,3 +157,10 @@ For computing a special dot product between two vectors $\mathbf{a}$ and $\mathb
 ```@docs
 dotdot
 ```
+
+## Voigt
+
+```@docs
+tovoigt
+fromvoigt
+```

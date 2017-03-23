@@ -13,6 +13,7 @@ export tdot, dott, dotdot
 export hessian#, gradient
 export basevec, eᵢ
 export rotate
+export tovoigt, fromvoigt
 
 #########
 # Types #
@@ -129,5 +130,6 @@ include("symmetric.jl")
 include("math_ops.jl")
 include("special_ops.jl")
 include("simd.jl")
+include("voigt.jl")
 
 end # module
