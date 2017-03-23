@@ -23,7 +23,7 @@ makedocs(
 deploydocs(
     repo = "github.com/KristofferC/Tensors.jl.git",
     target = "build",
-    julia = "0.6", # deploy from release bot
+    julia = "nightly", # deploy from release bot
     deps = nothing,
     make = nothing
 )
