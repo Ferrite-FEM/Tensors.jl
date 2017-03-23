@@ -298,7 +298,7 @@ julia> trace(A)
 end
 vol(S::SecondOrderTensor) = trace(S)
 
-Base.mean(S::SecondOrderTensor) = trace(S) / 3
+Base.mean{dim}(S::SecondOrderTensor{dim}) = trace(S) / dim
 
 """
 ```julia
@@ -323,7 +323,7 @@ julia> trace(dev(A))
 """
 @inline function dev(S::SecondOrderTensor)
     Tt = get_base(typeof(S))
-    tr = trace(S) / 3
+    tr = mean(S)
     Tt(
         @inline function(i, j)
             @inbounds  v = i == j ? S[i,j] - tr : S[i,j]

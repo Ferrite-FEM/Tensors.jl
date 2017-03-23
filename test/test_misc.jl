@@ -315,12 +315,12 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     @test trace(t) == sum([t[i,i] for i in 1:dim])
     @test trace(t_sym) == sum([t_sym[i,i] for i in 1:dim])
 
-    @test trace(t) ≈ vol(t) ≈ mean(t)*3.0
-    @test trace(t_sym) ≈ vol(t_sym) ≈ mean(t_sym)*3.0
+    @test trace(t) ≈ vol(t) ≈ mean(t)*dim
+    @test trace(t_sym) ≈ vol(t_sym) ≈ mean(t_sym)*dim
 
-    @test dev(t) ≈ Array(t) - 1/3*trace(t)*eye(dim)
+    @test dev(t) ≈ Array(t) - 1/dim*trace(t)*eye(dim)
     @test isa(dev(t), Tensor{2, dim, T})
-    @test dev(t_sym) ≈ Array(t_sym) - 1/3*trace(t_sym)*eye(dim)
+    @test dev(t_sym) ≈ Array(t_sym) - 1/dim*trace(t_sym)*eye(dim)
     @test isa(dev(t_sym), SymmetricTensor{2, dim, T})
 
     @test det(t) ≈ det(Array(t))
