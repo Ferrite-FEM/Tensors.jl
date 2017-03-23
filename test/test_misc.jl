@@ -308,15 +308,20 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
         end
     end
 
-    # trace, dev, det, inv (only for second order tensors)
+    # trace, vol, dev, det, inv (only for second order tensors)
     t = rand(Tensor{2, dim, T})
     t_sym = rand(SymmetricTensor{2, dim, T})
 
     @test trace(t) == sum([t[i,i] for i in 1:dim])
     @test trace(t_sym) == sum([t_sym[i,i] for i in 1:dim])
 
-    @test trace(t) ≈ vol(t) ≈ mean(t)*3.0
-    @test trace(t_sym) ≈ vol(t_sym) ≈ mean(t_sym)*3.0
+    @test trace(t) ≈ mean(t)*3.0
+    @test trace(t_sym) ≈ mean(t_sym)*3.0
+
+    @test vol(t) ≈ mean(t)*eye(dim)
+    @test isa(vol(t), Tensor{2, dim, T})
+    @test vol(t_sym) ≈ mean(t_sym)*eye(dim)
+    @test isa(vol(t_sym), SymmetricTensor{2, dim, T})
 
     @test dev(t) ≈ Array(t) - 1/3*trace(t)*eye(dim)
     @test isa(dev(t), Tensor{2, dim, T})

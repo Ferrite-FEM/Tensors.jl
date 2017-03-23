@@ -275,7 +275,6 @@ Extract eigenvectors from an `Eigen` object, returned by [`eigfact`](@ref).
 trace(::SecondOrderTensor)
 ```
 Computes the trace of a second order tensor.
-The synonym `vol` can also be used.
 
 **Example:**
 
@@ -296,9 +295,35 @@ julia> trace(A)
     exp = reduce((ex1, ex2) -> :(+($ex1, $ex2)), ex)
     @inbounds return exp
 end
-vol(S::SecondOrderTensor) = trace(S)
 
 Base.mean(S::SecondOrderTensor) = trace(S) / 3
+
+"""
+```julia
+vol(::SecondOrderTensor)
+```
+Computes the volumetric part of a second order tensor based on the additive decomposition.
+
+**Example:**
+
+```jldoctest
+julia> A = rand(SymmetricTensor{2,3})
+3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
+ 0.0339856  0.347344  0.416272
+ 0.347344   0.545664  0.885307
+ 0.416272   0.885307  0.683448
+
+julia> vol(A)
+3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
+ 0.421032  0.0       0.0
+ 0.0       0.421032  0.0
+ 0.0       0.0       0.421032
+
+julia> vol(A) + dev(A) ≈ A
+true
+```
+"""
+vol(S::SecondOrderTensor) = mean(S) * one(S)
 
 """
 ```julia
