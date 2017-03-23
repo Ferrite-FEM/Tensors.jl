@@ -101,7 +101,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Constructing tensors",
     "title": "Tensors.basevec",
     "category": "Function",
-    "text": "basevec(::Type{Vec{dim, T}})\nbasevec(::Type{Vec{dim, T}}, i)\nbasevec(::Vec{dim, T})\nbasevec(::Vec{dim, T}, i)\n\nReturn a tuple with the base vectors corresponding to the dimension dim and type T. An optional integer i can be used to extract the i:th base vector. The alias eᵢ can also be used, written e\\_i<TAB>.\n\nExample:\n\njulia> eᵢ(Vec{2, Float64})\n([1.0,0.0],[0.0,1.0])\n\njulia> eᵢ(Vec{2, Float64}, 2)\n2-element Tensors.Tensor{1,2,Float64,2}:\n 0.0\n 1.0\n\n\n\n"
+    "text": "basevec(::Type{Vec{dim, T}})\nbasevec(::Type{Vec{dim, T}}, i)\nbasevec(::Vec{dim, T})\nbasevec(::Vec{dim, T}, i)\n\nReturn a tuple with the base vectors corresponding to the dimension dim and type T. An optional integer i can be used to extract the i:th base vector. The alias eᵢ can also be used, written e\\_i<TAB>.\n\nExample:\n\njulia> eᵢ(Vec{2, Float64})\n([1.0, 0.0], [0.0, 1.0])\n\njulia> eᵢ(Vec{2, Float64}, 2)\n2-element Tensors.Tensor{1,2,Float64,2}:\n 0.0\n 1.0\n\n\n\n"
 },
 
 {
@@ -141,7 +141,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Constructing tensors",
     "title": "Converting to tensors",
     "category": "section",
-    "text": "Sometimes it is necessary to convert between standard Julia Array's and Tensor's. When the number type is a bits type (like for floats or integers) this is conveniently done by the reinterpret function. For example, a 2×5 Julia Array can be translated to a vector of Vec{2} with the following codejulia> data = rand(2, 5)\n2×5 Array{Float64,2}:\n 0.590845  0.566237  0.794026  0.200586  0.246837\n 0.766797  0.460085  0.854147  0.298614  0.579672\n\njulia> tensor_data = reinterpret(Vec{2, Float64}, data, (5,))\n5-element Array{Tensors.Tensor{1,2,Float64,2},1}:\n [0.590845,0.766797]\n [0.566237,0.460085]\n [0.794026,0.854147]\n [0.200586,0.298614]\n [0.246837,0.579672]The data can also be reinterpreted back to a Julia Arrayjulia> data = reinterpret(Float64, tensor_data, (2,5))\n2×5 Array{Float64,2}:\n 0.590845  0.566237  0.794026  0.200586  0.246837\n 0.766797  0.460085  0.854147  0.298614  0.579672"
+    "text": "Sometimes it is necessary to convert between standard Julia Array's and Tensor's. When the number type is a bits type (like for floats or integers) this is conveniently done by the reinterpret function. For example, a 2×5 Julia Array can be translated to a vector of Vec{2} with the following codejulia> data = rand(2, 5)\n2×5 Array{Float64,2}:\n 0.590845  0.566237  0.794026  0.200586  0.246837\n 0.766797  0.460085  0.854147  0.298614  0.579672\n\njulia> tensor_data = reinterpret(Vec{2, Float64}, data, (5,))\n5-element Array{Tensors.Tensor{1,2,Float64,2},1}:\n [0.590845, 0.766797]\n [0.566237, 0.460085]\n [0.794026, 0.854147]\n [0.200586, 0.298614]\n [0.246837, 0.579672]The data can also be reinterpreted back to a Julia Arrayjulia> data = reinterpret(Float64, tensor_data, (2,5))\n2×5 Array{Float64,2}:\n 0.590845  0.566237  0.794026  0.200586  0.246837\n 0.766797  0.460085  0.854147  0.298614  0.579672"
 },
 
 {
@@ -269,7 +269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Base.LinAlg.norm",
     "category": "Function",
-    "text": "norm(::Vec)\nnorm(::SecondOrderTensor)\nnorm(::FourthOrderTensor)\n\nComputes the norm of a tensor.\n\nExample:\n\njulia> A = rand(Tensor{2,3})\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 0.590845  0.460085  0.200586\n 0.766797  0.794026  0.298614\n 0.566237  0.854147  0.246837\n\njulia> norm(A)\n1.7377443667834922\n\n\n\n"
+    "text": "norm(::Vec)\nnorm(::SecondOrderTensor)\nnorm(::FourthOrderTensor)\n\nComputes the norm of a tensor.\n\nExample:\n\njulia> A = rand(Tensor{2,3})\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 0.590845  0.460085  0.200586\n 0.766797  0.794026  0.298614\n 0.566237  0.854147  0.246837\n\njulia> norm(A)\n1.7377443667834924\n\n\n\n"
 },
 
 {
@@ -441,11 +441,35 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "man/other_operators.html#Base.LinAlg.eigfact",
+    "page": "Other operators",
+    "title": "Base.LinAlg.eigfact",
+    "category": "Function",
+    "text": "eigfact(::SymmetricTensor{2})\n\nCompute the eigenvalues and eigenvectors of a symmetric second order tensor and return an Eigen object. The eigenvalues are stored in a Vec, sorted in ascending order. The corresponding eigenvectors are stored as the columns of a Tensor.\n\nSee eigvals and eigvecs.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2, 2})\n2×2 Tensors.SymmetricTensor{2,2,Float64,3}:\n 0.590845  0.766797\n 0.766797  0.566237\n\njulia> E = eigfact(A)\nTensors.Eigen{Float64,2,4}([-0.188355, 1.34544], [-0.701412 0.712756; 0.712756 0.701412])\n\njulia> eigvals(E)\n2-element Tensors.Tensor{1,2,Float64,2}:\n -0.188355\n  1.34544\n\njulia> eigvecs(E)\n2×2 Tensors.Tensor{2,2,Float64,4}:\n -0.701412  0.712756\n  0.712756  0.701412\n\n\n\n"
+},
+
+{
+    "location": "man/other_operators.html#Base.LinAlg.eigvals",
+    "page": "Other operators",
+    "title": "Base.LinAlg.eigvals",
+    "category": "Function",
+    "text": "eigvals(::SymmetricTensor{2})\n\nCompute the eigenvalues of a symmetric second order tensor.\n\n\n\neigvals(::Eigen)\n\nExtract eigenvalues from an Eigen object, returned by eigfact.\n\n\n\n"
+},
+
+{
+    "location": "man/other_operators.html#Base.LinAlg.eigvecs",
+    "page": "Other operators",
+    "title": "Base.LinAlg.eigvecs",
+    "category": "Function",
+    "text": "eigvecs(::SymmetricTensor{2})\n\nCompute the eigenvectors of a symmetric second order tensor.\n\n\n\neigvecs(::Eigen)\n\nExtract eigenvectors from an Eigen object, returned by eigfact.\n\n\n\n"
+},
+
+{
     "location": "man/other_operators.html#Base.LinAlg.eig",
     "page": "Other operators",
     "title": "Base.LinAlg.eig",
     "category": "Function",
-    "text": "eig(::SymmetricSecondOrderTensor)\n\nComputes the eigenvalues and eigenvectors of a symmetric second order tensor.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2,3})\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\njulia> Λ, Φ = eig(A);\n\njulia> Λ\n3-element Tensors.Tensor{1,3,Float64,3}:\n -0.312033\n  0.15636\n  2.06075\n\njulia> Φ\n3×3 Tensors.Tensor{2,3,Float64,9}:\n  0.492843  -0.684993  -0.536554\n -0.811724  -0.139855  -0.567049\n  0.313385   0.715     -0.624952\n\njulia> Φ ⋅ diagm(Tensor{2,3}, Λ) ⋅ inv(Φ) # Same as A\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\n\n\n"
+    "text": "eig(::SymmetricTensor{2})\n\nCompute the eigenvalues and eigenvectors of a symmetric second order tensor. eig is a wrapper around eigfact which extracts eigenvalues and eigenvectors to a tuple.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2, 2})\n2×2 Tensors.SymmetricTensor{2,2,Float64,3}:\n 0.590845  0.766797\n 0.766797  0.566237\n\njulia> Λ, Φ = eig(A);\n\njulia> Λ\n2-element Tensors.Tensor{1,2,Float64,2}:\n -0.188355\n  1.34544\n\njulia> Φ\n2×2 Tensors.Tensor{2,2,Float64,4}:\n -0.701412  0.712756\n  0.712756  0.701412\n\njulia> Φ ⋅ diagm(Tensor{2, 2}, Λ) ⋅ inv(Φ) # Same as A\n2×2 Tensors.Tensor{2,2,Float64,4}:\n 0.590845  0.766797\n 0.766797  0.566237\n\n\n\n"
 },
 
 {
@@ -453,7 +477,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Eigenvalues and eigenvectors",
     "category": "section",
-    "text": "The eigenvalues and eigenvectors of a (symmetric) second order tensor, mathbfA can be solved from the eigenvalue problemmathbfA cdot mathbfv_i = lambda_i mathbfv_i qquad i = 1 dots textdimwhere lambda_i are the eigenvalues and mathbfv_i are the corresponding eigenvectors.eig"
+    "text": "The eigenvalues and eigenvectors of a (symmetric) second order tensor, mathbfA can be solved from the eigenvalue problemmathbfA cdot mathbfv_i = lambda_i mathbfv_i qquad i = 1 dots textdimwhere lambda_i are the eigenvalues and mathbfv_i are the corresponding eigenvectors.eigfact\neigvals\neigvecs\neig"
 },
 
 {
@@ -486,6 +510,30 @@ var documenterSearchIndex = {"docs": [
     "title": "Special operations",
     "category": "section",
     "text": "For computing a special dot product between two vectors mathbfa and mathbfb with a fourth order symmetric tensor mathbfC such that a_k C_ikjl b_l there is dotdot(a, C, b). This function is useful because it is the expression for the tangent matrix in continuum mechanics when the displacements are approximated by scalar shape functions.dotdot"
+},
+
+{
+    "location": "man/other_operators.html#Tensors.tovoigt",
+    "page": "Other operators",
+    "title": "Tensors.tovoigt",
+    "category": "Function",
+    "text": "tovoigt(A::Union{SecondOrderTensor, FourthOrderTensor}; offdiagscale)\n\nConverts a tensor to \"Voigt\"-format using the following index order: [11, 22, 33, 23, 13, 12, 32, 31, 21]. For SymmetricTensors, the keyword argument offdiagscale sets a scaling factor on the offdiagonal elements\n\nSee also fromvoigt.\n\njulia> tovoigt(Tensor{2,3}(1:9))\n9-element Array{Int64,1}:\n 1\n 5\n 9\n 8\n 7\n 4\n 6\n 3\n 2\n\njulia> tovoigt(SymmetricTensor{2,3}(1.0:1.0:6.0); offdiagscale = 2.0)\n6-element Array{Float64,1}:\n  1.0\n  4.0\n  6.0\n 10.0\n  6.0\n  4.0\n\njulia> tovoigt(Tensor{4,2}(1:16))\n4×4 Array{Int64,2}:\n 1  13   9  5\n 4  16  12  8\n 3  15  11  7\n 2  14  10  6\n\n\n\n"
+},
+
+{
+    "location": "man/other_operators.html#Tensors.fromvoigt",
+    "page": "Other operators",
+    "title": "Tensors.fromvoigt",
+    "category": "Function",
+    "text": "fromvoigt(::T, A::Array)\n\nConverts an array A stored in Voigt format to a Tensor of type T. For SymmetricTensors, the keyword argument offdiagscale sets an inverse scaling factor on the offdiagonal elements.\n\nSee also tovoigt.\n\njulia> fromvoigt(Tensor{2,3}, 1.0:1.0:9.0)\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 1.0  6.0  5.0\n 9.0  2.0  4.0\n 8.0  7.0  3.0\n\n\n\n"
+},
+
+{
+    "location": "man/other_operators.html#Voigt-1",
+    "page": "Other operators",
+    "title": "Voigt",
+    "category": "section",
+    "text": "tovoigt\nfromvoigt"
 },
 
 {
