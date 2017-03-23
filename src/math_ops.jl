@@ -153,6 +153,16 @@ end
     end
 end
 
+function Base.inv{dim}(t::Tensor{4, dim})
+    fromvoigt(Tensor{4, dim}, inv(tovoigt(t)))
+end
+
+function Base.inv{dim, T}(t::SymmetricTensor{4, dim, T})
+    # use mandel form to reduce order of symmetric tensor
+    s = T(√2)
+    fromvoigt(SymmetricTensor{4, dim}, inv(tovoigt(t, offdiagscale=s)), offdiagscale=s)
+end
+
 """
 ```julia
 eig(::SymmetricTensor{2})
