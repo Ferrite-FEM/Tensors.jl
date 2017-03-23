@@ -302,22 +302,23 @@ Base.mean(S::SecondOrderTensor) = trace(S) / 3
 ```julia
 vol(::SecondOrderTensor)
 ```
-Computes the volumetric part of a second order tensor based on the additive decomposition.
+Computes the volumetric part of a second order tensor
+based on the additive decomposition.
 
 **Example:**
 
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
 3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
- 0.0339856  0.347344  0.416272
- 0.347344   0.545664  0.885307
- 0.416272   0.885307  0.683448
+ 0.590845  0.766797  0.566237
+ 0.766797  0.460085  0.794026
+ 0.566237  0.794026  0.854147
 
 julia> vol(A)
 3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
- 0.421032  0.0       0.0
- 0.0       0.421032  0.0
- 0.0       0.0       0.421032
+ 0.635026  0.0       0.0
+ 0.0       0.635026  0.0
+ 0.0       0.0       0.635026
 
 julia> vol(A) + dev(A) ≈ A
 true
@@ -334,7 +335,7 @@ Computes the deviatoric part of a second order tensor.
 **Example:**
 
 ```jldoctest
-julia> A = rand(Tensor{2,3});
+julia> A = rand(Tensor{2, 3});
 
 julia> dev(A)
 3×3 Tensors.Tensor{2,3,Float64,9}:

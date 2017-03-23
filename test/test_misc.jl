@@ -338,7 +338,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     @test inv(t_sym) ≈ inv(Array(t_sym))
     @test isa(inv(t_sym), SymmetricTensor{2, dim, T})
 
-    # inv for forth order tensors
+    # inv for fourth order tensors
     AA = rand(Tensor{4, dim, T})
     AA_sym = rand(SymmetricTensor{4, dim, T})
     @test AA ⊡ inv(AA) ≈ one(Tensor{4, dim, T})
