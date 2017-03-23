@@ -333,6 +333,14 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     @test inv(t_sym) ≈ inv(Array(t_sym))
     @test isa(inv(t_sym), SymmetricTensor{2, dim, T})
 
+    # inv for forth order tensors
+    AA = rand(Tensor{4, dim, T})
+    AA_sym = rand(SymmetricTensor{4, dim, T})
+    @test AA ⊡ inv(AA) ≈ one(Tensor{4, dim, T})
+    @test isa(inv(AA), Tensor{4, dim, T})
+    @test AA_sym ⊡ inv(AA_sym) ≈ one(SymmetricTensor{4, dim, T})
+    @test isa(inv(AA_sym), SymmetricTensor{4, dim, T})
+
     E = eigfact(t_sym)
     Λ, Φ = eig(t_sym)
     Λa, Φa = eig(Array(t_sym))
