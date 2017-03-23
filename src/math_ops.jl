@@ -155,46 +155,110 @@ end
 
 """
 ```julia
-eig(::SymmetricSecondOrderTensor)
+eig(::SymmetricTensor{2})
 ```
-Computes the eigenvalues and eigenvectors of a symmetric second order tensor.
+Compute the eigenvalues and eigenvectors of a symmetric second order tensor.
+`eig` is a wrapper around [`eigfact`](@ref) which extracts eigenvalues and
+eigenvectors to a tuple.
 
 **Example:**
 
 ```jldoctest
-julia> A = rand(SymmetricTensor{2,3})
-3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
- 0.590845  0.766797  0.566237
- 0.766797  0.460085  0.794026
- 0.566237  0.794026  0.854147
+julia> A = rand(SymmetricTensor{2, 2})
+2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+ 0.590845  0.766797
+ 0.766797  0.566237
 
 julia> Λ, Φ = eig(A);
 
 julia> Λ
-3-element Tensors.Tensor{1,3,Float64,3}:
- -0.312033
-  0.15636
-  2.06075
+2-element Tensors.Tensor{1,2,Float64,2}:
+ -0.188355
+  1.34544
 
 julia> Φ
-3×3 Tensors.Tensor{2,3,Float64,9}:
-  0.492843  -0.684993  -0.536554
- -0.811724  -0.139855  -0.567049
-  0.313385   0.715     -0.624952
+2×2 Tensors.Tensor{2,2,Float64,4}:
+ -0.701412  0.712756
+  0.712756  0.701412
 
-julia> Φ ⋅ diagm(Tensor{2,3}, Λ) ⋅ inv(Φ) # Same as A
-3×3 Tensors.Tensor{2,3,Float64,9}:
- 0.590845  0.766797  0.566237
- 0.766797  0.460085  0.794026
- 0.566237  0.794026  0.854147
+julia> Φ ⋅ diagm(Tensor{2, 2}, Λ) ⋅ inv(Φ) # Same as A
+2×2 Tensors.Tensor{2,2,Float64,4}:
+ 0.590845  0.766797
+ 0.766797  0.566237
 ```
 """
-function Base.eig{dim, T, M}(S::SymmetricTensor{2, dim, T, M})
-    λ, ϕ = eig(Array(S))
-    Λ = Tensor{1, dim}(λ)
-    Φ = Tensor{2, dim}(ϕ)
-    return Λ, Φ
+@inline Base.eig(S::SymmetricTensor) = (E = eigfact(S); (E.λ, E.Φ))
+
+"""
+```julia
+eigvals(::SymmetricTensor{2})
+```
+Compute the eigenvalues of a symmetric second order tensor.
+"""
+@inline Base.eigvals(S::SymmetricTensor) = (E = eigfact(S); E.λ)
+
+"""
+```julia
+eigvecs(::SymmetricTensor{2})
+```
+Compute the eigenvectors of a symmetric second order tensor.
+"""
+@inline Base.eigvecs(S::SymmetricTensor) = (E = eigfact(S); E.Φ)
+
+immutable Eigen{T, dim, M}
+    λ::Vec{dim, T}
+    Φ::Tensor{2, dim, T, M}
 end
+
+"""
+```julia
+eigfact(::SymmetricTensor{2})
+```
+Compute the eigenvalues and eigenvectors of a symmetric second order tensor
+and return an `Eigen` object. The eigenvalues are stored in a `Vec`,
+sorted in ascending order. The corresponding eigenvectors are stored
+as the columns of a `Tensor`.
+
+See [`eigvals`](@ref) and [`eigvecs`](@ref).
+
+**Example:**
+
+```jldoctest
+julia> A = rand(SymmetricTensor{2, 2})
+2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+ 0.590845  0.766797
+ 0.766797  0.566237
+
+julia> E = eigfact(A)
+Tensors.Eigen{Float64,2,4}([-0.188355, 1.34544], [-0.701412 0.712756; 0.712756 0.701412])
+
+julia> eigvals(E)
+2-element Tensors.Tensor{1,2,Float64,2}:
+ -0.188355
+  1.34544
+
+julia> eigvecs(E)
+2×2 Tensors.Tensor{2,2,Float64,4}:
+ -0.701412  0.712756
+  0.712756  0.701412
+```
+"""
+Base.eigfact
+
+"""
+```julia
+eigvals(::Eigen)
+```
+Extract eigenvalues from an `Eigen` object, returned by [`eigfact`](@ref).
+"""
+@inline Base.eigvals(E::Eigen) = E.λ
+"""
+```julia
+eigvecs(::Eigen)
+```
+Extract eigenvectors from an `Eigen` object, returned by [`eigfact`](@ref).
+"""
+@inline Base.eigvecs(E::Eigen) = E.Φ
 
 """
 ```julia
