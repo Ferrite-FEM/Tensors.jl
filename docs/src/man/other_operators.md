@@ -112,7 +112,7 @@ The skew symmetric part of a symmetric tensor is zero.
 skew
 ```
 
-## Deviator
+## Deviatoric tensor
 
 The deviatoric part of a second order tensor is defined by
 
@@ -120,6 +120,16 @@ $\mathbf{A}^\text{dev} = \mathbf{A} - \frac{1}{3} \mathrm{trace}[\mathbf{A}] \ma
 
 ```@docs
 dev
+```
+
+## Volumetric tensor
+
+The volumetric part of a second order tensor is defined by
+
+$\mathbf{A}^\text{vol} = \frac{1}{3} \mathrm{trace}[\mathbf{A}] \mathbf{I} \Leftrightarrow A_{ij}^\text{vol} = \frac{1}{3}A_{kk}\delta_{ij}$
+
+```@docs
+vol
 ```
 
 ## Cross product
