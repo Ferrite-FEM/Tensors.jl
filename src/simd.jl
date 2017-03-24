@@ -321,7 +321,7 @@ end
         return Tensor{4, 2}((r1, r2, r3, r4))
     end
 end
-@inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
+function dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1},  Val{9})
@@ -375,7 +375,7 @@ end
         return SymmetricTensor{4, 2}((r1, r2, r3))
     end
 end
-@inline function dcontract{T <: SIMDTypes}(S1::SymmetricTensor{4, 3, T}, S2::SymmetricTensor{4, 3, T})
+function dcontract{T <: SIMDTypes}(S1::SymmetricTensor{4, 3, T}, S2::SymmetricTensor{4, 3, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1},  Val{6})
