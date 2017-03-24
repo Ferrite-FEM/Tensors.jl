@@ -285,7 +285,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Base.LinAlg.trace",
     "category": "Function",
-    "text": "trace(::SecondOrderTensor)\n\nComputes the trace of a second order tensor. The synonym vol can also be used.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2,3})\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\njulia> trace(A)\n1.9050765715072775\n\n\n\n"
+    "text": "trace(::SecondOrderTensor)\n\nComputes the trace of a second order tensor.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2,3})\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\njulia> trace(A)\n1.9050765715072775\n\n\n\n"
 },
 
 {
@@ -413,15 +413,31 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Tensors.dev",
     "category": "Function",
-    "text": "dev(::SecondOrderTensor)\n\nComputes the deviatoric part of a second order tensor.\n\nExample:\n\njulia> A = rand(Tensor{2,3});\n\njulia> dev(A)\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 0.0469421  0.460085   0.200586\n 0.766797   0.250123   0.298614\n 0.566237   0.854147  -0.297065\n\njulia> trace(dev(A))\n0.0\n\n\n\n"
+    "text": "dev(::SecondOrderTensor)\n\nComputes the deviatoric part of a second order tensor.\n\nExample:\n\njulia> A = rand(Tensor{2, 3});\n\njulia> dev(A)\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 0.0469421  0.460085   0.200586\n 0.766797   0.250123   0.298614\n 0.566237   0.854147  -0.297065\n\njulia> trace(dev(A))\n0.0\n\n\n\n"
 },
 
 {
-    "location": "man/other_operators.html#Deviator-1",
+    "location": "man/other_operators.html#Deviatoric-tensor-1",
     "page": "Other operators",
-    "title": "Deviator",
+    "title": "Deviatoric tensor",
     "category": "section",
     "text": "The deviatoric part of a second order tensor is defined bymathbfA^textdev = mathbfA - frac13 mathrmtracemathbfA mathbfI Leftrightarrow A_ij^textdev = A_ij - frac13A_kkdelta_ijdev"
+},
+
+{
+    "location": "man/other_operators.html#Tensors.vol",
+    "page": "Other operators",
+    "title": "Tensors.vol",
+    "category": "Function",
+    "text": "vol(::SecondOrderTensor)\n\nComputes the volumetric part of a second order tensor based on the additive decomposition.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2,3})\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\njulia> vol(A)\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 0.635026  0.0       0.0\n 0.0       0.635026  0.0\n 0.0       0.0       0.635026\n\njulia> vol(A) + dev(A) ≈ A\ntrue\n\n\n\n"
+},
+
+{
+    "location": "man/other_operators.html#Volumetric-tensor-1",
+    "page": "Other operators",
+    "title": "Volumetric tensor",
+    "category": "section",
+    "text": "The volumetric part of a second order tensor is defined bymathbfA^textvol = frac13 mathrmtracemathbfA mathbfI Leftrightarrow A_ij^textvol = frac13A_kkdelta_ijvol"
 },
 
 {
