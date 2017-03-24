@@ -5,7 +5,7 @@
     @inboundsret Eigen(Vec{1, T}((S[1, 1],)), one(Tensor{2, 1, T}))
 end
 
-@inline function Base.eigfact{T}(S::SymmetricTensor{2, 2, T})
+function Base.eigfact{T}(S::SymmetricTensor{2, 2, T})
     @inbounds begin
         # eigenvalues from quadratic formula
         trS_half = trace(S) / 2
@@ -36,7 +36,7 @@ end
 # A small part of the code in the following method was inspired by works of David
 # Eberly, Geometric Tools LLC, in code released under the Boost Software
 # License. See LICENSE.md
-@inline function Base.eigfact{T}(S::SymmetricTensor{2, 3, T})
+function Base.eigfact{T}(S::SymmetricTensor{2, 3, T})
     @inbounds begin
         R = typeof((one(T)*zero(T) + zero(T))/one(T))
         SR = convert(SymmetricTensor{2, 3, R}, S)
