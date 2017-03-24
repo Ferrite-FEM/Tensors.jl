@@ -49,19 +49,19 @@ end
             v1, v2, v3 = basevec(Vec{3, R})
             if S11 < S22
                 if S22 < S33
-                    return (Vec{3, R}((S11, S22, S33)), Tensor{2, 3, R}((v1[1], v1[2], v1[3], v2[1], v2[2], v2[3], v3[1], v3[2], v3[3])))
+                    return Eigen(Vec{3, R}((S11, S22, S33)), Tensor{2, 3, R}((v1[1], v1[2], v1[3], v2[1], v2[2], v2[3], v3[1], v3[2], v3[3])))
                 elseif S33 < S11
-                    return (Vec{3, R}((S33, S11, S22)), Tensor{2, 3, R}((v3[1], v3[2], v3[3], v2[1], v2[2], v2[3], v1[1], v1[2], v1[3])))
+                    return Eigen(Vec{3, R}((S33, S11, S22)), Tensor{2, 3, R}((v3[1], v3[2], v3[3], v2[1], v2[2], v2[3], v1[1], v1[2], v1[3])))
                 else
-                    return (Vec{3, R}((S11, S33, S22)), Tensor{2, 3, R}((v1[1], v1[2], v1[3], v3[1], v3[2], v3[3], v2[1], v2[2], v2[3])))
+                    return Eigen(Vec{3, R}((S11, S33, S22)), Tensor{2, 3, R}((v1[1], v1[2], v1[3], v3[1], v3[2], v3[3], v2[1], v2[2], v2[3])))
                 end
             else #S22 < S11
                 if S11 < S33
-                    return (Vec{3, R}((S22, S11, S33)), Tensor{2, 3, R}((v2[1], v2[2], v2[3], v1[1], v1[2], v1[3], v3[1], v3[2], v3[3])))
+                    return Eigen(Vec{3, R}((S22, S11, S33)), Tensor{2, 3, R}((v2[1], v2[2], v2[3], v1[1], v1[2], v1[3], v3[1], v3[2], v3[3])))
                 elseif S33 < S22
-                    return (Vec{3, R}((S33, S22, S11)), Tensor{2, 3, R}((v3[1], v3[2], v3[3], v2[1], v2[2], v2[3], v1[1], v1[2], v1[3])))
+                    return Eigen(Vec{3, R}((S33, S22, S11)), Tensor{2, 3, R}((v3[1], v3[2], v3[3], v2[1], v2[2], v2[3], v1[1], v1[2], v1[3])))
                 else
-                    return (Vec{3, R}((S22, S33, S11)), Tensor{2, 3, R}((v2[1], v2[2], v2[3], v3[1], v3[2], v3[3], v1[1], v1[2], v1[3])))
+                    return Eigen(Vec{3, R}((S22, S33, S11)), Tensor{2, 3, R}((v2[1], v2[2], v2[3], v3[1], v3[2], v3[3], v1[1], v1[2], v1[3])))
                 end
             end
         end
