@@ -37,19 +37,12 @@ end
 @inline Base.convert{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}, t::SymmetricTensor{order, dim, T, M}) = t
 
 # Change element type
-@generated function Base.convert{order, dim, T1, T2, N}(::Type{Tensor{order, dim, T1}}, t::Tensor{order, dim, T2, N})
-    exp = Expr(:tuple, [:(T1(get_data(t)[$i])) for i in 1:N]...)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return Tensor{order, dim}($exp)
-    end
+@inline function Base.convert{order, dim, T1, T2}(::Type{Tensor{order, dim, T1}}, t::Tensor{order, dim, T2})
+    apply_all(Tensor{order, dim}, @inline function(i) @inboundsret T1(t.data[i]); end)
 end
-@generated function Base.convert{order, dim, T1, T2, N}(::Type{SymmetricTensor{order, dim, T1}}, t::SymmetricTensor{order, dim, T2, N})
-    exp = Expr(:tuple, [:(T1(get_data(t)[$i])) for i in 1:N]...)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return SymmetricTensor{order, dim}($exp)
-    end
+
+@inline function Base.convert{order, dim, T1, T2}(::Type{SymmetricTensor{order, dim, T1}}, t::SymmetricTensor{order, dim, T2})
+    apply_all(SymmetricTensor{order, dim}, @inline function(i) @inboundsret T1(t.data[i]); end)
 end
 
 # Peel off the M but define these so that convert(typeof(...), ...) works
@@ -64,26 +57,14 @@ end
 @inline Base.convert{order, dim, T}(::Type{SymmetricTensor}, t::Tensor{order, dim, T}) = convert(SymmetricTensor{order, dim, T}, t)
 
 # SymmetricTensor -> Tensor
-# We unroll the creation by calling the compute_index function
-@generated function Base.convert{order, dim, T1, T2}(::Type{Tensor{order, dim, T1}}, t::SymmetricTensor{order, dim, T2})
-    exp = Expr(:tuple)
-    # Compute (row, col) from linear index
-    if order == 2
-        for j in 1:dim, i in 1:dim
-            push!(exp.args, :(T1(data[$(compute_index(SymmetricTensor{order, dim}, i, j))])))
-        end
-    else
-        for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
-            push!(exp.args, :(T1(data[$(compute_index(SymmetricTensor{order, dim}, i, j, k, l))])))
-        end
-    end
-    return quote
-        $(Expr(:meta, :inline))
-        data = get_data(t)
-        v = $exp
-        Tensor{order, dim}(v)
-    end
+function Base.convert{dim, T1, T2}(::Type{Tensor{2, dim, T1}}, t::SymmetricTensor{2, dim, T2})
+    Tensor{2, dim}(@inline function(i,j) @inboundsret T1(t[i,j]); end)
 end
+
+function Base.convert{dim, T1, T2}(::Type{Tensor{4, dim, T1}}, t::SymmetricTensor{4, dim, T2})
+    Tensor{4, dim}(@inline function(i,j,k,l) @inboundsret T1(t[i,j,k,l]); end)
+end
+
 
 # Tensor -> SymmetricTensor
 function Base.convert{dim, order, T1}(::Type{SymmetricTensor{order, dim, T1}}, t::Tensor{order, dim})
