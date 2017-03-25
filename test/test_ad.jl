@@ -21,6 +21,19 @@ const Kb = 1.66e11;
 S(C) = S(C, μ, Kb)
 
 @testsection "AD" begin
+
+    @testsection "scalars" begin
+        f = x -> cos(x)
+        @test gradient(f, 0.5) ≈ -sin(0.5)
+        @test gradient(f, 0.5, :all)[1] ≈ -sin(0.5)
+        @test gradient(f, 0.5, :all)[2] ≈ cos(0.5)
+
+        @test hessian(f, 0.5) ≈ -cos(0.5)
+        @test hessian(f, 0.5, :all)[1] ≈ -cos(0.5)
+        @test hessian(f, 0.5, :all)[2] ≈ -sin(0.5)
+        @test hessian(f, 0.5, :all)[3] ≈ cos(0.5)
+    end
+
     for dim in 1:3
         @testsection "dim $dim" begin
         F = one(Tensor{2,dim}) + rand(Tensor{2,dim});
