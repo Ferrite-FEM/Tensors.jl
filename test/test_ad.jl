@@ -58,6 +58,10 @@ S(C) = S(C, μ, Kb)
                 @test ∇(norm, A_sym, :all)[2] ≈ norm(A_sym)
                 @test ∇(v -> 3*v, v) ≈ ∇(v -> 3*v, v, :all)[1] ≈ diagm(Tensor{2, dim}, 3.0)
                 @test ∇(v -> 3*v, v, :all)[2] ≈ 3*v
+                # function does not return dual
+                @test ∇(A -> 1, A) ≈ ∇(A -> 1, A, :all)[1] ≈ zero(Tensor{2, dim, Int})
+                @test ∇(A -> 1, A, :all)[2] == 1
+                @test isa(∇(A -> 1, A), Tensor{2, dim, Int})
             end
 
             @testsection "2nd tensor grad" begin
@@ -92,6 +96,10 @@ S(C) = S(C, μ, Kb)
                 @test ∇(inv, A, :all)[2] ≈ inv(A)
                 @test ∇(inv, A_sym) ⊡ B_sym ≈ ∇(inv, A_sym, :all)[1] ⊡ B_sym ≈ - inv(A_sym) ⋅ B_sym ⋅ inv(A_sym)
                 @test ∇(inv, A_sym, :all)[2] ≈ inv(A_sym)
+                # function does not return dual
+                @test ∇(A -> B, A) ≈ ∇(A -> B, A, :all)[1] ≈ zero(Tensor{4, dim, T})
+                @test ∇(A -> B, A, :all)[2] ≈ B
+                @test isa(∇(A -> B, A), Tensor{4, dim, T})
             end
 
             # Hessians of scalars
@@ -99,6 +107,11 @@ S(C) = S(C, μ, Kb)
                 @test Δ(norm, A) ≈ Δ(norm, A, :all)[1] ≈ reshape(ForwardDiff.hessian(x -> sqrt(sum(abs2, x)), A), (dim, dim, dim, dim))
                 @test Array(Δ(norm, A, :all)[2]) ≈ reshape(ForwardDiff.gradient(x -> sqrt(sum(abs2, x)), A), (dim, dim))
                 @test Δ(norm, A, :all)[3] ≈ norm(A)
+                # function does not return dual
+                @test Δ(A -> 1, A) ≈ Δ(A -> 1, A, :all)[1] ≈ zero(Tensor{4, dim, Int})
+                @test Δ(A -> 1, A, :all)[2] ≈ zero(Tensor{2, dim, Int})
+                @test Δ(A -> 1, A, :all)[3] == 1
+                @test isa(Δ(A -> 1, A), Tensor{4, dim, Int})
             end
             end # loop T            
         end # testsection
