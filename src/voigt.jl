@@ -7,7 +7,8 @@ dimrange(::SymmetricTensor, i, dim) = i
 Converts a tensor to "Voigt"-format using the following index order:
 `[11, 22, 33, 23, 13, 12, 32, 31, 21]`.
 For `SymmetricTensor`s, the keyword argument `offdiagscale` sets a scaling factor
-on the offdiagonal elements
+on the offdiagonal elements. `tomandel` can also be used for "Mandel"-format
+which sets `offdiagscale = √2`.
 
 See also [`fromvoigt`](@ref).
 
@@ -46,6 +47,11 @@ function tovoigt end
 
 tovoigt(A::SymmetricTensor; offdiagscale::Real=one(eltype(A))) = _tovoigt(A, offdiagscale)
 tovoigt(A::Union{Tensor{2}, Tensor{4}}) = _tovoigt(A, one(eltype(A)))
+function tomandel(A::SymmetricTensor)
+    T = eltype(A)
+    offdiagscale = T(√2)
+    _tovoigt(A, offdiagscale)
+end
 
 function _tovoigt{dim,T}(A::SecondOrderTensor{dim, T}, offdiagscale)
     v = zeros(T, length(A.data))
@@ -72,7 +78,8 @@ end
 
 Converts an array `A` stored in Voigt format to a Tensor of type `T`.
 For `SymmetricTensor`s, the keyword argument `offdiagscale` sets an inverse scaling factor
-on the offdiagonal elements.
+on the offdiagonal elements. `frommandel` can also be used for "Mandel"-format
+which sets `offdiagscale = √2`.
 
 See also [`tovoigt`](@ref).
 
@@ -88,6 +95,11 @@ function fromvoigt end
 
 fromvoigt{dim}(A::Union{Type{SymmetricTensor{2,dim}}, Type{SymmetricTensor{4,dim}}}, v::AbstractVecOrMat; offdiagscale::Real=one(eltype(v))) = _fromvoigt(A, v, offdiagscale)
 fromvoigt{dim}(A::Union{Type{Tensor{2,dim}}, Type{Tensor{4,dim}}}, v::AbstractVecOrMat) = _fromvoigt(A, v, one(eltype(v)))
+function frommandel{dim}(A::Union{Type{SymmetricTensor{2,dim}}, Type{SymmetricTensor{4,dim}}}, v::AbstractVecOrMat)
+    T = eltype(v)
+    offdiagscale = T(√2)
+    _fromvoigt(A, v, offdiagscale)
+end
 
 function _fromvoigt{dim}(TT::Union{Type{Tensor{2,dim}}, Type{SymmetricTensor{2,dim}}}, v::AbstractVector, offdiagscale)
     length(v) == n_components(TT) || throw(ArgumentError("invalid input size of voigt array"))

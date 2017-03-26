@@ -260,6 +260,10 @@ end
     @test fromvoigt(Tensor{4,dim}, tovoigt(AA)) ≈ AA
     @test fromvoigt(SymmetricTensor{2,dim}, tovoigt(A_sym, offdiagscale=2), offdiagscale=2) ≈ A_sym
     @test fromvoigt(SymmetricTensor{4,dim}, tovoigt(AA_sym, offdiagscale=2), offdiagscale=2) ≈ AA_sym
+
+    @test tomandel(AA_sym) * tomandel(A_sym) ≈ tomandel(AA_sym ⊡ A_sym)
+    @test frommandel(SymmetricTensor{2,dim}, tomandel(A_sym)) ≈ A_sym
+    @test frommandel(SymmetricTensor{4,dim}, tomandel(AA_sym)) ≈ AA_sym
 end
 end # of testsection
 end # of testsection

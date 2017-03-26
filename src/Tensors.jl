@@ -13,7 +13,7 @@ export tdot, dott, dotdot
 export hessian#, gradient
 export basevec, eᵢ
 export rotate
-export tovoigt, fromvoigt
+export tovoigt, fromvoigt, tomandel, frommandel
 
 #########
 # Types #

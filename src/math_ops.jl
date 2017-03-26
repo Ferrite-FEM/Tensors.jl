@@ -158,9 +158,7 @@ function Base.inv{dim}(t::Tensor{4, dim})
 end
 
 function Base.inv{dim, T}(t::SymmetricTensor{4, dim, T})
-    # use mandel form to reduce order of symmetric tensor
-    s = T(√2)
-    fromvoigt(SymmetricTensor{4, dim}, inv(tovoigt(t, offdiagscale=s)), offdiagscale=s)
+    frommandel(SymmetricTensor{4, dim}, inv(tomandel(t)))
 end
 
 """
