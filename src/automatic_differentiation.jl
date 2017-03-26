@@ -13,6 +13,10 @@ import ForwardDiff: Dual, partials, value
 # For dim = 1 the type is exactly the same.
 
 # Scalar
+@inline function _extract_value{N, T}(v::Dual{N, T}, ::Real)
+    return value(v)
+end
+
 @inline function _extract_value{N, T}(v::Dual{N, T}, ::Vec{N})
     return value(v)
 end
@@ -103,6 +107,11 @@ end
     end
     return f
 end
+
+@inline function _extract_gradient{D <: Dual}(v::D, ::Any)
+    return partials(v)[1]
+end
+
 @inline function _extract_gradient{D <: Dual}(v::SymmetricTensor{2, 1, D}, ::Any)
     @inbounds begin
         p1 = partials(v[1,1])
@@ -155,7 +164,7 @@ end
     end
     return f
 end
-@inline function _extract_gradient{D <: Dual}(v::Tensor{2, 3, D}, ::Any)
+function _extract_gradient{D <: Dual}(v::Tensor{2, 3, D}, ::Any)
     @inbounds begin
         p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[3,1])
         p4, p5, p6 = partials(v[1,2]), partials(v[2,2]), partials(v[3,2])
@@ -181,7 +190,7 @@ end
     end
     return f
 end
-@inline function _extract_gradient{D <: Dual}(v::SymmetricTensor{2, 3, D}, ::Any)
+function _extract_gradient{D <: Dual}(v::SymmetricTensor{2, 3, D}, ::Any)
     @inbounds begin
         p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[3,1])
         p4, p5, p6 = partials(v[2,2]), partials(v[3,2]), partials(v[3,3])
@@ -201,6 +210,11 @@ end
 
 # Loaders are supposed to take a tensor of real values and convert it
 # into a tensor of dual values where the seeds are correctly defined.
+
+@inline function _load{T <: Real}(v::T)
+    @inbounds v_dual = Dual(v, one(T))
+    return v_dual
+end
 
 @inline function _load{T}(v::Vec{1, T})
     @inbounds v_dual = Vec{1}((Dual(v[1], one(T)),))
@@ -257,7 +271,7 @@ end
     return v_dual
 end
 
-@inline function _load{T}(v::Tensor{2, 3, T})
+function _load{T}(v::Tensor{2, 3, T})
     data = get_data(v)
     o = one(T)
     z = zero(T)
@@ -289,8 +303,8 @@ end
 
 """
 ```julia
-gradient(f::Function, v::Union{SecondOrderTensor, Vec})
-gradient(f::Function, v::Union{SecondOrderTensor, Vec}, :all)
+gradient(f::Function, v::Union{SecondOrderTensor, Vec, Real})
+gradient(f::Function, v::Union{SecondOrderTensor, Vec, Real}, :all)
 ```
 Computes the gradient of the input function. If the (pseudo)-keyword `all`
 is given, the value of the function is also returned as a second output argument.
@@ -308,12 +322,12 @@ julia> ∇f = gradient(norm, A)
 julia> ∇f, f = gradient(norm, A, :all);
 ```
 """
-function Base.gradient{F}(f::F, v::Union{SecondOrderTensor, Vec})
+function Base.gradient{F <: Function}(f::F, v::Union{SecondOrderTensor, Vec, Real})
     v_dual = _load(v)
     res = f(v_dual)
     return _extract_gradient(res, v)
 end
-function Base.gradient{F}(f::F, v::Union{SecondOrderTensor, Vec}, ::Symbol)
+function Base.gradient{F <: Function}(f::F, v::Union{SecondOrderTensor, Vec, Real}, ::Symbol)
     v_dual = _load(v)
     res = f(v_dual)
     return _extract_gradient(res, v), _extract_value(res, v)
@@ -321,8 +335,8 @@ end
 
 """
 ```julia
-hessian(f::Function, v::Union{SecondOrderTensor, Vec})
-hessian(f::Function, v::Union{SecondOrderTensor, Vec}, :all)
+hessian(f::Function, v::Union{SecondOrderTensor, Real})
+hessian(f::Function, v::Union{SecondOrderTensor, Vec, Real}, :all)
 ```
 Computes the hessian of the input function. If the (pseudo)-keyword `all`
 is given, the lower order results (gradient and value) of the function is
@@ -354,12 +368,12 @@ julia> ∇∇f = hessian(norm, A)
 julia> ∇∇f, ∇f, f = hessian(norm, A, :all);
 ```
 """
-function hessian{F}(f::F, v::Union{SecondOrderTensor, Vec})
+function hessian{F <: Function}(f::F, v::Union{SecondOrderTensor, Vec, Real})
     gradf = y -> gradient(f, y)
     return gradient(gradf, v)
 end
 
-function hessian{F}(f::F, v::Union{SecondOrderTensor, Vec}, ::Symbol)
+function hessian{F <: Function}(f::F, v::Union{SecondOrderTensor, Vec, Real}, ::Symbol)
     gradf = y -> gradient(f, y)
     return gradient(gradf, v), gradient(f, v, :all)...
 end
