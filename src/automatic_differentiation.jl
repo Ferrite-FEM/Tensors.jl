@@ -201,16 +201,15 @@ end
 end
 for TensorType in (Tensor, SymmetricTensor)
     @eval begin
-        @inline function _extract_gradient{T<:Real, order, dim}(v::T, x::$TensorType{order, dim})
-            N = n_components($TensorType{order, dim})
+        @inline function _extract_gradient{T<:Real, order, dim, T2, N}(v::T, x::$TensorType{order, dim, T2, N})
             $TensorType{order, dim, T}(zero_tuple(NTuple{N, T}))
         end
-        @generated function _extract_gradient{T<:Real, order, dim}(v::$TensorType{order, dim, T}, ::$TensorType{order, dim})
+        @generated function _extract_gradient{T<:Real, order, dim, T2, N}(v::$TensorType{order, dim, T, N}, ::$TensorType{order, dim, T2, N})
             RetType = $TensorType{order+order, dim}
-            N = n_components(RetType)
+            M = N * N
             return quote
                 $(Expr(:meta, :inline))
-                $RetType{T}(zero_tuple(NTuple{$N, T}))
+                $RetType{T}(zero_tuple(NTuple{$M, T}))
             end
         end
     end
