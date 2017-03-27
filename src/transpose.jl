@@ -28,7 +28,7 @@ julia> A'
     Tensor{2, dim}(@inline function(i, j) @inboundsret S[j,i]; end)
 end
 
-Base.transpose(S::SymmetricTensor{2}) = S
+@inline Base.transpose(S::SymmetricTensor{2}) = S
 
 """
 ```julia
@@ -40,8 +40,8 @@ Computes the minor transpose of a fourth order tensor.
     Tensor{4, dim}(@inline function(i, j, k, l) @inboundsret S[j,i,l,k]; end)
 end
 
-minortranspose(S::SymmetricTensor{4}) = S
-Base.transpose(S::FourthOrderTensor) = minortranspose(S)
+@inline minortranspose(S::SymmetricTensor{4}) = S
+@inline Base.transpose(S::FourthOrderTensor) = minortranspose(S)
 
 """
 ```julia
@@ -53,4 +53,4 @@ Computes the major transpose of a fourth order tensor.
     Tensor{4, dim}(@inline function(i, j, k, l) @inboundsret S[k,l,i,j]; end)
 end
 
-Base.ctranspose(S::AllTensors) = transpose(S)
+@inline Base.ctranspose(S::AllTensors) = transpose(S)
