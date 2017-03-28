@@ -11,6 +11,7 @@ export otimes, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, m
 export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric
 export tdot, dott, dotdot
 export hessian#, gradient
+export By
 export basevec, eᵢ
 export rotate
 export tovoigt, fromvoigt, tomandel, frommandel
@@ -121,6 +122,7 @@ include("indexing.jl")
 include("utilities.jl")
 include("tensor_ops_errors.jl")
 include("automatic_differentiation.jl")
+include("prime_differentiation.jl")
 include("promotion_conversion.jl")
 include("constructors.jl")
 include("basic_operations.jl")

@@ -1,3 +1,4 @@
+Tensors.@use_prime_diff
 const ∇ = Tensors.gradient
 const Δ = Tensors.hessian
 
@@ -27,12 +28,12 @@ S(C) = S(C, μ, Kb)
         C = tdot(F);
         C2 = F' ⋅ F;
 
-        @test 2∇(Ψ, C) ≈ S(C)
-        @test 2∇(Ψ, C2) ≈ S(C2)
+        @test 2∇(Ψ, C) ≈ 2Ψ'(By{1}, C) ≈ S(C)
+        @test 2∇(Ψ, C2) ≈ 2Ψ'(By{1}, C2) ≈ S(C2)
 
         b = rand(SymmetricTensor{2, dim})
-        @test 2 * Δ(Ψ, C) ⊡ b ≈ ∇(S, C) ⊡ b
-        @test 2 * Δ(Ψ, C2) ⊡ b ≈ ∇(S, C2) ⊡ b
+        @test 2 * Δ(Ψ, C) ⊡ b ≈ 2Ψ''(By{1}, C) ⊡ b ≈ ∇(S, C) ⊡ b
+        @test 2 * Δ(Ψ, C2) ⊡ b ≈ 2Ψ''(By{1}, C2) ⊡ b ≈ ∇(S, C2) ⊡ b
 
         @test ∇(Ψ, C) ≈ ∇(Ψ, C2)
         @test ∇(S, C) ⊡ b ≈ ∇(S, C2) ⊡ b
@@ -50,16 +51,16 @@ S(C) = S(C, μ, Kb)
 
             # Gradient of scalars
             @testsection "scalar grad" begin
-                @test ∇(norm, v) ≈ ∇(norm, v, :all)[1] ≈ v / norm(v)
+                @test ∇(norm, v) ≈ ∇(norm, v, :all)[1] ≈ norm'(v) ≈ v / norm(v)
                 @test ∇(norm, v, :all)[2] ≈ norm(v)
-                @test ∇(norm, A) ≈ ∇(norm, A, :all)[1] ≈ A / norm(A)
+                @test ∇(norm, A) ≈ ∇(norm, A, :all)[1] ≈ norm'(A) ≈ A / norm(A)
                 @test ∇(norm, A, :all)[2] ≈ norm(A)
-                @test ∇(norm, A_sym) ≈ ∇(norm, A_sym, :all)[1] ≈ A_sym / norm(A_sym)
+                @test ∇(norm, A_sym) ≈ ∇(norm, A_sym, :all)[1] ≈ norm'(A_sym) ≈ A_sym / norm(A_sym)
                 @test ∇(norm, A_sym, :all)[2] ≈ norm(A_sym)
-                @test ∇(v -> 3*v, v) ≈ ∇(v -> 3*v, v, :all)[1] ≈ diagm(Tensor{2, dim}, 3.0)
+                @test ∇(v -> 3*v, v) ≈ ∇(v -> 3*v, v, :all)[1] ≈ (v -> 3*v)'(v) ≈ diagm(Tensor{2, dim}, 3.0)
                 @test ∇(v -> 3*v, v, :all)[2] ≈ 3*v
                 # function does not return dual
-                @test ∇(A -> 1, A) ≈ ∇(A -> 1, A, :all)[1] ≈ zero(Tensor{2, dim, Int})
+                @test ∇(A -> 1, A) ≈ ∇(A -> 1, A, :all)[1] ≈ (A -> 1)'(A) ≈ zero(Tensor{2, dim, Int})
                 @test ∇(A -> 1, A, :all)[2] == 1
                 @test isa(∇(A -> 1, A), Tensor{2, dim, Int})
             end
@@ -71,44 +72,44 @@ S(C) = S(C, μ, Kb)
                 I2, DI2 = A -> 1/2 * (trace(A)^2 - trace(A⋅A)), A -> I1(A) * one(A) - A'
                 I3, DI3 = A -> det(A), A -> det(A) * inv(A)'
 
-                @test ∇(I1, A) ≈ ∇(I1, A, :all)[1] ≈ DI1(A)
+                @test ∇(I1, A) ≈ ∇(I1, A, :all)[1] ≈ I1'(A) ≈ DI1(A)
                 @test ∇(I1, A, :all)[2] ≈ I1(A)
-                @test ∇(I2, A) ≈ ∇(I2, A, :all)[1] ≈ DI2(A)
+                @test ∇(I2, A) ≈ ∇(I2, A, :all)[1] ≈ I2'(A) ≈ DI2(A)
                 @test ∇(I2, A, :all)[2] ≈ I2(A)
-                @test ∇(I3, A) ≈ ∇(I3, A, :all)[1] ≈ DI3(A)
+                @test ∇(I3, A) ≈ ∇(I3, A, :all)[1] ≈ I3'(A) ≈ DI3(A)
                 @test ∇(I3, A, :all)[2] ≈ I3(A)
-                @test ∇(I1, A_sym) ≈ ∇(I1, A_sym, :all)[1] ≈ DI1(A_sym)
+                @test ∇(I1, A_sym) ≈ ∇(I1, A_sym, :all)[1] ≈ I1'(A_sym) ≈ DI1(A_sym)
                 @test ∇(I1, A_sym, :all)[2] ≈ I1(A_sym)
-                @test ∇(I2, A_sym) ≈ ∇(I2, A_sym, :all)[1] ≈ DI2(A_sym)
+                @test ∇(I2, A_sym) ≈ ∇(I2, A_sym, :all)[1] ≈ I2'(A_sym) ≈ DI2(A_sym)
                 @test ∇(I2, A_sym, :all)[2] ≈ I2(A_sym)
-                @test ∇(I3, A_sym) ≈ ∇(I3, A_sym, :all)[1] ≈ DI3(A_sym)
+                @test ∇(I3, A_sym) ≈ ∇(I3, A_sym, :all)[1] ≈ I3'(A_sym) ≈ DI3(A_sym)
                 @test ∇(I3, A_sym, :all)[2] ≈ I3(A_sym)
 
-                @test ∇(identity, A) ≈ ∇(identity, A, :all)[1] ≈ II
+                @test ∇(identity, A) ≈ ∇(identity, A, :all)[1] ≈ identity'(A) ≈ II
                 @test ∇(identity, A, :all)[2] ≈ A
-                @test ∇(identity, A_sym) ≈ ∇(identity, A_sym, :all)[1] ≈ II_sym
+                @test ∇(identity, A_sym) ≈ ∇(identity, A_sym, :all)[1] ≈ identity'(A_sym) ≈ II_sym
                 @test ∇(identity, A_sym, :all)[2] ≈ A_sym
-                @test ∇(transpose, A) ⊡ B ≈ ∇(transpose, A, :all)[1] ⊡ B ≈ B'
+                @test ∇(transpose, A) ⊡ B ≈ ∇(transpose, A, :all)[1] ⊡ B ≈ transpose'(A) ⊡ B ≈ B'
                 @test ∇(transpose, A, :all)[2] ≈ A'
-                @test ∇(transpose, A_sym) ⊡ B_sym ≈ ∇(transpose, A_sym, :all)[1] ⊡ B_sym ≈ B_sym'
+                @test ∇(transpose, A_sym) ⊡ B_sym ≈ ∇(transpose, A_sym, :all)[1] ⊡ B_sym ≈ transpose'(A_sym) ⊡ B_sym ≈ B_sym'
                 @test ∇(transpose, A_sym, :all)[2] ≈ A_sym'
-                @test ∇(inv, A) ⊡ B ≈ ∇(inv, A, :all)[1] ⊡ B ≈ - inv(A) ⋅ B ⋅ inv(A)
+                @test ∇(inv, A) ⊡ B ≈ ∇(inv, A, :all)[1] ⊡ B ≈ inv'(A) ⊡ B ≈ - inv(A) ⋅ B ⋅ inv(A)
                 @test ∇(inv, A, :all)[2] ≈ inv(A)
-                @test ∇(inv, A_sym) ⊡ B_sym ≈ ∇(inv, A_sym, :all)[1] ⊡ B_sym ≈ - inv(A_sym) ⋅ B_sym ⋅ inv(A_sym)
+                @test ∇(inv, A_sym) ⊡ B_sym ≈ ∇(inv, A_sym, :all)[1] ⊡ B_sym ≈ inv'(A_sym) ⊡ B_sym ≈ - inv(A_sym) ⋅ B_sym ⋅ inv(A_sym)
                 @test ∇(inv, A_sym, :all)[2] ≈ inv(A_sym)
                 # function does not return dual
-                @test ∇(A -> B, A) ≈ ∇(A -> B, A, :all)[1] ≈ zero(Tensor{4, dim, T})
+                @test ∇(A -> B, A) ≈ ∇(A -> B, A, :all)[1] ≈ (A->B)'(A) ≈ zero(Tensor{4, dim, T})
                 @test ∇(A -> B, A, :all)[2] ≈ B
                 @test isa(∇(A -> B, A), Tensor{4, dim, T})
             end
 
             # Hessians of scalars
             @testsection "hessian" begin
-                @test Δ(norm, A) ≈ Δ(norm, A, :all)[1] ≈ reshape(ForwardDiff.hessian(x -> sqrt(sum(abs2, x)), A), (dim, dim, dim, dim))
+                @test Δ(norm, A) ≈ Δ(norm, A, :all)[1] ≈ norm''(A) ≈ reshape(ForwardDiff.hessian(x -> sqrt(sum(abs2, x)), A), (dim, dim, dim, dim))
                 @test Array(Δ(norm, A, :all)[2]) ≈ reshape(ForwardDiff.gradient(x -> sqrt(sum(abs2, x)), A), (dim, dim))
                 @test Δ(norm, A, :all)[3] ≈ norm(A)
                 # function does not return dual
-                @test Δ(A -> 1, A) ≈ Δ(A -> 1, A, :all)[1] ≈ zero(Tensor{4, dim, Int})
+                @test Δ(A -> 1, A) ≈ Δ(A -> 1, A, :all)[1] ≈ (A->1)''(A) ≈ zero(Tensor{4, dim, Int})
                 @test Δ(A -> 1, A, :all)[2] ≈ zero(Tensor{2, dim, Int})
                 @test Δ(A -> 1, A, :all)[3] == 1
                 @test isa(Δ(A -> 1, A), Tensor{4, dim, Int})
