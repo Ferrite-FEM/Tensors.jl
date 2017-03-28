@@ -23,8 +23,8 @@ end
 
 @inline (p::PrimeDiff)(x) = gradient(p.f, x)
 
-macro use_prime_diff()
-    :(@inline Base.ctranspose{F <: Function}(f::F) = PrimeDiff{1}(f))
+function use_prime_diff()
+    @inline Base.ctranspose{F <: Function}(f::F) = Tensors.PrimeDiff{1}(f)
 end
 
 immutable By{N} end

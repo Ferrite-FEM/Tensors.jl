@@ -1,4 +1,4 @@
-Tensors.@use_prime_diff
+Tensors.use_prime_diff()
 const ∇ = Tensors.gradient
 const Δ = Tensors.hessian
 
