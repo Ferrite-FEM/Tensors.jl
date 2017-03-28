@@ -43,7 +43,7 @@ julia> zero(SymmetricTensor{4, 2, Float32})
  0.0  0.0
 ```
 
-A Julia `Array` with zeroed tensors can be created with `zeroes`, with the tensor type and dimensions of the array as arguments:
+A Julia `Array` with zeroed tensors can be created with `zeros`, with the tensor type and dimensions of the array as arguments:
 
 ```jldoctest
 julia> zeros(Tensor{2,2}, 2, 3)
