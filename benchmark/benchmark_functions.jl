@@ -81,6 +81,10 @@ for dim in (ALL_DIMENSIONS ? (1,2,3) : (3,))
                 SUITE["basic-operations"]["SymmetricTensor{2, $dim, $T} $f SymmetricTensor{2, $dim, $T}"] = @benchmarkable $f($V2sym, $V2sym)
                 SUITE["basic-operations"]["Tensor{4, $dim, $T} $f Tensor{4, $dim, $T}"]                   = @benchmarkable $f($V4, $V4)
                 SUITE["basic-operations"]["SymmetricTensor{4, $dim, $T} $f SymmetricTensor{4, $dim, $T}"] = @benchmarkable $f($V4sym, $V4sym)
+                if MIXED_SYM_NONSYM
+                    SUITE["basic-operations"]["Tensor{2, $dim, $T} $f SymmetricTensor{2, $dim, $T}"]      = @benchmarkable $f($V2, $V2sym)
+                    SUITE["basic-operations"]["Tensor{4, $dim, $T} $f SymmetricTensor{4, $dim, $T}"]      = @benchmarkable $f($V4, $V4sym)
+                end
             end
             for f in (:*, :/)
                 n = rand(T)
