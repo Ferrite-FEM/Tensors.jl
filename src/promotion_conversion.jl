@@ -5,26 +5,33 @@
 # Promotion between two tensors promote the eltype and promotes
 # symmetric tensors to tensors
 
-function Base.promote_rule{dim , A <: Number, B <: Number, order, M}(::Type{SymmetricTensor{order, dim, A, M}},
+@inline function Base.promote_rule{dim , A <: Number, B <: Number, order, M}(::Type{SymmetricTensor{order, dim, A, M}},
                                                                      ::Type{SymmetricTensor{order, dim, B, M}})
     SymmetricTensor{order, dim, promote_type(A, B), M}
 end
 
-function Base.promote_rule{dim , A <: Number, B <: Number, order, M}(::Type{Tensor{order, dim, A, M}},
+@inline function Base.promote_rule{dim , A <: Number, B <: Number, order, M}(::Type{Tensor{order, dim, A, M}},
                                                                      ::Type{Tensor{order, dim, B, M}})
     Tensor{order, dim, promote_type(A, B), M}
 end
 
-function Base.promote_rule{dim , A <: Number, B <: Number, order, M1, M2}(::Type{SymmetricTensor{order, dim, A, M1}},
+@inline function Base.promote_rule{dim , A <: Number, B <: Number, order, M1, M2}(::Type{SymmetricTensor{order, dim, A, M1}},
                                                                           ::Type{Tensor{order, dim, B, M2}})
     Tensor{order, dim, promote_type(A, B), M2}
 end
 
-function Base.promote_rule{dim , A <: Number, B <: Number, order, M1, M2}(::Type{Tensor{order, dim, A, M1}},
+@inline function Base.promote_rule{dim , A <: Number, B <: Number, order, M1, M2}(::Type{Tensor{order, dim, A, M1}},
                                                                           ::Type{SymmetricTensor{order, dim, B, M2}})
     Tensor{order, dim, promote_type(A, B), M1}
 end
 
+# define a base promotion that only promotes SymmetricTensor to Tensor but leaves eltype
+@inline function promote_base{order, dim}(S1::Tensor{order, dim}, S2::SymmetricTensor{order, dim})
+    return S1, convert(Tensor{order, dim}, S2)
+end
+@inline function promote_base{order, dim}(S1::SymmetricTensor{order, dim}, S2::Tensor{order, dim})
+    return convert(Tensor{order, dim}, S1), S2
+end
 
 ###############
 # Conversions #
