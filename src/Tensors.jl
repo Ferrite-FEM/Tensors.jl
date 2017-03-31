@@ -38,8 +38,6 @@ end
 ###############
 @compat const Vec{dim, T, M} = Tensor{1, dim, T, dim}
 
-@compat const AnyTensor{order, dim, T} = Union{SymmetricTensor{order, dim, T}, Tensor{order, dim, T}}
-
 @compat const AllTensors{dim, T} = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T},
                                          SymmetricTensor{4, dim, T}, Tensor{4, dim, T},
                                          Vec{dim, T}}

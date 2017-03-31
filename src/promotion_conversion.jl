@@ -25,6 +25,13 @@ end
     Tensor{order, dim, promote_type(A, B), M1}
 end
 
+# define a base promotion that only promotes SymmetricTensor to Tensor but leaves eltype
+@inline function promote_base{order, dim}(S1::Tensor{order, dim}, S2::SymmetricTensor{order, dim})
+    return S1, convert(Tensor{order, dim}, S2)
+end
+@inline function promote_base{order, dim}(S1::SymmetricTensor{order, dim}, S2::Tensor{order, dim})
+    return convert(Tensor{order, dim}, S1), S2
+end
 
 ###############
 # Conversions #
