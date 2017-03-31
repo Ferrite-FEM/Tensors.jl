@@ -25,6 +25,11 @@ end
     Tensor{order, dim, promote_type(A, B), M1}
 end
 
+# define our own inlined promote
+@inline function Base.promote{T <: AbstractTensor, S <: AbstractTensor}(S1::T, S2::S)
+    (convert(promote_type(T, S), S1), convert(promote_type(T, S), S2))
+end
+
 # define a base promotion that only promotes SymmetricTensor to Tensor but leaves eltype
 @inline function promote_base{order, dim}(S1::Tensor{order, dim}, S2::SymmetricTensor{order, dim})
     return S1, convert(Tensor{order, dim}, S2)
@@ -64,17 +69,17 @@ end
 @inline Base.convert{order, dim, T}(::Type{SymmetricTensor}, t::Tensor{order, dim, T}) = convert(SymmetricTensor{order, dim, T}, t)
 
 # SymmetricTensor -> Tensor
-function Base.convert{dim, T1, T2}(::Type{Tensor{2, dim, T1}}, t::SymmetricTensor{2, dim, T2})
+@inline function Base.convert{dim, T1, T2}(::Type{Tensor{2, dim, T1}}, t::SymmetricTensor{2, dim, T2})
     Tensor{2, dim}(@inline function(i,j) @inboundsret T1(t[i,j]); end)
 end
 
-function Base.convert{dim, T1, T2}(::Type{Tensor{4, dim, T1}}, t::SymmetricTensor{4, dim, T2})
+@inline function Base.convert{dim, T1, T2}(::Type{Tensor{4, dim, T1}}, t::SymmetricTensor{4, dim, T2})
     Tensor{4, dim}(@inline function(i,j,k,l) @inboundsret T1(t[i,j,k,l]); end)
 end
 
 
 # Tensor -> SymmetricTensor
-function Base.convert{dim, order, T1}(::Type{SymmetricTensor{order, dim, T1}}, t::Tensor{order, dim})
+@inline function Base.convert{dim, order, T1}(::Type{SymmetricTensor{order, dim, T1}}, t::Tensor{order, dim})
     if issymmetric(t)
         return convert(SymmetricTensor{order, dim, T1}, symmetric(t))
     else
