@@ -9,11 +9,11 @@
 # Binary
 @inline Base.:+{order, dim}(S1::Tensor{order, dim}, S2::Tensor{order, dim}) = _map(+, S1, S2)
 @inline Base.:+{order, dim}(S1::SymmetricTensor{order, dim}, S2::SymmetricTensor{order, dim}) = _map(+, S1, S2)
-@inline Base.:+{order, dim}(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) = ((SS1, SS2) = promote_base(S1, S2); _map(+, SS1, SS2))
+@inline Base.:+{order, dim}(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) = ((SS1, SS2) = promote_base(S1, S2); SS1 + SS2)
 
 @inline Base.:-{order, dim}(S1::Tensor{order, dim}, S2::Tensor{order, dim}) = _map(-, S1, S2)
 @inline Base.:-{order, dim}(S1::SymmetricTensor{order, dim}, S2::SymmetricTensor{order, dim}) = _map(-, S1, S2)
-@inline Base.:-{order, dim}(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) = ((SS1, SS2) = promote_base(S1, S2); _map(-, SS1, SS2))
+@inline Base.:-{order, dim}(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) = ((SS1, SS2) = promote_base(S1, S2); SS1 - SS2)
 
 @inline Base.:*(S::AbstractTensor, n::Number) = _map(x -> x*n, S)
 @inline Base.:*(n::Number, S::AbstractTensor) = _map(x -> n*x, S)
