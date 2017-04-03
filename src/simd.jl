@@ -194,6 +194,8 @@ end
 ############
 # (3): dot #
 ############
+# 2s-1
+@inline Base.dot{dim, T <: SIMDTypes}(S1::SymmetricTensor{2, dim, T}, S2::Vec{dim, T}) = dot(promote(S1), S2)
 # 2-1
 @inline function Base.dot{T <: SIMDTypes, N}(S1::Tensor{2, 2, T, N}, S2::Vec{2, T})
     @inbounds begin
@@ -215,6 +217,10 @@ end
     end
 end
 
+# 2s-2 / 2-2s
+@inline function Base.dot{dim, T <: SIMDTypes}(S1::AbstractTensor{2, dim, T}, S2::AbstractTensor{2, dim, T})
+    SS1, SS2 = promote_base(S1, S2); dot(SS1, SS2)
+end
 # 2-2
 @inline function Base.dot{T <: SIMDTypes}(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
@@ -242,6 +248,10 @@ end
 ##################
 # (4): dcontract #
 ##################
+# 2s-2 / 2-2s
+@inline function dcontract{dim, T <: SIMDTypes}(S1::AbstractTensor{2, dim, T}, S2::AbstractTensor{2, dim, T})
+    SS1, SS2 = promote_base(S1, S2); dcontract(SS1, SS2)
+end
 # 2-2
 @inline function dcontract{dim, T <: SIMDTypes, N}(S1::Tensor{2, dim, T, N}, S2::Tensor{2, dim, T, N})
     SV1 = tosimd(get_data(S1))
@@ -262,6 +272,8 @@ end
     end
 end
 
+# 4-2s
+@inline dcontract{T <: SIMDTypes}(S1::Tensor{4, 3, T}, S2::SymmetricTensor{2, 3, T}) = dcontract(S1, promote(S2))
 # 4-2
 @inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
@@ -306,6 +318,10 @@ end
     end
 end
 
+# 4s-4 / 4-4s
+@inline function dcontract{dim, T <: SIMDTypes}(S1::AbstractTensor{4, dim, T}, S2::AbstractTensor{4, dim, T})
+    SS1, SS2 = promote_base(S1, S2); dcontract(SS1, SS2)
+end
 # 4-4
 @inline function dcontract{T <: SIMDTypes}(S1::Tensor{4, 2, T}, S2::Tensor{4, 2, T})
     @inbounds begin
@@ -403,6 +419,7 @@ end
 ###############
 # (5): otimes #
 ###############
+# 1-1
 @inline function otimes{T <: SIMDTypes}(S1::Vec{2, T}, S2::Vec{2, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
@@ -420,6 +437,13 @@ end
         return Tensor{2, 3}((r1, r2, r3))
     end
 end
+
+# 2s-2 / 2-2s
+@inline function otimes{dim, T <: SIMDTypes}(S1::AbstractTensor{2, dim, T}, S2::AbstractTensor{2, dim, T})
+    SS1, SS2 = promote_base(S1, S2); otimes(SS1, SS2)
+end
+
+# 2-2
 @inline function otimes{T <: SIMDTypes}(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
@@ -438,6 +462,8 @@ end
         return Tensor{4, 3}((r1, r2, r3, r4, r5, r6, r7, r8, r9))
     end
 end
+
+# 2s-2s
 @inline function otimes{T <: SIMDTypes}(S1::SymmetricTensor{2, 2, T}, S2::SymmetricTensor{2, 2, T})
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)

@@ -5,32 +5,33 @@
 # Promotion between two tensors promote the eltype and promotes
 # symmetric tensors to tensors
 
-@inline function Base.promote_rule{dim , A <: Number, B <: Number, order, M}(::Type{SymmetricTensor{order, dim, A, M}},
-                                                                     ::Type{SymmetricTensor{order, dim, B, M}})
+@inline function Base.promote_rule{dim, A, B, order, M}(::Type{SymmetricTensor{order, dim, A, M}},
+                                                        ::Type{SymmetricTensor{order, dim, B, M}})
     SymmetricTensor{order, dim, promote_type(A, B), M}
 end
 
-@inline function Base.promote_rule{dim , A <: Number, B <: Number, order, M}(::Type{Tensor{order, dim, A, M}},
-                                                                     ::Type{Tensor{order, dim, B, M}})
+@inline function Base.promote_rule{dim, A, B, order, M}(::Type{Tensor{order, dim, A, M}},
+                                                        ::Type{Tensor{order, dim, B, M}})
     Tensor{order, dim, promote_type(A, B), M}
 end
 
-@inline function Base.promote_rule{dim , A <: Number, B <: Number, order, M1, M2}(::Type{SymmetricTensor{order, dim, A, M1}},
-                                                                          ::Type{Tensor{order, dim, B, M2}})
+@inline function Base.promote_rule{dim, A, B, order, M1, M2}(::Type{SymmetricTensor{order, dim, A, M1}},
+                                                             ::Type{Tensor{order, dim, B, M2}})
     Tensor{order, dim, promote_type(A, B), M2}
 end
 
-@inline function Base.promote_rule{dim , A <: Number, B <: Number, order, M1, M2}(::Type{Tensor{order, dim, A, M1}},
-                                                                          ::Type{SymmetricTensor{order, dim, B, M2}})
+@inline function Base.promote_rule{dim, A, B, order, M1, M2}(::Type{Tensor{order, dim, A, M1}},
+                                                             ::Type{SymmetricTensor{order, dim, B, M2}})
     Tensor{order, dim, promote_type(A, B), M1}
 end
 
-# define our own inlined promote
+# inlined promote (promote in Base is not inlined)
 @inline function Base.promote{T <: AbstractTensor, S <: AbstractTensor}(S1::T, S2::S)
-    (convert(promote_type(T, S), S1), convert(promote_type(T, S), S2))
+    return convert(promote_type(T, S), S1), convert(promote_type(T, S), S2)
 end
+@inline Base.promote{order, dim, T}(S1::AbstractTensor{order, dim, T}) = convert(Tensor{order, dim, T}, S1)
 
-# define a base promotion that only promotes SymmetricTensor to Tensor but leaves eltype
+# base promotion that only promotes SymmetricTensor to Tensor but leaves eltype
 @inline function promote_base{order, dim}(S1::Tensor{order, dim}, S2::SymmetricTensor{order, dim})
     return S1, convert(Tensor{order, dim}, S2)
 end
@@ -76,7 +77,6 @@ end
 @inline function Base.convert{dim, T1, T2}(::Type{Tensor{4, dim, T1}}, t::SymmetricTensor{4, dim, T2})
     Tensor{4, dim}(@inline function(i,j,k,l) @inboundsret T1(t[i,j,k,l]); end)
 end
-
 
 # Tensor -> SymmetricTensor
 @inline function Base.convert{dim, order, T1}(::Type{SymmetricTensor{order, dim, T1}}, t::Tensor{order, dim})
