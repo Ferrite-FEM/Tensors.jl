@@ -287,7 +287,7 @@ end
         SV18 = tosimd(D1, Val{64}, Val{72})
         SV19 = tosimd(D1, Val{73}, Val{81})
         r = muladd(SV19, D2[9], muladd(SV18, D2[8], muladd(SV17, D2[7], muladd(SV16, D2[6], muladd(SV15, D2[5], muladd(SV14, D2[4], muladd(SV13, D2[3], muladd(SV12, D2[2], SV11 * D2[1]))))))))
-        return return Tensor{2, 3}(r)
+        return Tensor{2, 3}(r)
     end
 end
 @inline function dcontract{T <: SIMDTypes}(S1::SymmetricTensor{4, 3, T}, S2::SymmetricTensor{2, 3, T})
@@ -357,7 +357,7 @@ end
         D21 = D2[1]; D22 = D2[2] + D2[4]; D23 = D2[3] + D2[7]
         D24 = D2[5]; D25 = D2[6] + D2[8]; D26 = D2[9]
         r = muladd(SV16, D26, muladd(SV15, D25, muladd(SV14, D24, muladd(SV13, D23, muladd(SV12, D22, SV11 * D21)))))
-        return return SymmetricTensor{2, 3}(r)
+        return SymmetricTensor{2, 3}(r)
     end
 end
 @inline function dcontract{T <: SIMDTypes}(S1::SymmetricTensor{4, 2, T}, S2::SymmetricTensor{4, 2, T})
