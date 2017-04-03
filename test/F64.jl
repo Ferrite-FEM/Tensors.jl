@@ -13,7 +13,7 @@ end
 for op in(:zero, :one)
     @eval Base.$op(::Type{F64}) = F64($op(Float64))
 end
-Base.rand(rng::AbstractRNG, F64) = F64(rand())
+Base.rand(rng::AbstractRNG, ::Type{F64}) = F64(rand())
 Base.sqrt(a::F64) = F64(sqrt(a.x))
 
 # comparison
