@@ -157,6 +157,15 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Te
 
         @test (@inferred -t) == zero(t) - t
         @test isa(-t, $TensorType{$order, $dim})
+
+        if $order == 2
+            # Power by integer: ^
+            @test t^0 ≈ one(t)
+            @test t^1 ≈ t
+            @test t^2 ≈ t ⋅ t
+            @test t^3 ≈ t ⋅ t ⋅ t
+            @test t^-1 ≈ inv(t)
+        end
     end
 end
 end # of testset
