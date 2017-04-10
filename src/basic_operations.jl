@@ -19,6 +19,22 @@
 @inline Base.:*(n::Number, S::AbstractTensor) = _map(x -> n*x, S)
 @inline Base.:/(S::AbstractTensor, n::Number) = _map(x -> x/n, S)
 
+# squaring method should be used for performance
+function Base.:^(S::SecondOrderTensor, p::Int)
+    if p == 1
+        return S
+    elseif p == 0
+        return one(S)
+    elseif p < 0
+        return inv(S)^(-p)
+    end
+    t = S
+    for _ in 2:p
+        t = t ⋅ S
+    end
+    return t
+end
+
 Base.:+(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimension and order must match"))
 Base.:-(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimension and order must match"))
 
