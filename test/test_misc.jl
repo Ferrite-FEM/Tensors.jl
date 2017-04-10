@@ -159,13 +159,14 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Te
         @test isa(-t, $TensorType{$order, $dim})
 
         if $order == 2
-            # Power integer: ^
-            @test t^0 ≈ one(t)
-            @test t^1 ≈ t
-            @test t^2 ≈ t ⋅ t
-            @test t^3 ≈ t ⋅ t ⋅ t
-            @test t^-1 ≈ inv(t)
-            @test t^-2 ≈ inv(t) ⋅ inv(t)
+            # Power by literal integer
+            @test (t^0)::typeof(t)  ≈ one(t)
+            @test (t^1)::typeof(t)  ≈ t
+            @test (t^2)::typeof(t)  ≈ t ⋅ t
+            @test (t^3)::typeof(t)  ≈ t ⋅ t ⋅ t
+            @test (t^-1)::typeof(t) ≈ inv(t)
+            @test (t^-2)::typeof(t) ≈ inv(t) ⋅ inv(t)
+            @test (t^-3)::typeof(t) ≈ inv(t) ⋅ inv(t) ⋅ inv(t)
         end
     end
 end
