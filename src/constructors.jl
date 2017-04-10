@@ -103,8 +103,8 @@ Base.fill{T <: AbstractTensor}(el::Number, S::Type{T}) = apply_all(get_base(T), 
 Base.fill{T <: AbstractTensor}(f::Function, S::Type{T}) = apply_all(get_base(T), i -> f())
 
 # Array with zero/ones
-@inline Base.zeros{T <: AbstractTensor}(::Type{T}, dims...) = fill(zero(T), dims...)
-@inline Base.ones{T <: AbstractTensor}(::Type{T}, dims...) = fill(one(T), dims...)
+@inline Base.zeros{T <: AbstractTensor}(::Type{T}, dims::Int...) = fill!(Array{typeof(zero(T))}(dims), zero(T))
+@inline Base.ones{T <: AbstractTensor}(::Type{T}, dims::Int...) = fill!(Array{typeof(one(T))}(dims), one(T))
 
 # diagm
 @generated function Base.diagm{T <: SecondOrderTensor}(S::Type{T}, v::Union{AbstractVector, Tuple})
