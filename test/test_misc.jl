@@ -6,18 +6,10 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
             TensorType == SymmetricTensor && order == 1 && continue
             @eval begin
                 N = Tensors.n_components($TensorType{$order, $dim})
-
-                t = @inferred $(op)($TensorType{$order, $dim})
-                @test isa(t, $TensorType{$order, $dim, Float64})
-
-                t = @inferred $(op)($TensorType{$order, $dim, $T})
-                @test isa(t, $TensorType{$order, $dim, $T})
-
-                t = @inferred $(op)($TensorType{$order, $dim, $T, N})
-                @test isa(t, $TensorType{$order, $dim, $T})
-
-                t = @inferred $(op)(t)
-                @test isa(t, $TensorType{$order, $dim, $T})
+                t = (@inferred $(op)($TensorType{$order, $dim}))::$TensorType{$order, $dim, Float64}
+                t = (@inferred $(op)($TensorType{$order, $dim, $T}))::$TensorType{$order, $dim, $T}
+                t = (@inferred $(op)($TensorType{$order, $dim, $T, N}))::$TensorType{$order, $dim, $T}
+                t = (@inferred $(op)(t))::$TensorType{$order, $dim, $T}
 
                 $op == zero && @test zero($TensorType{$order, $dim, $T}) == zeros($T, size(t))
                 $op == ones && @test ones($TensorType{$order, $dim, $T}) == ones($T, size(t))
@@ -26,13 +18,8 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
         # Vec
         if order == 1
             @eval begin
-                t = @inferred $(op)(Vec{$dim})
-                @test isa(t, Tensor{$order, $dim, Float64})
-                @test isa(t, Vec{$dim, Float64})
-
-                t = @inferred $(op)(Vec{$dim, $T})
-                @test isa(t, Tensor{$order, $dim, $T})
-                @test isa(t, Vec{$dim, $T})
+                (@inferred $(op)(Vec{$dim}))::Tensor{$order, $dim, Float64}
+                (@inferred $(op)(Vec{$dim, $T}))::Tensor{$order, $dim, $T}
             end
         end
     end
@@ -58,18 +45,14 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     v = rand(T, dim)
     vt = (v...)
 
-    @test diagm(Tensor{2, dim}, v) == diagm(Tensor{2, dim}, vt) == diagm(v)
-    @test isa(diagm(Tensor{2, dim}, v), Tensor{2, dim, T})
-    @test isa(diagm(Tensor{2, dim}, vt), Tensor{2, dim, T})
-    @test diagm(SymmetricTensor{2, dim}, v) == diagm(SymmetricTensor{2, dim}, vt) == diagm(v)
-    @test isa(diagm(SymmetricTensor{2, dim}, v), SymmetricTensor{2, dim, T})
-    @test isa(diagm(SymmetricTensor{2, dim}, vt), SymmetricTensor{2, dim, T})
+    @test (@inferred diagm(Tensor{2, dim}, v))::Tensor{2, dim, T} == diagm(v)
+    @test (@inferred diagm(Tensor{2, dim}, vt))::Tensor{2, dim, T} == diagm(v)
+    @test (@inferred diagm(SymmetricTensor{2, dim}, v))::SymmetricTensor{2, dim, T} == diagm(v)
+    @test (@inferred diagm(SymmetricTensor{2, dim}, vt))::SymmetricTensor{2, dim, T} == diagm(v)
 
     v = rand(T); vv = v * ones(T, dim)
-    @test diagm(Tensor{2, dim}, v) == diagm(vv)
-    @test isa(diagm(Tensor{2, dim}, v), Tensor{2, dim, T})
-    @test diagm(SymmetricTensor{2, dim}, v) == diagm(vv)
-    @test isa(diagm(SymmetricTensor{2, dim}, v), SymmetricTensor{2, dim, T})
+    @test (@inferred diagm(Tensor{2, dim}, v))::Tensor{2, dim, T} == diagm(vv)
+    @test (@inferred diagm(SymmetricTensor{2, dim}, v))::SymmetricTensor{2, dim, T} == diagm(vv)
 
     # one
     @test one(Tensor{2, dim, T}) == diagm(Tensor{2, dim}, one(T)) == eye(T, dim, dim)
@@ -79,10 +62,10 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     @test one(Tensor{2, dim, T, M}) == one(Tensor{2, dim, T})
     @test one(SymmetricTensor{2, dim, T, M}) == one(SymmetricTensor{2, dim, T})
 
-    I = one(Tensor{2, dim, T})
-    I_sym = one(SymmetricTensor{2, dim, T})
-    II = one(Tensor{4, dim, T})
-    II_sym = one(SymmetricTensor{4, dim, T})
+    I =  (@inferred one(Tensor{2, dim, T}))::Tensor{2, dim, T}
+    II = (@inferred one(Tensor{4, dim, T}))::Tensor{4, dim, T}
+    I_sym =  (@inferred one(SymmetricTensor{2, dim, T}))::SymmetricTensor{2, dim, T}
+    II_sym = (@inferred one(SymmetricTensor{4, dim, T}))::SymmetricTensor{4, dim, T}
     for i in 1:dim, j in 1:dim
         if i == j
             @test I[i,j] == T(1)
@@ -137,36 +120,30 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Te
         t = rand($TensorType{$order, $dim, $T})
 
         # Binary tensor tensor: +, -
-        @test (@inferred t + t) == 2 * t == 2 * Array(t)
-        @test isa(t + t, $TensorType{$order, $dim})
-
-        @test (@inferred t - t) == zero(t) == 0 * Array(t)
-        @test isa(t - t, $TensorType{$order, $dim})
+        @test (@inferred t + t)::$TensorType{$order, $dim} == Array(t) + Array(t)
+        @test (@inferred 2*t)::$TensorType{$order, $dim} == 2 * Array(t)
+        @test (@inferred t - t)::$TensorType{$order, $dim} == Array(t) - Array(t)
+        @test (@inferred 0*t)::$TensorType{$order, $dim} == 0 * Array(t)
 
         # Binary tensor number: *, /
-        @test 0.5 * t ≈ t * 0.5 ≈ t / 2.0 ≈ 0.5 * Array(t)
-        @test isa(0.5 * t, $TensorType{$order, $dim})
-        @test isa(t * 0.5, $TensorType{$order, $dim})
-        @test isa(t / 2.0, $TensorType{$order, $dim})
-
-        @test (@inferred rand(t) * 0.0) == zero(t)
+        @test (@inferred 0.5 * t)::$TensorType{$order, $dim} ≈ 0.5 * Array(t)
+        @test (@inferred t * 0.5)::$TensorType{$order, $dim} ≈ Array(t) * 0.5
+        @test (@inferred t / 2.0)::$TensorType{$order, $dim} ≈ Array(t) / 2.0
 
         # Unary: +, -
-        @test (@inferred +t) == zero(t) + t
-        @test isa(+t, $TensorType{$order, $dim})
-
-        @test (@inferred -t) == zero(t) - t
-        @test isa(-t, $TensorType{$order, $dim})
+        @test (@inferred +t)::$TensorType{$order, $dim} == zero(t) + t
+        @test (@inferred -t)::$TensorType{$order, $dim} == zero(t) - t
 
         if $order == 2
             # Power by literal integer
-            @test (t^0)::typeof(t)  ≈ one(t)
-            @test (t^1)::typeof(t)  ≈ t
-            @test (t^2)::typeof(t)  ≈ t ⋅ t
-            @test (t^3)::typeof(t)  ≈ t ⋅ t ⋅ t
-            @test (t^-1)::typeof(t) ≈ inv(t)
-            @test (t^-2)::typeof(t) ≈ inv(t) ⋅ inv(t)
-            @test (t^-3)::typeof(t) ≈ inv(t) ⋅ inv(t) ⋅ inv(t)
+            fm3, fm2, fm1, f0, fp1, fp2, fp3 = t -> t^-3, t -> t^-2, t -> t^-1, t -> t^0, t -> t^1, t -> t^2, t -> t^3
+            @test (@inferred fm3(t))::typeof(t) ≈ inv(t) ⋅ inv(t) ⋅ inv(t)
+            @test (@inferred fm2(t))::typeof(t) ≈ inv(t) ⋅ inv(t)
+            @test (@inferred fm1(t))::typeof(t) ≈ inv(t)
+            @test (@inferred f0(t))::typeof(t)  ≈ one(t)
+            @test (@inferred fp1(t))::typeof(t) ≈ t
+            @test (@inferred fp2(t))::typeof(t) ≈ t ⋅ t
+            @test (@inferred fp3(t))::typeof(t) ≈ t ⋅ t ⋅ t
         end
     end
 end
@@ -179,20 +156,12 @@ for T in (Float32, Float64, F64)
         fij = (i,j) -> cos(i) + sin(j)
         fijkl = (i, j, k ,l) -> cos(i) + sin(j) + tan(k) + exp(l)
 
-        vf = Vec{dim, T}(fi)
-        af = Tensor{1, dim, T}(fi)
-        Af = Tensor{2, dim, T}(fij)
-        AAf = Tensor{4, dim, T}(fijkl)
-        Af_sym = SymmetricTensor{2, dim, T}(fij)
-        AAf_sym = SymmetricTensor{4, dim, T}(fijkl)
-
-        # Make sure we get the specified eltype
-        @test isa(vf, Tensor{1, dim, T})
-        @test isa(af, Tensor{1, dim, T})
-        @test isa(Af, Tensor{2, dim, T})
-        @test isa(AAf, Tensor{4, dim, T})
-        @test isa(Af_sym, SymmetricTensor{2, dim, T})
-        @test isa(AAf_sym, SymmetricTensor{4, dim, T})
+        vf = (@inferred Vec{dim, T}(fi))::Tensor{1, dim, T}
+        af = (@inferred Tensor{1, dim, T}(fi))::Tensor{1, dim, T}
+        Af = (@inferred Tensor{2, dim, T}(fij))::Tensor{2, dim, T}
+        AAf = (@inferred Tensor{4, dim, T}(fijkl))::Tensor{4, dim, T}
+        Af_sym = (@inferred SymmetricTensor{2, dim, T}(fij))::SymmetricTensor{2, dim, T}
+        AAf_sym = (@inferred SymmetricTensor{4, dim, T}(fijkl))::SymmetricTensor{4, dim, T}
 
         for i in 1:dim
             @test vf[i] == T(fi(i))
@@ -220,10 +189,8 @@ for (T1, T2) in ((Float32, Float64), (Float64, Float32)), order in (1,2,4), dim 
     At = rand(Tensor{order, dim})
     gen_data = rand(T1, size(At))
 
-    @test Tensor{order, dim}(gen_data) ≈ gen_data
-    @test Tensor{order, dim, T2}(gen_data) ≈ gen_data
-    @test isa(Tensor{order, dim}(gen_data), Tensor{order, dim, T1})
-    @test isa(Tensor{order, dim, T2}(gen_data), Tensor{order, dim, T2})
+    @test (@inferred Tensor{order, dim}(gen_data))::Tensor{order, dim, T1}     ≈ gen_data
+    @test (@inferred Tensor{order, dim, T2}(gen_data))::Tensor{order, dim, T2} ≈ gen_data
 
     if order != 1
         As = rand(SymmetricTensor{order, dim})
@@ -233,15 +200,10 @@ for (T1, T2) in ((Float32, Float64), (Float64, Float32)), order in (1,2,4), dim 
         gen_sym_data_full = Array(Ats)
         gen_sym_data = T1[Ats.data[i] for i in 1:length(Ats.data)]
 
-        @test SymmetricTensor{order, dim}(gen_sym_data_full) ≈ Ats
-        @test SymmetricTensor{order, dim}(gen_sym_data) ≈ Ats
-        @test SymmetricTensor{order, dim, T2}(gen_sym_data_full) ≈ Ats
-        @test SymmetricTensor{order, dim, T2}(gen_sym_data) ≈ Ats
-
-        @test isa(SymmetricTensor{order, dim}(gen_sym_data_full), SymmetricTensor{order, dim, T1})
-        @test isa(SymmetricTensor{order, dim}(gen_sym_data), SymmetricTensor{order, dim, T1})
-        @test isa(SymmetricTensor{order, dim, T2}(gen_sym_data_full), SymmetricTensor{order, dim, T2})
-        @test isa(SymmetricTensor{order, dim, T2}(gen_sym_data), SymmetricTensor{order, dim, T2})
+        @test (@inferred SymmetricTensor{order, dim}(gen_sym_data_full))::SymmetricTensor{order, dim, T1}     ≈ Ats
+        @test (@inferred SymmetricTensor{order, dim}(gen_sym_data))::SymmetricTensor{order, dim, T1}          ≈ Ats
+        @test (@inferred SymmetricTensor{order, dim, T2}(gen_sym_data_full))::SymmetricTensor{order, dim, T2} ≈ Ats
+        @test (@inferred SymmetricTensor{order, dim, T2}(gen_sym_data))::SymmetricTensor{order, dim, T2}      ≈ Ats
     end
 end
 end # of testset
@@ -250,16 +212,15 @@ end # of testset
 for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
     if order == 1
         data = rand(T, dim)
-        vec = Tensor{order, dim, T}(data)
+        vect = Tensor{order, dim, T}(data)
         for i in 1:dim+1
             if i > dim
-                @test_throws BoundsError vec[i]
+                @test_throws BoundsError vect[i]
             else
-                @test vec[i] ≈ data[i]
+                @test vect[i] ≈ data[i]
             end
         end
-        @test vec[:] == vec
-        @test typeof(vec[:]) <: Vec{dim, T}
+        @test (@inferred vect[:])::Vec{dim, T} == vect
     elseif order == 2
         data = rand(T, dim, dim)
         symdata = data + data'
@@ -275,14 +236,10 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
                 @test S[i, j] ≈ data[i, j]
                 @test Ssym[i, j] ≈ symdata[i, j]
                 # Slice
-                @test S[i,:] ≈ data[i,:]
-                @test typeof(S[i,:]) <: Tensor{1, dim, T}
-                @test S[:,j] ≈ data[:,j]
-                @test typeof(S[:,j]) <: Tensor{1, dim, T}
-                @test Ssym[i,:] ≈ symdata[i,:]
-                @test typeof(Ssym[i,:]) <: Tensor{1, dim, T}
-                @test Ssym[:,j] ≈ symdata[:,j]
-                @test typeof(Ssym[:,j]) <: Tensor{1, dim, T}
+                @test (@inferred S[i,:])::Tensor{1, dim, T} ≈ data[i,:]
+                @test (@inferred S[:,j])::Tensor{1, dim, T} ≈ data[:,j]
+                @test (@inferred Ssym[i,:])::Tensor{1, dim, T} ≈ symdata[i,:]
+                @test (@inferred Ssym[:,j])::Tensor{1, dim, T} ≈ symdata[:,j]
             end
         end
     elseif order == 4
@@ -310,12 +267,10 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     # norm
     for order in (1,2,4)
         t = rand(Tensor{order, dim, T})
-        @test norm(t) ≈ sqrt(sum(abs2, Array(t)[:]))
-        @test isa(norm(t), T)
+        @test (@inferred norm(t))::T ≈ sqrt(sum(abs2, Array(t)[:]))
         if order != 1
             t_sym = rand(SymmetricTensor{order, dim, T})
-            @test norm(t_sym) ≈ sqrt(sum(abs2, Array(t_sym)[:]))
-            @test isa(norm(t_sym), T)
+            @test (@inferred norm(t_sym))::T ≈ sqrt(sum(abs2, Array(t_sym)[:]))
         end
     end
 
@@ -323,46 +278,36 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     t = rand(Tensor{2, dim, T})
     t_sym = rand(SymmetricTensor{2, dim, T})
 
-    @test trace(t) == sum([t[i,i] for i in 1:dim])
-    @test trace(t_sym) == sum([t_sym[i,i] for i in 1:dim])
+    @test (@inferred trace(t))::T == sum([t[i,i] for i in 1:dim])
+    @test (@inferred trace(t_sym))::T == sum([t_sym[i,i] for i in 1:dim])
 
     @test trace(t) ≈ mean(t)*3.0
     @test trace(t_sym) ≈ mean(t_sym)*3.0
 
-    @test vol(t) ≈ mean(t)*eye(dim)
-    @test isa(vol(t), Tensor{2, dim, T})
-    @test vol(t_sym) ≈ mean(t_sym)*eye(dim)
-    @test isa(vol(t_sym), SymmetricTensor{2, dim, T})
+    @test (@inferred vol(t))::Tensor{2, dim, T} ≈ mean(t)*eye(dim)
+    @test (@inferred vol(t_sym))::SymmetricTensor{2, dim, T} ≈ mean(t_sym)*eye(dim)
 
-    @test dev(t) ≈ Array(t) - 1/3*trace(t)*eye(dim)
-    @test isa(dev(t), Tensor{2, dim, T})
-    @test dev(t_sym) ≈ Array(t_sym) - 1/3*trace(t_sym)*eye(dim)
-    @test isa(dev(t_sym), SymmetricTensor{2, dim, T})
+    @test (@inferred dev(t))::Tensor{2, dim, T} ≈ Array(t) - 1/3*trace(t)*eye(dim)
+    @test (@inferred dev(t_sym))::SymmetricTensor{2, dim, T} ≈ Array(t_sym) - 1/3*trace(t_sym)*eye(dim)
 
-    @test det(t) ≈ det(Array(t))
-    @test isa(det(t), T)
-    @test det(t_sym) ≈ det(Array(t_sym))
-    @test isa(det(t_sym), T)
+    @test (@inferred det(t))::T ≈ det(Array(t))
+    @test (@inferred det(t_sym))::T ≈ det(Array(t_sym))
 
-    @test inv(t) ≈ inv(Array(t))
-    @test isa(inv(t), Tensor{2, dim, T})
-    @test inv(t_sym) ≈ inv(Array(t_sym))
-    @test isa(inv(t_sym), SymmetricTensor{2, dim, T})
+    @test (@inferred inv(t))::Tensor{2, dim, T} ≈ inv(Array(t))
+    @test (@inferred inv(t_sym))::SymmetricTensor{2, dim, T} ≈ inv(Array(t_sym))
 
     # inv for fourth order tensors
     AA = rand(Tensor{4, dim, T})
     AA_sym = rand(SymmetricTensor{4, dim, T})
-    @test AA ⊡ inv(AA) ≈ one(Tensor{4, dim, T})
-    @test isa(inv(AA), Tensor{4, dim, T})
-    @test AA_sym ⊡ inv(AA_sym) ≈ one(SymmetricTensor{4, dim, T})
-    @test isa(inv(AA_sym), SymmetricTensor{4, dim, T})
+    @test AA ⊡ (@inferred inv(AA))::Tensor{4, dim, T} ≈ one(Tensor{4, dim, T})
+    @test AA_sym ⊡ (@inferred inv(AA_sym))::SymmetricTensor{4, dim, T} ≈ one(SymmetricTensor{4, dim, T})
 
-    E = eigfact(t_sym)
-    Λ, Φ = eig(t_sym)
+    E = @inferred eigfact(t_sym)
+    Λ, Φ = @inferred eig(t_sym)
     Λa, Φa = eig(Array(t_sym))
 
-    @test Λ ≈ eigvals(t_sym) ≈ eigvals(E) ≈ Λa
-    @test Φ ≈ eigvecs(t_sym) ≈ eigvecs(E)
+    @test Λ ≈ (@inferred eigvals(t_sym)) ≈ eigvals(E) ≈ Λa
+    @test Φ ≈ (@inferred eigvecs(t_sym)) ≈ eigvecs(E)
     for i in 1:dim
         # scale with first element of eigenvector to account for possible directions
         @test Φ[:, i]*Φ[1, i] ≈ Φa[:, i]*Φa[1, i]
@@ -460,12 +405,12 @@ for dim in (1,2,3), order in (1,2,4)
 
     At = rand(tens)
     Bt = rand(tens_wide)
-    @test isa(At + Bt, tens_wide)
-    @test isa(convert(Tensor, At), tens)
-    @test isa(convert(Tensor{order, dim, T}, At), tens)
-    @test isa(convert(tens, At), tens)
-    @test isa(convert(Tensor{order, dim, WIDE_T}, At), tens_wide)
-    @test isa(convert(tens_wide, At), tens_wide)
+    @test isa((@inferred At + Bt), tens_wide)
+    @test isa((@inferred convert(Tensor, At)), tens)
+    @test isa((@inferred convert(Tensor{order, dim, T}, At)), tens)
+    @test isa((@inferred convert(tens, At)), tens)
+    @test isa((@inferred convert(Tensor{order, dim, WIDE_T}, At)), tens_wide)
+    @test isa((@inferred convert(tens_wide, At)), tens_wide)
 
     if order != 1
         M = Tensors.n_components(SymmetricTensor{order, dim})
@@ -487,24 +432,19 @@ for dim in (1,2,3), order in (1,2,4)
 
         As = rand(sym)
         Bs = rand(sym_wide)
-        @test isa(As + Bs, sym_wide)
+        @test isa((@inferred As + Bs), sym_wide)
 
-        @test isa(convert(SymmetricTensor, As), sym)
-        @test isa(convert(SymmetricTensor{order, dim, T}, As), sym)
-        @test isa(convert(sym, As), sym)
-        @test isa(convert(SymmetricTensor{order, dim, WIDE_T}, As), sym_wide)
-        @test isa(convert(sym_wide, As), sym_wide)
+        @test isa((@inferred convert(SymmetricTensor, As)), sym)
+        @test isa((@inferred convert(SymmetricTensor{order, dim, T}, As)), sym)
+        @test isa((@inferred convert(sym, As)), sym)
+        @test isa((@inferred convert(SymmetricTensor{order, dim, WIDE_T}, As)), sym_wide)
+        @test isa((@inferred convert(sym_wide, As)), sym_wide)
 
         # SymmetricTensor -> Tensor
-        @test convert(Tensor, As) ≈ As ≈ Array(As)
-        @test convert(Tensor{order, dim}, As) ≈ As ≈ Array(As)
-        @test convert(Tensor{order, dim, WIDE_T}, As) ≈ As ≈ Array(As)
-        @test convert(tens_wide, As) ≈ As ≈ Array(As)
-
-        @test isa(convert(Tensor, As), tens)
-        @test isa(convert(Tensor{order, dim}, As), tens)
-        @test isa(convert(Tensor{order, dim, WIDE_T}, As), tens_wide)
-        @test isa(convert(tens_wide, As), tens_wide)
+        @test (@inferred convert(Tensor, As))::tens ≈ As ≈ Array(As)
+        @test (@inferred convert(Tensor{order, dim}, As))::tens ≈ As ≈ Array(As)
+        @test (@inferred convert(Tensor{order, dim, WIDE_T}, As))::tens_wide ≈ As ≈ Array(As)
+        @test (@inferred convert(tens_wide, As))::tens_wide ≈ As ≈ Array(As)
 
         # Tensor -> SymmetricTensor
         if dim != 1
