@@ -34,3 +34,4 @@ Base.convert{T <: Number}(::Type{F64}, a::T) = F64(a)
 # for testing of eigfact
 Base.acos(a::F64) = F64(acos(a.x))
 Base.cos(a::F64) = F64(cos(a.x))
+Base.sin(a::F64) = F64(sin(a.x))
