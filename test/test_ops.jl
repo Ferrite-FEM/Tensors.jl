@@ -177,21 +177,23 @@ end # of testsection
     @test AAT ⊡ (b ⊗ a) ≈ (@inferred dotdot(a, AA_sym, b))::Tensor{2, dim, T}
 end # of testsection
 
-@testsection "rotation" begin
-    x = eᵢ(Vec{3}, 1)
-    y = eᵢ(Vec{3}, 2)
-    z = eᵢ(Vec{3}, 3)
+if dim == 3
+    @testsection "rotation" begin
+        x = eᵢ(Vec{3, T}, 1)
+        y = eᵢ(Vec{3, T}, 2)
+        z = eᵢ(Vec{3, T}, 3)
 
-    @test (@inferred rotate(z, z, rand()))::Vec{dim, T} ≈ z
-    @test rotate(2*z, y, π/2) ≈ 2*x
-    @test rotate(3*z, y, π) ≈ -3*z
-    @test rotate(x+y+z, z, π/4) ≈ Vec{3}((0.0,√2,1.0))
+        @test (@inferred rotate(z, z, rand(T)))::Vec{3, T} ≈ z
+        @test rotate(2*z, y, π/2) ≈ 2*x
+        @test rotate(3*z, y, π) ≈ -3*z
+        @test rotate(x+y+z, z, π/4) ≈ Vec{3}((0.0,√2,1.0))
 
-    a = rand(Vec{3})
-    b = rand(Vec{3})
-    @test rotate(a, b, 0) ≈ a
-    @test rotate(a, b, π) ≈ rotate(a, b, -π)
-    @test rotate(a, b, π/2) ≈ rotate(a, -b, -π/2)
+        a = rand(Vec{3, T})
+        b = rand(Vec{3, T})
+        @test rotate(a, b, 0) ≈ a
+        @test rotate(a, b, π) ≈ rotate(a, b, -π)
+        @test rotate(a, b, π/2) ≈ rotate(a, -b, -π/2)
+    end
 end
 
 @testsection "tovoigt/fromvoigt" begin
