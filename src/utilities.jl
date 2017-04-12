@@ -1,7 +1,7 @@
 macro inboundsret(ex)
     return quote
         @inbounds v = $(esc(ex))
-        v
+        return v
     end
 end
 
