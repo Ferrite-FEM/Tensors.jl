@@ -41,46 +41,54 @@ julia> tovoigt(Tensor{4,2}(1:16))
  2  14  10  6
 ```
 """
-tovoigt{dim, T, M}(A::Tensor{2, dim, T, M})                            =  tovoigt!(Vector{T}(M), A)
-tovoigt{dim, T, M}(A::Tensor{4, dim, T, M})                            =  tovoigt!(Matrix{T}(Int(√M), Int(√M)), A)
-tovoigt{dim, T, M}(A::SymmetricTensor{2, dim, T, M}; offdiagscale = 1) = _tovoigt!(Vector{T}(M), A, offdiagscale)
-tovoigt{dim, T, M}(A::SymmetricTensor{4, dim, T, M}; offdiagscale = 1) = _tovoigt!(Matrix{T}(Int(√M), Int(√M)), A, offdiagscale)
+@inline function tovoigt{dim, T, M}(A::Tensor{2, dim, T, M})
+    @inboundsret tovoigt!(Vector{T}(M), A)
+end
+@inline function tovoigt{dim, T, M}(A::Tensor{4, dim, T, M})
+    @inboundsret tovoigt!(Matrix{T}(Int(√M), Int(√M)), A)
+end
+@inline function tovoigt{dim, T, M}(A::SymmetricTensor{2, dim, T, M}; offdiagscale = 1)
+    @inboundsret tovoigt!(Vector{T}(M), A, offdiagscale = offdiagscale)
+end
+@inline function tovoigt{dim, T, M}(A::SymmetricTensor{4, dim, T, M}; offdiagscale = 1)
+    @inboundsret tovoigt!(Matrix{T}(Int(√M), Int(√M)), A, offdiagscale = offdiagscale)
+end
 
-function tovoigt!{dim}(v::AbstractVector, A::Tensor{2, dim})
-    length(v) == length(A.data) || throw(ArgumentError("invalid input size of voigt array"))
-    @inbounds for j in 1:dim, i in 1:dim
-        v[VOIGT_ORDER[dim][i, j]] = A[i, j]
+Base.@propagate_inbounds @inline function tovoigt!{dim}(v::AbstractVector, A::Tensor{2, dim}; offset::Int = 0)
+    for j in 1:dim, i in 1:dim
+        v[offset + VOIGT_ORDER[dim][i, j]] = A[i, j]
     end
-    v
+    return v
 end
-function tovoigt!{dim}(v::AbstractMatrix, A::Tensor{4, dim})
-    (size(v, 1) == size(v, 2) && length(v) == length(A.data)) || throw(ArgumentError("invalid input size of voigt array"))
-    @inbounds for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
-        v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]] = A[i, j, k, l]
+Base.@propagate_inbounds @inline function tovoigt!{dim}(v::AbstractMatrix, A::Tensor{4, dim}; offset_i::Int = 0, offset_j::Int = 0)
+    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
+        v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]] = A[i, j, k, l]
     end
-    v
+    return v
 end
-tovoigt!(v::AbstractVecOrMat, A::SymmetricTensor; offdiagscale = 1) = _tovoigt!(v, A, offdiagscale)
-function _tovoigt!{dim}(v::AbstractVector, A::SymmetricTensor{2, dim}, offdiagscale)
-    length(v) == length(A.data) || throw(ArgumentError("invalid input size of voigt array"))
-    @inbounds for j in 1:dim, i in 1:j
-        v[VOIGT_ORDER[dim][i, j]] = i == j ? A[i, j] : A[i, j] * offdiagscale
+Base.@propagate_inbounds @inline function tovoigt!{dim}(v::AbstractVector, A::SymmetricTensor{2, dim}; offdiagscale = 1, offset::Int = 0)
+    for j in 1:dim, i in 1:j
+        v[offset + VOIGT_ORDER[dim][i, j]] = i == j ? A[i, j] : A[i, j] * offdiagscale
     end
-    v
+    return v
 end
-function _tovoigt!{dim}(v::AbstractMatrix, A::SymmetricTensor{4, dim}, offdiagscale)
-    (size(v, 1) == size(v, 2) && length(v) == length(A.data)) || throw(ArgumentError("invalid input size of voigt array"))
-    @inbounds for l in 1:dim, k in 1:l, j in 1:dim, i in 1:j
-        v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]] =
+Base.@propagate_inbounds @inline function tovoigt!{dim}(v::AbstractMatrix, A::SymmetricTensor{4, dim}; offdiagscale = 1, offset_i::Int = 0, offset_j::Int = 0)
+    for l in 1:dim, k in 1:l, j in 1:dim, i in 1:j
+        v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]] =
             (i == j && k == l) ? A[i, j, k, l] :
             (i == j || k == l) ? A[i, j, k, l] * offdiagscale :
                                  A[i, j, k, l] * (offdiagscale * offdiagscale)
     end
-    v
+    return v
 end
 
-tomandel(A::SymmetricTensor) = tovoigt(A, offdiagscale = √2)
-tomandel!(v::AbstractVecOrMat, A::SymmetricTensor) = _tovoigt!(v, A, √2)
+@inline tomandel(A::SymmetricTensor) = @inboundsret tovoigt(A, offdiagscale = √2)
+Base.@propagate_inbounds @inline function tomandel!(v::AbstractVector, A::SymmetricTensor{2}; offset::Int = 0)
+    tovoigt!(v, A, offdiagscale = √2, offset = offset)
+end
+Base.@propagate_inbounds @inline function tomandel!(v::AbstractMatrix, A::SymmetricTensor{4}; offset_i::Int = 0, offset_j::Int = 0)
+    tovoigt!(v, A, offdiagscale = √2, offset_i = offset_i, offset_j = offset_j)
+end
 
 """
     fromvoigt(S::Type{<:AbstractTensor}, A::Array{T}; offdiagscale::T = 1)
@@ -100,32 +108,29 @@ julia> fromvoigt(Tensor{2,3}, 1.0:1.0:9.0)
  8.0  7.0  3.0
 ```
 """
-function fromvoigt{dim, T}(TT::Type{Tensor{2, dim}}, v::AbstractVector{T})
-    length(v) == n_components(TT) || throw(ArgumentError("invalid input size of voigt array"))
-    return TT(function (i, j); @inboundsret T(v[VOIGT_ORDER[dim][i, j]]); end)
+Base.@propagate_inbounds @inline function fromvoigt{dim, T}(TT::Type{Tensor{2, dim}}, v::AbstractVector{T}; offset::Int = 0)
+    return TT(function (i, j); return T(v[offset + VOIGT_ORDER[dim][i, j]]); end)
 end
-function fromvoigt{dim, T}(TT::Type{Tensor{4, dim}}, v::AbstractMatrix{T})
-    size(v, 1) == size(v, 2) && length(v) == n_components(TT) || throw(ArgumentError("invalid input size of voigt array"))
-    return TT(function (i, j, k, l); @inboundsret T(v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]]); end)
+Base.@propagate_inbounds @inline function fromvoigt{dim, T}(TT::Type{Tensor{4, dim}}, v::AbstractMatrix{T}; offset_i::Int = 0, offset_j::Int = 0)
+    return TT(function (i, j, k, l); return T(v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]]); end)
 end
-fromvoigt{dim, T}(TT::Union{Type{SymmetricTensor{2, dim}}, Type{SymmetricTensor{4, dim}}}, v::AbstractVecOrMat{T}; offdiagscale::T = T(1)) = _fromvoigt(TT, v, offdiagscale)
-function _fromvoigt{dim, T}(TT::Type{SymmetricTensor{2, dim}}, v::AbstractVector{T}, offdiagscale)
-    length(v) == n_components(TT) || throw(ArgumentError("invalid input size of voigt array"))
+Base.@propagate_inbounds @inline function fromvoigt{dim, T}(TT::Type{SymmetricTensor{2, dim}}, v::AbstractVector{T}; offdiagscale::T = T(1), offset::Int = 0)
     return TT(function (i, j)
             i > j && ((i, j) = (j, i))
-            i == j ? (@inboundsret T(v[VOIGT_ORDER[dim][i, j]])) :
-                     (@inboundsret T(v[VOIGT_ORDER[dim][i, j]] / offdiagscale))
+            i == j ? (return T(v[offset + VOIGT_ORDER[dim][i, j]])) :
+                     (return T(v[offset + VOIGT_ORDER[dim][i, j]] / offdiagscale))
         end)
 end
-function _fromvoigt{dim, T}(TT::Type{SymmetricTensor{4, dim}}, v::AbstractMatrix{T}, offdiagscale)
-    size(v, 1) == size(v, 2) && length(v) == n_components(TT) || throw(ArgumentError("invalid input size of voigt array"))
+Base.@propagate_inbounds @inline function fromvoigt{dim, T}(TT::Type{SymmetricTensor{4, dim}}, v::AbstractMatrix{T}; offdiagscale::T = T(1), offset_i::Int = 0, offset_j::Int = 0)
     return TT(function (i, j, k, l)
             i > j && ((i, j) = (j, i))
             k > l && ((k, l) = (l, k))
-            i == j && k == l ? (@inboundsret T(v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]])) :
-            i == j || k == l ? (@inboundsret T(v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]] / offdiagscale)) :
-                               (@inboundsret T(v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]] / (offdiagscale * offdiagscale)))
+            i == j && k == l ? (return T(v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]])) :
+            i == j || k == l ? (return T(v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]] / offdiagscale)) :
+                               (return T(v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]] / (offdiagscale * offdiagscale)))
         end)
 end
 
-frommandel{dim, T}(TT::Union{Type{SymmetricTensor{2, dim}}, Type{SymmetricTensor{4, dim}}}, v::AbstractVecOrMat{T}) = _fromvoigt(TT, v, T(√2))
+Base.@propagate_inbounds @inline function frommandel{dim, T}(TT::Union{Type{SymmetricTensor{2, dim}}, Type{SymmetricTensor{4, dim}}}, v::AbstractVecOrMat{T})
+    fromvoigt(TT, v, offdiagscale = T(√2))
+end
