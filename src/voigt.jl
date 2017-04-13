@@ -108,7 +108,7 @@ function fromvoigt{dim, T}(TT::Type{Tensor{4, dim}}, v::AbstractMatrix{T})
     size(v, 1) == size(v, 2) && length(v) == n_components(TT) || throw(ArgumentError("invalid input size of voigt array"))
     return TT(function (i, j, k, l); @inboundsret T(v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]]); end)
 end
-fromvoigt{dim, T}(TT::Union{Type{SymmetricTensor{2, dim}}, Type{SymmetricTensor{4, dim}}}, v::AbstractVecOrMat{T}; offdiagscale::T = T(1)) = _fromvoigt(A, v, offdiagscale)
+fromvoigt{dim, T}(TT::Union{Type{SymmetricTensor{2, dim}}, Type{SymmetricTensor{4, dim}}}, v::AbstractVecOrMat{T}; offdiagscale::T = T(1)) = _fromvoigt(TT, v, offdiagscale)
 function _fromvoigt{dim, T}(TT::Type{SymmetricTensor{2, dim}}, v::AbstractVector{T}, offdiagscale)
     length(v) == n_components(TT) || throw(ArgumentError("invalid input size of voigt array"))
     return TT(function (i, j)
