@@ -83,9 +83,9 @@ tomandel(A::SymmetricTensor) = tovoigt(A, offdiagscale = √2)
 tomandel!(v::AbstractVecOrMat, A::SymmetricTensor) = _tovoigt!(v, A, √2)
 
 """
-    fromvoigt(T::Type{<:AbstractTensor}, A::Array{T}; offdiagscale::T = 1)
+    fromvoigt(S::Type{<:AbstractTensor}, A::Array{T}; offdiagscale::T = 1)
 
-Converts an array `A` stored in Voigt format to a Tensor of type `T`.
+Converts an array `A` stored in Voigt format to a Tensor of type `S`.
 For `SymmetricTensor`s, the keyword argument `offdiagscale` sets an inverse scaling factor
 on the offdiagonal elements. `frommandel` can also be used for "Mandel"-format
 which sets `offdiagscale = √2`.
