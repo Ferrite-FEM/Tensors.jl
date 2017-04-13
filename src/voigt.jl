@@ -1,6 +1,7 @@
 const VOIGT_ORDER = ([1], [1 3; 4 2], [1 6 5; 9 2 4; 8 7 3])
 """
     tovoigt(A::Union{SecondOrderTensor, FourthOrderTensor}; offdiagscale)
+    tovoigt!(v::Array, A::Union{SecondOrderTensor, FourthOrderTensor}; offdiagscale)
 
 Converts a tensor to "Voigt"-format using the following index order:
 `[11, 22, 33, 23, 13, 12, 32, 31, 21]`.
@@ -23,14 +24,14 @@ julia> tovoigt(Tensor{2,3}(1:9))
  3
  2
 
-julia> tovoigt(SymmetricTensor{2,3}(1.0:1.0:6.0); offdiagscale = 2.0)
-6-element Array{Float64,1}:
-  1.0
-  4.0
-  6.0
- 10.0
-  6.0
-  4.0
+julia> tovoigt(SymmetricTensor{2,3}(1:6); offdiagscale = 2)
+6-element Array{Int64,1}:
+  1
+  4
+  6
+ 10
+  6
+  4
 
 julia> tovoigt(Tensor{4,2}(1:16))
 4×4 Array{Int64,2}:
@@ -82,7 +83,7 @@ tomandel(A::SymmetricTensor) = tovoigt(A, offdiagscale = √2)
 tomandel!(v::AbstractVecOrMat, A::SymmetricTensor) = _tovoigt!(v, A, √2)
 
 """
-    fromvoigt(T::Type{<:AbstractTensor}, A::Array)
+    fromvoigt(T::Type{<:AbstractTensor}, A::Array{T}; offdiagscale::T = 1)
 
 Converts an array `A` stored in Voigt format to a Tensor of type `T`.
 For `SymmetricTensor`s, the keyword argument `offdiagscale` sets an inverse scaling factor
@@ -107,7 +108,7 @@ function fromvoigt{dim, T}(TT::Type{Tensor{4, dim}}, v::AbstractMatrix{T})
     size(v, 1) == size(v, 2) && length(v) == n_components(TT) || throw(ArgumentError("invalid input size of voigt array"))
     return TT(function (i, j, k, l); @inboundsret T(v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]]); end)
 end
-fromvoigt{dim}(A::Union{Type{SymmetricTensor{2, dim}}, Type{SymmetricTensor{4, dim}}}, v::AbstractVecOrMat; offdiagscale = 1) = _fromvoigt(A, v, offdiagscale)
+fromvoigt{dim, T}(TT::Union{Type{SymmetricTensor{2, dim}}, Type{SymmetricTensor{4, dim}}}, v::AbstractVecOrMat{T}; offdiagscale::T = T(1)) = _fromvoigt(A, v, offdiagscale)
 function _fromvoigt{dim, T}(TT::Type{SymmetricTensor{2, dim}}, v::AbstractVector{T}, offdiagscale)
     length(v) == n_components(TT) || throw(ArgumentError("invalid input size of voigt array"))
     return TT(function (i, j)
@@ -127,4 +128,4 @@ function _fromvoigt{dim, T}(TT::Type{SymmetricTensor{4, dim}}, v::AbstractMatrix
         end)
 end
 
-frommandel{dim, T}(A::Union{Type{SymmetricTensor{2, dim}}, Type{SymmetricTensor{4, dim}}}, v::AbstractVecOrMat{T}) = _fromvoigt(A, v, T(√2))
+frommandel{dim, T}(TT::Union{Type{SymmetricTensor{2, dim}}, Type{SymmetricTensor{4, dim}}}, v::AbstractVecOrMat{T}) = _fromvoigt(TT, v, T(√2))

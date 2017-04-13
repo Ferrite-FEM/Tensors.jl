@@ -197,15 +197,14 @@ if dim == 3
 end
 
 @testsection "tovoigt/fromvoigt" begin
+    T2 = T(2)
     @test (@inferred tovoigt(AA)) * (@inferred tovoigt(A)) ≈ tovoigt(AA ⊡ A)
-    @test (@inferred tovoigt(AA_sym)) * (@inferred tovoigt(A_sym, offdiagscale=2)) ≈ tovoigt(AA_sym ⊡ A_sym)
+    @test (@inferred tovoigt(AA_sym)) * (@inferred tovoigt(A_sym, offdiagscale = T2)) ≈ tovoigt(AA_sym ⊡ A_sym)
 
     @test (@inferred fromvoigt(Tensor{2,dim}, tovoigt(A))) ≈ A
     @test (@inferred fromvoigt(Tensor{4,dim}, tovoigt(AA))) ≈ AA
-    @test_broken (@inferred fromvoigt(SymmetricTensor{2,dim}, tovoigt(A_sym, offdiagscale=2), offdiagscale=2)) ≈ A_sym
-        @test fromvoigt(SymmetricTensor{2,dim}, tovoigt(A_sym, offdiagscale=2), offdiagscale=2) ≈ A_sym
-    @test_broken (@inferred fromvoigt(SymmetricTensor{4,dim}, tovoigt(AA_sym, offdiagscale=2), offdiagscale=2)) ≈ AA_sym
-        @test fromvoigt(SymmetricTensor{4,dim}, tovoigt(AA_sym, offdiagscale=2), offdiagscale=2) ≈ AA_sym
+    @test (@inferred fromvoigt(SymmetricTensor{2,dim}, tovoigt(A_sym, offdiagscale = T2), offdiagscale = T2)) ≈ A_sym
+    @test (@inferred fromvoigt(SymmetricTensor{4,dim}, tovoigt(AA_sym, offdiagscale = T2), offdiagscale = T2)) ≈ AA_sym
 
     @test (@inferred tomandel(AA_sym)) * (@inferred tomandel(A_sym)) ≈ tomandel(AA_sym ⊡ A_sym)
     @test (@inferred frommandel(SymmetricTensor{2,dim}, tomandel(A_sym))) ≈ A_sym
