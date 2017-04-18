@@ -1,8 +1,7 @@
-dimrange(::Tensor,          i, dim) = dim
-dimrange(::SymmetricTensor, i, dim) = i
-
+const VOIGT_ORDER = ([0], [0 2; 3 1], [0 5 4; 8 1 3; 7 6 2])
 """
     tovoigt(A::Union{SecondOrderTensor, FourthOrderTensor}; offdiagscale)
+    tovoigt!(v::Array, A::Union{SecondOrderTensor, FourthOrderTensor}; offdiagscale)
 
 Converts a tensor to "Voigt"-format using the following index order:
 `[11, 22, 33, 23, 13, 12, 32, 31, 21]`.
@@ -25,14 +24,14 @@ julia> tovoigt(Tensor{2,3}(1:9))
  3
  2
 
-julia> tovoigt(SymmetricTensor{2,3}(1.0:1.0:6.0); offdiagscale = 2.0)
-6-element Array{Float64,1}:
-  1.0
-  4.0
-  6.0
- 10.0
-  6.0
-  4.0
+julia> tovoigt(SymmetricTensor{2,3}(1:6); offdiagscale = 2)
+6-element Array{Int64,1}:
+  1
+  4
+  6
+ 10
+  6
+  4
 
 julia> tovoigt(Tensor{4,2}(1:16))
 4×4 Array{Int64,2}:
@@ -41,42 +40,60 @@ julia> tovoigt(Tensor{4,2}(1:16))
  3  15  11  7
  2  14  10  6
 ```
-
 """
-function tovoigt end
-
-tovoigt(A::SymmetricTensor; offdiagscale::Real=one(eltype(A))) = _tovoigt(A, offdiagscale)
-tovoigt(A::Union{Tensor{2}, Tensor{4}}) = _tovoigt(A, one(eltype(A)))
-function tomandel(A::SymmetricTensor)
-    T = eltype(A)
-    offdiagscale = T(√2)
-    _tovoigt(A, offdiagscale)
+@inline function tovoigt{dim, T, M}(A::Tensor{2, dim, T, M})
+    @inboundsret tovoigt!(Vector{T}(M), A)
+end
+@inline function tovoigt{dim, T, M}(A::Tensor{4, dim, T, M})
+    @inboundsret tovoigt!(Matrix{T}(Int(√M), Int(√M)), A)
+end
+@inline function tovoigt{dim, T, M}(A::SymmetricTensor{2, dim, T, M}; offdiagscale = 1)
+    @inboundsret tovoigt!(Vector{T}(M), A, offdiagscale = offdiagscale)
+end
+@inline function tovoigt{dim, T, M}(A::SymmetricTensor{4, dim, T, M}; offdiagscale = 1)
+    @inboundsret tovoigt!(Matrix{T}(Int(√M), Int(√M)), A, offdiagscale = offdiagscale)
 end
 
-function _tovoigt{dim,T}(A::SecondOrderTensor{dim, T}, offdiagscale)
-    v = zeros(T, length(A.data))
-    for j in 1:dim, i in 1:dimrange(A, j, dim)
-        I, si = _index_scale(dim, i, j, offdiagscale)
-        v[I] = si * A[i,j]
+Base.@propagate_inbounds @inline function tovoigt!{dim}(v::AbstractVector, A::Tensor{2, dim}; offset::Int = 1)
+    for j in 1:dim, i in 1:dim
+        v[offset + VOIGT_ORDER[dim][i, j]] = A[i, j]
+    end
+    return v
+end
+Base.@propagate_inbounds @inline function tovoigt!{dim}(v::AbstractMatrix, A::Tensor{4, dim}; offset_i::Int = 1, offset_j::Int = 1)
+    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
+        v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]] = A[i, j, k, l]
+    end
+    return v
+end
+Base.@propagate_inbounds @inline function tovoigt!{dim}(v::AbstractVector, A::SymmetricTensor{2, dim}; offdiagscale = 1, offset::Int = 1)
+    for j in 1:dim, i in 1:j
+        v[offset + VOIGT_ORDER[dim][i, j]] = i == j ? A[i, j] : A[i, j] * offdiagscale
+    end
+    return v
+end
+Base.@propagate_inbounds @inline function tovoigt!{dim}(v::AbstractMatrix, A::SymmetricTensor{4, dim}; offdiagscale = 1, offset_i::Int = 1, offset_j::Int = 1)
+    for l in 1:dim, k in 1:l, j in 1:dim, i in 1:j
+        v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]] =
+            (i == j && k == l) ? A[i, j, k, l] :
+            (i == j || k == l) ? A[i, j, k, l] * offdiagscale :
+                                 A[i, j, k, l] * (offdiagscale * offdiagscale)
     end
     return v
 end
 
-function _tovoigt{dim,T}(A::FourthOrderTensor{dim, T}, offdiagscale)
-    n = Int(√(length(A.data)))
-    v = zeros(T, n, n)
-     for l in 1:dim, k in 1:dimrange(A, l, dim), j in 1:dim, i in 1:dimrange(A, j, dim)
-        I, si = _index_scale(dim, i, j, offdiagscale)
-        J, sj = _index_scale(dim, k, l, offdiagscale)
-        v[I,J] = si * sj * A[i,j,k,l]
-    end
-    return v
+@inline tomandel(A::SymmetricTensor) = @inboundsret tovoigt(A, offdiagscale = √2)
+Base.@propagate_inbounds @inline function tomandel!(v::AbstractVector, A::SymmetricTensor{2}; offset::Int = 1)
+    tovoigt!(v, A, offdiagscale = √2, offset = offset)
+end
+Base.@propagate_inbounds @inline function tomandel!(v::AbstractMatrix, A::SymmetricTensor{4}; offset_i::Int = 1, offset_j::Int = 1)
+    tovoigt!(v, A, offdiagscale = √2, offset_i = offset_i, offset_j = offset_j)
 end
 
 """
-    fromvoigt(::T, A::Array)
+    fromvoigt(S::Type{<:AbstractTensor}, A::Array{T}; offdiagscale::T = 1)
 
-Converts an array `A` stored in Voigt format to a Tensor of type `T`.
+Converts an array `A` stored in Voigt format to a Tensor of type `S`.
 For `SymmetricTensor`s, the keyword argument `offdiagscale` sets an inverse scaling factor
 on the offdiagonal elements. `frommandel` can also be used for "Mandel"-format
 which sets `offdiagscale = √2`.
@@ -91,69 +108,29 @@ julia> fromvoigt(Tensor{2,3}, 1.0:1.0:9.0)
  8.0  7.0  3.0
 ```
 """
-function fromvoigt end
-
-fromvoigt{dim}(A::Union{Type{SymmetricTensor{2,dim}}, Type{SymmetricTensor{4,dim}}}, v::AbstractVecOrMat; offdiagscale::Real=one(eltype(v))) = _fromvoigt(A, v, offdiagscale)
-fromvoigt{dim}(A::Union{Type{Tensor{2,dim}}, Type{Tensor{4,dim}}}, v::AbstractVecOrMat) = _fromvoigt(A, v, one(eltype(v)))
-function frommandel{dim}(A::Union{Type{SymmetricTensor{2,dim}}, Type{SymmetricTensor{4,dim}}}, v::AbstractVecOrMat)
-    T = eltype(v)
-    offdiagscale = T(√2)
-    _fromvoigt(A, v, offdiagscale)
+Base.@propagate_inbounds @inline function fromvoigt{dim, T}(TT::Type{Tensor{2, dim}}, v::AbstractVector{T}; offset::Int = 1)
+    return TT(function (i, j); return T(v[offset + VOIGT_ORDER[dim][i, j]]); end)
+end
+Base.@propagate_inbounds @inline function fromvoigt{dim, T}(TT::Type{Tensor{4, dim}}, v::AbstractMatrix{T}; offset_i::Int = 1, offset_j::Int = 1)
+    return TT(function (i, j, k, l); return T(v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]]); end)
+end
+Base.@propagate_inbounds @inline function fromvoigt{dim, T}(TT::Type{SymmetricTensor{2, dim}}, v::AbstractVector{T}; offdiagscale::T = T(1), offset::Int = 1)
+    return TT(function (i, j)
+            i > j && ((i, j) = (j, i))
+            i == j ? (return T(v[offset + VOIGT_ORDER[dim][i, j]])) :
+                     (return T(v[offset + VOIGT_ORDER[dim][i, j]] / offdiagscale))
+        end)
+end
+Base.@propagate_inbounds @inline function fromvoigt{dim, T}(TT::Type{SymmetricTensor{4, dim}}, v::AbstractMatrix{T}; offdiagscale::T = T(1), offset_i::Int = 1, offset_j::Int = 1)
+    return TT(function (i, j, k, l)
+            i > j && ((i, j) = (j, i))
+            k > l && ((k, l) = (l, k))
+            i == j && k == l ? (return T(v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]])) :
+            i == j || k == l ? (return T(v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]] / offdiagscale)) :
+                               (return T(v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]] / (offdiagscale * offdiagscale)))
+        end)
 end
 
-function _fromvoigt{dim}(TT::Union{Type{Tensor{2,dim}}, Type{SymmetricTensor{2,dim}}}, v::AbstractVector, offdiagscale)
-    length(v) == n_components(TT) || throw(ArgumentError("invalid input size of voigt array"))
-    return TT(function (i,j)
-            if i > j && TT == SymmetricTensor{2,dim}
-                i,j = j,i
-            end
-            I, si = _index_scale(dim, i, j, offdiagscale)
-            return v[I] / si
-        end
-    )
-end
-
-function _fromvoigt{dim}(TT::Union{Type{Tensor{4,dim}}, Type{SymmetricTensor{4,dim}}}, v::AbstractMatrix, offdiagscale)
-    length(v) == n_components(TT) || throw(ArgumentError("invalid input size of voigt array"))
-    return TT(function (i,j,k,l)
-            if TT == SymmetricTensor{4,dim}
-                if i > j; i,j = j,i; end
-                if k > l; k,l = l,k; end
-            end
-            I, si = _index_scale(dim, i, j, offdiagscale)
-            J, sj = _index_scale(dim, k, l, offdiagscale)
-            return v[I, J] / (si * sj)
-        end
-    )
-end
-
-# Get index and scale to reduce order of symmetric tensor
-#
-# Example
-# index:
-# [1 6 5
-#  9 2 4
-#  8 7 3]
-#
-# scale:
-# [1 s s
-#  s 1 s
-#  s s 1]
-#
-function _index_scale(dim::Int, i::Int, j::Int, s::Real) # i ≤ dim and j ≤ dim are assumed
-    if i == j
-        (i, one(typeof(s)))
-    elseif i < j
-        (_offdiagind(dim, i, j), s)
-    else
-        (_offdiagind(dim, j, i) + sum(1:dim-1), s)
-    end
-end
-
-function _offdiagind(dim::Int, i::Int, j::Int) # i < j ≤ dim is assumed
-    count = dim + (j-1) - (i-1)
-    for idx in j+1:dim
-        count += idx-1
-    end
-    count
+Base.@propagate_inbounds @inline function frommandel{dim, T}(TT::Union{Type{SymmetricTensor{2, dim}}, Type{SymmetricTensor{4, dim}}}, v::AbstractVecOrMat{T})
+    fromvoigt(TT, v, offdiagscale = T(√2))
 end
