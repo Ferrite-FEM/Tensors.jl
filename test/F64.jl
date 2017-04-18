@@ -1,5 +1,5 @@
 # dummy type wrapping a Float64 used in tests
-immutable F64 <: AbstractFloat
+struct F64 <: AbstractFloat
     x::Float64
 end
 
@@ -25,11 +25,11 @@ Base.eps(::Type{F64}) = eps(Float64)
 # promotion
 Base.promote_type(::Type{Float32}, ::Type{F64}) = Float64 # for eig
 Base.promote_type(::Type{Float64}, ::Type{F64}) = Float64 # for vecnorm
-Base.promote{T <: Number}(a::F64, b::T) = a, F64(b)
-Base.promote{T <: Number}(a::T, b::F64) = F64(a), b
+Base.promote(a::F64, b::T) where {T <: Number} = a, F64(b)
+Base.promote(a::T, b::F64) where {T <: Number} = F64(a), b
 Base.convert(::Type{F64}, a::F64) = a
 Base.convert(::Type{Float64}, a::F64) = a.x
-Base.convert{T <: Number}(::Type{F64}, a::T) = F64(a)
+Base.convert(::Type{F64}, a::T) where {T <: Number} = F64(a)
 
 # for testing of eigfact
 Base.acos(a::F64) = F64(acos(a.x))

@@ -5,11 +5,11 @@ macro inboundsret(ex)
     end
 end
 
-function tensor_create_linear{order, dim}(T::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}, f)
+function tensor_create_linear(T::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}, f) where {order, dim}
     return Expr(:tuple, [f(i) for i=1:n_components(T)]...)
 end
 
-function tensor_create{order, dim}(::Type{Tensor{order, dim}}, f)
+function tensor_create(::Type{Tensor{order, dim}}, f) where {order, dim}
     if order == 1
         ex = Expr(:tuple, [f(i) for i=1:dim]...)
     elseif order == 2
@@ -20,7 +20,7 @@ function tensor_create{order, dim}(::Type{Tensor{order, dim}}, f)
     return ex
 end
 
-function tensor_create{order, dim}(::Type{SymmetricTensor{order, dim}}, f)
+function tensor_create(::Type{SymmetricTensor{order, dim}}, f) where {order, dim}
     ex = Expr(:tuple)
     if order == 2
         for j in 1:dim, i in j:dim
@@ -72,8 +72,8 @@ function remove_duplicates(ex1in, ex2in)
 end
 
 # check symmetry and return
-remove_duplicates{order, dim}(::Type{Tensor{order, dim}}, ex) = ex # do nothing if return type is a Tensor
-function remove_duplicates{order, dim}(::Type{SymmetricTensor{order, dim}}, ex)
+remove_duplicates(::Type{<:Tensor}, ex) = ex # do nothing if return type is a Tensor
+function remove_duplicates(::Type{SymmetricTensor{order, dim}}, ex) where {order, dim}
     ex.args = ex.args[SYMMETRIC_INDICES[order][dim]]
     return ex
 end
@@ -81,23 +81,15 @@ end
 # return types
 # double contraction
 function dcontract end
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{Tensor{4, dim}}) = Tensor{4, dim}
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{SymmetricTensor{4, dim}}) = Tensor{4, dim}
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{Tensor{4, dim}}) = Tensor{4, dim}
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{SymmetricTensor{4, dim}}) = SymmetricTensor{4, dim}
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{Tensor{2, dim}}) = Tensor{2, dim}
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{4, dim}}, ::Type{SymmetricTensor{2, dim}}) = Tensor{2, dim}
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{Tensor{2, dim}}) = SymmetricTensor{2, dim}
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{4, dim}}, ::Type{SymmetricTensor{2, dim}}) = SymmetricTensor{2, dim}
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{2, dim}}, ::Type{Tensor{4, dim}}) = Tensor{2, dim}
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{Tensor{2, dim}}, ::Type{SymmetricTensor{4, dim}}) = SymmetricTensor{2, dim}
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{2, dim}}, ::Type{Tensor{4, dim}}) = Tensor{2, dim}
-@pure getreturntype{dim}(::typeof(dcontract), ::Type{SymmetricTensor{2, dim}}, ::Type{SymmetricTensor{4, dim}}) = SymmetricTensor{2, dim}
+@pure getreturntype(::typeof(dcontract), ::Type{<:FourthOrderTensor{dim}}, ::Type{<:FourthOrderTensor{dim}}) where {dim} = Tensor{4, dim}
+@pure getreturntype(::typeof(dcontract), ::Type{<:SymmetricTensor{4, dim}}, ::Type{<:SymmetricTensor{4, dim}}) where {dim} = SymmetricTensor{4, dim}
+@pure getreturntype(::typeof(dcontract), ::Type{<:Tensor{4, dim}}, ::Type{<:SecondOrderTensor{dim}}) where {dim} = Tensor{2, dim}
+@pure getreturntype(::typeof(dcontract), ::Type{<:SymmetricTensor{4, dim}}, ::Type{<:SecondOrderTensor{dim}}) where {dim} = SymmetricTensor{2, dim}
+@pure getreturntype(::typeof(dcontract), ::Type{<:SecondOrderTensor{dim}}, ::Type{<:Tensor{4, dim}}) where {dim} = Tensor{2, dim}
+@pure getreturntype(::typeof(dcontract), ::Type{<:SecondOrderTensor{dim}}, ::Type{<:SymmetricTensor{4, dim}}) where {dim} = SymmetricTensor{2, dim}
 
 # otimes
 function otimes end
-@pure getreturntype{dim}(::typeof(otimes), ::Type{Tensor{1, dim}}, ::Type{Tensor{1, dim}}) = Tensor{2, dim}
-@pure getreturntype{dim}(::typeof(otimes), ::Type{Tensor{2, dim}}, ::Type{Tensor{2, dim}}) = Tensor{4, dim}
-@pure getreturntype{dim}(::typeof(otimes), ::Type{SymmetricTensor{2, dim}}, ::Type{Tensor{2, dim}}) = Tensor{4, dim}
-@pure getreturntype{dim}(::typeof(otimes), ::Type{Tensor{2, dim}}, ::Type{SymmetricTensor{2, dim}}) = Tensor{4, dim}
-@pure getreturntype{dim}(::typeof(otimes), ::Type{SymmetricTensor{2, dim}}, ::Type{SymmetricTensor{2, dim}}) = SymmetricTensor{4, dim}
+@pure getreturntype(::typeof(otimes), ::Type{<:Tensor{1, dim}}, ::Type{<:Tensor{1, dim}}) where {dim} = Tensor{2, dim}
+@pure getreturntype(::typeof(otimes), ::Type{<:SecondOrderTensor{dim}}, ::Type{<:SecondOrderTensor{dim}}) where {dim} = Tensor{4, dim}
+@pure getreturntype(::typeof(otimes), ::Type{<:SymmetricTensor{2, dim}}, ::Type{<:SymmetricTensor{2, dim}}) where {dim} = SymmetricTensor{4, dim}
