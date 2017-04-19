@@ -197,10 +197,10 @@ end
 end
 for TensorType in (Tensor, SymmetricTensor)
     @eval begin
-        @inline function _extract_gradient(v::T, x::$TensorType{order, dim, T2, N}) where {T<:Real, order, dim, T2, N}
+        @inline function _extract_gradient(v::T, x::$TensorType{order, dim}) where {T<:Real, order, dim}
             zero($TensorType{order, dim, T})
         end
-        @generated function _extract_gradient(v::$TensorType{order, dim, T, N}, ::$TensorType{order, dim, T2, N}) where {T<:Real, order, dim, T2, N}
+        @generated function _extract_gradient(v::$TensorType{order, dim, T}, ::$TensorType{order, dim}) where {T<:Real, order, dim}
             RetType = $TensorType{order+order, dim, T}
             return quote
                 $(Expr(:meta, :inline))
