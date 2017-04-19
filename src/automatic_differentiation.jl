@@ -13,25 +13,25 @@ import ForwardDiff: Dual, partials, value
 # For dim = 1 the type is exactly the same.
 
 # Scalar
-@inline function _extract_value{N, T}(v::Dual{N, T}, ::Vec{N})
+@inline function _extract_value(v::Dual, ::Vec)
     return value(v)
 end
-@inline function _extract_gradient{N, T}(v::Dual{N, T}, ::Vec{N})
-    return Vec{N, T}(partials(v).values)
+@inline function _extract_gradient{N}(v::Dual, ::Vec{N})
+    return Vec{N}(partials(v).values)
 end
 
-@inline function _extract_value{N, T, dim, T2}(v::Dual{N, T}, ::SymmetricTensor{2, dim, T2, N})
+@inline function _extract_value(v::Dual, ::SymmetricTensor)
     return value(v)
 end
-@inline function _extract_gradient{N, T, dim, T2}(v::Dual{N, T}, ::SymmetricTensor{2, dim, T2, N})
-    return SymmetricTensor{2, dim, T}(partials(v).values)
+@inline function _extract_gradient{dim}(v::Dual, ::SymmetricTensor{2, dim})
+    return SymmetricTensor{2, dim}(partials(v).values)
 end
 
-@inline function _extract_value{N, T, dim, T2}(v::Dual{N, T}, ::Tensor{2, dim, T2, N})
+@inline function _extract_value{dim}(v::Dual, ::Tensor{2, dim})
     return value(v)
 end
-@inline function _extract_gradient{N, T, dim, T2}(v::Dual{N, T}, ::Tensor{2, dim, T2, N})
-    return Tensor{2, dim, T}(partials(v).values)
+@inline function _extract_gradient{dim}(v::Dual, ::Tensor{2, dim})
+    return Tensor{2, dim}(partials(v).values)
 end
 
 # Vec
