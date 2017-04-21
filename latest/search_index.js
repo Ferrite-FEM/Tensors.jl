@@ -181,7 +181,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Binary Operations",
     "title": "Base.LinAlg.dot",
     "category": "Function",
-    "text": "dot(::Vec, ::Vec)\ndot(::Vec, ::SecondOrderTensor)\ndot(::SecondOrderTensor, ::Vec)\ndot(::SecondOrderTensor, ::SecondOrderTensor)\n\nComputes the dot product (single contraction) between two tensors. The symbol ⋅, written \\cdot, is overloaded for single contraction.\n\nExample:\n\njulia> A = rand(Tensor{2, 2})\n2×2 Tensors.Tensor{2,2,Float64,4}:\n 0.590845  0.566237\n 0.766797  0.460085\n\njulia> B = rand(Tensor{1, 2})\n2-element Tensors.Tensor{1,2,Float64,2}:\n 0.794026\n 0.854147\n\njulia> dot(A, B)\n2-element Tensors.Tensor{1,2,Float64,2}:\n 0.952796\n 1.00184\n\njulia> A ⋅ B\n2-element Tensors.Tensor{1,2,Float64,2}:\n 0.952796\n 1.00184\n\n\n\n"
+    "text": "dot(::Vec, ::Vec)\ndot(::Vec, ::SecondOrderTensor)\ndot(::SecondOrderTensor, ::Vec)\ndot(::SecondOrderTensor, ::SecondOrderTensor)\n\nComputes the dot product (single contraction) between two tensors. The symbol ⋅, written \\cdot, is overloaded for single contraction.\n\nExample:\n\njulia> A = rand(Tensor{2, 2})\n2×2 Tensors.Tensor{2,2,Float64,4}:\n 0.590845  0.566237\n 0.766797  0.460085\n\njulia> B = rand(Tensor{1, 2})\n2-element Tensors.Tensor{1,2,Float64,2}:\n 0.794026\n 0.854147\n\njulia> dot(A, B)\n2-element Tensors.Tensor{1,2,Float64,2}:\n 0.952796\n 1.00184\n\njulia> A ⋅ B\n2-element Tensors.Tensor{1,2,Float64,2}:\n 0.952796\n 1.00184\n\n\n\ndot(::SymmetricTensor{2})\n\nCompute the dot product of a symmetric second order tensor with itself. Return a SymmetricTensor.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2,3})\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\njulia> dot(A)\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 1.2577   1.25546  1.42706\n 1.25546  1.43013  1.47772\n 1.42706  1.47772  1.68067\n\n\n\n"
 },
 
 {
@@ -197,7 +197,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Binary Operations",
     "title": "Tensors.dcontract",
     "category": "Function",
-    "text": "dcontract(::SecondOrderTensor, ::SecondOrderTensor)\ndcontract(::SecondOrderTensor, ::FourthOrderTensor)\ndcontract(::FourthOrderTensor, ::SecondOrderTensor)\ndcontract(::FourthOrderTensor, ::FourthOrderTensor)\n\nComputes the double contraction between two tensors. The symbol ⊡, written \\boxdot, is overloaded for double contraction. The reason : is not used is because it does not have the same precedence as multiplication.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2, 2});\n\njulia> B = rand(SymmetricTensor{2, 2});\n\njulia> dcontract(A,B)\n1.9732018397544984\n\njulia> A ⊡ B\n1.9732018397544984\n\n\n\n"
+    "text": "dcontract(::SecondOrderTensor, ::SecondOrderTensor)\ndcontract(::SecondOrderTensor, ::FourthOrderTensor)\ndcontract(::FourthOrderTensor, ::SecondOrderTensor)\ndcontract(::FourthOrderTensor, ::FourthOrderTensor)\n\nCompute the double contraction between two tensors. The symbol ⊡, written \\boxdot, is overloaded for double contraction. The reason : is not used is because it does not have the same precedence as multiplication.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2, 2});\n\njulia> B = rand(SymmetricTensor{2, 2});\n\njulia> dcontract(A,B)\n1.9732018397544984\n\njulia> A ⊡ B\n1.9732018397544984\n\n\n\n"
 },
 
 {
@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Binary Operations",
     "title": "Tensors.otimes",
     "category": "Function",
-    "text": "otimes(::Vec, ::Vec)\notimes(::SecondOrderTensor, ::SecondOrderTensor)\n\nComputes the open product between two tensors. The symbol ⊗, written \\otimes, is overloaded for tensor products.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2, 2});\n\njulia> B = rand(SymmetricTensor{2, 2});\n\njulia> A ⊗ B\n2×2×2×2 Tensors.SymmetricTensor{4,2,Float64,9}:\n[:, :, 1, 1] =\n 0.271839  0.352792\n 0.352792  0.260518\n\n[:, :, 2, 1] =\n 0.469146  0.608857\n 0.608857  0.449607\n\n[:, :, 1, 2] =\n 0.469146  0.608857\n 0.608857  0.449607\n\n[:, :, 2, 2] =\n 0.504668  0.654957\n 0.654957  0.48365\n\n\n\n"
+    "text": "otimes(::Vec, ::Vec)\notimes(::SecondOrderTensor, ::SecondOrderTensor)\n\nCompute the open product between two tensors. The symbol ⊗, written \\otimes, is overloaded for tensor products.\n\nExample:\n\njulia> A = rand(SymmetricTensor{2, 2});\n\njulia> B = rand(SymmetricTensor{2, 2});\n\njulia> A ⊗ B\n2×2×2×2 Tensors.SymmetricTensor{4,2,Float64,9}:\n[:, :, 1, 1] =\n 0.271839  0.352792\n 0.352792  0.260518\n\n[:, :, 2, 1] =\n 0.469146  0.608857\n 0.608857  0.449607\n\n[:, :, 1, 2] =\n 0.469146  0.608857\n 0.608857  0.449607\n\n[:, :, 2, 2] =\n 0.504668  0.654957\n 0.654957  0.48365\n\n\n\notimes(::Vec)\n\nCompute the open product of a vector with itself. Return a SymmetricTensor.\n\nExample:\n\njulia> A = rand(Vec{2})\n2-element Tensors.Tensor{1,2,Float64,2}:\n 0.590845\n 0.766797\n\njulia> otimes(A)\n2×2 Tensors.SymmetricTensor{2,2,Float64,3}:\n 0.349097  0.453058\n 0.453058  0.587978\n\n\n\n"
 },
 
 {
@@ -245,7 +245,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Tensors.tdot",
     "category": "Function",
-    "text": "tdot(::SecondOrderTensor)\n\nComputes the transpose-dot of a second order tensor with itself. Returns a SymmetricTensor.\n\nExample:\n\njulia> A = rand(Tensor{2,3})\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 0.590845  0.460085  0.200586\n 0.766797  0.794026  0.298614\n 0.566237  0.854147  0.246837\n\njulia> tdot(A)\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 1.2577   1.36435   0.48726\n 1.36435  1.57172   0.540229\n 0.48726  0.540229  0.190334\n\n\n\n"
+    "text": "tdot(::SecondOrderTensor)\n\nCompute the transpose-dot product of a second order tensor with itself. Return a SymmetricTensor.\n\nExample:\n\njulia> A = rand(Tensor{2,3})\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 0.590845  0.460085  0.200586\n 0.766797  0.794026  0.298614\n 0.566237  0.854147  0.246837\n\njulia> tdot(A)\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 1.2577   1.36435   0.48726\n 1.36435  1.57172   0.540229\n 0.48726  0.540229  0.190334\n\n\n\n"
 },
 
 {
@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Tensors.dott",
     "category": "Function",
-    "text": "dott(::SecondOrderTensor)\n\nComputes the dot-transpose of a second order tensor with itself. Returns a SymmetricTensor.\n\nExample:\n\njulia> A = rand(Tensor{2,3})\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 0.590845  0.460085  0.200586\n 0.766797  0.794026  0.298614\n 0.566237  0.854147  0.246837\n\njulia> dott(A)\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 0.601011  0.878275  0.777051\n 0.878275  1.30763   1.18611\n 0.777051  1.18611   1.11112\n\n\n\n"
+    "text": "dott(::SecondOrderTensor)\n\nCompute the dot-transpose product of a second order tensor with itself. Return a SymmetricTensor.\n\nExample:\n\njulia> A = rand(Tensor{2,3})\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 0.590845  0.460085  0.200586\n 0.766797  0.794026  0.298614\n 0.566237  0.854147  0.246837\n\njulia> dott(A)\n3×3 Tensors.SymmetricTensor{2,3,Float64,6}:\n 0.601011  0.878275  0.777051\n 0.878275  1.30763   1.18611\n 0.777051  1.18611   1.11112\n\n\n\n"
 },
 
 {
