@@ -24,7 +24,7 @@ julia> symmetric(A)
 """
 @inline symmetric(S1::SymmetricTensors) = S1
 
-@inline function symmetric{dim}(S::Tensor{2, dim})
+@inline function symmetric(S::Tensor{2, dim}) where {dim}
     SymmetricTensor{2, dim}(@inline function(i, j) @inboundsret i == j ? S[i,j] : (S[i,j] + S[j,i]) / 2 end)
 end
 
@@ -36,7 +36,7 @@ minorsymmetric(::FourthOrderTensor)
 ```
 Computes the minor symmetric part of a fourth order tensor, returns a `SymmetricTensor{4}`.
 """
-@inline function minorsymmetric{dim}(S::Tensor{4, dim})
+@inline function minorsymmetric(S::Tensor{4, dim}) where {dim}
     SymmetricTensor{4, dim}(
         @inline function(i, j, k, l)
             @inbounds if i == j && k == l
@@ -58,7 +58,7 @@ majorsymmetric(::FourthOrderTensor)
 ```
 Computes the major symmetric part of a fourth order tensor, returns a `Tensor{4}`.
 """
-@inline function majorsymmetric{dim}(S::FourthOrderTensor{dim})
+@inline function majorsymmetric(S::FourthOrderTensor{dim}) where {dim}
     Tensor{4, dim}(
         @inline function(i, j, k, l)
             @inbounds if i == j == k == l || i == k && j == l
@@ -77,7 +77,7 @@ skew(::SecondOrderTensor)
 Computes the skew-symmetric (anti-symmetric) part of a second order tensor, returns a `Tensor{2}`.
 """
 @inline skew(S1::Tensor{2}) = (S1 - S1.') / 2
-@inline skew{dim,T}(S1::SymmetricTensor{2,dim,T}) = zero(Tensor{2,dim,T})
+@inline skew(S1::SymmetricTensor{2,dim,T}) where {dim, T} = zero(Tensor{2,dim,T})
 
 # Symmetry checks
 @inline Base.issymmetric(t::Tensor{2, 1}) = true
@@ -87,7 +87,7 @@ Computes the skew-symmetric (anti-symmetric) part of a second order tensor, retu
     return @inboundsret t[1,2] == t[2,1] && t[1,3] == t[3,1] && t[2,3] == t[3,2]
 end
 
-function isminorsymmetric{dim}(t::Tensor{4, dim})
+function isminorsymmetric(t::Tensor{4, dim}) where {dim}
     @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
         if t[i,j,k,l] != t[j,i,k,l] || t[i,j,k,l] != t[i,j,l,k]
             return false
@@ -98,7 +98,7 @@ end
 
 isminorsymmetric(::SymmetricTensor{4}) = true
 
-function ismajorsymmetric{dim}(t::FourthOrderTensor{dim})
+function ismajorsymmetric(t::FourthOrderTensor{dim}) where {dim}
     @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
         if t[i,j,k,l] != t[k,l,i,j]
             return false

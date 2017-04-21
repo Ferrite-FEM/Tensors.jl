@@ -3,7 +3,6 @@ __precompile__()
 module Tensors
 
 import Base.@pure
-using Compat
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
@@ -18,35 +17,35 @@ export tovoigt, tovoigt!, fromvoigt, tomandel, tomandel!, frommandel
 #########
 # Types #
 #########
-@compat abstract type AbstractTensor{order, dim, T <: Real} <: AbstractArray{T, order} end
+abstract type AbstractTensor{order, dim, T <: Real} <: AbstractArray{T, order} end
 
-immutable SymmetricTensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
+struct SymmetricTensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
     data::NTuple{M, T}
-    (::Type{SymmetricTensor{order, dim, T, M}}){order, dim, T, M}(data::NTuple) = new{order, dim, T, M}(data)
+    SymmetricTensor{order, dim, T, M}(data::NTuple) where {order, dim, T, M} = new{order, dim, T, M}(data)
 end
 
-immutable Tensor{order, dim, T <: Real, M} <: AbstractTensor{order, dim, T}
+struct Tensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
     data::NTuple{M, T}
 
     # this is needed to make Vec{3, Float64}(f::Function) work properly
-    (::Type{Tensor{order, dim, T, M}}){order, dim, T, M}(data::NTuple) = new{order, dim, T, M}(data)
-    (::Type{Tensor{order, dim, T, M}}){order, dim, T, M}(f::Function) = new{order, dim, T, M}(NTuple{M, T}(ntuple(f, Val{M})))
+    Tensor{order, dim, T, M}(data::NTuple) where {order, dim, T, M} = new{order, dim, T, M}(data)
+    Tensor{order, dim, T, M}(f::Function) where {order, dim, T, M} = new{order, dim, T, M}(NTuple{M, T}(ntuple(f, Val{M})))
 end
 
 ###############
 # Typealiases #
 ###############
-@compat const Vec{dim, T, M} = Tensor{1, dim, T, dim}
+const Vec{dim, T, M} = Tensor{1, dim, T, dim}
 
-@compat const AllTensors{dim, T} = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T},
-                                         SymmetricTensor{4, dim, T}, Tensor{4, dim, T},
-                                         Vec{dim, T}}
+const AllTensors{dim, T} = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T},
+                                 SymmetricTensor{4, dim, T}, Tensor{4, dim, T},
+                                 Vec{dim, T}}
 
 
-@compat const SecondOrderTensor{dim, T}   = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T}}
-@compat const FourthOrderTensor{dim, T}   = Union{SymmetricTensor{4, dim, T}, Tensor{4, dim, T}}
-@compat const SymmetricTensors{dim, T}    = Union{SymmetricTensor{2, dim, T}, SymmetricTensor{4, dim, T}}
-@compat const NonSymmetricTensors{dim, T} = Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T}}
+const SecondOrderTensor{dim, T}   = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T}}
+const FourthOrderTensor{dim, T}   = Union{SymmetricTensor{4, dim, T}, Tensor{4, dim, T}}
+const SymmetricTensors{dim, T}    = Union{SymmetricTensor{2, dim, T}, SymmetricTensor{4, dim, T}}
+const NonSymmetricTensors{dim, T} = Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T}}
 
 
 ##############################
@@ -54,42 +53,38 @@ end
 ##############################
 get_data(t::AbstractTensor) = t.data
 
-@pure n_components{dim}(::Type{SymmetricTensor{2, dim}}) = dim*dim - div((dim-1)*dim, 2)
-@pure function n_components{dim}(::Type{SymmetricTensor{4, dim}})
+@pure n_components(::Type{SymmetricTensor{2, dim}}) where {dim} = dim*dim - div((dim-1)*dim, 2)
+@pure function n_components(::Type{SymmetricTensor{4, dim}}) where {dim}
     n = n_components(SymmetricTensor{2, dim})
     return n*n
 end
-@pure n_components{order, dim}(::Type{Tensor{order, dim}}) = dim^order
+@pure n_components(::Type{Tensor{order, dim}}) where {order, dim} = dim^order
 
-@pure get_type{X}(::Type{Type{X}}) = X
+@pure get_type(::Type{Type{X}}) where {X} = X
 
-@pure get_base{order, dim, T, M}(::Type{Tensor{order, dim, T, M}}) = Tensor{order, dim}
-@pure get_base{order, dim, T}(::Type{Tensor{order, dim, T}}) = Tensor{order, dim}
-@pure get_base{order, dim}(::Type{Tensor{order, dim}}) = Tensor{order, dim}
-@pure get_base{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = SymmetricTensor{order, dim}
-@pure get_base{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}) = SymmetricTensor{order, dim}
-@pure get_base{order, dim}(::Type{SymmetricTensor{order, dim}}) = SymmetricTensor{order, dim}
+@pure get_base(::Type{<:Tensor{order, dim}})          where {order, dim} = Tensor{order, dim}
+@pure get_base(::Type{<:SymmetricTensor{order, dim}}) where {order, dim} = SymmetricTensor{order, dim}
 
-@pure Base.eltype{order, dim, T, M}(::Type{Tensor{order, dim, T, M}}) = T
-@pure Base.eltype{order, dim, T}(::Type{Tensor{order, dim, T}}) = T
-@pure Base.eltype{order, dim}(::Type{Tensor{order, dim}}) = Any
-@pure Base.eltype{order, dim, T, M}(::Type{SymmetricTensor{order, dim, T, M}}) = T
-@pure Base.eltype{order, dim, T}(::Type{SymmetricTensor{order, dim, T}}) = T
-@pure Base.eltype{order, dim}(::Type{SymmetricTensor{order, dim}}) = Any
+@pure Base.eltype(::Type{Tensor{order, dim, T, M}})          where {order, dim, T, M} = T
+@pure Base.eltype(::Type{Tensor{order, dim, T}})             where {order, dim, T}    = T
+@pure Base.eltype(::Type{Tensor{order, dim}})                where {order, dim}       = Any
+@pure Base.eltype(::Type{SymmetricTensor{order, dim, T, M}}) where {order, dim, T, M} = T
+@pure Base.eltype(::Type{SymmetricTensor{order, dim, T}})    where {order, dim, T}    = T
+@pure Base.eltype(::Type{SymmetricTensor{order, dim}})       where {order, dim}       = Any
 
 
 ############################
 # Abstract Array interface #
 ############################
-@compat Base.IndexStyle(::Type{<: SymmetricTensor}) = IndexCartesian()
-@compat Base.IndexStyle(::Type{<: Tensor}) = IndexLinear()
+Base.IndexStyle(::Type{<:SymmetricTensor}) = IndexCartesian()
+Base.IndexStyle(::Type{<:Tensor}) = IndexLinear()
 
 ########
 # Size #
 ########
-Base.size{dim}(::Vec{dim}) = (dim,)
-Base.size{dim}(::SecondOrderTensor{dim}) = (dim, dim)
-Base.size{dim}(::FourthOrderTensor{dim}) = (dim, dim, dim, dim)
+Base.size(::Vec{dim})               where {dim} = (dim,)
+Base.size(::SecondOrderTensor{dim}) where {dim} = (dim, dim)
+Base.size(::FourthOrderTensor{dim}) where {dim} = (dim, dim, dim, dim)
 
 #########################
 # Internal constructors #
@@ -98,24 +93,24 @@ for TensorType in (SymmetricTensor, Tensor)
     for order in (2, 4), dim in (1, 2, 3)
         N = n_components(TensorType{order, dim})
         @eval begin
-            @inline (::Type{$TensorType{$order, $dim}}){T <: Real}(t::NTuple{$N, T}) = $TensorType{$order, $dim, T, $N}(t)
-            @inline (::Type{$TensorType{$order, $dim, T1}}){T1 <: Real, T2 <: Real}(t::NTuple{$N, T2}) = $TensorType{$order, $dim, T1, $N}(t)
+            @inline $TensorType{$order, $dim}(t::NTuple{$N, T}) where {T} = $TensorType{$order, $dim, T, $N}(t)
+            @inline $TensorType{$order, $dim, T1}(t::NTuple{$N, T2}) where {T1, T2} = $TensorType{$order, $dim, T1, $N}(t)
         end
     end
     if TensorType == Tensor
         for dim in (1, 2, 3)
-            @eval @inline (::Type{Tensor{1, $dim}}){T <: Real}(t::NTuple{$dim, T}) = Tensor{1, $dim, T, $dim}(t)
+            @eval @inline Tensor{1, $dim}(t::NTuple{$dim, T}) where {T} = Tensor{1, $dim, T, $dim}(t)
         end
     end
 end
 # Special for Vec
-@inline (Tt::Type{Vec{dim}}){dim}(data) = Tensor{1, dim}(data)
+@inline Vec{dim}(data) where {dim} = Tensor{1, dim}(data)
 
 # General fallbacks
-@inline          (Tt::Type{Tensor{order, dim, T}}){order, dim, T}(data::Union{AbstractArray, Tuple, Function}) = convert(Tensor{order, dim, T}, Tensor{order, dim}(data))
-@inline (Tt::Type{SymmetricTensor{order, dim, T}}){order, dim, T}(data::Union{AbstractArray, Tuple, Function}) = convert(SymmetricTensor{order, dim, T}, SymmetricTensor{order, dim}(data))
-#@inline          (Tt::Type{Tensor{order, dim, T, M}}){order, dim, T, M}(data::Union{AbstractArray, Tuple, Function}) = Tensor{order, dim, T}(data)
-#@inline (Tt::Type{SymmetricTensor{order, dim, T, M}}){order, dim, T, M}(data::Union{AbstractArray, Tuple, Function}) = SymmetricTensor{order, dim, T}(data)
+@inline          Tensor{order, dim, T}(data::Union{AbstractArray, Tuple, Function}) where {order, dim, T} = convert(Tensor{order, dim, T}, Tensor{order, dim}(data))
+@inline SymmetricTensor{order, dim, T}(data::Union{AbstractArray, Tuple, Function}) where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, SymmetricTensor{order, dim}(data))
+# @inline          Tensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = Tensor{order, dim, T}(data)
+# @inline SymmetricTensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = SymmetricTensor{order, dim, T}(data)
 
 include("indexing.jl")
 include("utilities.jl")

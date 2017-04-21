@@ -7,13 +7,13 @@
 @inline Base.:-(S::AbstractTensor) = _map(-, S)
 
 # Binary
-@inline Base.:+{order, dim}(S1::Tensor{order, dim}, S2::Tensor{order, dim}) = _map(+, S1, S2)
-@inline Base.:+{order, dim}(S1::SymmetricTensor{order, dim}, S2::SymmetricTensor{order, dim}) = _map(+, S1, S2)
-@inline Base.:+{order, dim}(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) = ((SS1, SS2) = promote_base(S1, S2); SS1 + SS2)
+@inline Base.:+(S1::Tensor{order, dim}, S2::Tensor{order, dim}) where {order, dim} = _map(+, S1, S2)
+@inline Base.:+(S1::SymmetricTensor{order, dim}, S2::SymmetricTensor{order, dim}) where {order, dim} = _map(+, S1, S2)
+@inline Base.:+(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) where {order, dim} = ((SS1, SS2) = promote_base(S1, S2); SS1 + SS2)
 
-@inline Base.:-{order, dim}(S1::Tensor{order, dim}, S2::Tensor{order, dim}) = _map(-, S1, S2)
-@inline Base.:-{order, dim}(S1::SymmetricTensor{order, dim}, S2::SymmetricTensor{order, dim}) = _map(-, S1, S2)
-@inline Base.:-{order, dim}(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) = ((SS1, SS2) = promote_base(S1, S2); SS1 - SS2)
+@inline Base.:-(S1::Tensor{order, dim}, S2::Tensor{order, dim}) where {order, dim} = _map(-, S1, S2)
+@inline Base.:-(S1::SymmetricTensor{order, dim}, S2::SymmetricTensor{order, dim}) where {order, dim} = _map(-, S1, S2)
+@inline Base.:-(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) where {order, dim} = ((SS1, SS2) = promote_base(S1, S2); SS1 - SS2)
 
 @inline Base.:*(S::AbstractTensor, n::Number) = _map(x -> x*n, S)
 @inline Base.:*(n::Number, S::AbstractTensor) = _map(x -> n*x, S)
@@ -34,34 +34,20 @@ end
 end
 
 # power
-@static if VERSION >= v"0.6.0-pre.alpha.108"
-    @inline Base.literal_pow(::typeof(^), S::SecondOrderTensor,   ::Type{Val{-1}}) = inv(S)
-    @inline Base.literal_pow(::typeof(^), S::SecondOrderTensor,   ::Type{Val{0}})  = one(S)
-    @inline Base.literal_pow(::typeof(^), S::SecondOrderTensor,   ::Type{Val{1}})  = S
-    @inline function Base.literal_pow{p}(::typeof(^), S1::SecondOrderTensor, ::Type{Val{p}})
-        p > 0 ? (S2 = S1; q = p) : (S2 = inv(S1); q = -p)
-        S3 = S2
-        for i in 2:q
-            S2 = _powdot(S2, S3)
-        end
-        S2
+@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Type{Val{-1}}) = inv(S)
+@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Type{Val{0}})  = one(S)
+@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Type{Val{1}})  = S
+@inline function Base.literal_pow(::typeof(^), S1::SecondOrderTensor, ::Type{Val{p}}) where {p}
+    p > 0 ? (S2 = S1; q = p) : (S2 = inv(S1); q = -p)
+    S3 = S2
+    for i in 2:q
+        S2 = _powdot(S2, S3)
     end
-else # 0.5
-    @inline function Base.:^(S1::SecondOrderTensor, p::Int)
-        p == -1 && return inv(S1)
-        p ==  0 && return one(S1)
-        p ==  1 && return S1
-        p <   0 && return inv(S1)^-p
-        S2 = S1
-        for i in 2:p
-            S2 = _powdot(S2, S1)
-        end
-        S2
-    end
+    S2
 end
 
 @inline _powdot(S1::Tensor, S2::Tensor) = dot(S1, S2)
-@generated function _powdot{dim}(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim})
+@generated function _powdot(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim}) where {dim}
     idxS1(i, j) = compute_index(get_base(S1), i, j)
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     exps = Expr(:tuple)

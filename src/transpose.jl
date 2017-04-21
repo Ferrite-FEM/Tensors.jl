@@ -24,7 +24,7 @@ julia> A'
 """
 @inline Base.transpose(S::Vec) = S
 
-@inline function Base.transpose{dim}(S::Tensor{2, dim})
+@inline function Base.transpose(S::Tensor{2, dim}) where {dim}
     Tensor{2, dim}(@inline function(i, j) @inboundsret S[j,i]; end)
 end
 
@@ -36,7 +36,7 @@ minortranspose(::FourthOrderTensor)
 ```
 Computes the minor transpose of a fourth order tensor.
 """
-@inline function minortranspose{dim}(S::Tensor{4, dim})
+@inline function minortranspose(S::Tensor{4, dim}) where {dim}
     Tensor{4, dim}(@inline function(i, j, k, l) @inboundsret S[j,i,l,k]; end)
 end
 
@@ -49,7 +49,7 @@ majortranspose(::FourthOrderTensor)
 ```
 Computes the major transpose of a fourth order tensor.
 """
-@inline function majortranspose{dim}(S::FourthOrderTensor{dim})
+@inline function majortranspose(S::FourthOrderTensor{dim}) where {dim}
     Tensor{4, dim}(@inline function(i, j, k, l) @inboundsret S[k,l,i,j]; end)
 end
 

@@ -24,7 +24,7 @@ julia> A ⊡ B
 1.9732018397544984
 ```
 """
-@generated function dcontract{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
+@generated function dcontract(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
     idxS1(i, j) = compute_index(get_base(S1), i, j)
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))]) for i in 1:dim, j in 1:dim][:]
@@ -36,7 +36,7 @@ julia> A ⊡ B
     end
 end
 
-@generated function dcontract{dim}(S1::SecondOrderTensor{dim}, S2::FourthOrderTensor{dim})
+@generated function dcontract(S1::SecondOrderTensor{dim}, S2::FourthOrderTensor{dim}) where {dim}
     TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
     idxS1(i, j) = compute_index(get_base(S1), i, j)
     idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
@@ -53,7 +53,7 @@ end
     end
 end
 
-@generated function dcontract{dim}(S1::FourthOrderTensor{dim}, S2::SecondOrderTensor{dim})
+@generated function dcontract(S1::FourthOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
     TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
     idxS1(i, j, k, l) = compute_index(get_base(S1), i, j, k, l)
     idxS2(i, j) = compute_index(get_base(S2), i, j)
@@ -70,7 +70,7 @@ end
     end
 end
 
-@generated function dcontract{dim}(S1::FourthOrderTensor{dim}, S2::FourthOrderTensor{dim})
+@generated function dcontract(S1::FourthOrderTensor{dim}, S2::FourthOrderTensor{dim}) where {dim}
     TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
     idxS1(i, j, k, l) = compute_index(get_base(S1), i, j, k, l)
     idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
@@ -123,11 +123,11 @@ julia> A ⊗ B
  0.654957  0.48365
 ```
 """
-@inline function otimes{dim}(S1::Vec{dim}, S2::Vec{dim})
+@inline function otimes(S1::Vec{dim}, S2::Vec{dim}) where {dim}
     return Tensor{2, dim}(@inline function(i,j) @inboundsret S1[i] * S2[j]; end)
 end
 
-@inline function otimes{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
+@inline function otimes(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
     TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
     TensorType(@inline function(i,j,k,l) @inboundsret S1[i,j] * S2[k,l]; end)
 end
@@ -168,7 +168,7 @@ julia> A ⋅ B
  1.00184
 ```
 """
-@generated function Base.dot{dim}(S1::Vec{dim}, S2::Vec{dim})
+@generated function Base.dot(S1::Vec{dim}, S2::Vec{dim}) where {dim}
     ex1 = Expr[:(get_data(S1)[$i]) for i in 1:dim]
     ex2 = Expr[:(get_data(S2)[$i]) for i in 1:dim]
     exp = reducer(ex1, ex2)
@@ -178,7 +178,7 @@ julia> A ⋅ B
     end
 end
 
-@generated function Base.dot{dim}(S1::SecondOrderTensor{dim}, S2::Vec{dim})
+@generated function Base.dot(S1::SecondOrderTensor{dim}, S2::Vec{dim}) where {dim}
     idxS1(i, j) = compute_index(get_base(S1), i, j)
     exps = Expr(:tuple)
     for i in 1:dim
@@ -192,7 +192,7 @@ end
     end
 end
 
-@generated function Base.dot{dim}(S1::Vec{dim}, S2::SecondOrderTensor{dim})
+@generated function Base.dot(S1::Vec{dim}, S2::SecondOrderTensor{dim}) where {dim}
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     exps = Expr(:tuple)
     for j in 1:dim
@@ -206,7 +206,7 @@ end
     end
 end
 
-@generated function Base.dot{dim}(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim})
+@generated function Base.dot(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
     idxS1(i, j) = compute_index(get_base(S1), i, j)
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     exps = Expr(:tuple)
@@ -244,7 +244,7 @@ julia> tdot(A)
  0.48726  0.540229  0.190334
 ```
 """
-@generated function tdot{dim}(S1::SecondOrderTensor{dim})
+@generated function tdot(S1::SecondOrderTensor{dim}) where {dim}
     idxS1(i,j) = compute_index(get_base(S1), i, j)
     ex = Expr(:tuple)
     for j in 1:dim, i in 1:dim
@@ -313,6 +313,6 @@ julia> a × b
   0.116354
 ```
 """
-@inline Base.cross{T}(u::Vec{3, T}, v::Vec{3, T}) = @inboundsret Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
-@inline Base.cross{T}(u::Vec{2, T}, v::Vec{2, T}) = @inboundsret Vec{3}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
-@inline Base.cross{T}( ::Vec{1, T},  ::Vec{1, T}) = @inboundsret zero(Vec{3,T})
+@inline Base.cross(u::Vec{3, T}, v::Vec{3, T}) where {T} = @inboundsret Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
+@inline Base.cross(u::Vec{2, T}, v::Vec{2, T}) where {T} = @inboundsret Vec{3}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
+@inline Base.cross( ::Vec{1, T},  ::Vec{1, T}) where {T} = @inboundsret zero(Vec{3,T})

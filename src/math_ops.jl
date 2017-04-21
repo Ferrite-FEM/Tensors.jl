@@ -26,7 +26,7 @@ julia> norm(A)
 # special case for Tensor{4, 3} since it is faster than unrolling
 @inline Base.norm(S::Tensor{4, 3}) = sqrt(mapreduce(abs2, +, S))
 
-@generated function Base.norm{dim}(S::FourthOrderTensor{dim})
+@generated function Base.norm(S::FourthOrderTensor{dim}) where {dim}
     idx(i,j,k,l) = compute_index(get_base(S), i, j, k, l)
     ex = Expr[]
     for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
@@ -88,7 +88,7 @@ julia> inv(A)
  -68.541     81.4917  -38.8361
 ```
 """
-@generated function Base.inv{dim}(t::Tensor{2, dim})
+@generated function Base.inv(t::Tensor{2, dim}) where {dim}
     Tt = get_base(t)
     idx(i,j) = compute_index(Tt, i, j)
     if dim == 1
@@ -122,7 +122,7 @@ julia> inv(A)
     end
 end
 
-@generated function Base.inv{dim}(t::SymmetricTensor{2, dim})
+@generated function Base.inv(t::SymmetricTensor{2, dim}) where {dim}
     Tt = get_base(t)
     idx(i,j) = compute_index(Tt, i, j)
     if dim == 1
@@ -153,11 +153,11 @@ end
     end
 end
 
-function Base.inv{dim}(t::Tensor{4, dim})
+function Base.inv(t::Tensor{4, dim}) where {dim}
     fromvoigt(Tensor{4, dim}, inv(tovoigt(t)))
 end
 
-function Base.inv{dim, T}(t::SymmetricTensor{4, dim, T})
+function Base.inv(t::SymmetricTensor{4, dim, T}) where {dim, T}
     frommandel(SymmetricTensor{4, dim}, inv(tomandel(t)))
 end
 
@@ -287,7 +287,7 @@ julia> trace(A)
 1.9050765715072775
 ```
 """
-@generated function Base.trace{dim}(S::SecondOrderTensor{dim})
+@generated function Base.trace(S::SecondOrderTensor{dim}) where {dim}
     idx(i,j) = compute_index(get_base(S), i, j)
     ex = Expr[:(get_data(S)[$(idx(i,i))]) for i in 1:dim]
     exp = reduce((ex1, ex2) -> :(+($ex1, $ex2)), ex)
