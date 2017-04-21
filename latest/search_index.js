@@ -533,7 +533,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Tensors.tovoigt",
     "category": "Function",
-    "text": "tovoigt(A::Union{SecondOrderTensor, FourthOrderTensor}; offdiagscale)\n\nConverts a tensor to \"Voigt\"-format using the following index order: [11, 22, 33, 23, 13, 12, 32, 31, 21]. For SymmetricTensors, the keyword argument offdiagscale sets a scaling factor on the offdiagonal elements. tomandel can also be used for \"Mandel\"-format which sets offdiagscale = √2.\n\nSee also fromvoigt.\n\njulia> tovoigt(Tensor{2,3}(1:9))\n9-element Array{Int64,1}:\n 1\n 5\n 9\n 8\n 7\n 4\n 6\n 3\n 2\n\njulia> tovoigt(SymmetricTensor{2,3}(1.0:1.0:6.0); offdiagscale = 2.0)\n6-element Array{Float64,1}:\n  1.0\n  4.0\n  6.0\n 10.0\n  6.0\n  4.0\n\njulia> tovoigt(Tensor{4,2}(1:16))\n4×4 Array{Int64,2}:\n 1  13   9  5\n 4  16  12  8\n 3  15  11  7\n 2  14  10  6\n\n\n\n"
+    "text": "tovoigt(A::Union{SecondOrderTensor, FourthOrderTensor}; offdiagscale)\ntovoigt!(v::Array, A::Union{SecondOrderTensor, FourthOrderTensor}; offdiagscale)\n\nConverts a tensor to \"Voigt\"-format using the following index order: [11, 22, 33, 23, 13, 12, 32, 31, 21]. For SymmetricTensors, the keyword argument offdiagscale sets a scaling factor on the offdiagonal elements. tomandel can also be used for \"Mandel\"-format which sets offdiagscale = √2.\n\nSee also fromvoigt.\n\njulia> tovoigt(Tensor{2,3}(1:9))\n9-element Array{Int64,1}:\n 1\n 5\n 9\n 8\n 7\n 4\n 6\n 3\n 2\n\njulia> tovoigt(SymmetricTensor{2,3}(1:6); offdiagscale = 2)\n6-element Array{Int64,1}:\n  1\n  4\n  6\n 10\n  6\n  4\n\njulia> tovoigt(Tensor{4,2}(1:16))\n4×4 Array{Int64,2}:\n 1  13   9  5\n 4  16  12  8\n 3  15  11  7\n 2  14  10  6\n\n\n\n"
 },
 
 {
@@ -541,7 +541,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Tensors.fromvoigt",
     "category": "Function",
-    "text": "fromvoigt(::T, A::Array)\n\nConverts an array A stored in Voigt format to a Tensor of type T. For SymmetricTensors, the keyword argument offdiagscale sets an inverse scaling factor on the offdiagonal elements. frommandel can also be used for \"Mandel\"-format which sets offdiagscale = √2.\n\nSee also tovoigt.\n\njulia> fromvoigt(Tensor{2,3}, 1.0:1.0:9.0)\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 1.0  6.0  5.0\n 9.0  2.0  4.0\n 8.0  7.0  3.0\n\n\n\n"
+    "text": "fromvoigt(S::Type{<:AbstractTensor}, A::Array{T}; offdiagscale::T = 1)\n\nConverts an array A stored in Voigt format to a Tensor of type S. For SymmetricTensors, the keyword argument offdiagscale sets an inverse scaling factor on the offdiagonal elements. frommandel can also be used for \"Mandel\"-format which sets offdiagscale = √2.\n\nSee also tovoigt.\n\njulia> fromvoigt(Tensor{2,3}, 1.0:1.0:9.0)\n3×3 Tensors.Tensor{2,3,Float64,9}:\n 1.0  6.0  5.0\n 9.0  2.0  4.0\n 8.0  7.0  3.0\n\n\n\n"
 },
 
 {
