@@ -6,7 +6,7 @@ dcontract(::SecondOrderTensor, ::FourthOrderTensor)
 dcontract(::FourthOrderTensor, ::SecondOrderTensor)
 dcontract(::FourthOrderTensor, ::FourthOrderTensor)
 ```
-Computes the double contraction between two tensors.
+Compute the double contraction between two tensors.
 The symbol `⊡`, written `\\boxdot`, is overloaded for double contraction.
 The reason `:` is not used is because it does not have the same precedence as multiplication.
 
@@ -94,7 +94,7 @@ const ⊡ = dcontract
 otimes(::Vec, ::Vec)
 otimes(::SecondOrderTensor, ::SecondOrderTensor)
 ```
-Computes the open product between two tensors.
+Compute the open product between two tensors.
 The symbol `⊗`, written `\\otimes`, is overloaded for tensor products.
 
 **Example:**
@@ -133,6 +133,31 @@ end
 end
 
 const ⊗ = otimes
+
+"""
+```julia
+otimes(::Vec)
+```
+Compute the open product of a vector with itself.
+Return a `SymmetricTensor`.
+
+**Example:**
+
+```jldoctest
+julia> A = rand(Vec{2})
+2-element Tensors.Tensor{1,2,Float64,2}:
+ 0.590845
+ 0.766797
+
+julia> otimes(A)
+2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+ 0.349097  0.453058
+ 0.453058  0.587978
+```
+"""
+@inline function otimes(S::Vec{dim}) where {dim}
+    return SymmetricTensor{2, dim}(@inline function(i,j) @inboundsret S[i] * S[j]; end)
+end
 
 """
 ```julia
@@ -223,10 +248,35 @@ end
 
 """
 ```julia
+dot(::SymmetricTensor{2})
+```
+Compute the dot product of a symmetric second order tensor with itself.
+Return a `SymmetricTensor`.
+
+**Example:**
+
+```jldoctest
+julia> A = rand(SymmetricTensor{2,3})
+3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
+ 0.590845  0.766797  0.566237
+ 0.766797  0.460085  0.794026
+ 0.566237  0.794026  0.854147
+
+julia> dot(A)
+3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
+ 1.2577   1.25546  1.42706
+ 1.25546  1.43013  1.47772
+ 1.42706  1.47772  1.68067
+```
+"""
+@inline Base.dot(S::SymmetricTensor{2}) = tdot(S)
+
+"""
+```julia
 tdot(::SecondOrderTensor)
 ```
-Computes the transpose-dot of a second order tensor with itself.
-Returns a `SymmetricTensor`.
+Compute the transpose-dot product of a second order tensor with itself.
+Return a `SymmetricTensor`.
 
 **Example:**
 
@@ -244,12 +294,12 @@ julia> tdot(A)
  0.48726  0.540229  0.190334
 ```
 """
-@generated function tdot(S1::SecondOrderTensor{dim}) where {dim}
-    idxS1(i,j) = compute_index(get_base(S1), i, j)
+@generated function tdot(S::SecondOrderTensor{dim}) where {dim}
+    idxS(i,j) = compute_index(get_base(S), i, j)
     ex = Expr(:tuple)
     for j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(k, i))]) for k in 1:dim]
-        ex2 = Expr[:(get_data(S1)[$(idxS1(k, j))]) for k in 1:dim]
+        ex1 = Expr[:(get_data(S)[$(idxS(k, i))]) for k in 1:dim]
+        ex2 = Expr[:(get_data(S)[$(idxS(k, j))]) for k in 1:dim]
         push!(ex.args, reducer(ex1, ex2))
     end
     expr = remove_duplicates(SymmetricTensor{2, dim}, ex)
@@ -263,8 +313,8 @@ end
 ```julia
 dott(::SecondOrderTensor)
 ```
-Computes the dot-transpose of a second order tensor with itself.
-Returns a `SymmetricTensor`.
+Compute the dot-transpose product of a second order tensor with itself.
+Return a `SymmetricTensor`.
 
 **Example:**
 

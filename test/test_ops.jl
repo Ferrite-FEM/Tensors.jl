@@ -49,36 +49,36 @@ i,j,k,l = rand(1:dim,4)
 end # of testsection
 
 @testsection "outer product" begin
+    # binary
     @test             (@inferred otimes(a, b))::Tensor{2, dim, T}                                  ≈ Array(a) * Array(b)'
     @test reshape(vec((@inferred otimes(A, B))::Tensor{4, dim, T}), dim^2, dim^2)                  ≈ vec(A) * vec(B)'
     @test reshape(vec((@inferred otimes(A_sym, B))::Tensor{4, dim, T}), dim^2, dim^2)              ≈ vec(A_sym) * vec(B)'
     @test reshape(vec((@inferred otimes(A, B_sym))::Tensor{4, dim, T}), dim^2, dim^2)              ≈ vec(A) * vec(B_sym)'
     @test reshape(vec((@inferred otimes(A_sym, B_sym))::SymmetricTensor{4, dim, T}), dim^2, dim^2) ≈ vec(A_sym) * vec(B_sym)'
+    # unary
+    @test (@inferred otimes(a))::SymmetricTensor{2, dim, T} ≈ otimes(a, a)
 end # of testsection
 
 @testsection "dot products" begin
-    # 1 - 2
+    # 1 - 1
     @test (@inferred dot(a, b))::T               ≈ sum(Array(a) .* Array(b))
+    # 1 - 2
     @test (@inferred dot(A, b))::Vec{dim, T}     ≈ Array(A) * Array(b)
     @test (@inferred dot(A_sym, b))::Vec{dim, T} ≈ Array(A_sym) * Array(b)
     @test (@inferred dot(a, B))::Vec{dim, T}     ≈ Array(B)' * Array(a)
     @test (@inferred dot(a, B_sym))::Vec{dim, T} ≈ Array(B_sym)' * Array(a)
-
     # 2 - 2
+    # binary
     @test (@inferred dot(A, B))::Tensor{2, dim, T}         ≈ Array(A) * Array(B)
     @test (@inferred dot(A_sym, B))::Tensor{2, dim, T}     ≈ Array(A_sym) * Array(B)
     @test (@inferred dot(A, B_sym))::Tensor{2, dim, T}     ≈ Array(A) * Array(B_sym)
     @test (@inferred dot(A_sym, B_sym))::Tensor{2, dim, T} ≈ Array(A_sym) * Array(B_sym)
-
-    @test (@inferred tdot(A))::SymmetricTensor{2, dim, T}     ≈ Array(A)' * Array(A)
-    @test (@inferred tdot(A_sym))::SymmetricTensor{2, dim, T} ≈ Array(A_sym)' * Array(A_sym)
-    @test (@inferred dott(A))::SymmetricTensor{2, dim, T}     ≈ Array(A) * Array(A)'
-    @test (@inferred dott(A_sym))::SymmetricTensor{2, dim, T} ≈ Array(A_sym) * Array(A_sym)'
-
-    @test tdot(A) ≈ dott(transpose(A))
-    @test tdot(transpose(A)) ≈ dott(A)
-    @test tdot(A_sym) ≈ dott(transpose(A_sym))
-    @test tdot(transpose(A_sym)) ≈ dott(A_sym)
+    # unary
+    @test (@inferred dot(A_sym))::SymmetricTensor{2, dim, T}  ≈ dot(A_sym, A_sym)
+    @test (@inferred tdot(A))::SymmetricTensor{2, dim, T}     ≈ dot(transpose(A), A)
+    @test (@inferred tdot(A_sym))::SymmetricTensor{2, dim, T} ≈ dot(transpose(A_sym), A_sym)
+    @test (@inferred dott(A))::SymmetricTensor{2, dim, T}     ≈ dot(A, transpose(A))
+    @test (@inferred dott(A_sym))::SymmetricTensor{2, dim, T} ≈ dot(A_sym, transpose(A_sym))
 end # of testsection
 
 @testsection "symmetric/skew-symmetric" begin
