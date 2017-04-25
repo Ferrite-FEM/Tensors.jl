@@ -40,6 +40,7 @@ tensor_dict, symtensor_dict = create_tensors()
 
 include("benchmark_functions.jl")
 include("benchmark_ad.jl")
+include("benchmark_doc.jl")
 
 function run_benchmarks(name, tagfilter = @tagged ALL)
     const paramspath = joinpath(dirname(@__FILE__), "params.jld")
@@ -67,4 +68,3 @@ function generate_report(v1)
         printreport(f, minimum(v1_res); iscomparisonjob = false)
     end
 end
-
