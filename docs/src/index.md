@@ -31,6 +31,13 @@ Pages = [
 Depth = 1
 ```
 
+## Benchmarks
+
+```@contents
+Pages = [
+    "benchmarks.md"]
+```
+
 ## Demos
 
 ```@contents
@@ -38,7 +45,3 @@ Pages = [
     "demos.md"]
 Depth = 1
 ```
-
-
-
-

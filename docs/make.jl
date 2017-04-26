@@ -16,6 +16,7 @@ makedocs(
             "man/storing_tensors.md",
             "man/automatic_differentiation.md",
             ],
+        "Benchmarks" => "benchmarks.md",
         "Demos" => "demos.md"
     ]
 )
