@@ -131,10 +131,9 @@ Base.@propagate_inbounds @inline function fromvoigt(TT::Type{<: SymmetricTensor{
         end)
 end
 
-Base.@propagate_inbounds @inline function frommandel(TT::Type{<: SymmetricTensor{2, dim}}, v::AbstractVector{T}; offset::Int = 1) where {dim, T}
+Base.@propagate_inbounds @inline function frommandel(TT::Type{<: SymmetricTensor{2}}, v::AbstractVector{T}; offset::Int = 1) where {T}
     fromvoigt(TT, v, offdiagscale = T(√2), offset = offset)
 end
-
-Base.@propagate_inbounds @inline function frommandel(TT::Type{<: SymmetricTensor{4, dim}}, v::AbstractMatrix{T}; offset_i::Int = 1, offset_j::Int = 1) where {dim, T}
+Base.@propagate_inbounds @inline function frommandel(TT::Type{<: SymmetricTensor{4}}, v::AbstractMatrix{T}; offset_i::Int = 1, offset_j::Int = 1) where {T}
     fromvoigt(TT, v, offdiagscale = T(√2), offset_i = offset_i, offset_j = offset_j)
 end
