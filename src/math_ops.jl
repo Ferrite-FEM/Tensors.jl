@@ -23,8 +23,14 @@ julia> norm(A)
 @inline Base.norm(v::Vec) = sqrt(dot(v, v))
 @inline Base.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
 
-# special case for Tensor{4, 3} since it is faster than unrolling
-@inline Base.norm(S::Tensor{4, 3}) = sqrt(mapreduce(abs2, +, S))
+# special case for Tensor{4, 3} since this is faster than unrolling
+@inline function Base.norm{T}(S::Tensor{4, 3, T})
+    v = zero(T)
+    @inbounds @simd for i in 1:length(S)
+        v += S[i] * S[i]
+    end
+    return sqrt(v)
+end
 
 @generated function Base.norm(S::FourthOrderTensor{dim}) where {dim}
     idx(i,j,k,l) = compute_index(get_base(S), i, j, k, l)
