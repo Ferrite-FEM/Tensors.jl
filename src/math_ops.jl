@@ -213,7 +213,7 @@ Compute the eigenvectors of a symmetric second order tensor.
 """
 @inline Base.eigvecs(S::SymmetricTensor) = (E = eigfact(S); E.Φ)
 
-immutable Eigen{T, dim, M}
+struct Eigen{T, dim, M}
     λ::Vec{dim, T}
     Φ::Tensor{2, dim, T, M}
 end
