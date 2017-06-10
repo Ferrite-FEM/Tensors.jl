@@ -37,7 +37,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Manual Outline",
     "category": "section",
-    "text": "Pages = [\n    \"man/constructing_tensors.md\",\n    \"man/indexing.md\",\n    \"man/binary_operators.md\",\n    \"man/other_operators.md\",\n    \"man/storing_tensors.md\",\n]\nDepth = 1"
+    "text": "Pages = [\n    \"man/constructing_tensors.md\",\n    \"man/indexing.md\",\n    \"man/binary_operators.md\",\n    \"man/other_operators.md\",\n    \"man/storing_tensors.md\",\n    \"man/automatic_differentiation.md\",\n]\nDepth = 1"
 },
 
 {
