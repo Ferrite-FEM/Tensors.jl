@@ -312,6 +312,16 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
         # scale with first element of eigenvector to account for possible directions
         @test Φ[:, i]*Φ[1, i] ≈ Φa[:, i]*Φa[1, i]
     end
+
+    # test eigenfactorizations for a diagonal tensor
+    v = rand(T, dim)
+    d_sym = diagm(SymmetricTensor{2, dim, T}, v)
+    E = @inferred eigfact(d_sym)
+    Λ, Φ = @inferred eig(d_sym)
+    Λa, Φa = eig(Array(d_sym))
+
+    @test Λ ≈ (@inferred eigvals(d_sym)) ≈ eigvals(E) ≈ Λa
+    @test Φ ≈ (@inferred eigvecs(d_sym)) ≈ eigvecs(E)
 end
 end # of testset
 
