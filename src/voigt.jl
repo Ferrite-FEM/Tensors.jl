@@ -47,10 +47,10 @@ end
 @inline function tovoigt(A::Tensor{4, dim, T, M}) where {dim, T, M}
     @inboundsret tovoigt!(Matrix{T}(Int(√M), Int(√M)), A)
 end
-@inline function tovoigt(A::SymmetricTensor{2, dim, T, M}; offdiagscale = 1) where {dim, T, M}
+@inline function tovoigt(A::SymmetricTensor{2, dim, T, M}; offdiagscale::T = one(T)) where {dim, T, M}
     @inboundsret tovoigt!(Vector{T}(M), A, offdiagscale = offdiagscale)
 end
-@inline function tovoigt(A::SymmetricTensor{4, dim, T, M}; offdiagscale = 1) where {dim, T, M}
+@inline function tovoigt(A::SymmetricTensor{4, dim, T, M}; offdiagscale::T = one(T)) where {dim, T, M}
     @inboundsret tovoigt!(Matrix{T}(Int(√M), Int(√M)), A, offdiagscale = offdiagscale)
 end
 
@@ -66,13 +66,13 @@ Base.@propagate_inbounds @inline function tovoigt!(v::AbstractMatrix, A::Tensor{
     end
     return v
 end
-Base.@propagate_inbounds @inline function tovoigt!(v::AbstractVector, A::SymmetricTensor{2, dim}; offdiagscale = 1, offset::Int = 1) where {dim}
+Base.@propagate_inbounds @inline function tovoigt!(v::AbstractVector{T}, A::SymmetricTensor{2, dim}; offdiagscale::T = one(T), offset::Int = 1) where {T, dim}
     for j in 1:dim, i in 1:j
         v[offset + VOIGT_ORDER[dim][i, j]] = i == j ? A[i, j] : A[i, j] * offdiagscale
     end
     return v
 end
-Base.@propagate_inbounds @inline function tovoigt!(v::AbstractMatrix, A::SymmetricTensor{4, dim}; offdiagscale = 1, offset_i::Int = 1, offset_j::Int = 1) where {dim}
+Base.@propagate_inbounds @inline function tovoigt!(v::AbstractMatrix{T}, A::SymmetricTensor{4, dim}; offdiagscale::T = one(T), offset_i::Int = 1, offset_j::Int = 1) where {T, dim}
     for l in 1:dim, k in 1:l, j in 1:dim, i in 1:j
         v[offset_i + VOIGT_ORDER[dim][i, j], offset_j + VOIGT_ORDER[dim][k, l]] =
             (i == j && k == l) ? A[i, j, k, l] :
@@ -82,12 +82,12 @@ Base.@propagate_inbounds @inline function tovoigt!(v::AbstractMatrix, A::Symmetr
     return v
 end
 
-@inline tomandel(A::SymmetricTensor) = @inboundsret tovoigt(A, offdiagscale = √2)
-Base.@propagate_inbounds @inline function tomandel!(v::AbstractVector, A::SymmetricTensor{2}; offset::Int = 1)
-    tovoigt!(v, A, offdiagscale = √2, offset = offset)
+@inline tomandel(A::SymmetricTensor{order, dim, T}) where {order, dim, T} = @inboundsret tovoigt(A, offdiagscale = T(√2))
+Base.@propagate_inbounds @inline function tomandel!(v::AbstractVector{T}, A::SymmetricTensor{2}; offset::Int = 1) where {T}
+    tovoigt!(v, A, offdiagscale = T(√2), offset = offset)
 end
-Base.@propagate_inbounds @inline function tomandel!(v::AbstractMatrix, A::SymmetricTensor{4}; offset_i::Int = 1, offset_j::Int = 1)
-    tovoigt!(v, A, offdiagscale = √2, offset_i = offset_i, offset_j = offset_j)
+Base.@propagate_inbounds @inline function tomandel!(v::AbstractMatrix{T}, A::SymmetricTensor{4}; offset_i::Int = 1, offset_j::Int = 1) where {T}
+    tovoigt!(v, A, offdiagscale = T(√2), offset_i = offset_i, offset_j = offset_j)
 end
 
 """
