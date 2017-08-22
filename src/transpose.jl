@@ -53,4 +53,8 @@ Computes the major transpose of a fourth order tensor.
     Tensor{4, dim}(@inline function(i, j, k, l) @inboundsret S[k,l,i,j]; end)
 end
 
-@inline Base.ctranspose(S::AllTensors) = transpose(S)
+if VERSION >= v"0.7.0-DEV.1415"
+    @inline Base.adjoint(S::AllTensors) = transpose(S)
+else
+    @inline Base.ctranspose(S::AllTensors) = transpose(S)
+end
