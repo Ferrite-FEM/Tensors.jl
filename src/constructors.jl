@@ -87,7 +87,7 @@ for TensorType in (SymmetricTensor, Tensor)
 end
 
 # zero, one, rand
-for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))))
+for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
         @inline Base.$op(::Type{$TensorType{order, dim}}) where {order, dim} = $op($TensorType{order, dim, Float64})

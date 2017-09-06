@@ -1,6 +1,6 @@
 @testsection "constructors" begin
 for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
-    for op in (:rand, :zero, :ones)
+    for op in (:rand, :zero, :ones, :randn)
         # Tensor, SymmetricTensor
         for TensorType in (Tensor, SymmetricTensor)
             TensorType == SymmetricTensor && order == 1 && continue
