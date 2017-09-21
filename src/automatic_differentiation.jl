@@ -378,3 +378,49 @@ function hessian(f::F, v::Union{SecondOrderTensor, Vec}, ::Symbol) where {F}
     gradf = y -> gradient(f, y)
     return gradient(gradf, v), gradient(f, v, :all)...
 end
+
+"""
+```julia
+div(f, x)
+```
+
+Calculate the divergence of the vector field `f`.
+
+# Example
+```jldoctest
+julia> f(x) = 2x;
+
+julia> x = rand(Vec{3});
+
+julia> div(f, x)
+6.0
+```
+"""
+Base.div(f::F, v::Vec) where {F} = trace(gradient(f, v))
+
+"""
+```julia
+curl(f, x)
+```
+
+Calculate the curl of the vector field `f`.
+
+# Example
+```jldoctest
+julia> f(x::Vec{3, T}) where {T} = Vec{3, T}((x[2], -x[1], T(0)));
+
+julia> x = rand(Vec{3});
+
+julia> curl(f, x)
+3-element Tensors.Tensor{1,3,Float64,3}:
+  0.0
+  0.0
+ -2.0
+```
+"""
+function curl(f::F, v::Vec{3}) where F
+    ∇f = gradient(f, v)
+    return Vec{3}((∇f[3,2] - ∇f[2,3], ∇f[1,3] - ∇f[3,1], ∇f[2,1] - ∇f[1,2]))
+end
+curl(f::F, v::Vec{1, T}) where {F, T} = curl(f, Vec{3}((v[1], T(0), T(0))))
+curl(f::F, v::Vec{2, T}) where {F, T} = curl(f, Vec{3}((v[1], v[2], T(0))))
