@@ -419,8 +419,15 @@ julia> curl(f, x)
 ```
 """
 function curl(f::F, v::Vec{3}) where F
-    ∇f = gradient(f, v)
-    return Vec{3}((∇f[3,2] - ∇f[2,3], ∇f[1,3] - ∇f[3,1], ∇f[2,1] - ∇f[1,2]))
+    @inbounds begin
+        ∇f = gradient(f, v)
+        c = Vec{3}((∇f[3,2] - ∇f[2,3], ∇f[1,3] - ∇f[3,1], ∇f[2,1] - ∇f[1,2]))
+    end
+    return c
 end
 curl(f::F, v::Vec{1, T}) where {F, T} = curl(f, Vec{3}((v[1], T(0), T(0))))
 curl(f::F, v::Vec{2, T}) where {F, T} = curl(f, Vec{3}((v[1], v[2], T(0))))
+
+function laplace(f::F, v) where F
+    return div(x -> gradient(f, x), v)
+end
