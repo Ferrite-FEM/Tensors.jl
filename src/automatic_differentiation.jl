@@ -333,6 +333,7 @@ function Base.gradient(f::F, v::Union{SecondOrderTensor, Vec}, ::Symbol) where {
     res = f(v_dual)
     return _extract_gradient(res, v), _extract_value(res, v)
 end
+const ∇ = gradient
 
 """
 ```julia
@@ -378,13 +379,14 @@ function hessian(f::F, v::Union{SecondOrderTensor, Vec}, ::Symbol) where {F}
     gradf = y -> gradient(f, y)
     return gradient(gradf, v), gradient(f, v, :all)...
 end
+const ∇∇ = hessian
 
 """
 ```julia
 div(f, x)
 ```
 
-Calculate the divergence of the vector field `f`.
+Calculate the divergence of the vector field `f`, in the point `x`.
 
 # Example
 ```jldoctest
@@ -403,19 +405,19 @@ Base.div(f::F, v::Vec) where {F} = trace(gradient(f, v))
 curl(f, x)
 ```
 
-Calculate the curl of the vector field `f`.
+Calculate the curl of the vector field `f`, in the point `x`.
 
 # Example
 ```jldoctest
-julia> f(x::Vec{3, T}) where {T} = Vec{3, T}((x[2], -x[1], T(0)));
+julia> f(x) = Vec{3}((x[2], x[3], -x[1]));
 
 julia> x = rand(Vec{3});
 
 julia> curl(f, x)
 3-element Tensors.Tensor{1,3,Float64,3}:
-  0.0
-  0.0
- -2.0
+ -1.0
+  1.0
+ -1.0
 ```
 """
 function curl(f::F, v::Vec{3}) where F
@@ -428,6 +430,22 @@ end
 curl(f::F, v::Vec{1, T}) where {F, T} = curl(f, Vec{3}((v[1], T(0), T(0))))
 curl(f::F, v::Vec{2, T}) where {F, T} = curl(f, Vec{3}((v[1], v[2], T(0))))
 
+"""
+    laplace(f, x)
+
+Calculate the laplacian of the scalar field `f`, in the point `x`.
+
+# Example
+```jldoctest
+julia> f(x) = norm(x);
+
+julia> x = rand(Vec{3});
+
+julia> laplace(f, x)
+1.7833701103136868
+```
+"""
 function laplace(f::F, v) where F
     return div(x -> gradient(f, x), v)
 end
+const Δ = laplace
