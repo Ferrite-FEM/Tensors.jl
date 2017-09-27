@@ -122,34 +122,73 @@ S(C) = S(C, μ, Kb)
 
     @testsection "vector calculus identities" begin
         φ(x) = norm(x)^4
-        ϕ(x) = sum(x) + 4
-        A(x) = Vec{3}((x[1]*x[2]*x[3], x[1]*x[2]*x[3], x[1]*x[2]*x[3]))
+        ϕ(x) = sum(x)
+        A(x) = Vec{3}((x[1]*x[2]^3*x[3], x[1]*x[2]*x[3]^3, x[1]^3*x[2]*x[3]))
         B(x) = Vec{3}((x[1]*x[1], x[1]*x[2], x[1]*x[3]))
-        x = rand(Vec{3})
-        # gradient
-        @test gradient(x -> φ(x) + ϕ(x), x) ≈ gradient(φ, x) + gradient(ϕ, x)
-        @test gradient(x -> φ(x) * ϕ(x), x) ≈ φ(x) * gradient(ϕ, x) + gradient(φ, x) * ϕ(x)
-        @test gradient(x -> A(x) ⋅ B(x), x) ≈ gradient(A, x)⋅B(x) + gradient(B, x)⋅A(x) + A(x)×curl(B, x) + B(x)×curl(A, x)
-        # divergence
-        @test div(x -> A(x) + B(x), x) ≈ div(A, x) + div(B, x)
-        @test div(x -> φ(x) * A(x), x) ≈ φ(x)*div(A, x) + gradient(φ, x)⋅A(x)
-        @test div(x -> A(x) × B(x), x) ≈ B(x)⋅curl(A, x) - A(x)⋅curl(B, x)
-        # curl
-        @test curl(x -> A(x) + B(x), x) ≈ curl(A, x) + curl(B, x)
-        @test curl(x -> φ(x) * A(x), x) ≈ φ(x)*curl(A, x) + gradient(φ, x)×A(x)
-        @test_broken curl(x -> A(x) × B(x), x) ≈ A(x)*div(B, x) - B(x)*div(A, x) + div(B, x)*A(x) - div(A, x)*B(x)
-        # second derivatives
-        @test div(x -> curl(A, x), x) ≈ 0
-        @test curl(x -> gradient(φ, x), x) ≈ zero(Vec{3}) atol = 1e-14
-        @test div(x -> gradient(φ, x), x) ≈ laplace(φ, x)
-        # @test gradient(x -> div(A, x), x) ≈ curl(x -> curl(A, x), x) + laplace(A, x)
-        @test div(x -> ϕ(x)*gradient(φ, x), x) ≈ ϕ(x)*laplace(φ, x) + gradient(ϕ, x)⋅gradient(φ, x)
-        @test div(x -> φ(x)*gradient(ϕ, x) - gradient(φ, x)*ϕ(x), x) ≈ φ(x)*laplace(ϕ, x) - laplace(φ, x)*ϕ(x)
-        @test laplace(x -> ϕ(x)*φ(x), x) ≈ laplace(ϕ, x)*φ(x) + 2gradient(ϕ, x)⋅gradient(φ, x) + ϕ(x)*laplace(φ, x)
-        # @test laplace(x -> φ(x)*A(x), x) ≈ laplace(ϕ, x)*φ(x) + 2gradient(ϕ, x)⋅gradient(φ, x) + ϕ(x)*laplace(φ, x)
-        # third derivatives
-        # @test laplace(x -> gradient(φ, x), x) ≈ gradient(x -> div(gradient(φ, x), x)) ≈ gradient(x -> laplace(φ, x), x)
-        # @test laplace(x -> div(A, x), x) ≈ div(x -> gradient(div(A, x), x), x) ≈ div(x -> laplace(A, x), x)
-        # @test laplace(x -> curl(A, x), x) ≈ -curl(x -> curl(curl(A, x), x), x) ≈ curl(x -> laplace(A, x))
+        for T in (Float32, Float64)
+            x = rand(Vec{3, T})
+            # gradient
+            @test gradient(x -> φ(x) + ϕ(x), x) ≈ gradient(φ, x) + gradient(ϕ, x)
+            @test gradient(x -> φ(x) * ϕ(x), x) ≈ φ(x) * gradient(ϕ, x) + gradient(φ, x) * ϕ(x)
+            @test gradient(x -> A(x) ⋅ B(x), x) ≈ gradient(B, x)⋅A(x) + gradient(A, x)⋅B(x) + A(x)×curl(B, x) + B(x)×curl(A, x)
+            # divergence
+            @test div(x -> A(x) + B(x), x) ≈ div(A, x) + div(B, x)
+            @test div(x -> φ(x) * A(x), x) ≈ φ(x)*div(A, x) + gradient(φ, x)⋅A(x)
+            @test div(x -> A(x) × B(x), x) ≈ B(x)⋅curl(A, x) - A(x)⋅curl(B, x)
+            # curl
+            @test curl(x -> A(x) + B(x), x) ≈ curl(A, x) + curl(B, x)
+            @test curl(x -> φ(x) * A(x), x) ≈ φ(x)*curl(A, x) + gradient(φ, x)×A(x)
+            @test curl(x -> A(x) × B(x), x) ≈ A(x)*div(B, x) - B(x)*div(A, x) + gradient(A, x)⋅B(x) - gradient(B, x)⋅A(x)
+            # second derivatives
+            @test div(x -> curl(A, x), x) ≈ 0 atol = eps(T)
+            @test curl(x -> gradient(φ, x), x) ≈ zero(Vec{3}) atol = 10eps(T)
+            @test div(x -> gradient(φ, x), x) ≈ laplace(φ, x)
+            # @test gradient(x -> div(A, x), x) ≈ curl(x -> curl(A, x), x) + laplace(A, x)
+            @test div(x -> ϕ(x)*gradient(φ, x), x) ≈ ϕ(x)*laplace(φ, x) + gradient(ϕ, x)⋅gradient(φ, x)
+            @test div(x -> φ(x)*gradient(ϕ, x) - gradient(φ, x)*ϕ(x), x) ≈ φ(x)*laplace(ϕ, x) - laplace(φ, x)*ϕ(x)
+            @test laplace(x -> ϕ(x)*φ(x), x) ≈ laplace(ϕ, x)*φ(x) + 2*gradient(ϕ, x)⋅gradient(φ, x) + ϕ(x)*laplace(φ, x)
+            # @test laplace(x -> φ(x)*A(x), x) ≈ laplace(ϕ, x)*φ(x) + 2*gradient(ϕ, x)⋅gradient(φ, x) + ϕ(x)*laplace(φ, x)
+            # third derivatives
+            # @test laplace(x -> gradient(φ, x), x) ≈ gradient(x -> div(gradient(φ, x), x)) ≈ gradient(x -> laplace(φ, x), x)
+            @test laplace(x -> div(A, x), x) ≈ div(x -> gradient(x->div(A, x), x), x) # ≈ div(x -> laplace(A, x), x)
+            # @test laplace(x -> curl(A, x), x) ≈ -curl(x -> curl(curl(A, x), x), x) ≈ curl(x -> laplace(A, x))
+        end # loop T
     end # testsection
 end # testsection
+
+for i in 1:30
+    reset_timer!()
+    @testsection "vector calculus identities" begin
+        φ(x) = norm(x)^4
+        ϕ(x) = sum(x)
+        A(x) = Vec{3}((x[1]*x[2]^3*x[3], x[1]*x[2]*x[3]^3, x[1]^3*x[2]*x[3]))
+        B(x) = Vec{3}((x[1]*x[1], x[1]*x[2], x[1]*x[3]))
+        for T in (Float32, Float64)
+            x = rand(Vec{3, T})
+            # gradient
+            @test gradient(x -> φ(x) + ϕ(x), x) ≈ gradient(φ, x) + gradient(ϕ, x)
+            @test gradient(x -> φ(x) * ϕ(x), x) ≈ φ(x) * gradient(ϕ, x) + gradient(φ, x) * ϕ(x)
+            @test gradient(x -> A(x) ⋅ B(x), x) ≈ gradient(B, x)⋅A(x) + gradient(A, x)⋅B(x) + A(x)×curl(B, x) + B(x)×curl(A, x)
+            # divergence
+            @test div(x -> A(x) + B(x), x) ≈ div(A, x) + div(B, x)
+            @test div(x -> φ(x) * A(x), x) ≈ φ(x)*div(A, x) + gradient(φ, x)⋅A(x)
+            @test div(x -> A(x) × B(x), x) ≈ B(x)⋅curl(A, x) - A(x)⋅curl(B, x)
+            # curl
+            @test curl(x -> A(x) + B(x), x) ≈ curl(A, x) + curl(B, x)
+            @test curl(x -> φ(x) * A(x), x) ≈ φ(x)*curl(A, x) + gradient(φ, x)×A(x)
+            @test curl(x -> A(x) × B(x), x) ≈ A(x)*div(B, x) - B(x)*div(A, x) + gradient(A, x)⋅B(x) - gradient(B, x)⋅A(x)
+            # second derivatives
+            @test div(x -> curl(A, x), x) ≈ 0 atol = eps(T)
+            @test curl(x -> gradient(φ, x), x) ≈ zero(Vec{3}) atol = 10eps(T)
+            @test div(x -> gradient(φ, x), x) ≈ laplace(φ, x)
+            # @test gradient(x -> div(A, x), x) ≈ curl(x -> curl(A, x), x) + laplace(A, x)
+            @test div(x -> ϕ(x)*gradient(φ, x), x) ≈ ϕ(x)*laplace(φ, x) + gradient(ϕ, x)⋅gradient(φ, x)
+            @test div(x -> φ(x)*gradient(ϕ, x) - gradient(φ, x)*ϕ(x), x) ≈ φ(x)*laplace(ϕ, x) - laplace(φ, x)*ϕ(x)
+            @test laplace(x -> ϕ(x)*φ(x), x) ≈ laplace(ϕ, x)*φ(x) + 2*gradient(ϕ, x)⋅gradient(φ, x) + ϕ(x)*laplace(φ, x)
+            # @test laplace(x -> φ(x)*A(x), x) ≈ laplace(ϕ, x)*φ(x) + 2*gradient(ϕ, x)⋅gradient(φ, x) + ϕ(x)*laplace(φ, x)
+            # third derivatives
+            # @test laplace(x -> gradient(φ, x), x) ≈ gradient(x -> div(gradient(φ, x), x)) ≈ gradient(x -> laplace(φ, x), x)
+            @test laplace(x -> div(A, x), x) ≈ div(x -> gradient(x->div(A, x), x), x) # ≈ div(x -> laplace(A, x), x)
+            # @test laplace(x -> curl(A, x), x) ≈ -curl(x -> curl(curl(A, x), x), x) ≈ curl(x -> laplace(A, x))
+        end # loop T
+    end # testsection
