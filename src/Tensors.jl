@@ -9,7 +9,7 @@ export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOr
 export otimes, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
 export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric
 export tdot, dott, dotdot
-export hessian#, gradient
+export hessian, gradient, curl, div, laplace
 export basevec, eᵢ
 export rotate
 export tovoigt, tovoigt!, fromvoigt, tomandel, tomandel!, frommandel
