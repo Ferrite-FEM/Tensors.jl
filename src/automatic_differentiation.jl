@@ -398,7 +398,7 @@ julia> div(f, x)
 6.0
 ```
 """
-Base.div(f::F, v::Vec) where {F} = trace(gradient(f, v))
+Base.div(f::F, v::Vec) where {F<:Function} = trace(gradient(f, v))
 
 """
 ```julia
@@ -433,19 +433,39 @@ curl(f::F, v::Vec{2, T}) where {F, T} = curl(f, Vec{3}((v[1], v[2], T(0))))
 """
     laplace(f, x)
 
-Calculate the laplacian of the scalar field `f`, in the point `x`.
+Calculate the laplacian of the field `f`, in the point `x`.
+If `f` is a vector field, use broadcasting.
 
 # Example
 ```jldoctest
-julia> f(x) = norm(x);
-
 julia> x = rand(Vec{3});
+
+julia> f(x) = norm(x);
 
 julia> laplace(f, x)
 1.7833701103136868
+
+julia> g(x) = x*norm(x);
+
+julia> laplace.(g, x)
+3-element Tensors.Tensor{1,3,Float64,3}:
+ 2.10739
+ 2.73497
+ 2.01962
 ```
 """
 function laplace(f::F, v) where F
     return div(x -> gradient(f, x), v)
 end
 const Δ = laplace
+
+function Base.broadcast(::typeof(laplace), f::F, v::Vec{3}) where {F}
+    @inbounds begin
+        vdd = _load(_load(v))
+        res = f(vdd)
+        v1 = res[1].partials[1].partials[1] + res[1].partials[2].partials[2] + res[1].partials[3].partials[3]
+        v2 = res[2].partials[1].partials[1] + res[2].partials[2].partials[2] + res[2].partials[3].partials[3]
+        v3 = res[3].partials[1].partials[1] + res[3].partials[2].partials[2] + res[3].partials[3].partials[3]
+    end
+    return Vec{3}((v1, v2, v3))
+end
