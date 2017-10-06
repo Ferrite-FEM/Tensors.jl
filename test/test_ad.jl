@@ -143,15 +143,16 @@ S(C) = S(C, μ, Kb)
             @test div(x -> curl(A, x), x) ≈ 0 atol = eps(T)
             @test curl(x -> gradient(φ, x), x) ≈ zero(Vec{3}) atol = 10eps(T)
             @test div(x -> gradient(φ, x), x) ≈ laplace(φ, x)
-            # @test gradient(x -> div(A, x), x) ≈ curl(x -> curl(A, x), x) + laplace(A, x)
+            @test gradient(x -> div(A, x), x) ≈ curl(x -> curl(A, x), x) + laplace.(A, x)
             @test div(x -> ϕ(x)*gradient(φ, x), x) ≈ ϕ(x)*laplace(φ, x) + gradient(ϕ, x)⋅gradient(φ, x)
             @test div(x -> φ(x)*gradient(ϕ, x) - gradient(φ, x)*ϕ(x), x) ≈ φ(x)*laplace(ϕ, x) - laplace(φ, x)*ϕ(x)
             @test laplace(x -> ϕ(x)*φ(x), x) ≈ laplace(ϕ, x)*φ(x) + 2*gradient(ϕ, x)⋅gradient(φ, x) + ϕ(x)*laplace(φ, x)
-            # @test laplace(x -> φ(x)*A(x), x) ≈ laplace(ϕ, x)*φ(x) + 2*gradient(ϕ, x)⋅gradient(φ, x) + ϕ(x)*laplace(φ, x)
+            @test laplace.(x -> φ(x)*A(x), x) ≈ A(x)*laplace(φ, x) + 2*(gradient(A, x)⋅gradient(φ, x)) + φ(x)*laplace.(A, x)
+            @test laplace(x -> A(x)⋅B(x), x) ≈ A(x)⋅laplace.(B, x) - B(x)⋅laplace.(A, x) + 2*div(x -> gradient(A, x)⋅B(x) + B(x)×curl(A, x), x)
             # third derivatives
-            # @test laplace(x -> gradient(φ, x), x) ≈ gradient(x -> div(gradient(φ, x), x)) ≈ gradient(x -> laplace(φ, x), x)
-            @test laplace(x -> div(A, x), x) ≈ div(x -> gradient(x->div(A, x), x), x) # ≈ div(x -> laplace(A, x), x)
-            # @test laplace(x -> curl(A, x), x) ≈ -curl(x -> curl(curl(A, x), x), x) ≈ curl(x -> laplace(A, x))
+            @test laplace.(x -> gradient(φ, x), x) ≈ gradient(x -> div(x -> gradient(φ, x), x), x) ≈ gradient(x -> laplace(φ, x), x)
+            @test laplace(x -> div(A, x), x) ≈ div(x -> gradient(x->div(A, x), x), x) ≈ div(x -> laplace.(A, x), x)
+            @test laplace.(x -> curl(A, x), x) ≈ -curl(x -> curl(x -> curl(A, x), x), x) ≈ curl(x -> laplace.(A, x), x)
         end # loop T
     end # testsection
 end # testsection
