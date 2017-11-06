@@ -1,4 +1,4 @@
-function _permutedims{dim}(S::FourthOrderTensor{dim}, idx::NTuple{4,Int})
+function _permutedims(S::FourthOrderTensor{dim}, idx::NTuple{4,Int}) where dim
     sort([idx...]) == [1,2,3,4] || throw(ArgumentError("Missing index."))
     neworder = sortperm([idx...])
     f = (i,j,k,l) -> S[[i,j,k,l][neworder]...]
