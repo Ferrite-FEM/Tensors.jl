@@ -79,6 +79,15 @@ end # of testsection
     @test (@inferred tdot(A_sym))::SymmetricTensor{2, dim, T} ≈ dot(transpose(A_sym), A_sym)
     @test (@inferred dott(A))::SymmetricTensor{2, dim, T}     ≈ dot(A, transpose(A))
     @test (@inferred dott(A_sym))::SymmetricTensor{2, dim, T} ≈ dot(A_sym, transpose(A_sym))
+    # 2 - 4
+    @test (@inferred dot(AA, B))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(AA), (dim^3, dim))) * collect(reshape(vec(B), (dim, dim))), (dim, dim, dim, dim))
+    @test (@inferred dot(B, AA))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(B), (dim, dim))) * collect(reshape(vec(AA), (dim, dim^3))), (dim, dim, dim, dim))
+    @test (@inferred dot(AA_sym, B))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(AA_sym), (dim^3, dim))) * collect(reshape(vec(B), (dim, dim))), (dim, dim, dim, dim))
+    @test (@inferred dot(B, AA_sym))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(B), (dim, dim))) * collect(reshape(vec(AA_sym), (dim, dim^3))), (dim, dim, dim, dim))
+    @test (@inferred dot(AA, B_sym))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(AA), (dim^3, dim))) * collect(reshape(vec(B_sym), (dim, dim))), (dim, dim, dim, dim))
+    @test (@inferred dot(B_sym, AA))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(B_sym), (dim, dim))) * collect(reshape(vec(AA), (dim, dim^3))), (dim, dim, dim, dim))
+    @test (@inferred dot(AA_sym, B_sym))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(AA_sym), (dim^3, dim))) * collect(reshape(vec(B_sym), (dim, dim))), (dim, dim, dim, dim))
+    @test (@inferred dot(B_sym, AA_sym))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(B_sym), (dim, dim))) * collect(reshape(vec(AA_sym), (dim, dim^3))), (dim, dim, dim, dim))
 end # of testsection
 
 @testsection "symmetric/skew-symmetric" begin
@@ -193,6 +202,36 @@ if dim == 3
         @test rotate(a, b, 0) ≈ a
         @test rotate(a, b, π) ≈ rotate(a, b, -π)
         @test rotate(a, b, π/2) ≈ rotate(a, -b, -π/2)
+
+        # test vector-span definition
+        @test rotate(x, y, π/2) ≈ rotate(x, z, x, π/2)
+        @test rotate(2*z, z, x, π/2) ≈ 2*x
+        @test rotate(a, a, b, 0) ≈ a
+        @test rotate(a, a, b, π) ≈ rotate(a, a, b, -π)
+        @test rotate(a, a, b, π/2) ≈ rotate(a, b, a, -π/2)
+
+        # test second-order tensor rotations
+        A = rand(Tensor{2, 3})
+        @test rotate(A, x, π) ≈ rotate(A, x, -π)
+        @test rotate(rotate(rotate(A, x, π), y, π), z, π) ≈ A
+        @test rotate(A, a, 0) ≈ A
+        @test rotate(A, a, π/2) ≈ rotate(A, -a, -π/2)
+
+        @test rotate(A, a, b, 0) ≈ A
+        @test rotate(A, a, b, π) ≈ rotate(A, a, b, -π)
+        @test rotate(A, a, b, π/2) ≈ rotate(A, b, a, -π/2)
+
+        # test fourth-order tensor rotations
+        A = rand(Tensor{4, 3})
+        @test rotate(A, x, π) ≈ rotate(A, x, -π)
+        @test rotate(rotate(rotate(A, x, π), y, π), z, π) ≈ A
+        @test rotate(A, a, 0) ≈ A
+        @test rotate(A, a, π/2) ≈ rotate(A, -a, -π/2)
+
+        @test rotate(A, a, b, 0) ≈ A
+        @test rotate(A, a, b, π) ≈ rotate(A, a, b, -π)
+        @test rotate(A, a, b, π/2) ≈ rotate(A, b, a, -π/2)
+
     end
 end
 
