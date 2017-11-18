@@ -185,3 +185,11 @@ function rotor(u::Vec{dim}, v::Vec{dim}, θ::Number) where {dim}
     # generalized-rotation-matrix-in-n-dimensional-space-around-n-2-unit-vector
     one(Tensor{2, dim}) + sin(θ)*(otimes(v, u) - otimes(u, v)) + (cos(θ)-1)*(otimes(u) + otimes(v))
 end
+
+function rotor(u::Vec{3}, θ::Number)
+    # See http://mathworld.wolfram.com/RodriguesRotationFormula.html
+    u = u / norm(u)
+    z = zero(eltype(u))
+    ω̃ = Tensor{2, 3}((z, u[3], -u[2], -u[3], z, u[1], u[2], -u[1], z))
+    one(Tensor{2, 3}) + sin(θ)*ω̃ + (1 - cos(θ))*ω̃^2
+end
