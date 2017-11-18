@@ -114,6 +114,7 @@ end
 
 # Generic fallback for higher-dimensional tensors
 @inline Tensor{order, dim}(t::NTuple{N, T}) where {order, dim, T, N} = Tensor{order, dim, T, N}(t)
+@inline SymmetricTensor{order, dim}(t::NTuple{N, T}) where {order, dim, T, N} = SymmetricTensor{order, dim, T, N}(t)
 
 include("indexing.jl")
 include("utilities.jl")

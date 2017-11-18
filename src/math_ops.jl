@@ -358,7 +358,7 @@ end
 
 # http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
 """
-Rotate a three dimensional vector `x` around another vector `u` a total of `θ` radians.
+Rotate a tensor `x` around a vector `u` a total of `θ` radians.
 
 ```julia
 rotate(x::Vec{3}, u::Vec{3}, θ::Number)
@@ -394,3 +394,17 @@ function rotate(x::Vec{3}, u::Vec{3}, θ::Number)
     (u * ux * (1 - c) + u² * x * c + sqrt(u²) * (u × x) * s) / u²
 end
 
+function rotate(x::Vec{dim}, u::Vec{dim}, v::Vec{dim}, θ::Number) where {dim}
+    R = rotor(u, v, θ)
+    R ⋅ x
+end
+
+function rotate(x::SecondOrderTensor{dim}, u::Vec{dim}, v::Vec{dim}, θ::Number) where {dim}
+    R = rotor(u, v, θ)
+    R ⋅ x ⋅ R'
+end
+
+function rotate(x::FourthOrderTensor{dim}, u::Vec{dim}, v::Vec{dim}, θ::Number) where {dim}
+    R = rotor(u, v, θ)
+    R ⋅ R ⋅ x ⋅ R' ⋅ R'
+end

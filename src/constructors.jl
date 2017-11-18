@@ -169,3 +169,19 @@ end
 @inline basevec(v::Vec{dim, T}, i::Int) where {dim, T} = basevec(typeof(v), i)
 
 const eᵢ = basevec
+
+"""
+```julia
+rotor(u::Vec{3}, θ::Number)
+rotor(u::Vec{dim}, v::Vec{dim}, θ::Number)
+```
+Return a rotation matrix corresponding to a rotation around the vector `u`
+by `θ` radians in three dimensions. If two orthonormal vectors `u` and `v` are
+passed, then the rotation matrix given by rotating in the span of `u` and `v` by
+angle `θ` is returned.
+"""
+function rotor(u::Vec{dim}, v::Vec{dim}, θ::Number) where {dim}
+    # See https://math.stackexchange.com/questions/197772/
+    # generalized-rotation-matrix-in-n-dimensional-space-around-n-2-unit-vector
+    one(Tensor{2, dim}) + sin(θ)*(otimes(v, u) - otimes(u, v)) + (cos(θ)-1)*(otimes(u) + otimes(v))
+end
