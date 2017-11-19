@@ -112,10 +112,6 @@ end
 # @inline          Tensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = Tensor{order, dim, T}(data)
 # @inline SymmetricTensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = SymmetricTensor{order, dim, T}(data)
 
-# Generic fallback for higher-dimensional tensors
-@inline Tensor{order, dim}(t::NTuple{N, T}) where {order, dim, T, N} = Tensor{order, dim, T, N}(t)
-@inline SymmetricTensor{order, dim}(t::NTuple{N, T}) where {order, dim, T, N} = SymmetricTensor{order, dim, T, N}(t)
-
 include("indexing.jl")
 include("utilities.jl")
 include("tensor_ops_errors.jl")
