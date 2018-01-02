@@ -269,6 +269,46 @@ Extract eigenvectors from an `Eigen` object, returned by [`eigfact`](@ref).
 @inline Base.eigvecs(E::Eigen) = E.Φ
 
 """
+    sqrt(S::SymmetricTensor{2})
+
+Calculate the square root of the positive definite symmetric
+second order tensor `S`, such that `√S ⋅ √S == S`.
+
+# Examples
+```jldoctest
+julia> S = rand(SymmetricTensor{2,2}); S = tdot(S)
+2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+ 0.937075  0.887247
+ 0.887247  0.908603
+
+julia> sqrt(S)
+2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+ 0.776178  0.578467
+ 0.578467  0.757614
+
+julia> √S ⋅ √S ≈ S
+true
+```
+"""
+Base.sqrt(::SymmetricTensor{2})
+
+Base.sqrt(S::SymmetricTensor{2,1}) = SymmetricTensor{2,1}((sqrt(S[1,1]),))
+
+# https://en.m.wikipedia.org/wiki/Square_root_of_a_2_by_2_matrix
+function Base.sqrt(S::SymmetricTensor{2,2})
+    s = √(det(S))
+    t = √(trace(S)+2s)
+    return SymmetricTensor{2,2}((S[1,1]+s, S[2,1], S[2,2]+s)) / t
+end
+
+function Base.sqrt(S::SymmetricTensor{2,3,T}) where T
+    λ, Φ = eig(S)
+    z = zero(T)
+    Λ = Tensor{2,3}((√(λ[1]), z, z, z, √(λ[2]), z, z, z, √(λ[3])))
+    return symmetric(Φ⋅Λ⋅Φ')
+end
+
+"""
 ```julia
 trace(::SecondOrderTensor)
 ```
