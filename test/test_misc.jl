@@ -322,6 +322,10 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
 
     @test Λ ≈ (@inferred eigvals(d_sym)) ≈ eigvals(E) ≈ Λa
     @test Φ ≈ (@inferred eigvecs(d_sym)) ≈ eigvecs(E)
+
+    # sqrt
+    Apd = tdot(t_sym)
+    @test sqrt(Apd) ⋅ sqrt(Apd) ≈ Apd
 end
 end # of testset
 

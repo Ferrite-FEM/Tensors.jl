@@ -157,6 +157,17 @@ eigvecs
 eig
 ```
 
+## Tensor square root
+
+Square root of a symmetric positive definite second order tensor ``S``,
+defined such that
+
+$\sqrt{\mathbf{S}} \cdot \sqrt{\mathbf{S}} = S$
+
+```@docs
+sqrt
+```
+
 ## Rotations
 
 ```@docs
