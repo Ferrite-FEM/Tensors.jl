@@ -1,15 +1,13 @@
 # transpose, majortranspose, minortranspose
 """
-```julia
-transpose(::Vec)
-transpose(::SecondOrderTensor)
-transpose(::FourthOrderTensor)
-```
-Computes the transpose of a tensor.
+    transpose(::Vec)
+    transpose(::SecondOrderTensor)
+    transpose(::FourthOrderTensor)
+
+Compute the transpose of a tensor.
 For a fourth order tensor, the transpose is the minor transpose.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(Tensor{2,2})
 2×2 Tensors.Tensor{2,2,Float64,4}:
@@ -31,10 +29,9 @@ end
 @inline Base.transpose(S::SymmetricTensor{2}) = S
 
 """
-```julia
-minortranspose(::FourthOrderTensor)
-```
-Computes the minor transpose of a fourth order tensor.
+    minortranspose(::FourthOrderTensor)
+
+Compute the minor transpose of a fourth order tensor.
 """
 @inline function minortranspose(S::Tensor{4, dim}) where {dim}
     Tensor{4, dim}(@inline function(i, j, k, l) @inboundsret S[j,i,l,k]; end)
@@ -44,10 +41,9 @@ end
 @inline Base.transpose(S::FourthOrderTensor) = minortranspose(S)
 
 """
-```julia
-majortranspose(::FourthOrderTensor)
-```
-Computes the major transpose of a fourth order tensor.
+    majortranspose(::FourthOrderTensor)
+
+Compute the major transpose of a fourth order tensor.
 """
 @inline function majortranspose(S::FourthOrderTensor{dim}) where {dim}
     Tensor{4, dim}(@inline function(i, j, k, l) @inboundsret S[k,l,i,j]; end)
