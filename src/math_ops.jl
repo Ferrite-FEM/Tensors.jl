@@ -1,14 +1,12 @@
 # norm, det, inv, eig, trace, dev
 """
-```julia
-norm(::Vec)
-norm(::SecondOrderTensor)
-norm(::FourthOrderTensor)
-```
+    norm(::Vec)
+    norm(::SecondOrderTensor)
+    norm(::FourthOrderTensor)
+
 Computes the norm of a tensor.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(Tensor{2,3})
 3×3 Tensors.Tensor{2,3,Float64,9}:
@@ -40,13 +38,11 @@ julia> norm(A)
 end
 
 """
-```julia
-det(::SecondOrderTensor)
-```
+    det(::SecondOrderTensor)
+
 Computes the determinant of a second order tensor.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
 3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
@@ -67,13 +63,11 @@ julia> det(A)
 end
 
 """
-```julia
-inv(::SecondOrderTensor)
-```
+    inv(::SecondOrderTensor)
+
 Computes the inverse of a second order tensor.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(Tensor{2,3})
 3×3 Tensors.Tensor{2,3,Float64,9}:
@@ -162,15 +156,13 @@ function Base.inv(t::SymmetricTensor{4, dim, T}) where {dim, T}
 end
 
 """
-```julia
-eig(::SymmetricTensor{2})
-```
+    eig(::SymmetricTensor{2})
+
 Compute the eigenvalues and eigenvectors of a symmetric second order tensor.
 `eig` is a wrapper around [`eigfact`](@ref) which extracts eigenvalues and
 eigenvectors to a tuple.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2, 2})
 2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
@@ -198,17 +190,15 @@ julia> Φ ⋅ diagm(Tensor{2, 2}, Λ) ⋅ inv(Φ) # Same as A
 @inline Base.eig(S::SymmetricTensor) = (E = eigfact(S); (E.λ, E.Φ))
 
 """
-```julia
-eigvals(::SymmetricTensor{2})
-```
+    eigvals(::SymmetricTensor{2})
+
 Compute the eigenvalues of a symmetric second order tensor.
 """
 @inline Base.eigvals(S::SymmetricTensor) = (E = eigfact(S); E.λ)
 
 """
-```julia
-eigvecs(::SymmetricTensor{2})
-```
+    eigvecs(::SymmetricTensor{2})
+
 Compute the eigenvectors of a symmetric second order tensor.
 """
 @inline Base.eigvecs(S::SymmetricTensor) = (E = eigfact(S); E.Φ)
@@ -219,9 +209,8 @@ struct Eigen{T, dim, M}
 end
 
 """
-```julia
-eigfact(::SymmetricTensor{2})
-```
+    eigfact(::SymmetricTensor{2})
+
 Compute the eigenvalues and eigenvectors of a symmetric second order tensor
 and return an `Eigen` object. The eigenvalues are stored in a `Vec`,
 sorted in ascending order. The corresponding eigenvectors are stored
@@ -229,8 +218,7 @@ as the columns of a `Tensor`.
 
 See [`eigvals`](@ref) and [`eigvecs`](@ref).
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2, 2})
 2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
@@ -254,16 +242,14 @@ julia> eigvecs(E)
 Base.eigfact
 
 """
-```julia
-eigvals(::Eigen)
-```
+    eigvals(::Eigen)
+
 Extract eigenvalues from an `Eigen` object, returned by [`eigfact`](@ref).
 """
 @inline Base.eigvals(E::Eigen) = E.λ
 """
-```julia
-eigvecs(::Eigen)
-```
+    eigvecs(::Eigen)
+
 Extract eigenvectors from an `Eigen` object, returned by [`eigfact`](@ref).
 """
 @inline Base.eigvecs(E::Eigen) = E.Φ
@@ -309,13 +295,11 @@ function Base.sqrt(S::SymmetricTensor{2,3,T}) where T
 end
 
 """
-```julia
-trace(::SecondOrderTensor)
-```
+    trace(::SecondOrderTensor)
+
 Computes the trace of a second order tensor.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
 3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
@@ -337,14 +321,12 @@ end
 Base.mean(S::SecondOrderTensor) = trace(S) / 3
 
 """
-```julia
-vol(::SecondOrderTensor)
-```
+    vol(::SecondOrderTensor)
+
 Computes the volumetric part of a second order tensor
 based on the additive decomposition.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
 3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
@@ -365,13 +347,11 @@ true
 vol(S::SecondOrderTensor) = mean(S) * one(S)
 
 """
-```julia
-dev(::SecondOrderTensor)
-```
+    dev(::SecondOrderTensor)
+
 Computes the deviatoric part of a second order tensor.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(Tensor{2, 3});
 
@@ -398,14 +378,11 @@ end
 
 # http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
 """
+    rotate(x::Vec{3}, u::Vec{3}, θ::Number)
+
 Rotate a three dimensional vector `x` around another vector `u` a total of `θ` radians.
 
-```julia
-rotate(x::Vec{3}, u::Vec{3}, θ::Number)
-```
-
-**Example:**
-
+# Examples
 ```jldoctest
 julia> x = Vec{3}((0.0, 0.0, 1.0))
 3-element Tensors.Tensor{1,3,Float64,3}:

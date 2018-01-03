@@ -1,17 +1,15 @@
 # dcontract, dot, tdot, otimes, cross
 """
-```julia
-dcontract(::SecondOrderTensor, ::SecondOrderTensor)
-dcontract(::SecondOrderTensor, ::FourthOrderTensor)
-dcontract(::FourthOrderTensor, ::SecondOrderTensor)
-dcontract(::FourthOrderTensor, ::FourthOrderTensor)
-```
+    dcontract(::SecondOrderTensor, ::SecondOrderTensor)
+    dcontract(::SecondOrderTensor, ::FourthOrderTensor)
+    dcontract(::FourthOrderTensor, ::SecondOrderTensor)
+    dcontract(::FourthOrderTensor, ::FourthOrderTensor)
+
 Compute the double contraction between two tensors.
 The symbol `⊡`, written `\\boxdot`, is overloaded for double contraction.
 The reason `:` is not used is because it does not have the same precedence as multiplication.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2, 2});
 
@@ -90,15 +88,13 @@ end
 const ⊡ = dcontract
 
 """
-```julia
-otimes(::Vec, ::Vec)
-otimes(::SecondOrderTensor, ::SecondOrderTensor)
-```
+    otimes(::Vec, ::Vec)
+    otimes(::SecondOrderTensor, ::SecondOrderTensor)
+
 Compute the open product between two tensors.
 The symbol `⊗`, written `\\otimes`, is overloaded for tensor products.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2, 2});
 
@@ -135,14 +131,12 @@ end
 const ⊗ = otimes
 
 """
-```julia
-otimes(::Vec)
-```
+    otimes(::Vec)
+
 Compute the open product of a vector with itself.
 Return a `SymmetricTensor`.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(Vec{2})
 2-element Tensors.Tensor{1,2,Float64,2}:
@@ -160,17 +154,15 @@ julia> otimes(A)
 end
 
 """
-```julia
-dot(::Vec, ::Vec)
-dot(::Vec, ::SecondOrderTensor)
-dot(::SecondOrderTensor, ::Vec)
-dot(::SecondOrderTensor, ::SecondOrderTensor)
-```
+    dot(::Vec, ::Vec)
+    dot(::Vec, ::SecondOrderTensor)
+    dot(::SecondOrderTensor, ::Vec)
+    dot(::SecondOrderTensor, ::SecondOrderTensor)
+
 Computes the dot product (single contraction) between two tensors.
 The symbol `⋅`, written `\\cdot`, is overloaded for single contraction.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(Tensor{2, 2})
 2×2 Tensors.Tensor{2,2,Float64,4}:
@@ -247,14 +239,12 @@ end
 end
 
 """
-```julia
-dot(::SymmetricTensor{2})
-```
+    dot(::SymmetricTensor{2})
+
 Compute the dot product of a symmetric second order tensor with itself.
 Return a `SymmetricTensor`.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
 3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
@@ -272,14 +262,12 @@ julia> dot(A)
 @inline Base.dot(S::SymmetricTensor{2}) = tdot(S)
 
 """
-```julia
-tdot(::SecondOrderTensor)
-```
+    tdot(::SecondOrderTensor)
+
 Compute the transpose-dot product of a second order tensor with itself.
 Return a `SymmetricTensor`.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(Tensor{2,3})
 3×3 Tensors.Tensor{2,3,Float64,9}:
@@ -310,14 +298,12 @@ julia> tdot(A)
 end
 
 """
-```julia
-dott(::SecondOrderTensor)
-```
+    dott(::SecondOrderTensor)
+
 Compute the dot-transpose product of a second order tensor with itself.
 Return a `SymmetricTensor`.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(Tensor{2,3})
 3×3 Tensors.Tensor{2,3,Float64,9}:
@@ -335,14 +321,12 @@ julia> dott(A)
 @inline dott(S::SecondOrderTensor) = tdot(transpose(S))
 
 """
-```julia
-cross(::Vec, ::Vec)
-```
+    cross(::Vec, ::Vec)
+
 Computes the cross product between two `Vec` vectors, returns a `Vec{3}`. For dimensions 1 and 2 the `Vec`'s
 are expanded to 3D first. The infix operator `×` (written `\\times`) can also be used.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> a = rand(Vec{3})
 3-element Tensors.Tensor{1,3,Float64,3}:

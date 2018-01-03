@@ -303,15 +303,13 @@ end
 end
 
 """
-```julia
-gradient(f::Function, v::Union{SecondOrderTensor, Vec})
-gradient(f::Function, v::Union{SecondOrderTensor, Vec}, :all)
-```
+    gradient(f::Function, v::Union{SecondOrderTensor, Vec})
+    gradient(f::Function, v::Union{SecondOrderTensor, Vec}, :all)
+
 Computes the gradient of the input function. If the (pseudo)-keyword `all`
 is given, the value of the function is also returned as a second output argument.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2, 2});
 
@@ -336,16 +334,14 @@ end
 const ∇ = gradient
 
 """
-```julia
-hessian(f::Function, v::Union{SecondOrderTensor, Vec})
-hessian(f::Function, v::Union{SecondOrderTensor, Vec}, :all)
-```
+    hessian(f::Function, v::Union{SecondOrderTensor, Vec})
+    hessian(f::Function, v::Union{SecondOrderTensor, Vec}, :all)
+
 Computes the hessian of the input function. If the (pseudo)-keyword `all`
 is given, the lower order results (gradient and value) of the function is
 also returned as a second and third output argument.
 
-**Example:**
-
+# Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2, 2});
 
@@ -382,13 +378,11 @@ end
 const ∇∇ = hessian
 
 """
-```julia
-div(f, x)
-```
+    div(f, x)
 
 Calculate the divergence of the vector field `f`, in the point `x`.
 
-# Example
+# Examples
 ```jldoctest
 julia> f(x) = 2x;
 
@@ -401,13 +395,11 @@ julia> div(f, x)
 Base.div(f::F, v::Vec) where {F<:Function} = trace(gradient(f, v))
 
 """
-```julia
-curl(f, x)
-```
+    curl(f, x)
 
 Calculate the curl of the vector field `f`, in the point `x`.
 
-# Example
+# Examples
 ```jldoctest
 julia> f(x) = Vec{3}((x[2], x[3], -x[1]));
 
@@ -436,7 +428,7 @@ curl(f::F, v::Vec{2, T}) where {F, T} = curl(f, Vec{3}((v[1], v[2], T(0))))
 Calculate the laplacian of the field `f`, in the point `x`.
 If `f` is a vector field, use broadcasting.
 
-# Example
+# Examples
 ```jldoctest
 julia> x = rand(Vec{3});
 
