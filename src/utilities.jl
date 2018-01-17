@@ -1,10 +1,3 @@
-macro inboundsret(ex)
-    return quote
-        @inbounds v = $(esc(ex))
-        v
-    end
-end
-
 function tensor_create_linear(T::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}, f) where {order, dim}
     return Expr(:tuple, [f(i) for i=1:n_components(T)]...)
 end
@@ -56,8 +49,8 @@ function remove_duplicates(ex1in, ex2in)
 
     for (ex1ine, ex2ine) in zip(ex1in, ex2in)
         prod = :($ex1ine * $ex2ine)
-        i = findfirst(exout, prod) # check if this product exist in the output
-        if i == 0 # this product does not exist yet
+        i = findfirst(equalto(prod), exout) # check if this product exist in the output
+        if i == nothing # this product does not exist yet
             push!(ex1out, ex1ine)
             push!(ex2out, ex2ine)
             push!(exout, prod)

@@ -34,7 +34,7 @@ end
 function Tensor{order, dim}(data::AbstractArray) where {order, dim}
     N = n_components(Tensor{order, dim})
     length(data) != n_components(Tensor{order, dim}) && throw(ArgumentError("wrong number of elements, expected $N, got $(length(data))"))
-    return apply_all(Tensor{order, dim}, @inline function(i) @inboundsret data[i]; end)
+    return apply_all(Tensor{order, dim}, @inline function(i) @inbounds data[i]; end)
 end
 
 
@@ -103,8 +103,8 @@ end
 @inline Base.fill(f::Function, S::Type{T}) where {T <: Union{Tensor, SymmetricTensor}} = apply_all(get_base(T), i -> f())
 
 # Array with zero/ones
-@inline Base.zeros(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor}} = fill!(Array{typeof(zero(T))}(dims), zero(T))
-@inline Base.ones(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor}} = fill!(Array{typeof(one(T))}(dims), one(T))
+@inline Base.zeros(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor}} = fill(zero(T), (dims))
+@inline Base.ones(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor}} = fill(one(T), (dims))
 
 # diagm
 @generated function Base.diagm(S::Type{T}, v::Union{AbstractVector, Tuple}) where {T <: SecondOrderTensor}

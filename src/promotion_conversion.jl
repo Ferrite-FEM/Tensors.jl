@@ -51,11 +51,11 @@ end
 
 # Change element type
 @inline function Base.convert(::Type{Tensor{order, dim, T1}}, t::Tensor{order, dim, T2}) where {order, dim, T1, T2}
-    apply_all(Tensor{order, dim}, @inline function(i) @inboundsret T1(t.data[i]); end)
+    apply_all(Tensor{order, dim}, @inline function(i) @inbounds T1(t.data[i]); end)
 end
 
 @inline function Base.convert(::Type{SymmetricTensor{order, dim, T1}}, t::SymmetricTensor{order, dim, T2}) where {order, dim, T1, T2}
-    apply_all(SymmetricTensor{order, dim}, @inline function(i) @inboundsret T1(t.data[i]); end)
+    apply_all(SymmetricTensor{order, dim}, @inline function(i) @inbounds T1(t.data[i]); end)
 end
 
 # Peel off the M but define these so that convert(typeof(...), ...) works
@@ -71,11 +71,11 @@ end
 
 # SymmetricTensor -> Tensor
 @inline function Base.convert(::Type{Tensor{2, dim, T1}}, t::SymmetricTensor{2, dim, T2}) where {dim, T1, T2}
-    Tensor{2, dim}(@inline function(i,j) @inboundsret T1(t[i,j]); end)
+    Tensor{2, dim}(@inline function(i,j) @inbounds T1(t[i,j]); end)
 end
 
 @inline function Base.convert(::Type{Tensor{4, dim, T1}}, t::SymmetricTensor{4, dim, T2}) where {dim, T1, T2}
-    Tensor{4, dim}(@inline function(i,j,k,l) @inboundsret T1(t[i,j,k,l]); end)
+    Tensor{4, dim}(@inline function(i,j,k,l) @inbounds T1(t[i,j,k,l]); end)
 end
 
 # Tensor -> SymmetricTensor

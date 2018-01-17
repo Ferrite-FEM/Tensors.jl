@@ -13,7 +13,6 @@ export hessian, gradient, curl, div, laplace
 export basevec, eᵢ
 export rotate
 export tovoigt, tovoigt!, fromvoigt, tomandel, tomandel!, frommandel
-
 #########
 # Types #
 #########
@@ -29,7 +28,7 @@ struct Tensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
 
     # this is needed to make Vec{3, Float64}(f::Function) work properly
     Tensor{order, dim, T, M}(data::NTuple) where {order, dim, T, M} = new{order, dim, T, M}(data)
-    Tensor{order, dim, T, M}(f::Function) where {order, dim, T, M} = new{order, dim, T, M}(NTuple{M, T}(ntuple(f, Val{M})))
+    Tensor{order, dim, T, M}(f::Function) where {order, dim, T, M} = new{order, dim, T, M}(NTuple{M, T}(ntuple(f, Val(M))))
 end
 
 ###############
@@ -115,7 +114,7 @@ end
 include("indexing.jl")
 include("utilities.jl")
 include("tensor_ops_errors.jl")
-include("automatic_differentiation.jl")
+# include("automatic_differentiation.jl")
 include("promotion_conversion.jl")
 include("constructors.jl")
 include("basic_operations.jl")

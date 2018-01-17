@@ -1,77 +1,71 @@
 @testsection "constructors" begin
 for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
-    for op in (:rand, :zero, :ones, :randn)
+    for op in (rand, zero, ones, randn)
         # Tensor, SymmetricTensor
         for TensorType in (Tensor, SymmetricTensor)
             TensorType == SymmetricTensor && order == 1 && continue
-            @eval begin
-                N = Tensors.n_components($TensorType{$order, $dim})
-                t = (@inferred $(op)($TensorType{$order, $dim}))::$TensorType{$order, $dim, Float64}
-                t = (@inferred $(op)($TensorType{$order, $dim, $T}))::$TensorType{$order, $dim, $T}
-                t = (@inferred $(op)($TensorType{$order, $dim, $T, N}))::$TensorType{$order, $dim, $T}
-                t = (@inferred $(op)(t))::$TensorType{$order, $dim, $T}
+            N = Tensors.n_components(TensorType{order, dim})
+            t = (@inferred (op)(TensorType{order, dim}))::TensorType{order, dim, Float64}
+            t = (@inferred (op)(TensorType{order, dim, T}))::TensorType{order, dim, T}
+            t = (@inferred (op)(TensorType{order, dim, T, N}))::TensorType{order, dim, T}
+            t = (@inferred (op)(t))::TensorType{order, dim, T}
 
-                $op == zero && @test zero($TensorType{$order, $dim, $T}) == zeros($T, size(t))
-                $op == ones && @test ones($TensorType{$order, $dim, $T}) == ones($T, size(t))
-            end
+            op == zero && @test zero(TensorType{order, dim, T}) == zeros(T, size(t))
+            op == ones && @test ones(TensorType{order, dim, T}) == ones(T, size(t))
         end
         # Vec
         if order == 1
-            @eval begin
-                (@inferred $(op)(Vec{$dim}))::Tensor{$order, $dim, Float64}
-                (@inferred $(op)(Vec{$dim, $T}))::Tensor{$order, $dim, $T}
-            end
+            (@inferred (op)(Vec{dim}))::Tensor{order, dim, Float64}
+            (@inferred (op)(Vec{dim, T}))::Tensor{order, dim, T}
         end
     end
-    for TensorType in (Tensor, SymmetricTensor), (func, el) in ((:zeros, :zero), (:ones, :one))
+    for TensorType in (Tensor, SymmetricTensor), (func, el) in ((zeros, zero), (ones, one))
         TensorType == SymmetricTensor && order == 1 && continue
-        order == 1 && func == :ones && continue # one not supported for Vec's
-        @eval begin
-            N = Tensors.n_components($TensorType{$order, $dim})
-            tens_arr1 = $func($TensorType{$order, $dim}, 1)
-            tens_arr2 = $func($TensorType{$order, $dim, $T}, 2, 2)
-            tens_arr3 = $func($TensorType{$order, $dim, $T, N}, 3, 3, 3)
-            @test tens_arr1[1] == tens_arr2[1, 1] == tens_arr3[1, 1, 1] == $el($TensorType{$order, $dim, $T})
-            @test eltype(tens_arr1) == $TensorType{$order, $dim, Float64, N}
-            @test eltype(tens_arr2) == eltype(tens_arr3) == $TensorType{$order, $dim, $T, N}
-        end
+        order == 1 && func == ones && continue # one not supported for Vec's
+        N = Tensors.n_components(TensorType{order, dim})
+        tens_arr1 = func(TensorType{order, dim}, 1)
+        tens_arr2 = func(TensorType{order, dim, T}, 2, 2)
+        tens_arr3 = func(TensorType{order, dim, T, N}, 3, 3, 3)
+        @test tens_arr1[1] == tens_arr2[1, 1] == tens_arr3[1, 1, 1] == el(TensorType{order, dim, T})
+        @test eltype(tens_arr1) == TensorType{order, dim, Float64, N}
+        @test eltype(tens_arr2) == eltype(tens_arr3) == TensorType{order, dim, T, N}
     end
 end
 end # of testset
 
 @testsection "diagm, one" begin
-for T in (Float32, Float64, F64), dim in (1,2,3)
+for T in (Float32, Float64), dim in (1,2,3)
     # diagm
     v = rand(T, dim)
-    vt = (v...)
+    vt = (v...,)
 
-    @test (@inferred diagm(Tensor{2, dim}, v))::Tensor{2, dim, T} == diagm(v)
-    @test (@inferred diagm(Tensor{2, dim}, vt))::Tensor{2, dim, T} == diagm(v)
-    @test (@inferred diagm(SymmetricTensor{2, dim}, v))::SymmetricTensor{2, dim, T} == diagm(v)
-    @test (@inferred diagm(SymmetricTensor{2, dim}, vt))::SymmetricTensor{2, dim, T} == diagm(v)
+    @test (@inferred diagm(Tensor{2, dim}, v))::Tensor{2, dim, T} == diagm(0 => v)
+    @test (@inferred diagm(Tensor{2, dim}, vt))::Tensor{2, dim, T} == diagm(0 => v)
+    @test (@inferred diagm(SymmetricTensor{2, dim}, v))::SymmetricTensor{2, dim, T} == diagm(0 => v)
+    @test (@inferred diagm(SymmetricTensor{2, dim}, vt))::SymmetricTensor{2, dim, T} == diagm(0 => v)
 
     v = rand(T); vv = v * ones(T, dim)
-    @test (@inferred diagm(Tensor{2, dim}, v))::Tensor{2, dim, T} == diagm(vv)
-    @test (@inferred diagm(SymmetricTensor{2, dim}, v))::SymmetricTensor{2, dim, T} == diagm(vv)
+    @test (@inferred diagm(Tensor{2, dim}, v))::Tensor{2, dim, T} == diagm(0 => vv)
+    @test (@inferred diagm(SymmetricTensor{2, dim}, v))::SymmetricTensor{2, dim, T} == diagm(0 => vv)
 
     # one
-    @test one(Tensor{2, dim, T}) == diagm(Tensor{2, dim}, one(T)) == eye(T, dim, dim)
-    @test one(SymmetricTensor{2, dim, T}) == diagm(SymmetricTensor{2, dim}, one(T)) == eye(T, dim, dim)
+    @test one(Tensor{2, dim, T}) == diagm(Tensor{2, dim}, one(T)) == Matrix(I, dim, dim)
+    @test one(SymmetricTensor{2, dim, T}) == diagm(SymmetricTensor{2, dim}, one(T)) == Matrix(I, dim, dim)
 
     M = 1 # dummy
     @test one(Tensor{2, dim, T, M}) == one(Tensor{2, dim, T})
     @test one(SymmetricTensor{2, dim, T, M}) == one(SymmetricTensor{2, dim, T})
 
-    I =  (@inferred one(Tensor{2, dim, T}))::Tensor{2, dim, T}
+    _I =  (@inferred one(Tensor{2, dim, T}))::Tensor{2, dim, T}
     II = (@inferred one(Tensor{4, dim, T}))::Tensor{4, dim, T}
     I_sym =  (@inferred one(SymmetricTensor{2, dim, T}))::SymmetricTensor{2, dim, T}
     II_sym = (@inferred one(SymmetricTensor{4, dim, T}))::SymmetricTensor{4, dim, T}
     for i in 1:dim, j in 1:dim
         if i == j
-            @test I[i,j] == T(1)
+            @test _I[i,j] == T(1)
             @test I_sym[i,j] == T(1)
         else
-            @test I[i,j] == T(0)
+            @test _I[i,j] == T(0)
             @test I_sym[i,j] == T(0)
         end
         for k in 1:dim, l in 1:dim
@@ -116,35 +110,33 @@ end # of testset
 @testsection "simple math" begin
 for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Tensor, SymmetricTensor)
     TensorType == SymmetricTensor && order == 1 && continue
-    @eval begin
-        t = rand($TensorType{$order, $dim, $T})
+    t = rand(TensorType{order, dim, T})
 
-        # Binary tensor tensor: +, -
-        @test (@inferred t + t)::$TensorType{$order, $dim} == Array(t) + Array(t)
-        @test (@inferred 2*t)::$TensorType{$order, $dim} == 2 * Array(t)
-        @test (@inferred t - t)::$TensorType{$order, $dim} == Array(t) - Array(t)
-        @test (@inferred 0*t)::$TensorType{$order, $dim} == 0 * Array(t)
+    # Binary tensor tensor: +, -
+    @test (@inferred t + t)::TensorType{order, dim} == Array(t) + Array(t)
+    @test (@inferred 2*t)::TensorType{order, dim} == 2 * Array(t)
+    @test (@inferred t - t)::TensorType{order, dim} == Array(t) - Array(t)
+    @test (@inferred 0*t)::TensorType{order, dim} == 0 * Array(t)
 
-        # Binary tensor number: *, /
-        @test (@inferred 0.5 * t)::$TensorType{$order, $dim} ≈ 0.5 * Array(t)
-        @test (@inferred t * 0.5)::$TensorType{$order, $dim} ≈ Array(t) * 0.5
-        @test (@inferred t / 2.0)::$TensorType{$order, $dim} ≈ Array(t) / 2.0
+    # Binary tensor number: *, /
+    @test (@inferred 0.5 * t)::TensorType{order, dim} ≈ 0.5 * Array(t)
+    @test (@inferred t * 0.5)::TensorType{order, dim} ≈ Array(t) * 0.5
+    @test (@inferred t / 2.0)::TensorType{order, dim} ≈ Array(t) / 2.0
 
-        # Unary: +, -
-        @test (@inferred +t)::$TensorType{$order, $dim} == zero(t) + t
-        @test (@inferred -t)::$TensorType{$order, $dim} == zero(t) - t
+    # Unary: +, -
+    @test (@inferred +t)::TensorType{order, dim} == zero(t) + t
+    @test (@inferred -t)::TensorType{order, dim} == zero(t) - t
 
-        if $order == 2
-            # Power by literal integer
-            fm3, fm2, fm1, f0, fp1, fp2, fp3 = t -> t^-3, t -> t^-2, t -> t^-1, t -> t^0, t -> t^1, t -> t^2, t -> t^3
-            @test (@inferred fm3(t))::typeof(t) ≈ inv(t) ⋅ inv(t) ⋅ inv(t)
-            @test (@inferred fm2(t))::typeof(t) ≈ inv(t) ⋅ inv(t)
-            @test (@inferred fm1(t))::typeof(t) ≈ inv(t)
-            @test (@inferred f0(t))::typeof(t)  ≈ one(t)
-            @test (@inferred fp1(t))::typeof(t) ≈ t
-            @test (@inferred fp2(t))::typeof(t) ≈ t ⋅ t
-            @test (@inferred fp3(t))::typeof(t) ≈ t ⋅ t ⋅ t
-        end
+    if order == 2
+        # Power by literal integer
+        fm3, fm2, fm1, f0, fp1, fp2, fp3 = t -> t^-3, t -> t^-2, t -> t^-1, t -> t^0, t -> t^1, t -> t^2, t -> t^3
+        @test (@inferred fm3(t))::typeof(t) ≈ inv(t) ⋅ inv(t) ⋅ inv(t)
+        @test (@inferred fm2(t))::typeof(t) ≈ inv(t) ⋅ inv(t)
+        @test (@inferred fm1(t))::typeof(t) ≈ inv(t)
+        @test (@inferred f0(t))::typeof(t)  ≈ one(t)
+        @test (@inferred fp1(t))::typeof(t) ≈ t
+        @test (@inferred fp2(t))::typeof(t) ≈ t ⋅ t
+        @test (@inferred fp3(t))::typeof(t) ≈ t ⋅ t ⋅ t
     end
 end
 end # of testset
@@ -284,11 +276,11 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     @test trace(t) ≈ mean(t)*3.0
     @test trace(t_sym) ≈ mean(t_sym)*3.0
 
-    @test (@inferred vol(t))::Tensor{2, dim, T} ≈ mean(t)*eye(dim)
-    @test (@inferred vol(t_sym))::SymmetricTensor{2, dim, T} ≈ mean(t_sym)*eye(dim)
+    @test (@inferred vol(t))::Tensor{2, dim, T} ≈ mean(t) * Matrix(I, dim, dim)
+    @test (@inferred vol(t_sym))::SymmetricTensor{2, dim, T} ≈ mean(t_sym) * Matrix(I, dim, dim)
 
-    @test (@inferred dev(t))::Tensor{2, dim, T} ≈ Array(t) - 1/3*trace(t)*eye(dim)
-    @test (@inferred dev(t_sym))::SymmetricTensor{2, dim, T} ≈ Array(t_sym) - 1/3*trace(t_sym)*eye(dim)
+    @test (@inferred dev(t))::Tensor{2, dim, T} ≈ Array(t) - 1/3*trace(t)* Matrix(I, dim, dim)
+    @test (@inferred dev(t_sym))::SymmetricTensor{2, dim, T} ≈ Array(t_sym) - 1/3*trace(t_sym)* Matrix(I, dim, dim)
 
     @test (@inferred det(t))::T ≈ det(Array(t))
     @test (@inferred det(t_sym))::T ≈ det(Array(t_sym))
@@ -318,7 +310,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     d_sym = diagm(SymmetricTensor{2, dim, T}, v)
     E = @inferred eigfact(d_sym)
     Λ, Φ = @inferred eig(d_sym)
-    Λa, Φa = eig(Array(d_sym))
+    Λa, Φa = eig(Symmetric(Array(d_sym)))
 
     @test Λ ≈ (@inferred eigvals(d_sym)) ≈ eigvals(E) ≈ Λa
     @test Φ ≈ (@inferred eigvecs(d_sym)) ≈ eigvecs(E)
@@ -343,13 +335,13 @@ for T in (Float32, Float64, F64)
 
         @test A ⊡ B ≈ (A' ⋅ B) ⊡ one(A)
         @test A ⊡ (a ⊗ b) ≈ (A ⋅ b) ⋅ a
-        @test (A ⋅ a) ⋅ (B ⋅ b) ≈ (A.' ⋅ B) ⊡ (a ⊗ b)
+        @test (A ⋅ a) ⋅ (B ⋅ b) ≈ (A' ⋅ B) ⊡ (a ⊗ b)
         @test (A ⋅ a) ⊗ b ≈ A ⋅ (a ⊗ b)
-        @test a ⊗ (A ⋅ b) ≈ (A ⋅ (b ⊗ a)).'
-        @test a ⊗ (A ⋅ b) ≈ (a ⊗ b) ⋅ A.'
+        @test a ⊗ (A ⋅ b) ≈ (A ⋅ (b ⊗ a))'
+        @test a ⊗ (A ⋅ b) ≈ (a ⊗ b) ⋅ A'
 
         @test A ⊡ I ≈ trace(A)
-        @test det(A) ≈ det(A.')
+        @test det(A) ≈ det(A')
         @test trace(inv(A) ⋅ A) ≈ dim
         @test inv(A) ⋅ A ≈ I
 
@@ -364,7 +356,7 @@ for T in (Float32, Float64, F64)
         I_sym = one(SymmetricTensor{2, dim})
 
         @test A_sym ⊡ I_sym ≈ trace(A_sym)
-        @test det(A_sym) ≈ det(A_sym.')
+        @test det(A_sym) ≈ det(A_sym')
 
         @test (I_sym ⊗ I_sym) ⊡ A_sym ≈ trace(A_sym) * I_sym
         @test ((I_sym ⊗ I_sym) ⊡ A_sym) ⊡ A_sym ≈ trace(A_sym)^2
@@ -405,8 +397,8 @@ end
 end # of testset
 
 @testsection "promotion/conversion" begin
-const T = Float32
-const WIDE_T = widen(T)
+T = Float32
+WIDE_T = widen(T)
 for dim in (1,2,3), order in (1,2,4)
 
     tens = Tensor{order, dim, T, dim^order}
@@ -477,7 +469,6 @@ end  # of testset
     B = rand(Tensor{2, 3})
     @test_throws Exception A*B
     @test_throws Exception A'*B
-    @test_throws Exception A.'*B
     @test_throws Exception A\B
 
     AA = rand(Tensor{4, 2})

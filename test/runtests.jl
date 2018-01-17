@@ -1,25 +1,28 @@
 using Tensors
-using Base.Test
+using Compat.Test
 using TimerOutputs
 
-macro testsection(args...)
-    name = esc(args[1])
+macro testsection(str, block)
     return quote
-        @timeit $name begin
-            @testset($(map(esc, args)...))
+        @timeit $str begin
+            @testset $str begin
+                println($str)
+                $(esc(block))
+            end
         end
     end
 end
 
 reset_timer!()
 
-include("F64.jl")
+#include("F64.jl")
+const F64 = Float64
 include("test_misc.jl")
 include("test_ops.jl")
-include("test_ad.jl")
+#include("test_ad.jl")
 
 print_timer()
 println()
 
 # Build the docs
-include("../docs/make.jl")
+#include("../docs/make.jl")

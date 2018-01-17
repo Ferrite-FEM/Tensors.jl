@@ -23,7 +23,7 @@ julia> A'
 @inline Base.transpose(S::Vec) = S
 
 @inline function Base.transpose(S::Tensor{2, dim}) where {dim}
-    Tensor{2, dim}(@inline function(i, j) @inboundsret S[j,i]; end)
+    Tensor{2, dim}(@inline function(i, j) @inbounds S[j,i]; end)
 end
 
 @inline Base.transpose(S::SymmetricTensor{2}) = S
@@ -34,7 +34,7 @@ end
 Compute the minor transpose of a fourth order tensor.
 """
 @inline function minortranspose(S::Tensor{4, dim}) where {dim}
-    Tensor{4, dim}(@inline function(i, j, k, l) @inboundsret S[j,i,l,k]; end)
+    Tensor{4, dim}(@inline function(i, j, k, l) @inbounds S[j,i,l,k]; end)
 end
 
 @inline minortranspose(S::SymmetricTensor{4}) = S
@@ -46,7 +46,7 @@ end
 Compute the major transpose of a fourth order tensor.
 """
 @inline function majortranspose(S::FourthOrderTensor{dim}) where {dim}
-    Tensor{4, dim}(@inline function(i, j, k, l) @inboundsret S[k,l,i,j]; end)
+    Tensor{4, dim}(@inline function(i, j, k, l) @inbounds S[k,l,i,j]; end)
 end
 
 if VERSION >= v"0.7.0-DEV.1415"

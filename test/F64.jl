@@ -13,8 +13,12 @@ end
 for op in(:zero, :one)
     @eval Base.$op(::Type{F64}) = F64($op(Float64))
 end
-Base.rand(rng::AbstractRNG, ::Type{F64}) = F64(rand())
-Base.randn(rng::AbstractRNG, ::Type{F64}) = F64(randn())
+if isdefined(Base.Random, :Sampler)
+    Base.Random.Sampler(rng::MersenneTwister, r::F64, ::Val{1}) =
+                 Base.Random.SamplerTrivial(r)
+end
+Base.rand(::Type{F64}) = F64(rand())
+Base.randn(::Type{F64}) = F64(randn())
 Base.sqrt(a::F64) = F64(sqrt(a.x))
 
 # comparison

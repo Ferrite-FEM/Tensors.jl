@@ -24,20 +24,20 @@ Base.:-(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimen
 
 # map implementations
 @inline function _map(f, S::AbstractTensor)
-    return apply_all(S, @inline function(i) @inboundsret f(S.data[i]); end)
+    return apply_all(S, @inline function(i) @inbounds f(S.data[i]); end)
 end
 
 # the caller of 2 arg _map MUST guarantee that both arguments have
 # the same base (Tensor{order, dim} / SymmetricTensor{order, dim}) but not necessarily the same eltype
 @inline function _map(f, S1::AllTensors, S2::AllTensors)
-    return apply_all(S1, @inline function(i) @inboundsret f(S1.data[i], S2.data[i]); end)
+    return apply_all(S1, @inline function(i) @inbounds f(S1.data[i], S2.data[i]); end)
 end
 
 # power
-@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Type{Val{-1}}) = inv(S)
-@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Type{Val{0}})  = one(S)
-@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Type{Val{1}})  = S
-@inline function Base.literal_pow(::typeof(^), S1::SecondOrderTensor, ::Type{Val{p}}) where {p}
+@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Val{-1}) = inv(S)
+@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Val{0})  = one(S)
+@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Val{1})  = S
+@inline function Base.literal_pow(::typeof(^), S1::SecondOrderTensor, ::Val{p}) where {p}
     p > 0 ? (S2 = S1; q = p) : (S2 = inv(S1); q = -p)
     S3 = S2
     for i in 2:q

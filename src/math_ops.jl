@@ -54,10 +54,10 @@ julia> det(A)
 -0.1005427219925894
 ```
 """
-@inline Base.det(t::SecondOrderTensor{1}) = @inboundsret t[1,1]
-@inline Base.det(t::SecondOrderTensor{2}) = @inboundsret (t[1,1] * t[2,2] - t[1,2] * t[2,1])
+@inline Base.det(t::SecondOrderTensor{1}) = @inbounds t[1,1]
+@inline Base.det(t::SecondOrderTensor{2}) = @inbounds (t[1,1] * t[2,2] - t[1,2] * t[2,1])
 @inline function Base.det(t::SecondOrderTensor{3})
-    @inboundsret (t[1,1] * (t[2,2]*t[3,3] - t[2,3]*t[3,2]) -
+    @inbounds (t[1,1] * (t[2,2]*t[3,3] - t[2,3]*t[3,2]) -
                   t[1,2] * (t[2,1]*t[3,3] - t[2,3]*t[3,1]) +
                   t[1,3] * (t[2,1]*t[3,2] - t[2,2]*t[3,1]))
 end
