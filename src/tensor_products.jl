@@ -120,12 +120,12 @@ julia> A ⊗ B
 ```
 """
 @inline function otimes(S1::Vec{dim}, S2::Vec{dim}) where {dim}
-    return Tensor{2, dim}(@inline function(i,j) @inboundsret S1[i] * S2[j]; end)
+    return Tensor{2, dim}(@inline function(i,j) @inbounds S1[i] * S2[j]; end)
 end
 
 @inline function otimes(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
     TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
-    TensorType(@inline function(i,j,k,l) @inboundsret S1[i,j] * S2[k,l]; end)
+    TensorType(@inline function(i,j,k,l) @inbounds S1[i,j] * S2[k,l]; end)
 end
 
 const ⊗ = otimes
@@ -150,7 +150,7 @@ julia> otimes(A)
 ```
 """
 @inline function otimes(S::Vec{dim}) where {dim}
-    return SymmetricTensor{2, dim}(@inline function(i,j) @inboundsret S[i] * S[j]; end)
+    return SymmetricTensor{2, dim}(@inline function(i,j) @inbounds S[i] * S[j]; end)
 end
 
 """
@@ -347,6 +347,6 @@ julia> a × b
   0.116354
 ```
 """
-@inline Base.cross(u::Vec{3, T}, v::Vec{3, T}) where {T} = @inboundsret Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
-@inline Base.cross(u::Vec{2, T}, v::Vec{2, T}) where {T} = @inboundsret Vec{3}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
-@inline Base.cross( ::Vec{1, T},  ::Vec{1, T}) where {T} = @inboundsret zero(Vec{3,T})
+@inline Base.cross(u::Vec{3, T}, v::Vec{3, T}) where {T} = @inbounds Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
+@inline Base.cross(u::Vec{2, T}, v::Vec{2, T}) where {T} = @inbounds Vec{3}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
+@inline Base.cross( ::Vec{1, T},  ::Vec{1, T}) where {T} = @inbounds zero(Vec{3,T})

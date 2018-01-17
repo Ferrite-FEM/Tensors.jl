@@ -42,16 +42,16 @@ julia> tovoigt(Tensor{4,2}(1:16))
 ```
 """
 @inline function tovoigt(A::Tensor{2, dim, T, M}) where {dim, T, M}
-    @inboundsret tovoigt!(Vector{T}(M), A)
+    @inbounds tovoigt!(Vector{T}(uninitialized, M), A)
 end
 @inline function tovoigt(A::Tensor{4, dim, T, M}) where {dim, T, M}
-    @inboundsret tovoigt!(Matrix{T}(Int(√M), Int(√M)), A)
+    @inbounds tovoigt!(Matrix{T}(uninitialized, Int(√M), Int(√M)), A)
 end
 @inline function tovoigt(A::SymmetricTensor{2, dim, T, M}; offdiagscale::T = one(T)) where {dim, T, M}
-    @inboundsret tovoigt!(Vector{T}(M), A, offdiagscale = offdiagscale)
+    @inbounds tovoigt!(Vector{T}(uninitialized, M), A, offdiagscale = offdiagscale)
 end
 @inline function tovoigt(A::SymmetricTensor{4, dim, T, M}; offdiagscale::T = one(T)) where {dim, T, M}
-    @inboundsret tovoigt!(Matrix{T}(Int(√M), Int(√M)), A, offdiagscale = offdiagscale)
+    @inbounds tovoigt!(Matrix{T}(uninitialized, Int(√M), Int(√M)), A, offdiagscale = offdiagscale)
 end
 
 Base.@propagate_inbounds @inline function tovoigt!(v::AbstractVector, A::Tensor{2, dim}; offset::Int = 1) where {dim}
@@ -82,7 +82,7 @@ Base.@propagate_inbounds @inline function tovoigt!(v::AbstractMatrix{T}, A::Symm
     return v
 end
 
-@inline tomandel(A::SymmetricTensor{order, dim, T}) where {order, dim, T} = @inboundsret tovoigt(A, offdiagscale = T(√2))
+@inline tomandel(A::SymmetricTensor{order, dim, T}) where {order, dim, T} = @inbounds tovoigt(A, offdiagscale = T(√2))
 Base.@propagate_inbounds @inline function tomandel!(v::AbstractVector{T}, A::SymmetricTensor{2}; offset::Int = 1) where {T}
     tovoigt!(v, A, offdiagscale = T(√2), offset = offset)
 end

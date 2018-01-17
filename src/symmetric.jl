@@ -23,7 +23,7 @@ julia> symmetric(A)
 @inline symmetric(S1::SymmetricTensors) = S1
 
 @inline function symmetric(S::Tensor{2, dim}) where {dim}
-    SymmetricTensor{2, dim}(@inline function(i, j) @inboundsret i == j ? S[i,j] : (S[i,j] + S[j,i]) / 2 end)
+    SymmetricTensor{2, dim}(@inline function(i, j) @inbounds i == j ? S[i,j] : (S[i,j] + S[j,i]) / 2 end)
 end
 
 
@@ -71,15 +71,15 @@ end
 
 Computes the skew-symmetric (anti-symmetric) part of a second order tensor, returns a `Tensor{2}`.
 """
-@inline skew(S1::Tensor{2}) = (S1 - S1.') / 2
+@inline skew(S1::Tensor{2}) = (S1 - S1') / 2
 @inline skew(S1::SymmetricTensor{2,dim,T}) where {dim, T} = zero(Tensor{2,dim,T})
 
 # Symmetry checks
 @inline Base.issymmetric(t::Tensor{2, 1}) = true
-@inline Base.issymmetric(t::Tensor{2, 2}) = @inboundsret t[1,2] == t[2,1]
+@inline Base.issymmetric(t::Tensor{2, 2}) = @inbounds t[1,2] == t[2,1]
 
 @inline function Base.issymmetric(t::Tensor{2, 3})
-    return @inboundsret t[1,2] == t[2,1] && t[1,3] == t[3,1] && t[2,3] == t[3,2]
+    return @inbounds t[1,2] == t[2,1] && t[1,3] == t[3,1] && t[2,3] == t[3,2]
 end
 
 function isminorsymmetric(t::Tensor{4, dim}) where {dim}

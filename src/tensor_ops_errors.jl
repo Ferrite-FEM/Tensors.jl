@@ -12,7 +12,7 @@ end
 
 # Remove `.'*` as infix operator between tensors
 function Base.At_mul_B(S1::AbstractTensor, S2::AbstractTensor)
-    error("use `tdot(A,B)` (or `A.'⋅B`) instead if A.'*B")
+    error("use `tdot(A,B)` (or `transpose(A)⋅B`) instead if transpose(A)*B")
 end
 
 # Remove `\` as infix operator between tensors

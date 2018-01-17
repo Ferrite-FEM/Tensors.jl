@@ -2,7 +2,7 @@
 # See LICENSE.md for further licensing test
 
 @inline function Base.eigfact(S::SymmetricTensor{2, 1, T}) where {T}
-    @inboundsret Eigen(Vec{1, T}((S[1, 1],)), one(Tensor{2, 1, T}))
+    @inbounds Eigen(Vec{1, T}((S[1, 1],)), one(Tensor{2, 1, T}))
 end
 
 function Base.eigfact(S::SymmetricTensor{2, 2, T}) where {T}
