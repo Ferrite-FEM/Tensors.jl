@@ -1,5 +1,9 @@
 import ForwardDiff: Dual, partials, value
 
+@static if isdefined(Base, :gradient)
+    import Base.gradient
+end
+
 ######################
 # Extraction methods #
 ######################
@@ -321,12 +325,12 @@ julia> ∇f = gradient(norm, A)
 julia> ∇f, f = gradient(norm, A, :all);
 ```
 """
-function Base.gradient(f::F, v::Union{SecondOrderTensor, Vec}) where {F}
+function gradient(f::F, v::Union{SecondOrderTensor, Vec}) where {F}
     v_dual = _load(v)
     res = f(v_dual)
     return _extract_gradient(res, v)
 end
-function Base.gradient(f::F, v::Union{SecondOrderTensor, Vec}, ::Symbol) where {F}
+function gradient(f::F, v::Union{SecondOrderTensor, Vec}, ::Symbol) where {F}
     v_dual = _load(v)
     res = f(v_dual)
     return _extract_gradient(res, v), _extract_value(res, v)
