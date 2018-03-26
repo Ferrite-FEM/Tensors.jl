@@ -46,11 +46,8 @@ i,j,k,l = rand(1:dim,4)
     @test (@inferred dcontract(A_sym, B))::T     ≈ sum(vec(A_sym) .* vec(B))
     @test (@inferred dcontract(A, B_sym))::T     ≈ sum(vec(A) .* vec(B_sym))
     @test (@inferred dcontract(A_sym, B_sym))::T ≈ sum(vec(A_sym) .* vec(B_sym))
-end
-end
 end # of testsection
 
-#=
 @testsection "outer product" begin
     # binary
     @test             (@inferred otimes(a, b))::Tensor{2, dim, T}                                  ≈ Array(a) * Array(b)'
@@ -131,8 +128,8 @@ end # of testsection
     # Identities
     @test A ≈ symmetric(A) + skew(A)
     @test skew(A) ≈ -skew(A)'
-    @test trace(skew(A)) ≈ 0.0
-    @test trace(symmetric(A)) ≈ trace(A)
+    @test tr(skew(A)) ≈ 0.0
+    @test tr(symmetric(A)) ≈ tr(A)
 end # of testsection
 
 @testsection "transpose" begin
@@ -215,5 +212,3 @@ end
 end
 end # of testsection
 end # of testsection
-
-=#

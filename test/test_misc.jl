@@ -270,17 +270,17 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     t = rand(Tensor{2, dim, T})
     t_sym = rand(SymmetricTensor{2, dim, T})
 
-    @test (@inferred trace(t))::T == sum([t[i,i] for i in 1:dim])
-    @test (@inferred trace(t_sym))::T == sum([t_sym[i,i] for i in 1:dim])
+    @test (@inferred tr(t))::T == sum([t[i,i] for i in 1:dim])
+    @test (@inferred tr(t_sym))::T == sum([t_sym[i,i] for i in 1:dim])
 
-    @test trace(t) ≈ mean(t)*3.0
-    @test trace(t_sym) ≈ mean(t_sym)*3.0
+    @test tr(t) ≈ mean(t)*3.0
+    @test tr(t_sym) ≈ mean(t_sym)*3.0
 
     @test (@inferred vol(t))::Tensor{2, dim, T} ≈ mean(t) * Matrix(I, dim, dim)
     @test (@inferred vol(t_sym))::SymmetricTensor{2, dim, T} ≈ mean(t_sym) * Matrix(I, dim, dim)
 
-    @test (@inferred dev(t))::Tensor{2, dim, T} ≈ Array(t) - 1/3*trace(t)* Matrix(I, dim, dim)
-    @test (@inferred dev(t_sym))::SymmetricTensor{2, dim, T} ≈ Array(t_sym) - 1/3*trace(t_sym)* Matrix(I, dim, dim)
+    @test (@inferred dev(t))::Tensor{2, dim, T} ≈ Array(t) - 1/3*tr(t)* Matrix(I, dim, dim)
+    @test (@inferred dev(t_sym))::SymmetricTensor{2, dim, T} ≈ Array(t_sym) - 1/3*tr(t_sym)* Matrix(I, dim, dim)
 
     @test (@inferred det(t))::T ≈ det(Array(t))
     @test (@inferred det(t_sym))::T ≈ det(Array(t_sym))
@@ -340,13 +340,14 @@ for T in (Float32, Float64, F64)
         @test a ⊗ (A ⋅ b) ≈ (A ⋅ (b ⊗ a))'
         @test a ⊗ (A ⋅ b) ≈ (a ⊗ b) ⋅ A'
 
-        @test A ⊡ I ≈ trace(A)
+        @test A ⊡ I ≈ tr(A)
         @test det(A) ≈ det(A')
-        @test trace(inv(A) ⋅ A) ≈ dim
-        @test inv(A) ⋅ A ≈ I
+        @test tr(inv(A) ⋅ A) ≈ dim
+        @test inv(A) ⋅ A ≈ A \ A ≈ I
+        @test inv(A) ⋅ a ≈ A \ a
 
-        @test (I ⊗ I) ⊡ A ≈ trace(A) * I
-        @test (I ⊗ I) ⊡ A ⊡ A ≈ trace(A)^2
+        @test (I ⊗ I) ⊡ A ≈ tr(A) * I
+        @test (I ⊗ I) ⊡ A ⊡ A ≈ tr(A)^2
 
         @test A ⋅ a ≈ a ⋅ A'
 
@@ -355,11 +356,11 @@ for T in (Float32, Float64, F64)
         C_sym = rand(SymmetricTensor{2, dim})
         I_sym = one(SymmetricTensor{2, dim})
 
-        @test A_sym ⊡ I_sym ≈ trace(A_sym)
+        @test A_sym ⊡ I_sym ≈ tr(A_sym)
         @test det(A_sym) ≈ det(A_sym')
 
-        @test (I_sym ⊗ I_sym) ⊡ A_sym ≈ trace(A_sym) * I_sym
-        @test ((I_sym ⊗ I_sym) ⊡ A_sym) ⊡ A_sym ≈ trace(A_sym)^2
+        @test (I_sym ⊗ I_sym) ⊡ A_sym ≈ tr(A_sym) * I_sym
+        @test ((I_sym ⊗ I_sym) ⊡ A_sym) ⊡ A_sym ≈ tr(A_sym)^2
     end
 end
 
@@ -379,19 +380,19 @@ for T in (Float32, Float64, F64)
         @test AA ⊡ II ≈ AA
         @test II ⊡ A ≈ A
         @test A ⊡ II ≈ A
-        @test II ⊡ A ⊡ A ≈ (trace(A' ⋅ A))
+        @test II ⊡ A ⊡ A ≈ (tr(A' ⋅ A))
 
         @test II ⊡ AA_sym ≈ AA_sym
         @test AA_sym ⊡ II ≈ AA_sym
         @test II ⊡ A_sym ≈ A_sym
         @test A_sym ⊡ II ≈ A_sym
-        @test II ⊡ A_sym ⊡ A_sym ≈ (trace(A_sym' ⋅ A_sym))
+        @test II ⊡ A_sym ⊡ A_sym ≈ (tr(A_sym' ⋅ A_sym))
 
         @test II_sym ⊡ AA_sym ≈ AA_sym
         @test AA_sym ⊡ II_sym ≈ AA_sym
         @test II_sym ⊡ A_sym ≈ A_sym
         @test A_sym ⊡ II_sym ≈ A_sym
-        @test II_sym ⊡ A_sym ⊡ A_sym ≈ (trace(A_sym' ⋅ A_sym))
+        @test II_sym ⊡ A_sym ⊡ A_sym ≈ (tr(A_sym' ⋅ A_sym))
     end
 end
 end # of testset
@@ -469,16 +470,9 @@ end  # of testset
     B = rand(Tensor{2, 3})
     @test_throws Exception A*B
     @test_throws Exception A'*B
-    @test_throws Exception A\B
 
     AA = rand(Tensor{4, 2})
     A2 = rand(Tensor{2, 2})
     @test_throws DimensionMismatch A + A2
     @test_throws DimensionMismatch AA - A
-
-    # issue 75
-    @test_throws MethodError A+1
-    @test_throws MethodError 1+A
-    @test_throws MethodError A-1
-    @test_throws MethodError 1-A
 end # of testset

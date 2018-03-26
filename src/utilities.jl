@@ -49,7 +49,7 @@ function remove_duplicates(ex1in, ex2in)
 
     for (ex1ine, ex2ine) in zip(ex1in, ex2in)
         prod = :($ex1ine * $ex2ine)
-        i = findfirst(equalto(prod), exout) # check if this product exist in the output
+        i = findfirst(isequal(prod), exout) # check if this product exist in the output
         if i == nothing # this product does not exist yet
             push!(ex1out, ex1ine)
             push!(ex2out, ex2ine)

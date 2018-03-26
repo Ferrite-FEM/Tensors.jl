@@ -191,9 +191,9 @@ end
 # (3): dot #
 ############
 # 2s-1
-@inline Base.dot(S1::SymmetricTensor{2, dim, T}, S2::Vec{dim, T}) where {dim, T <: SIMDTypes} = dot(promote(S1), S2)
+@inline LinearAlgebra.dot(S1::SymmetricTensor{2, dim, T}, S2::Vec{dim, T}) where {dim, T <: SIMDTypes} = dot(promote(S1), S2)
 # 2-1
-@inline function Base.dot(S1::Tensor{2, 2, T}, S2::Vec{2, T}) where {T <: SIMDTypes}
+@inline function LinearAlgebra.dot(S1::Tensor{2, 2, T}, S2::Vec{2, T}) where {T <: SIMDTypes}
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1}, Val{2})
@@ -202,7 +202,7 @@ end
         return Tensor{1, 2}(r)
     end
 end
-@inline function Base.dot(S1::Tensor{2, 3, T}, S2::Vec{3, T}) where {T <: SIMDTypes}
+@inline function LinearAlgebra.dot(S1::Tensor{2, 3, T}, S2::Vec{3, T}) where {T <: SIMDTypes}
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1}, Val{3})
@@ -214,11 +214,11 @@ end
 end
 
 # 2s-2 / 2-2s
-@inline function Base.dot(S1::AbstractTensor{2, dim, T}, S2::AbstractTensor{2, dim, T}) where {dim, T <: SIMDTypes}
+@inline function LinearAlgebra.dot(S1::AbstractTensor{2, dim, T}, S2::AbstractTensor{2, dim, T}) where {dim, T <: SIMDTypes}
     SS1, SS2 = promote_base(S1, S2); dot(SS1, SS2)
 end
 # 2-2
-@inline function Base.dot(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T}) where {T <: SIMDTypes}
+@inline function LinearAlgebra.dot(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T}) where {T <: SIMDTypes}
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1}, Val{2})
@@ -228,7 +228,7 @@ end
         return Tensor{2, 2}((r1, r2))
     end
 end
-@inline function Base.dot(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T}) where {T <: SIMDTypes}
+@inline function LinearAlgebra.dot(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T}) where {T <: SIMDTypes}
     @inbounds begin
         D1 = get_data(S1); D2 = get_data(S2)
         SV11 = tosimd(D1, Val{1}, Val{3})
@@ -482,7 +482,7 @@ end
 # (6): norm #
 #############
 # order 1 and order 2 norms rely on dot and dcontract respectively
-@inline function Base.norm(S::Tensor{4, 2, T}) where {T <: SIMDTypes}
+@inline function LinearAlgebra.norm(S::Tensor{4, 2, T}) where {T <: SIMDTypes}
     @inbounds begin
         SV = tosimd(get_data(S))
         SVSV = SV * SV
@@ -490,7 +490,7 @@ end
         return sqrt(r)
     end
 end
-@generated function Base.norm(S::Tensor{4, 3, T}) where {T <: SIMDTypes}
+@generated function LinearAlgebra.norm(S::Tensor{4, 3, T}) where {T <: SIMDTypes}
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
@@ -503,7 +503,7 @@ end
         end
     end
 end
-@generated function Base.norm(S::SymmetricTensor{4, dim, T}) where {dim, T <: SIMDTypes}
+@generated function LinearAlgebra.norm(S::SymmetricTensor{4, dim, T}) where {dim, T <: SIMDTypes}
     F = symmetric_factors(4, dim, T)
     return quote
         $(Expr(:meta, :inline))

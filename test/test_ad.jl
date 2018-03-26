@@ -1,17 +1,18 @@
 using Tensors: ∇, ∇∇, Δ
+import ForwardDiff
 
 function Ψ(C, μ, Kb)
     detC = det(C)
     J = sqrt(detC)
     Ĉ = detC^(-1/3)*C
-    return 1/2*(μ * (trace(Ĉ)- 3) + Kb*(J-1)^2)
+    return 1/2*(μ * (tr(Ĉ)- 3) + Kb*(J-1)^2)
 end
 
 function S(C, μ, Kb)
     I = one(C)
     J = sqrt(det(C))
     invC = inv(C)
-    return μ * det(C)^(-1/3)*(I - 1/3*trace(C)*invC) + Kb*(J-1)*J*invC
+    return μ * det(C)^(-1/3)*(I - 1/3*tr(C)*invC) + Kb*(J-1)*J*invC
 end
 
 const μ = 1e10;
@@ -68,8 +69,8 @@ S(C) = S(C, μ, Kb)
             @testsection "2nd tensor grad" begin
             # Gradient of second order tensors
             # https://en.wikipedia.org/wiki/Tensor_derivative_(continuum_mechanics)#Derivatives_of_the_invariants_of_a_second-order_tensor
-                I1, DI1 = A -> trace(A), A -> one(A)
-                I2, DI2 = A -> (trace(A)^2 - trace(A⋅A)) / 2, A -> I1(A) * one(A) - A'
+                I1, DI1 = A -> tr(A), A -> one(A)
+                I2, DI2 = A -> (tr(A)^2 - tr(A⋅A)) / 2, A -> I1(A) * one(A) - A'
                 I3, DI3 = A -> det(A), A -> det(A) * inv(A)'
 
                 @test (@inferred ∇(I1, A))::typeof(A) ≈ ((@inferred ∇(I1, A, :all))[1])::typeof(A) ≈ DI1(A)

@@ -83,6 +83,6 @@ end
     if issymmetric(t)
         return convert(SymmetricTensor{order, dim, T1}, symmetric(t))
     else
-        throw(InexactError())
+        throw(InexactError(:convert, SymmetricTensor{order, dim, T1}, t))
     end
 end

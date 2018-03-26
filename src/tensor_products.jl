@@ -185,7 +185,7 @@ julia> A ⋅ B
  1.00184
 ```
 """
-@generated function Base.dot(S1::Vec{dim}, S2::Vec{dim}) where {dim}
+@generated function LinearAlgebra.dot(S1::Vec{dim}, S2::Vec{dim}) where {dim}
     ex1 = Expr[:(get_data(S1)[$i]) for i in 1:dim]
     ex2 = Expr[:(get_data(S2)[$i]) for i in 1:dim]
     exp = reducer(ex1, ex2)
@@ -195,7 +195,7 @@ julia> A ⋅ B
     end
 end
 
-@generated function Base.dot(S1::SecondOrderTensor{dim}, S2::Vec{dim}) where {dim}
+@generated function LinearAlgebra.dot(S1::SecondOrderTensor{dim}, S2::Vec{dim}) where {dim}
     idxS1(i, j) = compute_index(get_base(S1), i, j)
     exps = Expr(:tuple)
     for i in 1:dim
@@ -209,7 +209,7 @@ end
     end
 end
 
-@generated function Base.dot(S1::Vec{dim}, S2::SecondOrderTensor{dim}) where {dim}
+@generated function LinearAlgebra.dot(S1::Vec{dim}, S2::SecondOrderTensor{dim}) where {dim}
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     exps = Expr(:tuple)
     for j in 1:dim
@@ -223,7 +223,7 @@ end
     end
 end
 
-@generated function Base.dot(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
+@generated function LinearAlgebra.dot(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
     idxS1(i, j) = compute_index(get_base(S1), i, j)
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     exps = Expr(:tuple)
@@ -259,7 +259,7 @@ julia> dot(A)
  1.42706  1.47772  1.68067
 ```
 """
-@inline Base.dot(S::SymmetricTensor{2}) = tdot(S)
+@inline LinearAlgebra.dot(S::SymmetricTensor{2}) = tdot(S)
 
 """
     tdot(::SecondOrderTensor)
@@ -347,6 +347,6 @@ julia> a × b
   0.116354
 ```
 """
-@inline Base.cross(u::Vec{3, T}, v::Vec{3, T}) where {T} = @inbounds Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
-@inline Base.cross(u::Vec{2, T}, v::Vec{2, T}) where {T} = @inbounds Vec{3}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
-@inline Base.cross( ::Vec{1, T},  ::Vec{1, T}) where {T} = @inbounds zero(Vec{3,T})
+@inline LinearAlgebra.cross(u::Vec{3, T}, v::Vec{3, T}) where {T} = @inbounds Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))
+@inline LinearAlgebra.cross(u::Vec{2, T}, v::Vec{2, T}) where {T} = @inbounds Vec{3}((zero(T), zero(T), u[1]*v[2] - u[2]*v[1]))
+@inline LinearAlgebra.cross( ::Vec{1, T},  ::Vec{1, T}) where {T} = @inbounds zero(Vec{3,T})

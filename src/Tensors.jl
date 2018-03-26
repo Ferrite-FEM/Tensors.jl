@@ -4,6 +4,8 @@ module Tensors
 
 import Base.@pure
 
+using LinearAlgebra
+
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
 export otimes, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
@@ -114,7 +116,7 @@ end
 include("indexing.jl")
 include("utilities.jl")
 include("tensor_ops_errors.jl")
-# include("automatic_differentiation.jl")
+include("automatic_differentiation.jl")
 include("promotion_conversion.jl")
 include("constructors.jl")
 include("basic_operations.jl")
@@ -124,7 +126,7 @@ include("symmetric.jl")
 include("math_ops.jl")
 include("eigen.jl")
 include("special_ops.jl")
-include("simd.jl")
+# include("simd.jl")
 include("voigt.jl")
 
 end # module

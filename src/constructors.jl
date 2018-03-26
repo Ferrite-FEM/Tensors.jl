@@ -107,7 +107,7 @@ end
 @inline Base.ones(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor}} = fill(one(T), (dims))
 
 # diagm
-@generated function Base.diagm(S::Type{T}, v::Union{AbstractVector, Tuple}) where {T <: SecondOrderTensor}
+@generated function LinearAlgebra.diagm(S::Type{T}, v::Union{AbstractVector, Tuple}) where {T <: SecondOrderTensor}
     TensorType = get_base(get_type(S))
     ET = eltype(get_type(S)) == Any ? eltype(v) : eltype(get_type(S)) # lol
     f = (i,j) -> i == j ? :($ET(v[$i])) : :(o)
@@ -118,8 +118,8 @@ end
         @inbounds return $TensorType($exp)
     end
 end
-@inline Base.diagm(::Type{Tensor{2, dim}}, v::T) where {dim, T<:Number} = v * one(Tensor{2, dim, T})
-@inline Base.diagm(::Type{SymmetricTensor{2, dim}}, v::T) where {dim, T<:Number} = v * one(SymmetricTensor{2, dim, T})
+@inline LinearAlgebra.diagm(::Type{Tensor{2, dim}}, v::T) where {dim, T<:Number} = v * one(Tensor{2, dim, T})
+@inline LinearAlgebra.diagm(::Type{SymmetricTensor{2, dim}}, v::T) where {dim, T<:Number} = v * one(SymmetricTensor{2, dim, T})
 
 """
     basevec(::Type{Vec{dim, T}})
