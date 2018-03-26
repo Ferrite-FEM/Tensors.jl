@@ -42,16 +42,16 @@ julia> tovoigt(Tensor{4,2}(1:16))
 ```
 """
 @inline function tovoigt(A::Tensor{2, dim, T, M}) where {dim, T, M}
-    @inbounds tovoigt!(Vector{T}(uninitialized, M), A)
+    @inbounds tovoigt!(Vector{T}(undef, M), A)
 end
 @inline function tovoigt(A::Tensor{4, dim, T, M}) where {dim, T, M}
-    @inbounds tovoigt!(Matrix{T}(uninitialized, Int(√M), Int(√M)), A)
+    @inbounds tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A)
 end
 @inline function tovoigt(A::SymmetricTensor{2, dim, T, M}; offdiagscale::T = one(T)) where {dim, T, M}
-    @inbounds tovoigt!(Vector{T}(uninitialized, M), A, offdiagscale = offdiagscale)
+    @inbounds tovoigt!(Vector{T}(undef, M), A, offdiagscale = offdiagscale)
 end
 @inline function tovoigt(A::SymmetricTensor{4, dim, T, M}; offdiagscale::T = one(T)) where {dim, T, M}
-    @inbounds tovoigt!(Matrix{T}(uninitialized, Int(√M), Int(√M)), A, offdiagscale = offdiagscale)
+    @inbounds tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A, offdiagscale = offdiagscale)
 end
 
 Base.@propagate_inbounds @inline function tovoigt!(v::AbstractVector, A::Tensor{2, dim}; offset::Int = 1) where {dim}

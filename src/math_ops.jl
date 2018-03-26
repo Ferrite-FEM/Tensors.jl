@@ -18,13 +18,13 @@ julia> norm(A)
 1.7377443667834924
 ```
 """
-@inline Base.norm(v::Vec) = sqrt(dot(v, v))
-@inline Base.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
+@inline LinearAlgebra.norm(v::Vec) = sqrt(dot(v, v))
+@inline LinearAlgebra.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
 
 # special case for Tensor{4, 3} since it is faster than unrolling
-@inline Base.norm(S::Tensor{4, 3}) = sqrt(mapreduce(abs2, +, S))
+@inline LinearAlgebra.norm(S::Tensor{4, 3}) = sqrt(mapreduce(abs2, +, S))
 
-@generated function Base.norm(S::FourthOrderTensor{dim}) where {dim}
+@generated function LinearAlgebra.norm(S::FourthOrderTensor{dim}) where {dim}
     idx(i,j,k,l) = compute_index(get_base(S), i, j, k, l)
     ex = Expr[]
     for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
@@ -54,9 +54,9 @@ julia> det(A)
 -0.1005427219925894
 ```
 """
-@inline Base.det(t::SecondOrderTensor{1}) = @inbounds t[1,1]
-@inline Base.det(t::SecondOrderTensor{2}) = @inbounds (t[1,1] * t[2,2] - t[1,2] * t[2,1])
-@inline function Base.det(t::SecondOrderTensor{3})
+@inline LinearAlgebra.det(t::SecondOrderTensor{1}) = @inbounds t[1,1]
+@inline LinearAlgebra.det(t::SecondOrderTensor{2}) = @inbounds (t[1,1] * t[2,2] - t[1,2] * t[2,1])
+@inline function LinearAlgebra.det(t::SecondOrderTensor{3})
     @inbounds (t[1,1] * (t[2,2]*t[3,3] - t[2,3]*t[3,2]) -
                   t[1,2] * (t[2,1]*t[3,3] - t[2,3]*t[3,1]) +
                   t[1,3] * (t[2,1]*t[3,2] - t[2,2]*t[3,1]))
@@ -155,6 +155,8 @@ function Base.inv(t::SymmetricTensor{4, dim, T}) where {dim, T}
     frommandel(SymmetricTensor{4, dim}, inv(tomandel(t)))
 end
 
+Base.:\(S1::SecondOrderTensor, S2::AbstractTensor) = inv(S1) ⋅ S2
+
 """
     eig(::SymmetricTensor{2})
 
@@ -187,21 +189,21 @@ julia> Φ ⋅ diagm(Tensor{2, 2}, Λ) ⋅ inv(Φ) # Same as A
  0.766797  0.566237
 ```
 """
-@inline Base.eig(S::SymmetricTensor) = (E = eigfact(S); (E.λ, E.Φ))
+@inline LinearAlgebra.eig(S::SymmetricTensor) = (E = eigfact(S); (E.λ, E.Φ))
 
 """
     eigvals(::SymmetricTensor{2})
 
 Compute the eigenvalues of a symmetric second order tensor.
 """
-@inline Base.eigvals(S::SymmetricTensor) = (E = eigfact(S); E.λ)
+@inline LinearAlgebra.eigvals(S::SymmetricTensor) = (E = eigfact(S); E.λ)
 
 """
     eigvecs(::SymmetricTensor{2})
 
 Compute the eigenvectors of a symmetric second order tensor.
 """
-@inline Base.eigvecs(S::SymmetricTensor) = (E = eigfact(S); E.Φ)
+@inline LinearAlgebra.eigvecs(S::SymmetricTensor) = (E = eigfact(S); E.Φ)
 
 struct Eigen{T, dim, M}
     λ::Vec{dim, T}
@@ -246,13 +248,13 @@ Base.eigfact
 
 Extract eigenvalues from an `Eigen` object, returned by [`eigfact`](@ref).
 """
-@inline Base.eigvals(E::Eigen) = E.λ
+@inline LinearAlgebra.eigvals(E::Eigen) = E.λ
 """
     eigvecs(::Eigen)
 
 Extract eigenvectors from an `Eigen` object, returned by [`eigfact`](@ref).
 """
-@inline Base.eigvecs(E::Eigen) = E.Φ
+@inline LinearAlgebra.eigvecs(E::Eigen) = E.Φ
 
 """
     sqrt(S::SymmetricTensor{2})
@@ -283,7 +285,7 @@ Base.sqrt(S::SymmetricTensor{2,1}) = SymmetricTensor{2,1}((sqrt(S[1,1]),))
 # https://en.m.wikipedia.org/wiki/Square_root_of_a_2_by_2_matrix
 function Base.sqrt(S::SymmetricTensor{2,2})
     s = √(det(S))
-    t = √(trace(S)+2s)
+    t = √(tr(S)+2s)
     return SymmetricTensor{2,2}((S[1,1]+s, S[2,1], S[2,2]+s)) / t
 end
 
@@ -295,7 +297,7 @@ function Base.sqrt(S::SymmetricTensor{2,3,T}) where T
 end
 
 """
-    trace(::SecondOrderTensor)
+    tr(::SecondOrderTensor)
 
 Computes the trace of a second order tensor.
 
@@ -307,18 +309,18 @@ julia> A = rand(SymmetricTensor{2,3})
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147
 
-julia> trace(A)
+julia> tr(A)
 1.9050765715072775
 ```
 """
-@generated function Base.trace(S::SecondOrderTensor{dim}) where {dim}
+@generated function LinearAlgebra.tr(S::SecondOrderTensor{dim}) where {dim}
     idx(i,j) = compute_index(get_base(S), i, j)
     ex = Expr[:(get_data(S)[$(idx(i,i))]) for i in 1:dim]
     exp = reduce((ex1, ex2) -> :(+($ex1, $ex2)), ex)
     @inbounds return exp
 end
 
-Base.mean(S::SecondOrderTensor) = trace(S) / 3
+Base.mean(S::SecondOrderTensor) = tr(S) / 3
 
 """
     vol(::SecondOrderTensor)
@@ -361,16 +363,16 @@ julia> dev(A)
  0.766797   0.250123   0.298614
  0.566237   0.854147  -0.297065
 
-julia> trace(dev(A))
+julia> tr(dev(A))
 0.0
 ```
 """
 @inline function dev(S::SecondOrderTensor)
     Tt = get_base(typeof(S))
-    tr = trace(S) / 3
+    trace = tr(S) / 3
     Tt(
         @inline function(i, j)
-            @inbounds  v = i == j ? S[i,j] - tr : S[i,j]
+            @inbounds  v = i == j ? S[i,j] - trace : S[i,j]
             v
         end
     )

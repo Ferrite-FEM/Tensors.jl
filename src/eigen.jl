@@ -1,14 +1,14 @@
 # MIT License: Copyright (c) 2016: Andy Ferris.
 # See LICENSE.md for further licensing test
 
-@inline function Base.eigfact(S::SymmetricTensor{2, 1, T}) where {T}
+@inline function LinearAlgebra.eigfact(S::SymmetricTensor{2, 1, T}) where {T}
     @inbounds Eigen(Vec{1, T}((S[1, 1],)), one(Tensor{2, 1, T}))
 end
 
-function Base.eigfact(S::SymmetricTensor{2, 2, T}) where {T}
+function LinearAlgebra.eigfact(S::SymmetricTensor{2, 2, T}) where {T}
     @inbounds begin
         # eigenvalues from quadratic formula
-        trS_half = trace(S) / 2
+        trS_half = tr(S) / 2
         tmp2 = trS_half * trS_half - det(S)
         tmp2 < 0 ? tmp = zero(tmp2) : tmp = sqrt(tmp2) # Numerically stable for identity matrices, etc.
         λ = Vec{2}((trS_half - tmp, trS_half + tmp))
@@ -36,7 +36,7 @@ end
 # A small part of the code in the following method was inspired by works of David
 # Eberly, Geometric Tools LLC, in code released under the Boost Software
 # License. See LICENSE.md
-function Base.eigfact(S::SymmetricTensor{2, 3, T}) where {T}
+function LinearAlgebra.eigfact(S::SymmetricTensor{2, 3, T}) where {T}
     @inbounds begin
         R = typeof((one(T)*zero(T) + zero(T))/one(T))
         SR = convert(SymmetricTensor{2, 3, R}, S)
@@ -91,7 +91,7 @@ function Base.eigfact(S::SymmetricTensor{2, 3, T}) where {T}
 
         λ3 = q + 2 * p * cos(phi)
         λ1 = q + 2 * p * cos(phi + (2*R(pi)/3))
-        λ2 = 3 * q - λ1 - λ3 # since trace(S) = λ1 + λ2 + λ3
+        λ2 = 3 * q - λ1 - λ3 # since tr(S) = λ1 + λ2 + λ3
 
         if r > 0 # Helps with conditioning the eigenvector calculation
             (λ1, λ3) = (λ3, λ1)

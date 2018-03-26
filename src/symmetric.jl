@@ -75,10 +75,10 @@ Computes the skew-symmetric (anti-symmetric) part of a second order tensor, retu
 @inline skew(S1::SymmetricTensor{2,dim,T}) where {dim, T} = zero(Tensor{2,dim,T})
 
 # Symmetry checks
-@inline Base.issymmetric(t::Tensor{2, 1}) = true
-@inline Base.issymmetric(t::Tensor{2, 2}) = @inbounds t[1,2] == t[2,1]
+@inline LinearAlgebra.issymmetric(t::Tensor{2, 1}) = true
+@inline LinearAlgebra.issymmetric(t::Tensor{2, 2}) = @inbounds t[1,2] == t[2,1]
 
-@inline function Base.issymmetric(t::Tensor{2, 3})
+@inline function LinearAlgebra.issymmetric(t::Tensor{2, 3})
     return @inbounds t[1,2] == t[2,1] && t[1,3] == t[3,1] && t[2,3] == t[3,2]
 end
 
@@ -102,6 +102,6 @@ function ismajorsymmetric(t::FourthOrderTensor{dim}) where {dim}
     return true
 end
 
-Base.issymmetric(t::Tensor{4}) = isminorsymmetric(t)
+LinearAlgebra.issymmetric(t::Tensor{4}) = isminorsymmetric(t)
 
-Base.issymmetric(::SymmetricTensors) = true
+LinearAlgebra.issymmetric(::SymmetricTensors) = true

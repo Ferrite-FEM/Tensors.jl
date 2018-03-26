@@ -1,7 +1,7 @@
 import ForwardDiff: Dual, partials, value
 
-@static if isdefined(Base, :gradient)
-    import Base.gradient
+@static if isdefined(LinearAlgebra, :gradient)
+    import LinearAlgebra.gradient
 end
 
 ######################
@@ -396,7 +396,7 @@ julia> div(f, x)
 6.0
 ```
 """
-Base.div(f::F, v::Vec) where {F<:Function} = trace(gradient(f, v))
+Base.div(f::F, v::Vec) where {F<:Function} = tr(gradient(f, v))
 
 """
     curl(f, x)
