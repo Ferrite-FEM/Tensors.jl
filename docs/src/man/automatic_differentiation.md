@@ -1,5 +1,6 @@
 ```@meta
 DocTestSetup = quote
+    using Random
     srand(1234)
     using Tensors
 end
@@ -41,14 +42,14 @@ $f(\mathbf{x}) = |\mathbf{x}| \quad \Rightarrow \quad \partial f / \partial \mat
 julia> x = rand(Vec{2});
 
 julia> gradient(norm, x)
-2-element Tensors.Tensor{1,2,Float64,2}:
- 0.61036
- 0.792124
+2-element Tensor{1,2,Float64,2}:
+ 0.6103600560550116
+ 0.7921241076829584
 
 julia> x / norm(x)
-2-element Tensors.Tensor{1,2,Float64,2}:
- 0.61036
- 0.792124
+2-element Tensor{1,2,Float64,2}:
+ 0.6103600560550116
+ 0.7921241076829584
 ```
 
 ### Determinant of a second order symmetric tensor
@@ -59,12 +60,12 @@ $f(\mathbf{A}) = \det \mathbf{A} \quad \Rightarrow \quad \partial f / \partial \
 julia> A = rand(SymmetricTensor{2,2});
 
 julia> gradient(det, A)
-2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+2×2 SymmetricTensor{2,2,Float64,3}:
   0.566237  -0.766797
  -0.766797   0.590845
 
 julia> inv(A)' * det(A)
-2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+2×2 SymmetricTensor{2,2,Float64,3}:
   0.566237  -0.766797
  -0.766797   0.590845
 ```

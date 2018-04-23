@@ -102,7 +102,7 @@ See also [`tovoigt`](@ref).
 
 ```jldoctest
 julia> fromvoigt(Tensor{2,3}, 1.0:1.0:9.0)
-3×3 Tensors.Tensor{2,3,Float64,9}:
+3×3 Tensor{2,3,Float64,9}:
  1.0  6.0  5.0
  9.0  2.0  4.0
  8.0  7.0  3.0

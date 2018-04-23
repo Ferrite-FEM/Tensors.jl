@@ -10,12 +10,12 @@ For a fourth order tensor, the transpose is the minor transpose.
 # Examples
 ```jldoctest
 julia> A = rand(Tensor{2,2})
-2×2 Tensors.Tensor{2,2,Float64,4}:
+2×2 Tensor{2,2,Float64,4}:
  0.590845  0.566237
  0.766797  0.460085
 
 julia> A'
-2×2 Tensors.Tensor{2,2,Float64,4}:
+2×2 Tensor{2,2,Float64,4}:
  0.590845  0.766797
  0.566237  0.460085
 ```

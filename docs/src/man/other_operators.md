@@ -1,5 +1,6 @@
 ```@meta
 DocTestSetup = quote
+    using Random
     srand(1234)
     using Tensors
 end
@@ -19,8 +20,8 @@ $\mathbf{A} = \mathbf{B}^\text{T} \cdot \mathbf{B} \Leftrightarrow A_{ij} = B_{k
 $\mathbf{A} = \mathbf{B} \cdot \mathbf{B}^\text{T} \Leftrightarrow A_{ij} = B_{ik} B_{jk}^\text{T} = B_{ik} B_{kj}$
 
 ```@docs
-tdot
-dott
+Tensors.tdot
+Tensors.dott
 ```
 
 ## Norm
@@ -34,7 +35,7 @@ $\|\mathbf{A}\| = \sqrt{\mathbf{A} : \mathbf{A}} \Leftrightarrow \|A_{ij}\| = \s
 $\|\mathsf{A}\| = \sqrt{\mathsf{A} :: \mathsf{A}} \Leftrightarrow \|A_{ijkl}\| = \sqrt{A_{ijkl} A_{ijkl}}$
 
 ```@docs
-norm
+Tensors.norm
 ```
 
 ## Trace
@@ -44,7 +45,7 @@ The trace for a second order tensor is defined as the sum of the diagonal elemen
 $\text{tr}(\mathbf{A}) = \mathbf{I} : \mathbf{A} \Leftrightarrow \text{tr}(A_{ij}) = A_{ii}$
 
 ```@docs
-trace
+Tensors.tr
 ```
 
 ## Determinant
@@ -52,7 +53,7 @@ trace
 Determinant for a second order tensor.
 
 ```@docs
-det
+Tensors.det
 ```
 
 ## Inverse
@@ -64,7 +65,7 @@ $\mathbf{A}^{-1} \cdot \mathbf{A} = \mathbf{I}$
 where ``\mathbf{I}`` is the second order identitiy tensor.
 
 ```@docs
-inv
+Tensors.inv
 ```
 
 ## Transpose
@@ -82,9 +83,9 @@ and the major transpose as
 $A_{ijkl}^\text{T} = A_{klij}$
 
 ```@docs
-transpose
-minortranspose
-majortranspose
+Tensors.transpose
+Tensors.minortranspose
+Tensors.majortranspose
 ```
 
 ## Symmetric
@@ -95,9 +96,9 @@ $\mathbf{A}^\text{sym} = \frac{1}{2}(\mathbf{A} + \mathbf{A}^\text{T}) \Leftrigh
 $\mathsf{A}^\text{sym} = \frac{1}{2}(\mathsf{A} + \mathsf{A}^\text{t}) \Leftrightarrow A_{ijkl}^\text{sym} = \frac{1}{2}(A_{ijkl} + A_{jilk})$
 
 ```@docs
-symmetric
-minorsymmetric
-majorsymmetric
+Tensors.symmetric
+Tensors.minorsymmetric
+Tensors.majorsymmetric
 ```
 
 ## Skew symmetric
@@ -109,27 +110,27 @@ $\mathbf{A}^\text{skw} = \frac{1}{2}(\mathbf{A} - \mathbf{A}^\text{T}) \Leftrigh
 The skew symmetric part of a symmetric tensor is zero.
 
 ```@docs
-skew
+Tensors.skew
 ```
 
 ## Deviatoric tensor
 
 The deviatoric part of a second order tensor is defined by
 
-$\mathbf{A}^\text{dev} = \mathbf{A} - \frac{1}{3} \mathrm{trace}[\mathbf{A}] \mathbf{I} \Leftrightarrow A_{ij}^\text{dev} = A_{ij} - \frac{1}{3}A_{kk}\delta_{ij}$
+$\mathbf{A}^\text{dev} = \mathbf{A} - \frac{1}{3} \mathrm{tr}[\mathbf{A}] \mathbf{I} \Leftrightarrow A_{ij}^\text{dev} = A_{ij} - \frac{1}{3}A_{kk}\delta_{ij}$
 
 ```@docs
-dev
+Tensors.dev
 ```
 
 ## Volumetric tensor
 
 The volumetric part of a second order tensor is defined by
 
-$\mathbf{A}^\text{vol} = \frac{1}{3} \mathrm{trace}[\mathbf{A}] \mathbf{I} \Leftrightarrow A_{ij}^\text{vol} = \frac{1}{3}A_{kk}\delta_{ij}$
+$\mathbf{A}^\text{vol} = \frac{1}{3} \mathrm{tr}[\mathbf{A}] \mathbf{I} \Leftrightarrow A_{ij}^\text{vol} = \frac{1}{3}A_{kk}\delta_{ij}$
 
 ```@docs
-vol
+Tensors.vol
 ```
 
 ## Cross product
@@ -139,7 +140,7 @@ The cross product between two vectors is defined as
 $\mathbf{a} = \mathbf{b} \times \mathbf{c} \Leftrightarrow a_i = \epsilon_{ijk} b_j c_k$
 
 ```@docs
-cross
+Tensors.cross
 ```
 
 ## Eigenvalues and eigenvectors
@@ -151,10 +152,10 @@ $\mathbf{A} \cdot \mathbf{v}_i = \lambda_i \mathbf{v}_i \qquad i = 1, \dots, \te
 where ``\lambda_i`` are the eigenvalues and ``\mathbf{v}_i`` are the corresponding eigenvectors.
 
 ```@docs
-eigfact
-eigvals
-eigvecs
-eig
+Tensors.eigfact
+Tensors.eigvals
+Tensors.eigvecs
+Tensors.eig
 ```
 
 ## Tensor square root
@@ -165,13 +166,13 @@ defined such that
 $\sqrt{\mathbf{S}} \cdot \sqrt{\mathbf{S}} = S$
 
 ```@docs
-sqrt
+Tensors.sqrt
 ```
 
 ## Rotations
 
 ```@docs
-rotate
+Tensors.rotate
 ```
 
 ## Special operations
@@ -179,12 +180,12 @@ rotate
 For computing a special dot product between two vectors $\mathbf{a}$ and $\mathbf{b}$ with a fourth order symmetric tensor $\mathbf{C}$ such that $a_k C_{ikjl} b_l$ there is `dotdot(a, C, b)`. This function is useful because it is the expression for the tangent matrix in continuum mechanics when the displacements are approximated by scalar shape functions.
 
 ```@docs
-dotdot
+Tensors.dotdot
 ```
 
 ## Voigt
 
 ```@docs
-tovoigt
-fromvoigt
+Tensors.tovoigt
+Tensors.fromvoigt
 ```

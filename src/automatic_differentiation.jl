@@ -268,7 +268,7 @@ end
 @inline function _load(v::SymmetricTensor{2, 2, T}) where {T}
     data = get_data(v)
     o = one(T)
-    o2 = T(1/2)
+    o2 = convert(T, 1/2)
     z = zero(T)
     @inbounds v_dual = SymmetricTensor{2, 2}((Dual(data[1], o, z, z),
                                               Dual(data[2], z, o2, z),
@@ -295,7 +295,7 @@ end
 @inline function _load(v::SymmetricTensor{2, 3, T}) where {T}
     data = get_data(v)
     o = one(T)
-    o2 = T(1/2)
+    o2 = convert(T, 1/2)
     z = zero(T)
     @inbounds v_dual = SymmetricTensor{2, 3}((Dual(data[1], o, z, z, z, z, z),
                                               Dual(data[2], z, o2, z, z, z, z),
@@ -318,7 +318,7 @@ is given, the value of the function is also returned as a second output argument
 julia> A = rand(SymmetricTensor{2, 2});
 
 julia> ∇f = gradient(norm, A)
-2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+2×2 SymmetricTensor{2,2,Float64,3}:
  0.434906  0.56442
  0.56442   0.416793
 
@@ -350,7 +350,7 @@ also returned as a second and third output argument.
 julia> A = rand(SymmetricTensor{2, 2});
 
 julia> ∇∇f = hessian(norm, A)
-2×2×2×2 Tensors.SymmetricTensor{4,2,Float64,9}:
+2×2×2×2 SymmetricTensor{4,2,Float64,9}:
 [:, :, 1, 1] =
   0.596851  -0.180684
  -0.180684  -0.133425
@@ -410,7 +410,7 @@ julia> f(x) = Vec{3}((x[2], x[3], -x[1]));
 julia> x = rand(Vec{3});
 
 julia> curl(f, x)
-3-element Tensors.Tensor{1,3,Float64,3}:
+3-element Tensor{1,3,Float64,3}:
  -1.0
   1.0
  -1.0
@@ -444,10 +444,10 @@ julia> laplace(f, x)
 julia> g(x) = x*norm(x);
 
 julia> laplace.(g, x)
-3-element Tensors.Tensor{1,3,Float64,3}:
- 2.10739
- 2.73497
- 2.01962
+3-element Tensor{1,3,Float64,3}:
+ 2.107389336871036
+ 2.7349658311504834
+ 2.019621767876747
 ```
 """
 function laplace(f::F, v) where F

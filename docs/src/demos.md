@@ -42,7 +42,7 @@ function Ψ(C, μ, Kb)
     detC = det(C)
     J = sqrt(detC)
     Ĉ = detC^(-1/3)*C
-    return 1/2*(μ * (trace(Ĉ)- 3) + Kb*(J-1)^2)
+    return 1/2*(μ * (tr(Ĉ)- 3) + Kb*(J-1)^2)
 end
 ```
 
@@ -58,7 +58,7 @@ function S(C, μ, Kb)
     I = one(C)
     J = sqrt(det(C))
     invC = inv(C)
-    return μ * det(C)^(-1/3)*(I - 1/3*trace(C)*invC) + Kb*(J-1)*J*invC
+    return μ * det(C)^(-1/3)*(I - 1/3*tr(C)*invC) + Kb*(J-1)*J*invC
 end
 ```
 
@@ -68,6 +68,7 @@ For some material models it can be cumbersome to compute the analytical expressi
 
 ```@meta
 DocTestSetup = quote
+    using Random
     srand(1234)
     using Tensors
     E = 200e9
@@ -84,14 +85,14 @@ DocTestSetup = quote
         detC = det(C)
         J = sqrt(detC)
         Ĉ = detC^(-1/3)*C
-        return 1/2*(μ * (trace(Ĉ)- 3) + Kb*(J-1)^2)
+        return 1/2*(μ * (tr(Ĉ)- 3) + Kb*(J-1)^2)
     end
 
     function S(C, μ, Kb)
         I = one(C)
         J = sqrt(det(C))
         invC = inv(C)
-        return μ * det(C)^(-1/3)*(I - 1/3*trace(C)*invC) + Kb*(J-1)*J*invC
+        return μ * det(C)^(-1/3)*(I - 1/3*tr(C)*invC) + Kb*(J-1)*J*invC
     end
 end
 ```
@@ -106,13 +107,13 @@ julia> F = one(Tensor{2,3}) + rand(Tensor{2,3});
 julia> C = tdot(F);
 
 julia> S_AD = 2 * gradient(C -> Ψ(C, μ, Kb), C)
-3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2,3,Float64,6}:
   4.30534e11  -2.30282e11  -8.52861e10
  -2.30282e11   4.38793e11  -2.64481e11
  -8.52861e10  -2.64481e11   7.85515e11
 
 julia> S(C, μ, Kb)
-3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2,3,Float64,6}:
   4.30534e11  -2.30282e11  -8.52861e10
  -2.30282e11   4.38793e11  -2.64481e11
  -8.52861e10  -2.64481e11   7.85515e11

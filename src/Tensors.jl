@@ -5,6 +5,8 @@ module Tensors
 import Base.@pure
 
 using LinearAlgebra
+# re-exports from LinearAlgebra
+export ⋅, ×, dot, diagm, tr, det, norm, eig, eigvals, eigvecs, eigfact
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
