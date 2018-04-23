@@ -9,13 +9,13 @@ Computes the norm of a tensor.
 # Examples
 ```jldoctest
 julia> A = rand(Tensor{2,3})
-3×3 Tensors.Tensor{2,3,Float64,9}:
+3×3 Tensor{2,3,Float64,9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
 
 julia> norm(A)
-1.7377443667834924
+1.7377443667834922
 ```
 """
 @inline LinearAlgebra.norm(v::Vec) = sqrt(dot(v, v))
@@ -45,7 +45,7 @@ Computes the determinant of a second order tensor.
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
-3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2,3,Float64,6}:
  0.590845  0.766797  0.566237
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147
@@ -70,13 +70,13 @@ Computes the inverse of a second order tensor.
 # Examples
 ```jldoctest
 julia> A = rand(Tensor{2,3})
-3×3 Tensors.Tensor{2,3,Float64,9}:
+3×3 Tensor{2,3,Float64,9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
 
 julia> inv(A)
-3×3 Tensors.Tensor{2,3,Float64,9}:
+3×3 Tensor{2,3,Float64,9}:
   19.7146   -19.2802    7.30384
    6.73809  -10.7687    7.55198
  -68.541     81.4917  -38.8361
@@ -167,24 +167,24 @@ eigenvectors to a tuple.
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2, 2})
-2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+2×2 SymmetricTensor{2,2,Float64,3}:
  0.590845  0.766797
  0.766797  0.566237
 
 julia> Λ, Φ = eig(A);
 
 julia> Λ
-2-element Tensors.Tensor{1,2,Float64,2}:
- -0.188355
-  1.34544
+2-element Tensor{1,2,Float64,2}:
+ -0.1883547111127678
+  1.345436766284664
 
 julia> Φ
-2×2 Tensors.Tensor{2,2,Float64,4}:
+2×2 Tensor{2,2,Float64,4}:
  -0.701412  0.712756
   0.712756  0.701412
 
 julia> Φ ⋅ diagm(Tensor{2, 2}, Λ) ⋅ inv(Φ) # Same as A
-2×2 Tensors.Tensor{2,2,Float64,4}:
+2×2 Tensor{2,2,Float64,4}:
  0.590845  0.766797
  0.766797  0.566237
 ```
@@ -223,7 +223,7 @@ See [`eigvals`](@ref) and [`eigvecs`](@ref).
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2, 2})
-2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+2×2 SymmetricTensor{2,2,Float64,3}:
  0.590845  0.766797
  0.766797  0.566237
 
@@ -231,17 +231,17 @@ julia> E = eigfact(A)
 Tensors.Eigen{Float64,2,4}([-0.188355, 1.34544], [-0.701412 0.712756; 0.712756 0.701412])
 
 julia> eigvals(E)
-2-element Tensors.Tensor{1,2,Float64,2}:
- -0.188355
-  1.34544
+2-element Tensor{1,2,Float64,2}:
+ -0.1883547111127678
+  1.345436766284664
 
 julia> eigvecs(E)
-2×2 Tensors.Tensor{2,2,Float64,4}:
+2×2 Tensor{2,2,Float64,4}:
  -0.701412  0.712756
   0.712756  0.701412
 ```
 """
-Base.eigfact
+LinearAlgebra.eigfact
 
 """
     eigvals(::Eigen)
@@ -265,12 +265,12 @@ second order tensor `S`, such that `√S ⋅ √S == S`.
 # Examples
 ```jldoctest
 julia> S = rand(SymmetricTensor{2,2}); S = tdot(S)
-2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+2×2 SymmetricTensor{2,2,Float64,3}:
  0.937075  0.887247
  0.887247  0.908603
 
 julia> sqrt(S)
-2×2 Tensors.SymmetricTensor{2,2,Float64,3}:
+2×2 SymmetricTensor{2,2,Float64,3}:
  0.776178  0.578467
  0.578467  0.757614
 
@@ -304,7 +304,7 @@ Computes the trace of a second order tensor.
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
-3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2,3,Float64,6}:
  0.590845  0.766797  0.566237
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147
@@ -331,13 +331,13 @@ based on the additive decomposition.
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
-3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2,3,Float64,6}:
  0.590845  0.766797  0.566237
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147
 
 julia> vol(A)
-3×3 Tensors.SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2,3,Float64,6}:
  0.635026  0.0       0.0
  0.0       0.635026  0.0
  0.0       0.0       0.635026
@@ -358,7 +358,7 @@ Computes the deviatoric part of a second order tensor.
 julia> A = rand(Tensor{2, 3});
 
 julia> dev(A)
-3×3 Tensors.Tensor{2,3,Float64,9}:
+3×3 Tensor{2,3,Float64,9}:
  0.0469421  0.460085   0.200586
  0.766797   0.250123   0.298614
  0.566237   0.854147  -0.297065
@@ -387,22 +387,22 @@ Rotate a three dimensional vector `x` around another vector `u` a total of `θ` 
 # Examples
 ```jldoctest
 julia> x = Vec{3}((0.0, 0.0, 1.0))
-3-element Tensors.Tensor{1,3,Float64,3}:
+3-element Tensor{1,3,Float64,3}:
  0.0
  0.0
  1.0
 
 julia> u = Vec{3}((0.0, 1.0, 0.0))
-3-element Tensors.Tensor{1,3,Float64,3}:
+3-element Tensor{1,3,Float64,3}:
  0.0
  1.0
  0.0
 
 julia> rotate(x, u, π/2)
-3-element Tensors.Tensor{1,3,Float64,3}:
+3-element Tensor{1,3,Float64,3}:
  1.0
  0.0
- 6.12323e-17
+ 6.123233995736766e-17
 ```
 """
 function rotate(x::Vec{3}, u::Vec{3}, θ::Number)

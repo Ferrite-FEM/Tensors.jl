@@ -1,5 +1,6 @@
 ```@meta
 DocTestSetup = quote
+    using Random
     srand(1234)
     using Tensors
 end

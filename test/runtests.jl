@@ -28,4 +28,4 @@ print_timer()
 println()
 
 # Build the docs
-#include("../docs/make.jl")
+include("../docs/make.jl")
