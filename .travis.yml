@@ -10,9 +10,12 @@ julia:
 notifications:
   email: false
 
+script:
+  - julia -e 'import Pkg3; Pkg3.clone(pwd()); Pkg3.build("JuAFEM"); Pkg3.clone("https://github.com/fredrikekre/Literate.jl.git"); Pkg3.test("JuAFEM"; coverage=true)'
+
 # https://github.com/travis-ci/travis-ci/issues/4942 workaround
 git:
   depth: 99999
 
 after_success:
-  - julia -e 'include(Pkg.dir("Tensors", "test", "coverage.jl"))'
+  - julia -e 'import Pkg3; include(Pkg3.dir("Tensors", "test", "coverage.jl"))'
