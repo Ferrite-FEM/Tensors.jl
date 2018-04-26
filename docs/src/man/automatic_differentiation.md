@@ -24,7 +24,7 @@ When evaluating the function with dual numbers, the value (value and gradient in
 ```@docs
 gradient
 hessian
-div
+divergence
 curl
 laplace
 ```
