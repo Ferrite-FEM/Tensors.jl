@@ -382,7 +382,7 @@ end
 const ∇∇ = hessian
 
 """
-    div(f, x)
+    divergence(f, x)
 
 Calculate the divergence of the vector field `f`, in the point `x`.
 
@@ -392,11 +392,11 @@ julia> f(x) = 2x;
 
 julia> x = rand(Vec{3});
 
-julia> div(f, x)
+julia> divergence(f, x)
 6.0
 ```
 """
-Base.div(f::F, v::Vec) where {F<:Function} = tr(gradient(f, v))
+divergence(f::F, v::Vec) where {F<:Function} = tr(gradient(f, v))
 
 """
     curl(f, x)
@@ -451,7 +451,7 @@ julia> laplace.(g, x)
 ```
 """
 function laplace(f::F, v) where F
-    return div(x -> gradient(f, x), v)
+    return divergence(x -> gradient(f, x), v)
 end
 const Δ = laplace
 
