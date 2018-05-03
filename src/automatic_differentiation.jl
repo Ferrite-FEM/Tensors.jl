@@ -455,7 +455,7 @@ function laplace(f::F, v) where F
 end
 const Δ = laplace
 
-function Base.broadcast(::typeof(laplace), f::F, v::Vec{3}) where {F}
+function Broadcast.broadcasted(::typeof(laplace), f::F, v::Vec{3}) where {F}
     @inbounds begin
         vdd = _load(_load(v))
         res = f(vdd)
