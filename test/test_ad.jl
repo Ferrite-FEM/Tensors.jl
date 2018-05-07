@@ -122,6 +122,7 @@ S(C) = S(C, μ, Kb)
     end # loop dim
 
     @testsection "vector calculus identities" begin
+        srand(1234)
         φ(x) = norm(x)^4
         ϕ(x) = sum(x)
         A(x) = Vec{3}((x[1]*x[2]^3*x[3], x[1]*x[2]*x[3]^3, x[1]^3*x[2]*x[3]))
