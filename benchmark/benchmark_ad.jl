@@ -6,8 +6,8 @@ function Ψ(C, μ, Kb)
     T = ForwardDiff.valtype(eltype(C))
     detC = det(C)
     J = sqrt(detC)
-    Ĉ = detC^(T(-1 / 3)) * C
-    return (T(μ) * (trace(Ĉ) - 3) / 2 + T(Kb) * (J - 1)^2)
+    Ĉ = detC^(convert(T, -1 / 3)) * C
+    return (convert(T, μ) * (trace(Ĉ) - 3) / 2 + convert(T, Kb) * (J - 1)^2)
 end
 
 function S(C, μ, Kb)
@@ -15,7 +15,7 @@ function S(C, μ, Kb)
     I = one(C)
     J = sqrt(det(C))
     invC = inv(C)
-    return  T(μ) * det(C)^(T(-1/3)) * (I - trace(C) * invC / 3) + T(Kb) * (J - 1) * J * invC
+    return  convert(T, μ) * det(C)^(convert(T, -1/3)) * (I - trace(C) * invC / 3) + convert(T, Kb) * (J - 1) * J * invC
 end
 
 const μ = 1e10;
