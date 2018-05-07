@@ -61,7 +61,7 @@ for dim in (ALL_DIMENSIONS ? (1,2,3) : (3,))
         # other
         for (i, V2t) in enumerate((V2, V2sym))
             TensorType = i == 2 ? "SymmetricTensor" : "Tensor"
-            for f in (norm, trace, vol, det, inv, transpose, symmetric, skew, eig, mean, dev)
+            for f in (norm, tr, vol, det, inv, transpose, symmetric, skew, eig, mean, dev)
                 (i == 1 || typeof(V2t) <: Tensor || T == dT) && f == eig && continue
                 SUITE["other"]["$f($TensorType{2, $dim, $T})"] = @benchmarkable $f($V2t)
             end
