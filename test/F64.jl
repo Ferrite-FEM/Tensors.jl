@@ -36,7 +36,7 @@ Base.convert(::Type{F64}, a::F64) = a
 Base.convert(::Type{Float64}, a::F64) = a.x
 Base.convert(::Type{F64}, a::T) where {T <: Number} = F64(a)
 
-# for testing of eigfact
+# for testing of eigen
 Base.acos(a::F64) = F64(acos(a.x))
 Base.cos(a::F64) = F64(cos(a.x))
 Base.sin(a::F64) = F64(sin(a.x))

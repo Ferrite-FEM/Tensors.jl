@@ -6,7 +6,7 @@ import Base.@pure
 
 using LinearAlgebra
 # re-exports from LinearAlgebra
-export ⋅, ×, dot, diagm, tr, det, norm, eig, eigvals, eigvecs, eigfact
+export ⋅, ×, dot, diagm, tr, det, norm, eigvals, eigvecs, eigen
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 

@@ -152,10 +152,9 @@ $\mathbf{A} \cdot \mathbf{v}_i = \lambda_i \mathbf{v}_i \qquad i = 1, \dots, \te
 where ``\lambda_i`` are the eigenvalues and ``\mathbf{v}_i`` are the corresponding eigenvectors.
 
 ```@docs
-Tensors.eigfact
+Tensors.eigen
 Tensors.eigvals
 Tensors.eigvecs
-Tensors.eig
 ```
 
 ## Tensor square root
