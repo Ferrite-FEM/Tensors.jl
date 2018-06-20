@@ -1,11 +1,11 @@
 # MIT License: Copyright (c) 2016: Andy Ferris.
 # See LICENSE.md for further licensing test
 
-@inline function LinearAlgebra.eigfact(S::SymmetricTensor{2, 1, T}) where {T}
+@inline function LinearAlgebra.eigen(S::SymmetricTensor{2, 1, T}) where {T}
     @inbounds Eigen(Vec{1, T}((S[1, 1],)), one(Tensor{2, 1, T}))
 end
 
-function LinearAlgebra.eigfact(S::SymmetricTensor{2, 2, T}) where {T}
+function LinearAlgebra.eigen(S::SymmetricTensor{2, 2, T}) where {T}
     @inbounds begin
         # eigenvalues from quadratic formula
         trS_half = tr(S) / 2
@@ -36,7 +36,7 @@ end
 # A small part of the code in the following method was inspired by works of David
 # Eberly, Geometric Tools LLC, in code released under the Boost Software
 # License. See LICENSE.md
-function LinearAlgebra.eigfact(S::SymmetricTensor{2, 3, T}) where {T}
+function LinearAlgebra.eigen(S::SymmetricTensor{2, 3, T}) where {T}
     @inbounds begin
         R = typeof((one(T)*zero(T) + zero(T))/one(T))
         SR = convert(SymmetricTensor{2, 3, R}, S)

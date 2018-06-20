@@ -3,9 +3,8 @@
     symmetric(::SecondOrderTensor)
     symmetric(::FourthOrderTensor)
 
-Computes the symmetric part of a second or fourth order tensor.
-For a fourth order tensor, the symmetric part is the same as the minor symmetric part.
-Returns a `SymmetricTensor`.
+Computes the (minor) symmetric part of a second or fourth order tensor.
+Return a `SymmetricTensor`.
 
 # Examples
 ```jldoctest
@@ -31,7 +30,7 @@ end
 """
     minorsymmetric(::FourthOrderTensor)
 
-Computes the minor symmetric part of a fourth order tensor, returns a `SymmetricTensor{4}`.
+Compute the minor symmetric part of a fourth order tensor, return a `SymmetricTensor{4}`.
 """
 @inline function minorsymmetric(S::Tensor{4, dim}) where {dim}
     SymmetricTensor{4, dim}(
@@ -52,7 +51,7 @@ end
 """
     majorsymmetric(::FourthOrderTensor)
 
-Computes the major symmetric part of a fourth order tensor, returns a `Tensor{4}`.
+Compute the major symmetric part of a fourth order tensor, returns a `Tensor{4}`.
 """
 @inline function majorsymmetric(S::FourthOrderTensor{dim}) where {dim}
     Tensor{4, dim}(

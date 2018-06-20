@@ -6,7 +6,7 @@ import Base.@pure
 
 using LinearAlgebra
 # re-exports from LinearAlgebra
-export ⋅, ×, dot, diagm, tr, det, norm, eig, eigvals, eigvecs, eigfact
+export ⋅, ×, dot, diagm, tr, det, norm, eigvals, eigvecs, eigen
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
@@ -22,11 +22,40 @@ export tovoigt, tovoigt!, fromvoigt, tomandel, tomandel!, frommandel
 #########
 abstract type AbstractTensor{order, dim, T <: Real} <: AbstractArray{T, order} end
 
+"""
+    SymmetricTensor{order,dim,T<:Real}
+
+Symmetric tensor type supported for `order ∈ (2,4)` and `dim ∈ (1,2,3)`.
+`SymmetricTensor{4}` is a minor symmetric tensor, such that
+`A[i,j,k,l] == A[j,i,k,l]` and `A[i,j,k,l] == A[i,j,l,k]`.
+
+# Examples
+```jldoctest
+julia> SymmetricTensor{2,2,Float64}((1.0, 2.0, 3.0))
+2×2 SymmetricTensor{2,2,Float64,3}:
+ 1.0  2.0
+ 2.0  3.0
+```
+"""
 struct SymmetricTensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
     data::NTuple{M, T}
     SymmetricTensor{order, dim, T, M}(data::NTuple) where {order, dim, T, M} = new{order, dim, T, M}(data)
 end
 
+"""
+    Tensor{order,dim,T<:Real}
+
+Tensor type supported for `order ∈ (1,2,4)` and `dim ∈ (1,2,3)`.
+
+# Examples
+```jldoctest
+julia> Tensor{1,3,Float64}((1.0, 2.0, 3.0))
+3-element Tensor{1,3,Float64,3}:
+ 1.0
+ 2.0
+ 3.0
+```
+"""
 struct Tensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
     data::NTuple{M, T}
 

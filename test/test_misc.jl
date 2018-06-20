@@ -294,9 +294,9 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     @test AA ⊡ (@inferred inv(AA))::Tensor{4, dim, T} ≈ one(Tensor{4, dim, T})
     @test AA_sym ⊡ (@inferred inv(AA_sym))::SymmetricTensor{4, dim, T} ≈ one(SymmetricTensor{4, dim, T})
 
-    E = @inferred eigfact(t_sym)
-    Λ, Φ = @inferred eig(t_sym)
-    Λa, Φa = eig(Array(t_sym))
+    E = @inferred eigen(t_sym)
+    Λ, Φ = E
+    Λa, Φa = eigen(Array(t_sym))
 
     @test Λ ≈ (@inferred eigvals(t_sym)) ≈ eigvals(E) ≈ Λa
     @test Φ ≈ (@inferred eigvecs(t_sym)) ≈ eigvecs(E)
@@ -308,9 +308,9 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     # test eigenfactorizations for a diagonal tensor
     v = rand(T, dim)
     d_sym = diagm(SymmetricTensor{2, dim, T}, v)
-    E = @inferred eigfact(d_sym)
-    Λ, Φ = @inferred eig(d_sym)
-    Λa, Φa = eig(Symmetric(Array(d_sym)))
+    E = @inferred eigen(d_sym)
+    Λ, Φ = E
+    Λa, Φa = eigen(Symmetric(Array(d_sym)))
 
     @test Λ ≈ (@inferred eigvals(d_sym)) ≈ eigvals(E) ≈ Λa
     @test Φ ≈ (@inferred eigvecs(d_sym)) ≈ eigvecs(E)

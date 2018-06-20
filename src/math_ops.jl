@@ -158,60 +158,29 @@ end
 Base.:\(S1::SecondOrderTensor, S2::AbstractTensor) = inv(S1) ⋅ S2
 
 """
-    eig(::SymmetricTensor{2})
-
-Compute the eigenvalues and eigenvectors of a symmetric second order tensor.
-`eig` is a wrapper around [`eigfact`](@ref) which extracts eigenvalues and
-eigenvectors to a tuple.
-
-# Examples
-```jldoctest
-julia> A = rand(SymmetricTensor{2, 2})
-2×2 SymmetricTensor{2,2,Float64,3}:
- 0.590845  0.766797
- 0.766797  0.566237
-
-julia> Λ, Φ = eig(A);
-
-julia> Λ
-2-element Tensor{1,2,Float64,2}:
- -0.1883547111127678
-  1.345436766284664
-
-julia> Φ
-2×2 Tensor{2,2,Float64,4}:
- -0.701412  0.712756
-  0.712756  0.701412
-
-julia> Φ ⋅ diagm(Tensor{2, 2}, Λ) ⋅ inv(Φ) # Same as A
-2×2 Tensor{2,2,Float64,4}:
- 0.590845  0.766797
- 0.766797  0.566237
-```
-"""
-@inline LinearAlgebra.eig(S::SymmetricTensor) = (E = eigfact(S); (E.λ, E.Φ))
-
-"""
     eigvals(::SymmetricTensor{2})
 
 Compute the eigenvalues of a symmetric second order tensor.
 """
-@inline LinearAlgebra.eigvals(S::SymmetricTensor) = (E = eigfact(S); E.λ)
+@inline LinearAlgebra.eigvals(S::SymmetricTensor) = (E = eigen(S); E.values)
 
 """
     eigvecs(::SymmetricTensor{2})
 
 Compute the eigenvectors of a symmetric second order tensor.
 """
-@inline LinearAlgebra.eigvecs(S::SymmetricTensor) = (E = eigfact(S); E.Φ)
+@inline LinearAlgebra.eigvecs(S::SymmetricTensor) = (E = eigen(S); E.vectors)
 
 struct Eigen{T, dim, M}
-    λ::Vec{dim, T}
-    Φ::Tensor{2, dim, T, M}
+    values::Vec{dim, T}
+    vectors::Tensor{2, dim, T, M}
 end
 
+# destructure via iteration
+Base.iterate(E::Eigen, state::Int=1) = iterate((E.values, E.vectors), state)
+
 """
-    eigfact(::SymmetricTensor{2})
+    eigen(A::SymmetricTensor{2})
 
 Compute the eigenvalues and eigenvectors of a symmetric second order tensor
 and return an `Eigen` object. The eigenvalues are stored in a `Vec`,
@@ -222,39 +191,36 @@ See [`eigvals`](@ref) and [`eigvecs`](@ref).
 
 # Examples
 ```jldoctest
-julia> A = rand(SymmetricTensor{2, 2})
-2×2 SymmetricTensor{2,2,Float64,3}:
- 0.590845  0.766797
- 0.766797  0.566237
+julia> A = rand(SymmetricTensor{2, 2});
 
-julia> E = eigfact(A)
+julia> E = eigen(A)
 Tensors.Eigen{Float64,2,4}([-0.188355, 1.34544], [-0.701412 0.712756; 0.712756 0.701412])
 
-julia> eigvals(E)
+julia> E.values
 2-element Tensor{1,2,Float64,2}:
  -0.1883547111127678
   1.345436766284664
 
-julia> eigvecs(E)
+julia> E.vectors
 2×2 Tensor{2,2,Float64,4}:
  -0.701412  0.712756
   0.712756  0.701412
 ```
 """
-LinearAlgebra.eigfact
+LinearAlgebra.eigen
 
 """
     eigvals(::Eigen)
 
-Extract eigenvalues from an `Eigen` object, returned by [`eigfact`](@ref).
+Extract eigenvalues from an `Eigen` object, returned by [`eigen`](@ref).
 """
-@inline LinearAlgebra.eigvals(E::Eigen) = E.λ
+@inline LinearAlgebra.eigvals(E::Eigen) = E.values
 """
     eigvecs(::Eigen)
 
-Extract eigenvectors from an `Eigen` object, returned by [`eigfact`](@ref).
+Extract eigenvectors from an `Eigen` object, returned by [`eigen`](@ref).
 """
-@inline LinearAlgebra.eigvecs(E::Eigen) = E.Φ
+@inline LinearAlgebra.eigvecs(E::Eigen) = E.vectors
 
 """
     sqrt(S::SymmetricTensor{2})
@@ -290,7 +256,9 @@ function Base.sqrt(S::SymmetricTensor{2,2})
 end
 
 function Base.sqrt(S::SymmetricTensor{2,3,T}) where T
-    λ, Φ = eig(S)
+    E = eigen(S)
+    λ = E.values
+    Φ = E.vectors
     z = zero(T)
     Λ = Tensor{2,3}((√(λ[1]), z, z, z, √(λ[2]), z, z, z, √(λ[3])))
     return symmetric(Φ⋅Λ⋅Φ')

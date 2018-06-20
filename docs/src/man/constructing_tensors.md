@@ -11,6 +11,11 @@ end
 Tensors can be created in multiple ways but they usually include running a function on tensor types of which there are two kinds, `Tensor{order, dim, T}` for non-symmetric tensors and `SymmetricTensor{order, dim, T}` for symmetric tensors.
 The parameter `order` is an integer of value 1, 2 or 4, excluding 1 for symmetric tensors. The second parameter `dim` is an integer which corresponds to the dimension of the tensor and can be 1, 2 or 3. The last parameter `T` is the number type that the tensors contain, i.e. `Float64` or `Float32`.
 
+```@docs
+Tensors.Tensor
+Tensors.SymmetricTensor
+```
+
 ## [Zero tensors](@id zero_tensors)
 
 A tensor with only zeros is created using the function `zero`, applied to the type of tensor that should be created:
