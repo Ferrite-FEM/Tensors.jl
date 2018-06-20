@@ -65,11 +65,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "man/constructing_tensors.html#Tensors.Tensor",
+    "page": "Constructing tensors",
+    "title": "Tensors.Tensor",
+    "category": "type",
+    "text": "Tensor{order,dim,T<:Real}\n\nTensor type supported for order ∈ (1,2,4) and dim ∈ (1,2,3).\n\nExamples\n\njulia> Tensor{1,3,Float64}((1.0, 2.0, 3.0))\n3-element Tensor{1,3,Float64,3}:\n 1.0\n 2.0\n 3.0\n\n\n\n\n\n"
+},
+
+{
+    "location": "man/constructing_tensors.html#Tensors.SymmetricTensor",
+    "page": "Constructing tensors",
+    "title": "Tensors.SymmetricTensor",
+    "category": "type",
+    "text": "SymmetricTensor{order,dim,T<:Real}\n\nSymmetric tensor type supported for order ∈ (2,4) and dim ∈ (1,2,3). SymmetricTensor{4} is a minor symmetric tensor, such that A[i,j,k,l] == A[j,i,k,l] and A[i,j,k,l] == A[i,j,l,k].\n\nExamples\n\njulia> SymmetricTensor{2,2,Float64}((1.0, 2.0, 3.0))\n2×2 SymmetricTensor{2,2,Float64,3}:\n 1.0  2.0\n 2.0  3.0\n\n\n\n\n\n"
+},
+
+{
     "location": "man/constructing_tensors.html#Constructing-tensors-1",
     "page": "Constructing tensors",
     "title": "Constructing tensors",
     "category": "section",
-    "text": "Tensors can be created in multiple ways but they usually include running a function on tensor types of which there are two kinds, Tensor{order, dim, T} for non-symmetric tensors and SymmetricTensor{order, dim, T} for symmetric tensors. The parameter order is an integer of value 1, 2 or 4, excluding 1 for symmetric tensors. The second parameter dim is an integer which corresponds to the dimension of the tensor and can be 1, 2 or 3. The last parameter T is the number type that the tensors contain, i.e. Float64 or Float32."
+    "text": "Tensors can be created in multiple ways but they usually include running a function on tensor types of which there are two kinds, Tensor{order, dim, T} for non-symmetric tensors and SymmetricTensor{order, dim, T} for symmetric tensors. The parameter order is an integer of value 1, 2 or 4, excluding 1 for symmetric tensors. The second parameter dim is an integer which corresponds to the dimension of the tensor and can be 1, 2 or 3. The last parameter T is the number type that the tensors contain, i.e. Float64 or Float32.Tensors.Tensor\nTensors.SymmetricTensor"
 },
 
 {
@@ -373,7 +389,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Tensors.symmetric",
     "category": "function",
-    "text": "symmetric(::SecondOrderTensor)\nsymmetric(::FourthOrderTensor)\n\nComputes the symmetric part of a second or fourth order tensor. For a fourth order tensor, the symmetric part is the same as the minor symmetric part. Returns a SymmetricTensor.\n\nExamples\n\njulia> A = rand(Tensor{2,2})\n2×2 Tensor{2,2,Float64,4}:\n 0.590845  0.566237\n 0.766797  0.460085\n\njulia> symmetric(A)\n2×2 SymmetricTensor{2,2,Float64,3}:\n 0.590845  0.666517\n 0.666517  0.460085\n\n\n\n\n\n"
+    "text": "symmetric(::SecondOrderTensor)\nsymmetric(::FourthOrderTensor)\n\nComputes the (minor) symmetric part of a second or fourth order tensor. Return a SymmetricTensor.\n\nExamples\n\njulia> A = rand(Tensor{2,2})\n2×2 Tensor{2,2,Float64,4}:\n 0.590845  0.566237\n 0.766797  0.460085\n\njulia> symmetric(A)\n2×2 SymmetricTensor{2,2,Float64,3}:\n 0.590845  0.666517\n 0.666517  0.460085\n\n\n\n\n\n"
 },
 
 {
@@ -381,7 +397,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Tensors.minorsymmetric",
     "category": "function",
-    "text": "minorsymmetric(::FourthOrderTensor)\n\nComputes the minor symmetric part of a fourth order tensor, returns a SymmetricTensor{4}.\n\n\n\n\n\n"
+    "text": "minorsymmetric(::FourthOrderTensor)\n\nCompute the minor symmetric part of a fourth order tensor, return a SymmetricTensor{4}.\n\n\n\n\n\n"
 },
 
 {
@@ -389,7 +405,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Tensors.majorsymmetric",
     "category": "function",
-    "text": "majorsymmetric(::FourthOrderTensor)\n\nComputes the major symmetric part of a fourth order tensor, returns a Tensor{4}.\n\n\n\n\n\n"
+    "text": "majorsymmetric(::FourthOrderTensor)\n\nCompute the major symmetric part of a fourth order tensor, returns a Tensor{4}.\n\n\n\n\n\n"
 },
 
 {
@@ -465,11 +481,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "man/other_operators.html#LinearAlgebra.eigfact",
+    "location": "man/other_operators.html#LinearAlgebra.eigen",
     "page": "Other operators",
-    "title": "LinearAlgebra.eigfact",
+    "title": "LinearAlgebra.eigen",
     "category": "function",
-    "text": "eigfact(::SymmetricTensor{2})\n\nCompute the eigenvalues and eigenvectors of a symmetric second order tensor and return an Eigen object. The eigenvalues are stored in a Vec, sorted in ascending order. The corresponding eigenvectors are stored as the columns of a Tensor.\n\nSee eigvals and eigvecs.\n\nExamples\n\njulia> A = rand(SymmetricTensor{2, 2})\n2×2 SymmetricTensor{2,2,Float64,3}:\n 0.590845  0.766797\n 0.766797  0.566237\n\njulia> E = eigfact(A)\nTensors.Eigen{Float64,2,4}([-0.188355, 1.34544], [-0.701412 0.712756; 0.712756 0.701412])\n\njulia> eigvals(E)\n2-element Tensor{1,2,Float64,2}:\n -0.1883547111127678\n  1.345436766284664\n\njulia> eigvecs(E)\n2×2 Tensor{2,2,Float64,4}:\n -0.701412  0.712756\n  0.712756  0.701412\n\n\n\n\n\n"
+    "text": "eigen(A::SymmetricTensor{2})\n\nCompute the eigenvalues and eigenvectors of a symmetric second order tensor and return an Eigen object. The eigenvalues are stored in a Vec, sorted in ascending order. The corresponding eigenvectors are stored as the columns of a Tensor.\n\nSee eigvals and eigvecs.\n\nExamples\n\njulia> A = rand(SymmetricTensor{2, 2});\n\njulia> E = eigen(A)\nTensors.Eigen{Float64,2,4}([-0.188355, 1.34544], [-0.701412 0.712756; 0.712756 0.701412])\n\njulia> E.values\n2-element Tensor{1,2,Float64,2}:\n -0.1883547111127678\n  1.345436766284664\n\njulia> E.vectors\n2×2 Tensor{2,2,Float64,4}:\n -0.701412  0.712756\n  0.712756  0.701412\n\n\n\n\n\n"
 },
 
 {
@@ -477,7 +493,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "LinearAlgebra.eigvals",
     "category": "function",
-    "text": "eigvals(::SymmetricTensor{2})\n\nCompute the eigenvalues of a symmetric second order tensor.\n\n\n\n\n\neigvals(::Eigen)\n\nExtract eigenvalues from an Eigen object, returned by eigfact.\n\n\n\n\n\n"
+    "text": "eigvals(::SymmetricTensor{2})\n\nCompute the eigenvalues of a symmetric second order tensor.\n\n\n\n\n\neigvals(::Eigen)\n\nExtract eigenvalues from an Eigen object, returned by eigen.\n\n\n\n\n\n"
 },
 
 {
@@ -485,15 +501,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "LinearAlgebra.eigvecs",
     "category": "function",
-    "text": "eigvecs(::SymmetricTensor{2})\n\nCompute the eigenvectors of a symmetric second order tensor.\n\n\n\n\n\neigvecs(::Eigen)\n\nExtract eigenvectors from an Eigen object, returned by eigfact.\n\n\n\n\n\n"
-},
-
-{
-    "location": "man/other_operators.html#LinearAlgebra.eig",
-    "page": "Other operators",
-    "title": "LinearAlgebra.eig",
-    "category": "function",
-    "text": "eig(::SymmetricTensor{2})\n\nCompute the eigenvalues and eigenvectors of a symmetric second order tensor. eig is a wrapper around eigfact which extracts eigenvalues and eigenvectors to a tuple.\n\nExamples\n\njulia> A = rand(SymmetricTensor{2, 2})\n2×2 SymmetricTensor{2,2,Float64,3}:\n 0.590845  0.766797\n 0.766797  0.566237\n\njulia> Λ, Φ = eig(A);\n\njulia> Λ\n2-element Tensor{1,2,Float64,2}:\n -0.1883547111127678\n  1.345436766284664\n\njulia> Φ\n2×2 Tensor{2,2,Float64,4}:\n -0.701412  0.712756\n  0.712756  0.701412\n\njulia> Φ ⋅ diagm(Tensor{2, 2}, Λ) ⋅ inv(Φ) # Same as A\n2×2 Tensor{2,2,Float64,4}:\n 0.590845  0.766797\n 0.766797  0.566237\n\n\n\n\n\n"
+    "text": "eigvecs(::SymmetricTensor{2})\n\nCompute the eigenvectors of a symmetric second order tensor.\n\n\n\n\n\neigvecs(::Eigen)\n\nExtract eigenvectors from an Eigen object, returned by eigen.\n\n\n\n\n\n"
 },
 
 {
@@ -501,7 +509,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Eigenvalues and eigenvectors",
     "category": "section",
-    "text": "The eigenvalues and eigenvectors of a (symmetric) second order tensor, mathbfA can be solved from the eigenvalue problemmathbfA cdot mathbfv_i = lambda_i mathbfv_i qquad i = 1 dots textdimwhere lambda_i are the eigenvalues and mathbfv_i are the corresponding eigenvectors.Tensors.eigfact\nTensors.eigvals\nTensors.eigvecs\nTensors.eig"
+    "text": "The eigenvalues and eigenvectors of a (symmetric) second order tensor, mathbfA can be solved from the eigenvalue problemmathbfA cdot mathbfv_i = lambda_i mathbfv_i qquad i = 1 dots textdimwhere lambda_i are the eigenvalues and mathbfv_i are the corresponding eigenvectors.Tensors.eigen\nTensors.eigvals\nTensors.eigvecs"
 },
 
 {
