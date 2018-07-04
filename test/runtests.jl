@@ -3,6 +3,7 @@ using Test
 using TimerOutputs
 using LinearAlgebra
 using Random
+using Statistics: mean
 
 # macro testsection(str, block)
 #     return quote

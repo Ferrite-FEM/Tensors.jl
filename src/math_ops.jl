@@ -288,7 +288,7 @@ julia> tr(A)
     @inbounds return exp
 end
 
-Base.mean(S::SecondOrderTensor) = tr(S) / 3
+Statistics.mean(S::SecondOrderTensor) = tr(S) / 3
 
 """
     vol(::SecondOrderTensor)

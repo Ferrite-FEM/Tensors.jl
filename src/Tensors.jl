@@ -4,6 +4,8 @@ module Tensors
 
 import Base.@pure
 
+import Statistics
+using Statistics: mean
 using LinearAlgebra
 # re-exports from LinearAlgebra
 export ⋅, ×, dot, diagm, tr, det, norm, eigvals, eigvecs, eigen
