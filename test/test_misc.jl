@@ -273,11 +273,11 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     @test (@inferred tr(t))::T == sum([t[i,i] for i in 1:dim])
     @test (@inferred tr(t_sym))::T == sum([t_sym[i,i] for i in 1:dim])
 
-    @test tr(t) ≈ Tensors.mean(t)*3.0
-    @test tr(t_sym) ≈ Tensors.mean(t_sym)*3.0
+    @test tr(t) ≈ mean(t)*3.0
+    @test tr(t_sym) ≈ mean(t_sym)*3.0
 
-    @test (@inferred vol(t))::Tensor{2, dim, T} ≈ Tensors.mean(t) * Matrix(I, dim, dim)
-    @test (@inferred vol(t_sym))::SymmetricTensor{2, dim, T} ≈ Tensors.mean(t_sym) * Matrix(I, dim, dim)
+    @test (@inferred vol(t))::Tensor{2, dim, T} ≈ mean(t) * Matrix(I, dim, dim)
+    @test (@inferred vol(t_sym))::SymmetricTensor{2, dim, T} ≈ mean(t_sym) * Matrix(I, dim, dim)
 
     @test (@inferred dev(t))::Tensor{2, dim, T} ≈ Array(t) - 1/3*tr(t)* Matrix(I, dim, dim)
     @test (@inferred dev(t_sym))::SymmetricTensor{2, dim, T} ≈ Array(t_sym) - 1/3*tr(t_sym)* Matrix(I, dim, dim)
