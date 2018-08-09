@@ -1,7 +1,7 @@
 ```@meta
 DocTestSetup = quote
     using Random
-    srand(1234)
+    Random.seed!(1234)
     using Tensors
 end
 ```

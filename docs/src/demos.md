@@ -69,7 +69,7 @@ For some material models it can be cumbersome to compute the analytical expressi
 ```@meta
 DocTestSetup = quote
     using Random
-    srand(1234)
+    Random.seed!(1234)
     using Tensors
     E = 200e9
     ν = 0.3

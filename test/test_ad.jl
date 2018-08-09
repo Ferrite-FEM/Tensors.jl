@@ -39,7 +39,7 @@ S(C) = S(C, μ, Kb)
         @test ∇∇(Ψ, C) ⊡ b ≈ ∇∇(Ψ, C2) ⊡ b
 
         for T in (Float32, Float64)
-            srand(1234) # needed for getting "good" tensors for calculating det and friends
+            Random.seed!(1234) # needed for getting "good" tensors for calculating det and friends
             A = rand(Tensor{2, dim, T})
             B = rand(Tensor{2, dim, T})
             A_sym = rand(SymmetricTensor{2, dim, T})
@@ -122,7 +122,7 @@ S(C) = S(C, μ, Kb)
     end # loop dim
 
     @testsection "vector calculus identities" begin
-        srand(1234)
+        Random.seed!(1234)
         φ(x) = norm(x)^4
         ϕ(x) = sum(x)
         A(x) = Vec{3}((x[1]*x[2]^3*x[3], x[1]*x[2]*x[3]^3, x[1]^3*x[2]*x[3]))
