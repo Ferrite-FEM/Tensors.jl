@@ -6,6 +6,7 @@ os:
 
 julia:
   - 0.7
+  - 1.0
   - nightly
 
 branches:
@@ -22,4 +23,4 @@ git:
   depth: 99999
 
 after_success:
-  - julia -e 'include(Pkg.dir("Tensors", "test", "coverage.jl"))'
+  - julia -e 'import Pkg; include(joinpath("test", "coverage.jl"))'

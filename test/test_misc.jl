@@ -289,6 +289,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     @test (@inferred inv(t_sym))::SymmetricTensor{2, dim, T} ≈ inv(Array(t_sym))
 
     # inv for fourth order tensors
+    Random.seed!(1234)
     AA = rand(Tensor{4, dim, T})
     AA_sym = rand(SymmetricTensor{4, dim, T})
     @test AA ⊡ (@inferred inv(AA))::Tensor{4, dim, T} ≈ one(Tensor{4, dim, T})

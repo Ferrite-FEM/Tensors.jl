@@ -5,7 +5,7 @@ makedocs(
     format = :html,
     sitename = "Tensors.jl",
     doctest = true,
-    strict = VERSION.minor == 6 && sizeof(Int) == 8, # only strict mode on 0.6 and Int64
+    strict = VERSION.major == 1 && sizeof(Int) == 8, # only strict mode on 1.X and Int64
     pages = Any[
         "Home" => "index.md",
         "Manual" => [
@@ -24,7 +24,7 @@ makedocs(
 deploydocs(
     repo = "github.com/KristofferC/Tensors.jl.git",
     target = "build",
-    julia = "0.7",
+    julia = "1.0",
     deps = nothing,
     make = nothing
 )
