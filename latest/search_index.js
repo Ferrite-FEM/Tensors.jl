@@ -61,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Constructing tensors",
     "title": "Constructing tensors",
     "category": "page",
-    "text": "DocTestSetup = quote\n    using Random\n    srand(1234)\n    using Tensors\nend"
+    "text": "DocTestSetup = quote\n    using Random\n    Random.seed!(1234)\n    using Tensors\nend"
 },
 
 {
@@ -173,7 +173,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Indexing",
     "title": "Indexing",
     "category": "page",
-    "text": "DocTestSetup = quote\n    using Random\n    srand(1234)\n    using Tensors\nend"
+    "text": "DocTestSetup = quote\n    using Random\n    Random.seed!(1234)\n    using Tensors\nend"
 },
 
 {
@@ -189,7 +189,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Binary Operations",
     "title": "Binary Operations",
     "category": "page",
-    "text": "DocTestSetup = quote\n    using Random\n    srand(1234)\n    using Tensors\nend"
+    "text": "DocTestSetup = quote\n    using Random\n    Random.seed!(1234)\n    using Tensors\nend"
 },
 
 {
@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Other operators",
     "category": "page",
-    "text": "DocTestSetup = quote\n    using Random\n    srand(1234)\n    using Tensors\nend"
+    "text": "DocTestSetup = quote\n    using Random\n    Random.seed!(1234)\n    using Tensors\nend"
 },
 
 {
@@ -605,13 +605,13 @@ var documenterSearchIndex = {"docs": [
     "page": "Automatic Differentiation",
     "title": "Automatic Differentiation",
     "category": "page",
-    "text": "DocTestSetup = quote\n    using Random\n    srand(1234)\n    using Tensors\nend"
+    "text": "DocTestSetup = quote\n    using Random\n    Random.seed!(1234)\n    using Tensors\nend"
 },
 
 {
-    "location": "man/automatic_differentiation.html#LinearAlgebra.gradient",
+    "location": "man/automatic_differentiation.html#Tensors.gradient",
     "page": "Automatic Differentiation",
-    "title": "LinearAlgebra.gradient",
+    "title": "Tensors.gradient",
     "category": "function",
     "text": "gradient(f::Function, v::Union{SecondOrderTensor, Vec})\ngradient(f::Function, v::Union{SecondOrderTensor, Vec}, :all)\n\nComputes the gradient of the input function. If the (pseudo)-keyword all is given, the value of the function is also returned as a second output argument.\n\nExamples\n\njulia> A = rand(SymmetricTensor{2, 2});\n\njulia> ∇f = gradient(norm, A)\n2×2 SymmetricTensor{2,2,Float64,3}:\n 0.434906  0.56442\n 0.56442   0.416793\n\njulia> ∇f, f = gradient(norm, A, :all);\n\n\n\n\n\n"
 },
@@ -741,7 +741,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Demos",
     "title": "Automatic differentiation",
     "category": "section",
-    "text": "For some material models it can be cumbersome to compute the analytical expression for the Second Piola Kirchoff tensor. We can then instead use Automatic Differentiation (AD). Below is an example which computes the Second Piola Kirchoff tensor using AD and compares it to the analytical answer.DocTestSetup = quote\n    using Random\n    srand(1234)\n    using Tensors\n    E = 200e9\n    ν = 0.3\n    dim = 2\n    λ = E*ν / ((1 + ν) * (1 - 2ν))\n    μ = E / (2(1 + ν))\n    δ(i,j) = i == j ? 1.0 : 0.0\n    f = (i,j,k,l) -> λ*δ(i,j)*δ(k,l) + μ*(δ(i,k)*δ(j,l) + δ(i,l)*δ(j,k))\n\n    C = SymmetricTensor{4, dim}(f)\n\n    function Ψ(C, μ, Kb)\n        detC = det(C)\n        J = sqrt(detC)\n        Ĉ = detC^(-1/3)*C\n        return 1/2*(μ * (tr(Ĉ)- 3) + Kb*(J-1)^2)\n    end\n\n    function S(C, μ, Kb)\n        I = one(C)\n        J = sqrt(det(C))\n        invC = inv(C)\n        return μ * det(C)^(-1/3)*(I - 1/3*tr(C)*invC) + Kb*(J-1)*J*invC\n    end\nendjulia> μ = 1e10;\n\njulia> Kb = 1.66e11;\n\njulia> F = one(Tensor{2,3}) + rand(Tensor{2,3});\n\njulia> C = tdot(F);\n\njulia> S_AD = 2 * gradient(C -> Ψ(C, μ, Kb), C)\n3×3 SymmetricTensor{2,3,Float64,6}:\n  4.30534e11  -2.30282e11  -8.52861e10\n -2.30282e11   4.38793e11  -2.64481e11\n -8.52861e10  -2.64481e11   7.85515e11\n\njulia> S(C, μ, Kb)\n3×3 SymmetricTensor{2,3,Float64,6}:\n  4.30534e11  -2.30282e11  -8.52861e10\n -2.30282e11   4.38793e11  -2.64481e11\n -8.52861e10  -2.64481e11   7.85515e11"
+    "text": "For some material models it can be cumbersome to compute the analytical expression for the Second Piola Kirchoff tensor. We can then instead use Automatic Differentiation (AD). Below is an example which computes the Second Piola Kirchoff tensor using AD and compares it to the analytical answer.DocTestSetup = quote\n    using Random\n    Random.seed!(1234)\n    using Tensors\n    E = 200e9\n    ν = 0.3\n    dim = 2\n    λ = E*ν / ((1 + ν) * (1 - 2ν))\n    μ = E / (2(1 + ν))\n    δ(i,j) = i == j ? 1.0 : 0.0\n    f = (i,j,k,l) -> λ*δ(i,j)*δ(k,l) + μ*(δ(i,k)*δ(j,l) + δ(i,l)*δ(j,k))\n\n    C = SymmetricTensor{4, dim}(f)\n\n    function Ψ(C, μ, Kb)\n        detC = det(C)\n        J = sqrt(detC)\n        Ĉ = detC^(-1/3)*C\n        return 1/2*(μ * (tr(Ĉ)- 3) + Kb*(J-1)^2)\n    end\n\n    function S(C, μ, Kb)\n        I = one(C)\n        J = sqrt(det(C))\n        invC = inv(C)\n        return μ * det(C)^(-1/3)*(I - 1/3*tr(C)*invC) + Kb*(J-1)*J*invC\n    end\nendjulia> μ = 1e10;\n\njulia> Kb = 1.66e11;\n\njulia> F = one(Tensor{2,3}) + rand(Tensor{2,3});\n\njulia> C = tdot(F);\n\njulia> S_AD = 2 * gradient(C -> Ψ(C, μ, Kb), C)\n3×3 SymmetricTensor{2,3,Float64,6}:\n  4.30534e11  -2.30282e11  -8.52861e10\n -2.30282e11   4.38793e11  -2.64481e11\n -8.52861e10  -2.64481e11   7.85515e11\n\njulia> S(C, μ, Kb)\n3×3 SymmetricTensor{2,3,Float64,6}:\n  4.30534e11  -2.30282e11  -8.52861e10\n -2.30282e11   4.38793e11  -2.64481e11\n -8.52861e10  -2.64481e11   7.85515e11"
 },
 
 ]}
