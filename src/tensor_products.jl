@@ -177,12 +177,12 @@ julia> B = rand(Tensor{1, 2})
 julia> dot(A, B)
 2-element Tensor{1,2,Float64,2}:
  0.9527955925660736
- 1.0018368881367579
+ 1.0018368881367576
 
 julia> A ⋅ B
 2-element Tensor{1,2,Float64,2}:
  0.9527955925660736
- 1.0018368881367579
+ 1.0018368881367576
 ```
 """
 @generated function LinearAlgebra.dot(S1::Vec{dim}, S2::Vec{dim}) where {dim}
