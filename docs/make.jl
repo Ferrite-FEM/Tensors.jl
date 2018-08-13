@@ -4,8 +4,8 @@ makedocs(
     modules = [Tensors],
     format = :html,
     sitename = "Tensors.jl",
-    doctest = true,
-    strict = VERSION.major == 1 && VERSION.minor == 0 && sizeof(Int) == 8, # only strict mode on 1.X and Int64
+    doctest = false,
+    strict = false, # VERSION.major == 1 && VERSION.minor == 0 && sizeof(Int) == 8, # only strict mode on 1.X and Int64
     pages = Any[
         "Home" => "index.md",
         "Manual" => [
