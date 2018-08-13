@@ -2,6 +2,7 @@
 struct F64 <: AbstractFloat
     x::Float64
 end
+F64(x::F64) = x
 
 # operations
 for op in (:+, :-)
