@@ -205,7 +205,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Binary Operations",
     "title": "LinearAlgebra.dot",
     "category": "function",
-    "text": "dot(::Vec, ::Vec)\ndot(::Vec, ::SecondOrderTensor)\ndot(::SecondOrderTensor, ::Vec)\ndot(::SecondOrderTensor, ::SecondOrderTensor)\n\nComputes the dot product (single contraction) between two tensors. The symbol ⋅, written \\cdot, is overloaded for single contraction.\n\nExamples\n\njulia> A = rand(Tensor{2, 2})\n2×2 Tensor{2,2,Float64,4}:\n 0.590845  0.566237\n 0.766797  0.460085\n\njulia> B = rand(Tensor{1, 2})\n2-element Tensor{1,2,Float64,2}:\n 0.7940257103317943\n 0.8541465903790502\n\njulia> dot(A, B)\n2-element Tensor{1,2,Float64,2}:\n 0.9527955925660736\n 1.0018368881367579\n\njulia> A ⋅ B\n2-element Tensor{1,2,Float64,2}:\n 0.9527955925660736\n 1.0018368881367579\n\n\n\n\n\ndot(::SymmetricTensor{2})\n\nCompute the dot product of a symmetric second order tensor with itself. Return a SymmetricTensor.\n\nExamples\n\njulia> A = rand(SymmetricTensor{2,3})\n3×3 SymmetricTensor{2,3,Float64,6}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\njulia> dot(A)\n3×3 SymmetricTensor{2,3,Float64,6}:\n 1.2577   1.25546  1.42706\n 1.25546  1.43013  1.47772\n 1.42706  1.47772  1.68067\n\n\n\n\n\n"
+    "text": "dot(::Vec, ::Vec)\ndot(::Vec, ::SecondOrderTensor)\ndot(::SecondOrderTensor, ::Vec)\ndot(::SecondOrderTensor, ::SecondOrderTensor)\n\nComputes the dot product (single contraction) between two tensors. The symbol ⋅, written \\cdot, is overloaded for single contraction.\n\nExamples\n\njulia> A = rand(Tensor{2, 2})\n2×2 Tensor{2,2,Float64,4}:\n 0.590845  0.566237\n 0.766797  0.460085\n\njulia> B = rand(Tensor{1, 2})\n2-element Tensor{1,2,Float64,2}:\n 0.7940257103317943\n 0.8541465903790502\n\njulia> dot(A, B)\n2-element Tensor{1,2,Float64,2}:\n 0.9527955925660736\n 1.0018368881367576\n\njulia> A ⋅ B\n2-element Tensor{1,2,Float64,2}:\n 0.9527955925660736\n 1.0018368881367576\n\n\n\n\n\ndot(::SymmetricTensor{2})\n\nCompute the dot product of a symmetric second order tensor with itself. Return a SymmetricTensor.\n\nExamples\n\njulia> A = rand(SymmetricTensor{2,3})\n3×3 SymmetricTensor{2,3,Float64,6}:\n 0.590845  0.766797  0.566237\n 0.766797  0.460085  0.794026\n 0.566237  0.794026  0.854147\n\njulia> dot(A)\n3×3 SymmetricTensor{2,3,Float64,6}:\n 1.2577   1.25546  1.42706\n 1.25546  1.43013  1.47772\n 1.42706  1.47772  1.68067\n\n\n\n\n\n"
 },
 
 {
@@ -293,7 +293,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "LinearAlgebra.norm",
     "category": "function",
-    "text": "norm(::Vec)\nnorm(::SecondOrderTensor)\nnorm(::FourthOrderTensor)\n\nComputes the norm of a tensor.\n\nExamples\n\njulia> A = rand(Tensor{2,3})\n3×3 Tensor{2,3,Float64,9}:\n 0.590845  0.460085  0.200586\n 0.766797  0.794026  0.298614\n 0.566237  0.854147  0.246837\n\njulia> norm(A)\n1.7377443667834922\n\n\n\n\n\n"
+    "text": "norm(::Vec)\nnorm(::SecondOrderTensor)\nnorm(::FourthOrderTensor)\n\nComputes the norm of a tensor.\n\nExamples\n\njulia> A = rand(Tensor{2,3})\n3×3 Tensor{2,3,Float64,9}:\n 0.590845  0.460085  0.200586\n 0.766797  0.794026  0.298614\n 0.566237  0.854147  0.246837\n\njulia> norm(A)\n1.7377443667834924\n\n\n\n\n\n"
 },
 
 {
