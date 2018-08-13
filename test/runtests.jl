@@ -19,8 +19,7 @@ using Statistics: mean
 
 reset_timer!()
 
-#include("F64.jl")
-const F64 = Float64
+include("F64.jl")
 include("test_misc.jl")
 include("test_ops.jl")
 include("test_ad.jl")
