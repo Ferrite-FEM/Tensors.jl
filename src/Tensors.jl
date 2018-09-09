@@ -106,7 +106,6 @@ end
 @pure Base.eltype(::Type{SymmetricTensor{order, dim, T}})    where {order, dim, T}    = T
 @pure Base.eltype(::Type{SymmetricTensor{order, dim}})       where {order, dim}       = Any
 
-
 ############################
 # Abstract Array interface #
 ############################
@@ -119,6 +118,9 @@ Base.IndexStyle(::Type{<:Tensor}) = IndexLinear()
 Base.size(::Vec{dim})               where {dim} = (dim,)
 Base.size(::SecondOrderTensor{dim}) where {dim} = (dim, dim)
 Base.size(::FourthOrderTensor{dim}) where {dim} = (dim, dim, dim, dim)
+
+# Also define lnegth for the type itself
+Base.length(::Type{Tensor{order, dim, T, M}}) where {order, dim, T, M} = M
 
 #########################
 # Internal constructors #
