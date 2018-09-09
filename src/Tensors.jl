@@ -120,6 +120,9 @@ Base.size(::Vec{dim})               where {dim} = (dim,)
 Base.size(::SecondOrderTensor{dim}) where {dim} = (dim, dim)
 Base.size(::FourthOrderTensor{dim}) where {dim} = (dim, dim, dim, dim)
 
+# Also define lnegth for the type itself
+Base.length(::Type{Tensor{order, dim, T, M}}) where {order, dim, T, M} = M
+
 #########################
 # Internal constructors #
 #########################
