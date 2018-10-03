@@ -140,8 +140,7 @@ end
 # Special for Vec
 @inline Vec{dim}(data) where {dim} = Tensor{1, dim}(data)
 @inline Vec(data::NTuple{N}) where {N} = Vec{N}(data)
-@inline Vec(data::Vararg{T, N}) where {T, N} = Vec{N}(data)
-@inline Vec{N}(data::Vararg{T, N}) where {T, N} = Vec{N}(data)
+@inline Vec(data::Vararg{T,N}) where {T, N} = Vec{N,T}(data)
 
 # General fallbacks
 @inline          Tensor{order, dim, T}(data::Union{AbstractArray, Tuple, Function}) where {order, dim, T} = convert(Tensor{order, dim, T}, Tensor{order, dim}(data))
