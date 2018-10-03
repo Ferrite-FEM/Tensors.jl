@@ -33,6 +33,9 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
 end
 end # of testset
 
+@test Vec((1.0,2.0,3.0)) == Vec{3}((1.0,2.0,3.0))
+@test Vec(1.0,2.0,3.0) == Vec{3}((1.0,2.0,3.0))
+
 @testsection "diagm, one" begin
 for T in (Float32, Float64), dim in (1,2,3)
     # diagm
