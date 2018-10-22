@@ -468,6 +468,21 @@ for dim in (1,2,3), order in (1,2,4)
 end
 end  # of testset
 
+@testset "issues #100, #101: orders of eigenvectors" begin
+    for (i, j) in ((1, 2), (2, 1))
+        S = SymmetricTensor{2,2,Float64}((i, 0, j))
+        Λ = diagm(SymmetricTensor{2,2}, eigvals(S))
+        Φ = eigvecs(S)
+        @test Φ ⋅ Λ ⋅ Φ' ≈ S
+    end
+    for (i, j, k) in ((1, 2, 3), (1, 3, 2), (2, 1, 3), (2, 3, 1), (3, 1, 2), (3, 2, 1))
+        S = SymmetricTensor{2,3,Float64}((i, 0, 0, j, 0, k))
+        Λ = diagm(SymmetricTensor{2,3}, eigvals(S))
+        Φ = eigvecs(S)
+        @test Φ ⋅ Λ ⋅ Φ' ≈ S
+    end
+end
+
 @testsection "exceptions" begin
     # normal multiplication
     A = rand(Tensor{2, 3})
