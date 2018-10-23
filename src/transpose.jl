@@ -20,8 +20,6 @@ julia> A'
  0.566237  0.460085
 ```
 """
-@inline Base.transpose(S::Vec) = S
-
 @inline function Base.transpose(S::Tensor{2, dim}) where {dim}
     Tensor{2, dim}(@inline function(i, j) @inbounds S[j,i]; end)
 end

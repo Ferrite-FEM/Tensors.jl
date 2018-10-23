@@ -133,7 +133,6 @@ end # of testsection
 end # of testsection
 
 @testsection "transpose" begin
-    @test (@inferred transpose(a))::Vec{dim, T} ≈ a' ≈ a
     @test (@inferred transpose(A))::Tensor{2, dim, T} ≈ Array(A)'
     @test transpose(transpose(A)) ≈ A
     @test (@inferred transpose(A_sym))::SymmetricTensor{2, dim, T} ≈ A_sym ≈ Array(A_sym)'
