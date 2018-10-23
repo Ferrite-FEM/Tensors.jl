@@ -7,15 +7,23 @@ end
 
 function LinearAlgebra.eigen(S::SymmetricTensor{2, 2, T}) where {T}
     @inbounds begin
-        # eigenvalues from quadratic formula
-        trS_half = tr(S) / 2
-        tmp2 = trS_half * trS_half - det(S)
-        tmp2 < 0 ? tmp = zero(tmp2) : tmp = sqrt(tmp2) # Numerically stable for identity matrices, etc.
-        λ = Vec{2}((trS_half - tmp, trS_half + tmp))
-
         if S[2,1] == 0 # diagonal tensor
-            Φ = one(Tensor{2, 2, T})
+            S11 = S[1,1]
+            S22 = S[2,2]
+            if S11 < S22
+                λ = Vec{2}((S11, S22))
+                Φ = Tensor{2,2,T}((T(1), T(0), T(0), T(1)))
+            else # S22 <= S11
+                λ = Vec{2}((S22, S11))
+                Φ = Tensor{2,2,T}((T(0), T(1), T(1), T(0)))
+            end
         else
+            # eigenvalues from quadratic formula
+            trS_half = tr(S) / 2
+            tmp2 = trS_half * trS_half - det(S)
+            tmp2 < 0 ? tmp = zero(tmp2) : tmp = sqrt(tmp2) # Numerically stable for identity matrices, etc.
+            λ = Vec{2}((trS_half - tmp, trS_half + tmp))
+
             Φ11 = λ[1] - S[2,2]
             n1 = sqrt(Φ11 * Φ11 + S[2,1] * S[2,1])
             Φ11 = Φ11 / n1
@@ -51,7 +59,7 @@ function LinearAlgebra.eigen(S::SymmetricTensor{2, 3, T}) where {T}
                 if S22 < S33
                     return Eigen(Vec{3, R}((S11, S22, S33)), Tensor{2, 3, R}((v1[1], v1[2], v1[3], v2[1], v2[2], v2[3], v3[1], v3[2], v3[3])))
                 elseif S33 < S11
-                    return Eigen(Vec{3, R}((S33, S11, S22)), Tensor{2, 3, R}((v3[1], v3[2], v3[3], v2[1], v2[2], v2[3], v1[1], v1[2], v1[3])))
+                    return Eigen(Vec{3, R}((S33, S11, S22)), Tensor{2, 3, R}((v3[1], v3[2], v3[3], v1[1], v1[2], v1[3], v2[1], v2[2], v2[3])))
                 else
                     return Eigen(Vec{3, R}((S11, S33, S22)), Tensor{2, 3, R}((v1[1], v1[2], v1[3], v3[1], v3[2], v3[3], v2[1], v2[2], v2[3])))
                 end
