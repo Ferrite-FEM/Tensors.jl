@@ -6,3 +6,4 @@ docs/build/
 docs/site/
 benchmark/*.md
 /Manifest.toml
+/test/coverage/Manifest.toml
