@@ -4,13 +4,15 @@ This section contain a few demos of applying `Tensors` to continuum mechanics.
 
 ## Creating the linear elasticity tensor
 
-The linear elasticity tensor $\mathbf{C}$ can be defined from the Lamé parameters $\lambda$ and $\mu$ by the expression
+The linear elasticity tensor ``\mathbf{C}`` can be defined from the Lamé parameters ``\lambda`` and ``\mu`` by the expression
 
-$\mathbf{C}_{ijkl} = \lambda \delta_{ij}\delta_{kl} + \mu(\delta_{ij}\delta_{jl} + \delta_{il}\delta_{jk}),$
+```math
+\mathbf{C}_{ijkl} = \lambda \delta_{ij}\delta_{kl} + \mu(\delta_{ij}\delta_{jl} + \delta_{il}\delta_{jk}),
+```
 
-where $\delta_{ij} = 1$ if $i = j$ otherwise $0$. It can also be computed in terms of the Young's modulus $E$ and Poisson's ratio $\nu$ by the conversion formulas $\lambda = E\nu / [(1 + \nu)(1 - 2\nu)]$ and $\mu = E / [2(1 + \nu)]$
+where ``\delta_{ij} = 1`` if ``i = j`` otherwise ``0``. It can also be computed in terms of the Young's modulus ``E`` and Poisson's ratio ``\nu`` by the conversion formulas ``\lambda = E\nu / [(1 + \nu)(1 - 2\nu)]`` and ``\mu = E / [2(1 + \nu)]``.
 
-The code below creates the elasticity tensor for given parameters $E$ and $\nu$ and dimension $\texttt{dim}$. Note the similarity between the mathematical formula and the code.
+The code below creates the elasticity tensor for given parameters ``E`` and ``\nu`` and dimension `dim`. Note the similarity between the mathematical formula and the code.
 
 ```julia
 using Tensors
@@ -27,13 +29,31 @@ C = SymmetricTensor{4, dim}(f)
 
 ## Nonlinear elasticity material
 
-For a deformation gradient $\mathbf{F} = \mathbf{I} + \nabla \otimes \mathbf{u}$, where $\mathbf{u}$ is the deformation from the reference to the current configuration, the right Cauchy-Green deformation tensor is defined by $\mathbf{C} = \mathbf{F}^T \cdot \mathbf{F}$. The Second Piola Krichoff stress tensor $\mathbf{S}$ is derived from the Helmholtz free energy $\Psi$ by the relation $\mathbf{S} = 2 \frac{\partial \Psi}{\partial \mathbf{C}}$.
+For a deformation gradient
+
+```math
+\mathbf{F} = \mathbf{I} + \nabla \otimes \mathbf{u},
+```
+
+where ``\mathbf{u}`` is the deformation from the reference to the current configuration, the right Cauchy-Green deformation tensor is defined by
+
+```math
+\mathbf{C} = \mathbf{F}^T \cdot \mathbf{F}.
+```
+
+The Second Piola Krichoff stress tensor ``\mathbf{S}`` is derived from the Helmholtz free energy ``\Psi`` by the relation
+
+```math
+\mathbf{S} = 2 \frac{\partial \Psi}{\partial \mathbf{C}}.
+```
 
 We can define potential energy of the material as
 
-$\Psi(\mathbf{C}) = 1/2 \mu (\mathrm{tr}(\hat{\mathbf{C}}) - 3) + K_b(J-1)^2,$
+```math
+\Psi(\mathbf{C}) = 1/2 \mu (\mathrm{tr}(\hat{\mathbf{C}}) - 3) + K_b(J-1)^2,
+```
 
-where $\hat{\mathbf{C}} = \mathrm{det}(\mathbf{C})^{-1/3} \mathbf{C}$ and $J = \det(\mathbf{F}) = \sqrt{\det(\mathbf{C})}$ and the shear and bulk modulus are given by $\mu$ and $K_b$ respectively.
+where ``\hat{\mathbf{C}} = \mathrm{det}(\mathbf{C})^{-1/3} \mathbf{C}`` and ``J = \det(\mathbf{F}) = \sqrt{\det(\mathbf{C})}``, and the shear and bulk modulus are given by ``\mu`` and ``K_b`` respectively.
 
 This free energy function can be implemented in `Tensors` as:
 
@@ -48,8 +68,9 @@ end
 
 The analytical expression for the Second Piola Kirchoff tensor is
 
-$ \mathbf{S} = \mu \det(\mathbf{C})^{-1/3}(\mathbf{I} - 1/3 \mathrm{tr}(\mathbf{C})\mathbf{C}^{-1}) + K_b(J-1)J\mathbf{C}^{-1}
-$
+```math
+\mathbf{S} = \mu \det(\mathbf{C})^{-1/3}(\mathbf{I} - 1/3 \mathrm{tr}(\mathbf{C})\mathbf{C}^{-1}) + K_b(J-1)J\mathbf{C}^{-1}
+```
 
 which can be implemented by the function
 

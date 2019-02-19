@@ -36,7 +36,9 @@ We here give a few examples of differentiating various functions and compare wit
 
 ### Norm of a vector
 
-$f(\mathbf{x}) = |\mathbf{x}| \quad \Rightarrow \quad \partial f / \partial \mathbf{x} = \mathbf{x} / |\mathbf{x}|$
+```math
+f(\mathbf{x}) = |\mathbf{x}| \quad \Rightarrow \quad \partial f / \partial \mathbf{x} = \mathbf{x} / |\mathbf{x}|
+```
 
 ```jldoctest
 julia> x = rand(Vec{2});
@@ -54,7 +56,9 @@ julia> x / norm(x)
 
 ### Determinant of a second order symmetric tensor
 
-$f(\mathbf{A}) = \det \mathbf{A} \quad \Rightarrow \quad \partial f / \partial \mathbf{A} = \mathbf{A}^{-T} \det \mathbf{A}$
+```math
+f(\mathbf{A}) = \det \mathbf{A} \quad \Rightarrow \quad \partial f / \partial \mathbf{A} = \mathbf{A}^{-T} \det \mathbf{A}
+```
 
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,2});
@@ -72,9 +76,11 @@ julia> inv(A)' * det(A)
 
 ### Hessian of a quadratic potential
 
-$\psi(\mathbf{e}) = 1/2 \mathbf{e} : \mathsf{E} : \mathbf{e} \quad \Rightarrow \quad \partial \psi / (\partial \mathbf{e} \otimes \partial \mathbf{e}) = \mathsf{E}^\text{sym}$
+```math
+\psi(\mathbf{e}) = 1/2 \mathbf{e} : \mathsf{E} : \mathbf{e} \quad \Rightarrow \quad \partial \psi / (\partial \mathbf{e} \otimes \partial \mathbf{e}) = \mathsf{E}^\text{sym}
+```
 
-where $\mathsf{E}^\text{sym}$ is the major symmetric part of $\mathsf{E}$.
+where ``\mathsf{E}^\text{sym}`` is the major symmetric part of ``\mathsf{E}``.
 
 ```jldoctest
 julia> E = rand(Tensor{4,2});

@@ -110,12 +110,15 @@ julia> rand(SymmetricTensor{2,3,Float32})
 
 Identity tensors can be created for orders 2 and 4. The components of the second order identity tensor ``\mathbf{I}`` are defined as ``I_{ij} = \delta_{ij}``, where ``\delta_{ij}`` is the Kronecker delta. The fourth order identity tensor ``\mathsf{I}`` is the resulting tensor from taking the derivative of a second order tensor ``\mathbf{A}`` with itself:
 
-$\mathsf{I} = \frac{\partial \mathbf{A}}{\partial \mathbf{A}} \Leftrightarrow I_{ijkl} = \frac{\partial A_{ij}}{\partial A_{kl}} = \delta_{ik} \delta_{jl}$
+```math
+\mathsf{I} = \frac{\partial \mathbf{A}}{\partial \mathbf{A}} \Leftrightarrow I_{ijkl} = \frac{\partial A_{ij}}{\partial A_{kl}} = \delta_{ik} \delta_{jl}.
+```
 
 The symmetric fourth order tensor, ``\mathsf{I}^\text{sym}``, is the resulting tensor from taking the derivative of a symmetric second order tensor ``\mathbf{A}^\text{sym}`` with itself:
 
-$\mathsf{I}^\text{sym} = \frac{\partial \mathbf{A}^\text{sym}}{\partial \mathbf{A}^\text{sym}} \Leftrightarrow I^\text{sym}_{ijkl} = \frac{\partial A^\text{sym}_{ij}}{\partial A^\text{sym}_{kl}} = \frac{1}{2} (\delta_{ik} \delta_{jl} + \delta_{il} \delta_{jk})$
-
+```math
+\mathsf{I}^\text{sym} = \frac{\partial \mathbf{A}^\text{sym}}{\partial \mathbf{A}^\text{sym}} \Leftrightarrow I^\text{sym}_{ijkl} = \frac{\partial A^\text{sym}_{ij}}{\partial A^\text{sym}_{kl}} = \frac{1}{2} (\delta_{ik} \delta_{jl} + \delta_{il} \delta_{jk}).
+```
 
 Identity tensors are created using the function `one`, applied to the type of tensor that should be created:
 
