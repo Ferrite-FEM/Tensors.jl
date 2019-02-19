@@ -1,11 +1,9 @@
 using Documenter, Tensors
 
 makedocs(
+    format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
     modules = [Tensors],
-    format = :html,
     sitename = "Tensors.jl",
-    doctest = false,
-    strict = false, # VERSION.major == 1 && VERSION.minor == 0 && sizeof(Int) == 8, # only strict mode on 1.X and Int64
     pages = Any[
         "Home" => "index.md",
         "Manual" => [
@@ -23,8 +21,4 @@ makedocs(
 
 deploydocs(
     repo = "github.com/KristofferC/Tensors.jl.git",
-    target = "build",
-    julia = "1.0",
-    deps = nothing,
-    make = nothing
 )
