@@ -5,4 +5,4 @@
 docs/build/
 docs/site/
 benchmark/*.md
-Manifest.toml
+/Manifest.toml
