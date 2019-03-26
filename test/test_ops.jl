@@ -118,7 +118,7 @@ end # of testsection
     @test ((@inferred majorsymmetric(AA))::Tensor{4, dim, T})[i,j,k,l] ≈ 0.5*(AA[i,j,k,l] + AA[k,l,i,j])
     @test majorsymmetric(AA)[i,j,k,l] ≈ majorsymmetric(AA)[k,l,i,j]
     @test ismajorsymmetric(majorsymmetric(AA))
-    @test ((@inferred majorsymmetric(AA_sym))::Tensor{4, dim, T})[i,j,k,l] ≈ 0.5*(AA_sym[i,j,k,l] + AA_sym[k,l,i,j])
+    @test ((@inferred majorsymmetric(AA_sym))::SymmetricTensor{4, dim, T})[i,j,k,l] ≈ 0.5*(AA_sym[i,j,k,l] + AA_sym[k,l,i,j])
     @test majorsymmetric(AA_sym)[i,j,k,l] ≈ majorsymmetric(AA_sym)[k,l,i,j]
     @test ismajorsymmetric(majorsymmetric(AA_sym))
 
