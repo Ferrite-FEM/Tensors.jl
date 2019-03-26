@@ -405,7 +405,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Other operators",
     "title": "Tensors.majorsymmetric",
     "category": "function",
-    "text": "majorsymmetric(::FourthOrderTensor)\n\nCompute the major symmetric part of a fourth order tensor, returns a Tensor{4}.\n\n\n\n\n\n"
+    "text": "majorsymmetric(::FourthOrderTensor)\n\nCompute the major symmetric part of a fourth order tensor.\n\n\n\n\n\n"
 },
 
 {
