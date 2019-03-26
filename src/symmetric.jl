@@ -51,10 +51,10 @@ end
 """
     majorsymmetric(::FourthOrderTensor)
 
-Compute the major symmetric part of a fourth order tensor, returns a `Tensor{4}`.
+Compute the major symmetric part of a fourth order tensor.
 """
-@inline function majorsymmetric(S::FourthOrderTensor{dim}) where {dim}
-    Tensor{4, dim}(
+@inline function majorsymmetric(S::T) where {T <: FourthOrderTensor}
+    get_base(T)(
         @inline function(i, j, k, l)
             @inbounds if i == j == k == l || i == k && j == l
                 return S[i,j,k,l]
