@@ -327,9 +327,10 @@ end # of testset
 
 @testsection "eigen(::FourthOrderTensor)" begin
 for T in (Float32, Float64), dim in (1, 2, 3)
+    Random.seed!(123)
     # construct positive definite Voigt-tensor
     n = dim*dim - div((dim-1)*dim, 2)
-    A = rand(T, n, n); A = A'A
+    A = rand(T, n, n); A = A'A + I
     Aval, Avec = eigen(A)
     perm = sortperm(Aval)
     Aval = Aval[perm]
