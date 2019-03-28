@@ -325,6 +325,32 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
 end
 end # of testset
 
+@testsection "eigen(::FourthOrderTensor)" begin
+for T in (Float32, Float64), dim in (1, 2, 3)
+    # construct positive definite Voigt-tensor
+    n = dim*dim - div((dim-1)*dim, 2)
+    A = rand(T, n, n); A = A'A
+    Aval, Avec = eigen(A)
+    perm = sortperm(Aval)
+    Aval = Aval[perm]
+    Avec = [Avec[:, i] for i in perm]
+
+    # construct tensor with "inverse scaling"
+    S = fromvoigt(SymmetricTensor{4,dim,T}, A)
+    S′ = SymmetricTensor{4,dim}((i,j,k,l) -> k == l ? S[i,j,k,l] : S[i,j,k,l]/2)
+
+    E = eigen(S′)
+    @test eigvals(E) ≈ Aval
+    @test tovoigt.(eigvecs(E)) ≈ Avec
+    for i in 1:n
+        @test S′ ⊡ E.vectors[i] ≈ E.values[i] * E.vectors[i]
+    end
+    a, b = E # iteration
+    @test a == eigvals(E) == E.values
+    @test b == eigvecs(E) == E.vectors
+end
+end
+
 # https://en.wikiversity.org/wiki/Continuum_mechanics/Tensor_algebra_identities
 @testsection "tensor identities" begin
 for T in (Float32, Float64, F64)

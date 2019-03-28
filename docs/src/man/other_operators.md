@@ -185,6 +185,14 @@ The eigenvalues and eigenvectors of a (symmetric) second order tensor, ``\mathbf
 ```
 
 where ``\lambda_i`` are the eigenvalues and ``\mathbf{v}_i`` are the corresponding eigenvectors.
+For a symmetric fourth order tensor, ``\mathsf{A}`` the second order eigentensors and eigenvalues
+can be solved from
+
+```math
+\mathsf{A} : \mathbf{V}_i = \lambda_i \mathbf{V}_i \qquad i = 1, \dots, \text{dim}
+```
+
+where ``\lambda_i`` are the eigenvalues and ``\mathbf{V}_i`` the corresponding eigentensors.
 
 ```@docs
 Tensors.eigen
