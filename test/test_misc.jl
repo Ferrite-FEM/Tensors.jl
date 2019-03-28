@@ -19,6 +19,12 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
             (@inferred (op)(Vec{dim, T}))::Tensor{order, dim, T}
         end
     end
+    # Special Vec constructor
+    if order == 1
+        t = ntuple(i -> T(i), dim)
+        @test (@inferred Vec(t))::Tensor{1,dim,T,dim} == Vec{dim}(t)
+        @test (@inferred Vec(t...))::Tensor{1,dim,T,dim} == Vec{dim}(t)
+    end
     for TensorType in (Tensor, SymmetricTensor), (func, el) in ((zeros, zero), (ones, one))
         TensorType == SymmetricTensor && order == 1 && continue
         order == 1 && func == ones && continue # one not supported for Vec's
@@ -32,9 +38,6 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
     end
 end
 end # of testset
-
-@test Vec((1.0,2.0,3.0)) == Vec{3}((1.0,2.0,3.0))
-@test Vec(1.0,2.0,3.0) == Vec{3}((1.0,2.0,3.0))
 
 @testsection "diagm, one" begin
 for T in (Float32, Float64), dim in (1,2,3)
@@ -144,7 +147,7 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Te
 end
 end # of testset
 
-@testsection "constrct func" begin
+@testsection "construct from function" begin
 for T in (Float32, Float64, F64)
     for dim in (1,2,3)
         fi = (i) -> cos(i)
@@ -179,7 +182,7 @@ for T in (Float32, Float64, F64)
 end
 end # of testset
 
-@testsection "constrct Arr" begin
+@testsection "construct from Array" begin
 for (T1, T2) in ((Float32, Float64), (Float64, Float32)), order in (1,2,4), dim in (1,2,3)
     At = rand(Tensor{order, dim})
     gen_data = rand(T1, size(At))
