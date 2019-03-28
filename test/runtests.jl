@@ -5,17 +5,15 @@ using LinearAlgebra
 using Random
 using Statistics: mean
 
-# macro testsection(str, block)
-#     return quote
-#         @timeit $str begin
-#             @testset $str begin
-#                 println($str)
-#                 $(esc(block))
-#             end
-#         end
-#     end
-# end
-@eval const $(Symbol("@testsection")) = $(Symbol("@testset"))
+macro testsection(str, block)
+    return quote
+        @timeit "$($(esc(str)))" begin
+            @testset "$($(esc(str)))" begin
+                $(esc(block))
+            end
+        end
+    end
+end
 
 reset_timer!()
 
@@ -26,6 +24,3 @@ include("test_ad.jl")
 
 print_timer()
 println()
-
-# Build the docs
-include("../docs/make.jl")
