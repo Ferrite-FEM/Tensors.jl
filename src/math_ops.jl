@@ -158,26 +158,33 @@ end
 Base.:\(S1::SecondOrderTensor, S2::AbstractTensor) = inv(S1) ⋅ S2
 
 """
-    eigvals(::SymmetricTensor{2})
+    eigvals(::SymmetricTensor)
 
-Compute the eigenvalues of a symmetric second order tensor.
+Compute the eigenvalues of a symmetric tensor.
 """
-@inline LinearAlgebra.eigvals(S::SymmetricTensor) = (E = eigen(S); E.values)
+@inline LinearAlgebra.eigvals(S::SymmetricTensor) = eigvals(eigen(S))
 
 """
-    eigvecs(::SymmetricTensor{2})
+    eigvecs(::SymmetricTensor)
 
-Compute the eigenvectors of a symmetric second order tensor.
+Compute the eigenvectors of a symmetric tensor.
 """
-@inline LinearAlgebra.eigvecs(S::SymmetricTensor) = (E = eigen(S); E.vectors)
+@inline LinearAlgebra.eigvecs(S::SymmetricTensor) = eigvecs(eigen(S))
 
 struct Eigen{T, dim, M}
     values::Vec{dim, T}
     vectors::Tensor{2, dim, T, M}
 end
 
+struct FourthOrderEigen{dim,T,M}
+    values::Vector{T}
+    vectors::Vector{SymmetricTensor{2,dim,T,M}}
+end
+
 # destructure via iteration
-Base.iterate(E::Eigen, state::Int=1) = iterate((E.values, E.vectors), state)
+function Base.iterate(E::Union{Eigen,FourthOrderEigen}, state::Int=1)
+    return iterate((eigvals(E), eigvecs(E)), state)
+end
 
 """
     eigen(A::SymmetricTensor{2})
@@ -207,20 +214,42 @@ julia> E.vectors
   0.712756  0.701412
 ```
 """
-LinearAlgebra.eigen
+LinearAlgebra.eigen(::SymmetricTensor{2})
 
 """
-    eigvals(::Eigen)
+    eigvals(::Union{Eigen,FourthOrderEigen})
 
-Extract eigenvalues from an `Eigen` object, returned by [`eigen`](@ref).
+Extract eigenvalues from an `Eigen` or `FourthOrderEigen` object,
+returned by [`eigen`](@ref).
 """
-@inline LinearAlgebra.eigvals(E::Eigen) = E.values
+@inline LinearAlgebra.eigvals(E::Union{Eigen,FourthOrderEigen}) = E.values
 """
-    eigvecs(::Eigen)
+    eigvecs(::Union{Eigen,FourthOrderEigen})
 
-Extract eigenvectors from an `Eigen` object, returned by [`eigen`](@ref).
+Extract eigenvectors from an `Eigen` or `FourthOrderEigen` object,
+returned by [`eigen`](@ref).
 """
-@inline LinearAlgebra.eigvecs(E::Eigen) = E.vectors
+@inline LinearAlgebra.eigvecs(E::Union{Eigen,FourthOrderEigen}) = E.vectors
+
+"""
+    eigen(A::SymmetricTensor{4})
+
+Compute the eigenvalues and second order eigentensors of a symmetric fourth
+order tensor and return an `FourthOrderEigen` object. The eigenvalues and
+eigentensors are sorted in ascending order of the eigenvalues.
+
+See also [`eigvals`](@ref) and [`eigvecs`](@ref).
+"""
+function LinearAlgebra.eigen(S::SymmetricTensor{4,dim,T}) where {dim,T}
+    # Scale from the right only; tovoigt(S; offdiagscale=2) scales from left and right.
+    S′ = SymmetricTensor{4,dim,T}((i,j,k,l) -> k == l ? S[i,j,k,l] : 2*S[i,j,k,l])
+    v = tovoigt(S′)
+    E = eigen(v)
+    perm = sortperm(E.values)
+    values = T[E.values[i] for i in perm]
+    vectors = [fromvoigt(SymmetricTensor{2,dim,T}, view(E.vectors, :, i)) for i in perm]
+    return FourthOrderEigen(values, vectors)
+end
 
 """
     sqrt(S::SymmetricTensor{2})
