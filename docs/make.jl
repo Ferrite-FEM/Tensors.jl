@@ -1,5 +1,14 @@
 using Documenter, Tensors
 
+# Setup for doctests in docstrings
+DocMeta.setdocmeta!(Tensors, :DocTestSetup,
+    quote
+        using Random
+        Random.seed!(1234)
+        using Tensors
+    end
+)
+
 makedocs(
     format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
     modules = [Tensors],
