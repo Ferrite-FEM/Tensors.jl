@@ -154,6 +154,74 @@ julia> otimes(A)
 end
 
 """
+    otimesu(::SecondOrderTensor, ::SecondOrderTensor)
+
+Compute the "upper" open product between two tensors.
+
+# Examples
+```jldoctest
+julia> A = rand(SymmetricTensor{2, 2});
+
+julia> B = rand(SymmetricTensor{2, 2});
+
+julia> otimesu(A, B)
+2×2×2×2 Tensor{4,2,Float64,16}:
+[:, :, 1, 1] =
+ 0.271839  0.469146
+ 0.352792  0.608857
+
+[:, :, 2, 1] =
+ 0.352792  0.608857
+ 0.260518  0.449607
+
+[:, :, 1, 2] =
+ 0.469146  0.504668
+ 0.608857  0.654957
+
+[:, :, 2, 2] =
+ 0.608857  0.654957
+ 0.449607  0.48365
+```
+"""
+@inline function otimesu(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
+    return Tensor{4, dim}((i,j,k,l) -> S1[i,k] * S2[j,l])
+end
+
+"""
+    otimesl(::SecondOrderTensor, ::SecondOrderTensor)
+
+Compute the "lower" open product between two tensors.
+
+# Examples
+```jldoctest
+julia> A = rand(SymmetricTensor{2, 2});
+
+julia> B = rand(SymmetricTensor{2, 2});
+
+julia> otimesl(A, B)
+2×2×2×2 Tensor{4,2,Float64,16}:
+[:, :, 1, 1] =
+ 0.271839  0.469146
+ 0.352792  0.608857
+
+[:, :, 2, 1] =
+ 0.469146  0.504668
+ 0.608857  0.654957
+
+[:, :, 1, 2] =
+ 0.352792  0.608857
+ 0.260518  0.449607
+
+[:, :, 2, 2] =
+ 0.608857  0.654957
+ 0.449607  0.48365
+```
+"""
+@inline function otimesl(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
+    return Tensor{4, dim}((i,j,k,l) -> S1[i,l] * S2[j,k])
+end
+
+"""
     dot(::Vec, ::Vec)
     dot(::Vec, ::SecondOrderTensor)
     dot(::SecondOrderTensor, ::Vec)

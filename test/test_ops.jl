@@ -48,15 +48,27 @@ i,j,k,l = rand(1:dim,4)
     @test (@inferred dcontract(A_sym, B_sym))::T ≈ sum(vec(A_sym) .* vec(B_sym))
 end # of testsection
 
-@testsection "outer product" begin
-    # binary
+@testsection "outer products (otimes, otimesu, otimesl)" begin
+    # binary otimes
     @test             (@inferred otimes(a, b))::Tensor{2, dim, T}                                  ≈ Array(a) * Array(b)'
     @test reshape(vec((@inferred otimes(A, B))::Tensor{4, dim, T}), dim^2, dim^2)                  ≈ vec(A) * vec(B)'
     @test reshape(vec((@inferred otimes(A_sym, B))::Tensor{4, dim, T}), dim^2, dim^2)              ≈ vec(A_sym) * vec(B)'
     @test reshape(vec((@inferred otimes(A, B_sym))::Tensor{4, dim, T}), dim^2, dim^2)              ≈ vec(A) * vec(B_sym)'
     @test reshape(vec((@inferred otimes(A_sym, B_sym))::SymmetricTensor{4, dim, T}), dim^2, dim^2) ≈ vec(A_sym) * vec(B_sym)'
-    # unary
+    # unary otimes
     @test (@inferred otimes(a))::SymmetricTensor{2, dim, T} ≈ otimes(a, a)
+
+    # binary otimesu
+    @test (@inferred otimesu(A, B))::Tensor{4, dim, T}         ≈ _permutedims(otimes(A, B), (1,3,2,4))
+    @test (@inferred otimesu(A_sym, B))::Tensor{4, dim, T}     ≈ _permutedims(otimes(A_sym, B), (1,3,2,4))
+    @test (@inferred otimesu(A, B_sym))::Tensor{4, dim, T}     ≈ _permutedims(otimes(A, B_sym), (1,3,2,4))
+    @test (@inferred otimesu(A_sym, B_sym))::Tensor{4, dim, T} ≈ _permutedims(otimes(A_sym, B_sym), (1,3,2,4))
+
+    # binary otimesl
+    @test (@inferred otimesl(A, B))::Tensor{4, dim, T}         ≈ _permutedims(otimes(A, B), (1,3,4,2))
+    @test (@inferred otimesl(A_sym, B))::Tensor{4, dim, T}     ≈ _permutedims(otimes(A_sym, B), (1,3,4,2))
+    @test (@inferred otimesl(A, B_sym))::Tensor{4, dim, T}     ≈ _permutedims(otimes(A, B_sym), (1,3,4,2))
+    @test (@inferred otimesl(A_sym, B_sym))::Tensor{4, dim, T} ≈ _permutedims(otimes(A_sym, B_sym), (1,3,4,2))
 end # of testsection
 
 @testsection "dot products" begin

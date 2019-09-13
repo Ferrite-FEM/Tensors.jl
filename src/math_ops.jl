@@ -200,8 +200,7 @@ See [`eigvals`](@ref) and [`eigvecs`](@ref).
 ```jldoctest
 julia> A = rand(SymmetricTensor{2, 2});
 
-julia> E = eigen(A)
-Tensors.Eigen{Float64,2,4}([-0.188355, 1.34544], [-0.701412 0.712756; 0.712756 0.701412])
+julia> E = eigen(A);
 
 julia> E.values
 2-element Tensor{1,2,Float64,2}:
