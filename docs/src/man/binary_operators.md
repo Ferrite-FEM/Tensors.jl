@@ -65,3 +65,19 @@ and open product between two second order tensors ``\mathbf{B}`` and ``\mathbf{C
 ```@docs
 otimes
 ```
+
+### Permuted tensor products
+
+Two commonly used permutations of the open product are the "upper" open product
+(``\bar{\otimes}``) and "lower" open product (``\underline{\otimes}``) defined
+between second order tensors ``\mathbf{B}`` and ``\mathbf{C}`` as
+
+```math
+\mathsf{A} = \mathbf{B} \bar{\otimes} \mathbf{C} \Leftrightarrow A_{ijkl} = B_{ik} C_{jl}\\
+\mathsf{A} = \mathbf{B} \underline{\otimes} \mathbf{C} \Leftrightarrow A_{ijkl} = B_{il} C_{jk}
+```
+
+```@docs
+otimesu
+otimesl
+```

@@ -13,6 +13,7 @@ export ⋅, ×, dot, diagm, tr, det, norm, eigvals, eigvecs, eigen
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
 export otimes, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
+export otimesu, otimesl
 export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric
 export tdot, dott, dotdot
 export hessian, gradient, curl, divergence, laplace
