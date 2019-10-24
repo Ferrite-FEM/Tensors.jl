@@ -210,12 +210,23 @@ end
 @testsection "tovoigt/fromvoigt" begin
     T2 = T(2)
     @test (@inferred tovoigt(AA)) * (@inferred tovoigt(A)) ≈ tovoigt(AA ⊡ A)
-    @test (@inferred tovoigt(AA_sym)) * (@inferred tovoigt(A_sym, offdiagscale = T2)) ≈ tovoigt(AA_sym ⊡ A_sym)
+    @test (@inferred tovoigt(AA_sym)) * (@inferred tovoigt(A_sym, offdiagscale=T2)) ≈ tovoigt(AA_sym ⊡ A_sym)
+
+    nc(x::SecondOrderTensor) = length(x.data)
+    nc(x::FourthOrderTensor) = Int(sqrt(length(x.data)))
+    x = zeros(T, nc(A) + 1); tovoigt!(x, A; offset=1)
+    @test x[2:end] == tovoigt(A)
+    x = zeros(T, nc(A_sym) + 1); tovoigt!(x, A_sym; offset=1)
+    @test x[2:end] == tovoigt(A_sym)
+    x = zeros(T, nc(AA) + 1, nc(AA) + 1); tovoigt!(x, AA; offset_i=1, offset_j=1)
+    @test x[2:end, 2:end] == tovoigt(AA)
+    x = zeros(T, nc(AA_sym) + 1, nc(AA_sym) + 1); tovoigt!(x, AA_sym; offset_i=1, offset_j=1)
+    @test x[2:end, 2:end] == tovoigt(AA_sym)
 
     @test (@inferred fromvoigt(Tensor{2,dim}, tovoigt(A))) ≈ A
     @test (@inferred fromvoigt(Tensor{4,dim}, tovoigt(AA))) ≈ AA
-    @test (@inferred fromvoigt(SymmetricTensor{2,dim}, tovoigt(A_sym, offdiagscale = T2), offdiagscale = T2)) ≈ A_sym
-    @test (@inferred fromvoigt(SymmetricTensor{4,dim}, tovoigt(AA_sym, offdiagscale = T2), offdiagscale = T2)) ≈ AA_sym
+    @test (@inferred fromvoigt(SymmetricTensor{2,dim}, tovoigt(A_sym, offdiagscale=T2), offdiagscale=T2)) ≈ A_sym
+    @test (@inferred fromvoigt(SymmetricTensor{4,dim}, tovoigt(AA_sym, offdiagscale=T2), offdiagscale=T2)) ≈ AA_sym
 
     @test (@inferred tomandel(AA_sym)) * (@inferred tomandel(A_sym)) ≈ tomandel(AA_sym ⊡ A_sym)
     @test (@inferred frommandel(SymmetricTensor{2,dim}, tomandel(A_sym))) ≈ A_sym
