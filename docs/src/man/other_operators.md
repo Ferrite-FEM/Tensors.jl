@@ -227,9 +227,15 @@ For computing a special dot product between two vectors ``\mathbf{a}`` and ``\ma
 Tensors.dotdot
 ```
 
-## Voigt
+## Voigt format
+
+For some operations it is convenient to easily switch to the so called "Voigt"-format.
+For example when solving a local problem in a plasticity model. To simplify the conversion
+between tensors and Voigt format, see [`tovoigt`](@ref), [`tovoigt!`](@ref) and
+[`fromvoigt`](@ref) documented below.
 
 ```@docs
 Tensors.tovoigt
+Tensors.tovoigt!
 Tensors.fromvoigt
 ```
