@@ -208,6 +208,8 @@ if dim == 3
 end
 
 @testsection "tovoigt/fromvoigt" begin
+    # https://classes.engineering.wustl.edu/2009/spring/mase5513/abaqus/docs/v6.6/books/usb/default.htm?startat=pt01ch01s02aus02.html
+    abaqus = dim == 1 ? fill(1, 1, 1) : dim == 2 ? [1 3; 0 2] : [1 4 6; 0 2 5; 0 0 3]
     T2 = T(2)
     @test (@inferred tovoigt(AA)) * (@inferred tovoigt(A)) ≈ tovoigt(AA ⊡ A)
     @test (@inferred tovoigt(AA_sym)) * (@inferred tovoigt(A_sym, offdiagscale=T2)) ≈ tovoigt(AA_sym ⊡ A_sym)
@@ -227,6 +229,9 @@ end
     @test (@inferred fromvoigt(Tensor{4,dim}, tovoigt(AA))) ≈ AA
     @test (@inferred fromvoigt(SymmetricTensor{2,dim}, tovoigt(A_sym, offdiagscale=T2), offdiagscale=T2)) ≈ A_sym
     @test (@inferred fromvoigt(SymmetricTensor{4,dim}, tovoigt(AA_sym, offdiagscale=T2), offdiagscale=T2)) ≈ AA_sym
+
+    @test (@inferred fromvoigt(SymmetricTensor{2,dim}, tovoigt(A_sym; order=abaqus); order=abaqus)) ≈ A_sym
+    @test (@inferred fromvoigt(SymmetricTensor{4,dim}, tovoigt(AA_sym; order=abaqus); order=abaqus)) ≈ AA_sym
 
     @test (@inferred tomandel(AA_sym)) * (@inferred tomandel(A_sym)) ≈ tomandel(AA_sym ⊡ A_sym)
     @test (@inferred frommandel(SymmetricTensor{2,dim}, tomandel(A_sym))) ≈ A_sym
