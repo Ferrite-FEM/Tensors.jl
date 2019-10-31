@@ -24,6 +24,20 @@ end
 @inline function _extract_gradient(v::Dual, ::Number)
     return @inbounds partials(v)[1]
 end
+# Vec, Tensor{2/4}, SymmetricTensor{2/4} output, Scalar input -> Vec, Tensor{2/4}, SymmetricTensor{2/4} gradient
+@generated function _extract_gradient(v::AbstractTensor{order,dim,<:Dual}, ::Number) where {order,dim}
+    TensorType = get_base(v)
+    ex = Expr(:tuple)
+    for i in 1:n_components(TensorType)
+        # Can use linear indexing even for SymmetricTensor
+        # when indexing the underlying tuple
+        push!(ex.args, :(partials(get_data(v)[$i])[1]))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($ex)
+    end
+end
 # Scalar output, Vec input -> Vec gradient
 @inline function _extract_gradient(v::Dual, ::Vec{N}) where {N}
     return Vec{N}(partials(v).values)
