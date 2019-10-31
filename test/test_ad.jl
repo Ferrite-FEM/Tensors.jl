@@ -167,4 +167,15 @@ S(C) = S(C, μ, Kb)
         @test hessian(f, x, :all)[2] ≈ gradient(f, x) ≈ 6 * x^2
         @test hessian(f, x, :all)[3] ≈ gradient(f, x, :all)[2] ≈ 2 * x^3
     end
+    @testsection "f: scalar -> AbstractTensor" begin
+        for dim in 1:3, S in (rand(Vec{dim}), rand(Tensor{2,dim}), rand(SymmetricTensor{2,dim}))
+            f(x) = x^3 * S
+            x = 3.0
+            @test gradient(f, x) ≈ gradient(f, x, :all)[1] ≈ 3 * x^2 * S
+            @test gradient(f, x, :all)[2] ≈ f(x) ≈ x^3 * S
+            @test hessian(f, x) ≈ hessian(f, x, :all)[1] ≈ 6 * x * S
+            @test hessian(f, x, :all)[2] ≈ gradient(f, x) ≈ 3 * x^2 * S
+            @test hessian(f, x, :all)[3] ≈ f(x) ≈ x^3 * S
+        end
+    end
 end # testsection

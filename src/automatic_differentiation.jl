@@ -16,19 +16,33 @@ end
 # norm(v) and det(T) where v is a vector and T is a second order tensor.
 # For dim = 1 the type is exactly the same.
 
-# Scalar
-@inline function _extract_value(v::Dual, ::Union{Number,Vec,SecondOrderTensor})
+# Scalar output -> Scalar value
+@inline function _extract_value(v::Dual, ::Any)
     return value(v)
 end
-
+# Scalar output, Scalar input -> Scalar gradient
 @inline function _extract_gradient(v::Dual, ::Number)
     return @inbounds partials(v)[1]
 end
-
+# Vec, Tensor{2/4}, SymmetricTensor{2/4} output, Scalar input -> Vec, Tensor{2/4}, SymmetricTensor{2/4} gradient
+@generated function _extract_gradient(v::AbstractTensor{order,dim,<:Dual}, ::Number) where {order,dim}
+    TensorType = get_base(v)
+    ex = Expr(:tuple)
+    for i in 1:n_components(TensorType)
+        # Can use linear indexing even for SymmetricTensor
+        # when indexing the underlying tuple
+        push!(ex.args, :(partials(get_data(v)[$i])[1]))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($ex)
+    end
+end
+# Scalar output, Vec input -> Vec gradient
 @inline function _extract_gradient(v::Dual, ::Vec{N}) where {N}
     return Vec{N}(partials(v).values)
 end
-
+# Scalar output, SecondOrderTensor input -> SecondOrderTensor gradient
 @inline function _extract_gradient(v::Dual, ::SymmetricTensor{2, dim}) where {dim}
     return SymmetricTensor{2, dim}(partials(v).values)
 end
@@ -36,7 +50,7 @@ end
     return Tensor{2, dim}(partials(v).values)
 end
 
-# Vec
+# Vec output -> Vec value
 @inline function _extract_value(v::Vec{1, <: Dual}, ::Any)
     @inbounds begin
         v1 = value(v[1])
@@ -44,6 +58,7 @@ end
     end
     return f
 end
+# Vec output, Vec input -> Tensor{2} gradient
 @inline function _extract_gradient(v::Vec{1, <: Dual}, ::Vec{1})
     @inbounds begin
         p1 = partials(v[1])
@@ -51,7 +66,7 @@ end
     end
     return ∇f
 end
-
+# Vec output -> Vec value
 @inline function _extract_value(v::Vec{2, <: Dual}, ::Any)
     @inbounds begin
         v1, v2 = value(v[1]), value(v[2])
@@ -59,6 +74,7 @@ end
     end
     return f
 end
+# Vec output, Vec input -> Tensor{2} gradient
 @inline function _extract_gradient(v::Vec{2, <: Dual}, ::Vec{2})
     @inbounds begin
         p1, p2 = partials(v[1]), partials(v[2])
@@ -66,7 +82,7 @@ end
     end
     return ∇f
 end
-
+# Vec output -> Vec value
 @inline function _extract_value(v::Vec{3, <: Dual}, ::Any)
     @inbounds begin
         v1, v2, v3 = value(v[1]), value(v[2]), value(v[3])
@@ -74,6 +90,7 @@ end
     end
     return f
 end
+# Vec output, Vec input -> Tensor{2} gradient
 @inline function _extract_gradient(v::Vec{3, <: Dual}, ::Vec{3})
     @inbounds begin
         p1, p2, p3 = partials(v[1]), partials(v[2]), partials(v[3])
@@ -82,7 +99,7 @@ end
     return ∇f
 end
 
-# Second order tensor
+# Tensor{2} output -> Tensor{2} value
 @inline function _extract_value(v::Tensor{2, 1, <: Dual}, ::Any)
     @inbounds begin
         v1 = value(v[1,1])
@@ -90,6 +107,7 @@ end
     end
     return f
 end
+# Tensor{2} output, Tensor{2} input -> Tensor{4} gradient
 @inline function _extract_gradient(v::Tensor{2, 1, <: Dual}, ::Tensor{2, 1})
     @inbounds begin
         p1 = partials(v[1,1])
@@ -97,7 +115,7 @@ end
     end
     return ∇f
 end
-
+# SymmetricTensor{2} output -> SymmetricTensor{2} value
 @inline function _extract_value(v::SymmetricTensor{2, 1, <: Dual}, ::Any)
     @inbounds begin
         v1 = value(v[1,1])
@@ -105,6 +123,7 @@ end
     end
     return f
 end
+# SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
 @inline function _extract_gradient(v::SymmetricTensor{2, 1, <: Dual}, ::SymmetricTensor{2, 1})
     @inbounds begin
         p1 = partials(v[1,1])
@@ -112,7 +131,7 @@ end
     end
     return ∇f
 end
-
+# Tensor{2} output -> Tensor{2} value
 @inline function _extract_value(v::Tensor{2, 2, <: Dual}, ::Any)
     @inbounds begin
         v1, v2, v3, v4 = value(v[1,1]), value(v[2,1]), value(v[1,2]), value(v[2,2])
@@ -120,6 +139,7 @@ end
     end
     return f
 end
+# Tensor{2} output, Tensor{2} input -> Tensor{4} gradient
 @inline function _extract_gradient(v::Tensor{2, 2, <: Dual}, ::Tensor{2, 2})
     @inbounds begin
         p1, p2, p3, p4 = partials(v[1,1]), partials(v[2,1]), partials(v[1,2]), partials(v[2,2])
@@ -130,7 +150,7 @@ end
     end
     return ∇f
 end
-
+# SymmetricTensor{2} output -> SymmetricTensor{2} value
 @inline function _extract_value(v::SymmetricTensor{2, 2, <: Dual}, ::Any)
     @inbounds begin
         v1, v2, v3 = value(v[1,1]), value(v[2,1]), value(v[2,2])
@@ -138,6 +158,7 @@ end
     end
     return f
 end
+# SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
 @inline function _extract_gradient(v::SymmetricTensor{2, 2, <: Dual}, ::SymmetricTensor{2, 2})
     @inbounds begin
         p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[2,2])
@@ -147,7 +168,7 @@ end
     end
     return ∇f
 end
-
+# Tensor{2} output -> Tensor{2} value
 @inline function _extract_value(v::Tensor{2, 3, <: Dual}, ::Any)
     @inbounds begin
         v1, v2, v3 = value(v[1,1]), value(v[2,1]), value(v[3,1])
@@ -157,6 +178,7 @@ end
     end
     return f
 end
+# Tensor{2} output, Tensor{2} input -> Tensor{4} gradient
 @inline function _extract_gradient(v::Tensor{2, 3, <: Dual}, ::Tensor{2, 3})
     @inbounds begin
         p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[3,1])
@@ -174,7 +196,7 @@ end
     end
     return ∇f
 end
-
+# SymmetricTensor{2} output -> SymmetricTensor{2} value
 @inline function _extract_value(v::SymmetricTensor{2, 3, <: Dual}, ::Any)
     @inbounds begin
         v1, v2, v3 = value(v[1,1]), value(v[2,1]), value(v[3,1])
@@ -183,6 +205,7 @@ end
     end
     return f
 end
+# SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
 @inline function _extract_gradient(v::SymmetricTensor{2, 3, <: Dual}, ::SymmetricTensor{2, 3})
     @inbounds begin
         p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[3,1])
