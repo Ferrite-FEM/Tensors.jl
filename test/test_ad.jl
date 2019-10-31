@@ -157,4 +157,14 @@ S(C) = S(C, μ, Kb)
             @test laplace.(x -> curl(A, x), x) ≈ -curl(x -> curl(x -> curl(A, x), x), x) ≈ curl(x -> laplace.(A, x), x)
         end # loop T
     end # testsection
+
+    @testsection "f: scalar -> scalar" begin
+        f(x) = 2 * x^3
+        x = 3.0
+        @test gradient(f, x) ≈ gradient(f, x, :all)[1] ≈ 6 * x^2
+        @test gradient(f, x, :all)[2] ≈ f(x) ≈ 2 * x^3
+        @test hessian(f, x) ≈ hessian(f, x, :all)[1] ≈ 12 * x
+        @test hessian(f, x, :all)[2] ≈ gradient(f, x) ≈ 6 * x^2
+        @test hessian(f, x, :all)[3] ≈ gradient(f, x, :all)[2] ≈ 2 * x^3
+    end
 end # testsection
