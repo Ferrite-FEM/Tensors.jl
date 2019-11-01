@@ -7,7 +7,7 @@ julia&gt; ∇f = gradient(norm, A)
  0.434906  0.56442
  0.56442   0.416793
 
-julia&gt; ∇f, f = gradient(norm, A, :all);</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/KristofferC/Tensors.jl/blob/74e9eea935210688742267efe0e00af684e4b345/src/automatic_differentiation.jl#L338-L356">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="Tensors.hessian" href="#Tensors.hessian"><code>Tensors.hessian</code></a> — <span class="docstring-category">Function</span>.</div><div><div><pre><code class="language-julia">hessian(f::Function, v::Union{SecondOrderTensor, Vec, Number})
+julia&gt; ∇f, f = gradient(norm, A, :all);</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/KristofferC/Tensors.jl/blob/3f9be85fecb19d9b0ac311a3aeb9ffc534c727b9/src/automatic_differentiation.jl#L285-L303">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="Tensors.hessian" href="#Tensors.hessian"><code>Tensors.hessian</code></a> — <span class="docstring-category">Function</span>.</div><div><div><pre><code class="language-julia">hessian(f::Function, v::Union{SecondOrderTensor, Vec, Number})
 hessian(f::Function, v::Union{SecondOrderTensor, Vec, Number}, :all)</code></pre><p>Computes the hessian of the input function. If the (pseudo)-keyword <code>all</code> is given, the lower order results (gradient and value) of the function is also returned as a second and third output argument.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; A = rand(SymmetricTensor{2, 2});
 
 julia&gt; ∇∇f = hessian(norm, A)
@@ -28,12 +28,12 @@ julia&gt; ∇∇f = hessian(norm, A)
  -0.133425  -0.173159
  -0.173159   0.608207
 
-julia&gt; ∇∇f, ∇f, f = hessian(norm, A, :all);</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/KristofferC/Tensors.jl/blob/74e9eea935210688742267efe0e00af684e4b345/src/automatic_differentiation.jl#L369-L401">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="Tensors.divergence" href="#Tensors.divergence"><code>Tensors.divergence</code></a> — <span class="docstring-category">Function</span>.</div><div><div><pre><code class="language-julia">divergence(f, x)</code></pre><p>Calculate the divergence of the vector field <code>f</code>, in the point <code>x</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; f(x) = 2x;
+julia&gt; ∇∇f, ∇f, f = hessian(norm, A, :all);</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/KristofferC/Tensors.jl/blob/3f9be85fecb19d9b0ac311a3aeb9ffc534c727b9/src/automatic_differentiation.jl#L316-L348">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="Tensors.divergence" href="#Tensors.divergence"><code>Tensors.divergence</code></a> — <span class="docstring-category">Function</span>.</div><div><div><pre><code class="language-julia">divergence(f, x)</code></pre><p>Calculate the divergence of the vector field <code>f</code>, in the point <code>x</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; f(x) = 2x;
 
 julia&gt; x = rand(Vec{3});
 
 julia&gt; divergence(f, x)
-6.0</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/KristofferC/Tensors.jl/blob/74e9eea935210688742267efe0e00af684e4b345/src/automatic_differentiation.jl#L413-L427">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="Tensors.curl" href="#Tensors.curl"><code>Tensors.curl</code></a> — <span class="docstring-category">Function</span>.</div><div><div><pre><code class="language-julia">curl(f, x)</code></pre><p>Calculate the curl of the vector field <code>f</code>, in the point <code>x</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; f(x) = Vec{3}((x[2], x[3], -x[1]));
+6.0</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/KristofferC/Tensors.jl/blob/3f9be85fecb19d9b0ac311a3aeb9ffc534c727b9/src/automatic_differentiation.jl#L360-L374">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="Tensors.curl" href="#Tensors.curl"><code>Tensors.curl</code></a> — <span class="docstring-category">Function</span>.</div><div><div><pre><code class="language-julia">curl(f, x)</code></pre><p>Calculate the curl of the vector field <code>f</code>, in the point <code>x</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; f(x) = Vec{3}((x[2], x[3], -x[1]));
 
 julia&gt; x = rand(Vec{3});
 
@@ -41,7 +41,7 @@ julia&gt; curl(f, x)
 3-element Tensor{1,3,Float64,3}:
  -1.0
   1.0
- -1.0</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/KristofferC/Tensors.jl/blob/74e9eea935210688742267efe0e00af684e4b345/src/automatic_differentiation.jl#L430-L447">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="Tensors.laplace" href="#Tensors.laplace"><code>Tensors.laplace</code></a> — <span class="docstring-category">Function</span>.</div><div><div><pre><code class="language-julia">laplace(f, x)</code></pre><p>Calculate the laplacian of the field <code>f</code>, in the point <code>x</code>. If <code>f</code> is a vector field, use broadcasting.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; x = rand(Vec{3});
+ -1.0</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/KristofferC/Tensors.jl/blob/3f9be85fecb19d9b0ac311a3aeb9ffc534c727b9/src/automatic_differentiation.jl#L377-L394">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="Tensors.laplace" href="#Tensors.laplace"><code>Tensors.laplace</code></a> — <span class="docstring-category">Function</span>.</div><div><div><pre><code class="language-julia">laplace(f, x)</code></pre><p>Calculate the laplacian of the field <code>f</code>, in the point <code>x</code>. If <code>f</code> is a vector field, use broadcasting.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; x = rand(Vec{3});
 
 julia&gt; f(x) = norm(x);
 
@@ -54,7 +54,7 @@ julia&gt; laplace.(g, x)
 3-element Tensor{1,3,Float64,3}:
  2.107389336871036
  2.7349658311504834
- 2.019621767876747</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/KristofferC/Tensors.jl/blob/74e9eea935210688742267efe0e00af684e4b345/src/automatic_differentiation.jl#L458-L481">source</a></section><h2><a class="nav-anchor" id="Examples-1" href="#Examples-1">Examples</a></h2><p>We here give a few examples of differentiating various functions and compare with the analytical solution.</p><h3><a class="nav-anchor" id="Norm-of-a-vector-1" href="#Norm-of-a-vector-1">Norm of a vector</a></h3><div>\[f(\mathbf{x}) = |\mathbf{x}| \quad \Rightarrow \quad \partial f / \partial \mathbf{x} = \mathbf{x} / |\mathbf{x}|\]</div><pre><code class="language-julia-repl">julia&gt; x = rand(Vec{2});
+ 2.019621767876747</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/KristofferC/Tensors.jl/blob/3f9be85fecb19d9b0ac311a3aeb9ffc534c727b9/src/automatic_differentiation.jl#L405-L428">source</a></section><h2><a class="nav-anchor" id="Examples-1" href="#Examples-1">Examples</a></h2><p>We here give a few examples of differentiating various functions and compare with the analytical solution.</p><h3><a class="nav-anchor" id="Norm-of-a-vector-1" href="#Norm-of-a-vector-1">Norm of a vector</a></h3><div>\[f(\mathbf{x}) = |\mathbf{x}| \quad \Rightarrow \quad \partial f / \partial \mathbf{x} = \mathbf{x} / |\mathbf{x}|\]</div><pre><code class="language-julia-repl">julia&gt; x = rand(Vec{2});
 
 julia&gt; gradient(norm, x)
 2-element Tensor{1,2,Float64,2}:
