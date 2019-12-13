@@ -9,6 +9,8 @@ using Statistics: mean
 using LinearAlgebra
 # re-exports from LinearAlgebra
 export ⋅, ×, dot, diagm, tr, det, norm, eigvals, eigvecs, eigen
+# re-exports from Statistics
+export mean
 
 export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
 
