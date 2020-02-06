@@ -37,6 +37,27 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
         @test eltype(tens_arr2) == eltype(tens_arr3) == TensorType{order, dim, T, N}
     end
 end
+for dim in (1, 2, 3)
+    # Heterogeneous tuple/type unstable function
+    z(i, jkl...) = i % 2 == 0 ? 0 : float(0)
+    @test Vec{dim}(ntuple(z, dim))::Vec{dim,Float64} ==
+          Vec{dim}(z)::Vec{dim,Float64}
+    # @test Vec{dim,Float32}(ntuple(z, dim))::Vec{dim,Float32} ==
+    #       Vec{dim,Float32}(z)::Vec{dim,Float32}
+    for order in (1, 2, 4)
+        N = Tensors.n_components(Tensor{order,dim})
+        @test Tensor{order,dim}(ntuple(z, N))::Tensor{order,dim,Float64} ==
+              Tensor{order,dim}(z)::Tensor{order,dim,Float64}
+        @test Tensor{order,dim,Float32}(ntuple(z, N))::Tensor{order,dim,Float32} ==
+              Tensor{order,dim,Float32}(z)::Tensor{order,dim,Float32}
+        order == 1 && continue
+        N = Tensors.n_components(SymmetricTensor{order,dim})
+        @test SymmetricTensor{order,dim}(ntuple(z, N))::SymmetricTensor{order,dim,Float64} ==
+              SymmetricTensor{order,dim}(z)::SymmetricTensor{order,dim,Float64}
+        @test SymmetricTensor{order,dim,Float32}(ntuple(z, N))::SymmetricTensor{order,dim,Float32} ==
+              SymmetricTensor{order,dim,Float32}(z)::SymmetricTensor{order,dim,Float32}
+    end
+end
 end # of testset
 
 @testsection "diagm, one" begin
