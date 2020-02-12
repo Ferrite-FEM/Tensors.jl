@@ -181,6 +181,9 @@ end # of testsection
         ad2 = Vec{3, T}((0.0,1.0,0.0))
         @test (@inferred ad × ad2)::Vec{3, T} ≈ Vec{3, T}((0.0, 0.0, 1.0))
     end
+    if T == Float64 # mixed eltype
+        @test rand(Vec{dim,Float64}) × rand(Vec{dim,Float32}) isa Vec{3,Float64}
+    end
 end # of testsection
 
 @testsection "special" begin
