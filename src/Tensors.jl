@@ -88,7 +88,7 @@ const NonSymmetricTensors{dim, T} = Union{Tensor{2, dim, T}, Tensor{4, dim, T}, 
 ##############################
 # Utility/Accessor Functions #
 ##############################
-get_data(t::AbstractTensor) = t.data
+Base.Tuple(t::AbstractTensor) = t.data
 
 @pure n_components(::Type{SymmetricTensor{2, dim}}) where {dim} = dim*dim - div((dim-1)*dim, 2)
 @pure function n_components(::Type{SymmetricTensor{4, dim}}) where {dim}

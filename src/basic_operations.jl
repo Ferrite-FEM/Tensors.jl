@@ -52,8 +52,8 @@ end
     idxS2(i, j) = compute_index(get_base(S2), i, j)
     exps = Expr(:tuple)
     for j in 1:dim, i in j:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, k))]) for k in 1:dim]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(k, j))]) for k in 1:dim]
+        ex1 = Expr[:(Tuple(S1)[$(idxS1(i, k))]) for k in 1:dim]
+        ex2 = Expr[:(Tuple(S2)[$(idxS2(k, j))]) for k in 1:dim]
         push!(exps.args, reducer(ex1, ex2))
     end
     quote

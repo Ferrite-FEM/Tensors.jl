@@ -93,8 +93,8 @@ end
 ################################
 @inline function Base.:+(S1::TT, S2::TT) where {TT <: AllSIMDTensors}
     @inbounds begin
-        D1 = get_data(S1); SV1 = tosimd(D1)
-        D2 = get_data(S2); SV2 = tosimd(D2)
+        D1 = Tuple(S1); SV1 = tosimd(D1)
+        D2 = Tuple(S2); SV2 = tosimd(D2)
         r = SV1 + SV2
         return get_base(TT)(r)
     end
@@ -103,8 +103,8 @@ end
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D1 = get_data(S1); SV180 = tosimd(D1, Val{1}, Val{80})
-            D2 = get_data(S2); SV280 = tosimd(D2, Val{1}, Val{80})
+            D1 = Tuple(S1); SV180 = tosimd(D1, Val{1}, Val{80})
+            D2 = Tuple(S2); SV280 = tosimd(D2, Val{1}, Val{80})
             r = SV180 + SV280
             r81 = D1[81] + D2[81]
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
@@ -113,8 +113,8 @@ end
 end
 @inline function Base.:-(S1::TT, S2::TT) where {TT <: AllSIMDTensors}
     @inbounds begin
-        D1 = get_data(S1); SV1 = tosimd(D1)
-        D2 = get_data(S2); SV2 = tosimd(D2)
+        D1 = Tuple(S1); SV1 = tosimd(D1)
+        D2 = Tuple(S2); SV2 = tosimd(D2)
         r = SV1 - SV2
         return get_base(TT)(r)
     end
@@ -123,8 +123,8 @@ end
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D1 = get_data(S1); SV180 = tosimd(D1, Val{1}, Val{80})
-            D2 = get_data(S2); SV280 = tosimd(D2, Val{1}, Val{80})
+            D1 = Tuple(S1); SV180 = tosimd(D1, Val{1}, Val{80})
+            D2 = Tuple(S2); SV280 = tosimd(D2, Val{1}, Val{80})
             r = SV180 - SV280
             r81 = D1[81] - D2[81]
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
@@ -137,21 +137,21 @@ end
 ##########################################
 @inline function Base.:*(n::T, S::AllSIMDTensors{T}) where {T <: SIMDTypes}
     @inbounds begin
-        D = get_data(S); SV = tosimd(D)
+        D = Tuple(S); SV = tosimd(D)
         r = n * SV
         return get_base(typeof(S))(r)
     end
 end
 @inline function Base.:*(S::AllSIMDTensors{T}, n::T) where {T <: SIMDTypes}
     @inbounds begin
-        D = get_data(S); SV = tosimd(D)
+        D = Tuple(S); SV = tosimd(D)
         r = SV * n
         return get_base(typeof(S))(r)
     end
 end
 @inline function Base.:/(S::AllSIMDTensors{T}, n::T) where {T <: SIMDTypes}
     @inbounds begin
-        D = get_data(S); SV = tosimd(D)
+        D = Tuple(S); SV = tosimd(D)
         r = SV / n
         return get_base(typeof(S))(r)
     end
@@ -160,7 +160,7 @@ end
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D = get_data(S); SV80 = tosimd(D, Val{1}, Val{80})
+            D = Tuple(S); SV80 = tosimd(D, Val{1}, Val{80})
             r = n * SV80; r81 = n * D[81]
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
         end
@@ -170,7 +170,7 @@ end
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D = get_data(S); SV80 = tosimd(D, Val{1}, Val{80})
+            D = Tuple(S); SV80 = tosimd(D, Val{1}, Val{80})
             r = SV80 * n; r81 = D[81] * n
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
         end
@@ -180,7 +180,7 @@ end
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D = get_data(S); SV80 = tosimd(D, Val{1}, Val{80})
+            D = Tuple(S); SV80 = tosimd(D, Val{1}, Val{80})
             r = SV80 / n; r81 = D[81] / n
             return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
         end
@@ -195,7 +195,7 @@ end
 # 2-1
 @inline function LinearAlgebra.dot(S1::Tensor{2, 2, T}, S2::Vec{2, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1}, Val{2})
         SV12 = tosimd(D1, Val{3}, Val{4})
         r = muladd(SV12, D2[2], SV11 * D2[1])
@@ -204,7 +204,7 @@ end
 end
 @inline function LinearAlgebra.dot(S1::Tensor{2, 3, T}, S2::Vec{3, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1}, Val{3})
         SV12 = tosimd(D1, Val{4}, Val{6})
         SV13 = tosimd(D1, Val{7}, Val{9})
@@ -220,7 +220,7 @@ end
 # 2-2
 @inline function LinearAlgebra.dot(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1}, Val{2})
         SV12 = tosimd(D1, Val{3}, Val{4})
         r1 = muladd(SV12, D2[2], SV11 * D2[1])
@@ -230,7 +230,7 @@ end
 end
 @inline function LinearAlgebra.dot(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1}, Val{3})
         SV12 = tosimd(D1, Val{4}, Val{6})
         SV13 = tosimd(D1, Val{7}, Val{9})
@@ -250,8 +250,8 @@ end
 end
 # 2-2
 @inline function dcontract(S1::Tensor{2, dim, T}, S2::Tensor{2, dim, T}) where {dim, T <: SIMDTypes}
-    SV1 = tosimd(get_data(S1))
-    SV2 = tosimd(get_data(S2))
+    SV1 = tosimd(Tuple(S1))
+    SV2 = tosimd(Tuple(S2))
     r = SV1 * SV2
     return sum(r)
 end
@@ -261,8 +261,8 @@ end
     return quote
         $(Expr(:meta, :inline))
         F = $F
-        SV1 = tosimd(get_data(S1))
-        SV2 = tosimd(get_data(S2))
+        SV1 = tosimd(Tuple(S1))
+        SV2 = tosimd(Tuple(S2))
         SV1SV2 = SV1 * SV2; FSV1SV2 = F * SV1SV2
         return sum(FSV1SV2)
     end
@@ -273,7 +273,7 @@ end
 # 4-2
 @inline function dcontract(S1::Tensor{4, 2, T}, S2::Tensor{2, 2, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1}, Val{4})
         SV12 = tosimd(D1, Val{5}, Val{8})
         SV13 = tosimd(D1, Val{9}, Val{12})
@@ -284,7 +284,7 @@ end
 end
 @inline function dcontract(S1::Tensor{4, 3, T}, S2::Tensor{2, 3, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1},  Val{9})
         SV12 = tosimd(D1, Val{10}, Val{18})
         SV13 = tosimd(D1, Val{19}, Val{27})
@@ -300,7 +300,7 @@ end
 end
 @inline function dcontract(S1::SymmetricTensor{4, 3, T}, S2::SymmetricTensor{2, 3, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1},  Val{6})
         SV12 = tosimd(D1, Val{7},  Val{12})
         SV13 = tosimd(D1, Val{13}, Val{18})
@@ -321,7 +321,7 @@ end
 # 4-4
 @inline function dcontract(S1::Tensor{4, 2, T}, S2::Tensor{4, 2, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1},  Val{4})
         SV12 = tosimd(D1, Val{5},  Val{8})
         SV13 = tosimd(D1, Val{9},  Val{12})
@@ -335,7 +335,7 @@ end
 end
 function dcontract(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1},  Val{9})
         SV12 = tosimd(D1, Val{10}, Val{18})
         SV13 = tosimd(D1, Val{19}, Val{27})
@@ -359,7 +359,7 @@ function dcontract(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T}) where {T <: SIMDTyp
 end
 @inline function dcontract(S1::SymmetricTensor{4, 3, T}, S2::Tensor{2, 3, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1},  Val{6})
         SV12 = tosimd(D1, Val{7}, Val{12})
         SV13 = tosimd(D1, Val{13}, Val{18})
@@ -374,7 +374,7 @@ end
 end
 @inline function dcontract(S1::SymmetricTensor{4, 2, T}, S2::SymmetricTensor{4, 2, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1},  Val{3})
         SV12 = tosimd(D1, Val{4},  Val{6})
         SV13 = tosimd(D1, Val{7},  Val{9})
@@ -389,7 +389,7 @@ end
 end
 function dcontract(S1::SymmetricTensor{4, 3, T}, S2::SymmetricTensor{4, 3, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV11 = tosimd(D1, Val{1},  Val{6})
         SV12 = tosimd(D1, Val{7},  Val{12})
         SV13 = tosimd(D1, Val{13}, Val{18})
@@ -418,7 +418,7 @@ end
 # 1-1
 @inline function otimes(S1::Vec{2, T}, S2::Vec{2, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV1 = tosimd(D1)
         r1 = SV1 * D2[1]
         r2 = SV1 * D2[2]
@@ -427,7 +427,7 @@ end
 end
 @inline function otimes(S1::Vec{3, T}, S2::Vec{3, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV1 = tosimd(D1)
         r1 = SV1 * D2[1]; r2 = SV1 * D2[2]; r3 = SV1 * D2[3]
         return Tensor{2, 3}((r1, r2, r3))
@@ -442,7 +442,7 @@ end
 # 2-2
 @inline function otimes(S1::Tensor{2, 2, T}, S2::Tensor{2, 2, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV1 = tosimd(D1)
         r1 = SV1 * D2[1]; r2 = SV1 * D2[2]; r3 = SV1 * D2[3]; r4 = SV1 * D2[4]
         return Tensor{4, 2}((r1, r2, r3, r4))
@@ -450,7 +450,7 @@ end
 end
 @inline function otimes(S1::Tensor{2, 3, T}, S2::Tensor{2, 3, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV1 = tosimd(D1)
         r1 = SV1 * D2[1]; r2 = SV1 * D2[2]; r3 = SV1 * D2[3]
         r4 = SV1 * D2[4]; r5 = SV1 * D2[5]; r6 = SV1 * D2[6]
@@ -462,7 +462,7 @@ end
 # 2s-2s
 @inline function otimes(S1::SymmetricTensor{2, 2, T}, S2::SymmetricTensor{2, 2, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV1 = tosimd(D1)
         r1 = SV1 * D2[1]; r2 = SV1 * D2[2]; r3 = SV1 * D2[3]
         return SymmetricTensor{4, 2}((r1, r2, r3))
@@ -470,7 +470,7 @@ end
 end
 @inline function otimes(S1::SymmetricTensor{2, 3, T}, S2::SymmetricTensor{2, 3, T}) where {T <: SIMDTypes}
     @inbounds begin
-        D1 = get_data(S1); D2 = get_data(S2)
+        D1 = Tuple(S1); D2 = Tuple(S2)
         SV1 = tosimd(D1)
         r1 = SV1 * D2[1]; r2 = SV1 * D2[2]; r3 = SV1 * D2[3]
         r4 = SV1 * D2[4]; r5 = SV1 * D2[5]; r6 = SV1 * D2[6]
@@ -484,7 +484,7 @@ end
 # order 1 and order 2 norms rely on dot and dcontract respectively
 @inline function LinearAlgebra.norm(S::Tensor{4, 2, T}) where {T <: SIMDTypes}
     @inbounds begin
-        SV = tosimd(get_data(S))
+        SV = tosimd(Tuple(S))
         SVSV = SV * SV
         r = sum(SVSV)
         return sqrt(r)
@@ -494,7 +494,7 @@ end
     return quote
         $(Expr(:meta, :inline))
         @inbounds begin
-            D = get_data(S)
+            D = Tuple(S)
             SV80 = tosimd(D, Val{1}, Val{80})
             SV80SV80 = SV80 * SV80
             r80 = sum(SV80SV80)
@@ -508,7 +508,7 @@ end
     return quote
         $(Expr(:meta, :inline))
         F = $F
-        SV = tosimd(get_data(S))
+        SV = tosimd(Tuple(S))
         SVSV = SV * SV; FSVSV = F * SVSV; r = sum(FSVSV)
         return sqrt(r)
     end

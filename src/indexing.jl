@@ -43,19 +43,19 @@ const SYMMETRIC_INDICES = ((), ([1,], [1, 2, 4], [1, 2, 3, 5, 6, 9]), (),
 ###########################
 @inline function Base.getindex(S::Tensor, i::Int)
     @boundscheck checkbounds(S, i)
-    @inbounds v = get_data(S)[i]
+    @inbounds v = Tuple(S)[i]
     return v
 end
 
 @inline function Base.getindex(S::SymmetricTensor{2, dim}, i::Int, j::Int) where {dim}
     @boundscheck checkbounds(S, i, j)
-    @inbounds v = get_data(S)[compute_index(SymmetricTensor{2, dim}, i, j)]
+    @inbounds v = Tuple(S)[compute_index(SymmetricTensor{2, dim}, i, j)]
     return v
 end
 
 @inline function Base.getindex(S::SymmetricTensor{4, dim}, i::Int, j::Int, k::Int, l::Int) where {dim}
     @boundscheck checkbounds(S, i, j, k, l)
-    @inbounds v = get_data(S)[compute_index(SymmetricTensor{4, dim}, i, j, k, l)]
+    @inbounds v = Tuple(S)[compute_index(SymmetricTensor{4, dim}, i, j, k, l)]
     return v
 end
 
@@ -68,9 +68,9 @@ end
 
 @inline @generated function Base.getindex(S::SecondOrderTensor{dim}, ::Colon, j::Int) where {dim}
     idx2(i,j) = compute_index(get_base(S), i, j)
-    ex1 = Expr(:tuple, [:(get_data(S)[$(idx2(i,1))]) for i in 1:dim]...)
-    ex2 = Expr(:tuple, [:(get_data(S)[$(idx2(i,2))]) for i in 1:dim]...)
-    ex3 = Expr(:tuple, [:(get_data(S)[$(idx2(i,3))]) for i in 1:dim]...)
+    ex1 = Expr(:tuple, [:(Tuple(S)[$(idx2(i,1))]) for i in 1:dim]...)
+    ex2 = Expr(:tuple, [:(Tuple(S)[$(idx2(i,2))]) for i in 1:dim]...)
+    ex3 = Expr(:tuple, [:(Tuple(S)[$(idx2(i,3))]) for i in 1:dim]...)
     return quote
         @boundscheck checkbounds(S,Colon(),j)
         if     j == 1 return Vec{dim}($ex1)
@@ -81,9 +81,9 @@ end
 end
 @inline @generated function Base.getindex(S::SecondOrderTensor{dim}, i::Int, ::Colon) where {dim}
     idx2(i,j) = compute_index(get_base(S), i, j)
-    ex1 = Expr(:tuple, [:(get_data(S)[$(idx2(1,j))]) for j in 1:dim]...)
-    ex2 = Expr(:tuple, [:(get_data(S)[$(idx2(2,j))]) for j in 1:dim]...)
-    ex3 = Expr(:tuple, [:(get_data(S)[$(idx2(3,j))]) for j in 1:dim]...)
+    ex1 = Expr(:tuple, [:(Tuple(S)[$(idx2(1,j))]) for j in 1:dim]...)
+    ex2 = Expr(:tuple, [:(Tuple(S)[$(idx2(2,j))]) for j in 1:dim]...)
+    ex3 = Expr(:tuple, [:(Tuple(S)[$(idx2(3,j))]) for j in 1:dim]...)
     return quote
         @boundscheck checkbounds(S,i,Colon())
         if     i == 1 return Vec{dim}($ex1)

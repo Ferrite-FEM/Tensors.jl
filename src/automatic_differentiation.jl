@@ -30,7 +30,7 @@ end
     for i in 1:n_components(TensorType)
         # Can use linear indexing even for SymmetricTensor
         # when indexing the underlying tuple
-        push!(ex.args, :(value(get_data(v)[$i])))
+        push!(ex.args, :(value(Tuple(v)[$i])))
     end
     quote
         $(Expr(:meta, :inline))
@@ -53,7 +53,7 @@ end
     for i in 1:n_components(TensorType)
         # Can use linear indexing even for SymmetricTensor
         # when indexing the underlying tuple
-        push!(ex.args, :(partials(get_data(v)[$i])[1]))
+        push!(ex.args, :(partials(Tuple(v)[$i])[1]))
     end
     quote
         $(Expr(:meta, :inline))
@@ -221,17 +221,17 @@ end
 
 # Second order tensors
 @inline function _load(v::Tensor{2, 1, T}) where {T}
-    @inbounds v_dual = Tensor{2, 1}((Dual(get_data(v)[1], one(T)),))
+    @inbounds v_dual = Tensor{2, 1}((Dual(Tuple(v)[1], one(T)),))
     return v_dual
 end
 
 @inline function _load(v::SymmetricTensor{2, 1, T}) where {T}
-    @inbounds v_dual = SymmetricTensor{2, 1}((Dual(get_data(v)[1], one(T)),))
+    @inbounds v_dual = SymmetricTensor{2, 1}((Dual(Tuple(v)[1], one(T)),))
     return v_dual
 end
 
 @inline function _load(v::Tensor{2, 2, T}) where {T}
-    data = get_data(v)
+    data = Tuple(v)
     o = one(T)
     z = zero(T)
     @inbounds v_dual = Tensor{2, 2}((Dual(data[1], o, z, z, z),
@@ -242,7 +242,7 @@ end
 end
 
 @inline function _load(v::SymmetricTensor{2, 2, T}) where {T}
-    data = get_data(v)
+    data = Tuple(v)
     o = one(T)
     o2 = convert(T, 1/2)
     z = zero(T)
@@ -253,7 +253,7 @@ end
 end
 
 @inline function _load(v::Tensor{2, 3, T}) where {T}
-    data = get_data(v)
+    data = Tuple(v)
     o = one(T)
     z = zero(T)
     @inbounds v_dual = Tensor{2, 3}((Dual(data[1], o, z, z, z, z, z, z, z, z),
@@ -269,7 +269,7 @@ end
 end
 
 @inline function _load(v::SymmetricTensor{2, 3, T}) where {T}
-    data = get_data(v)
+    data = Tuple(v)
     o = one(T)
     o2 = convert(T, 1/2)
     z = zero(T)
