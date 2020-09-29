@@ -19,6 +19,10 @@
 @inline Base.:*(n::Number, S::AbstractTensor) = _map(x -> n*x, S)
 @inline Base.:/(S::AbstractTensor, n::Number) = _map(x -> x/n, S)
 
+@inline Base.:*(S::AbstractTensor, n::Tensor{1,1,T,1}) where {T} = _map(x -> x*n[1], S)
+@inline Base.:*(n::Tensor{1,1,T,1}, S::AbstractTensor) where {T} = _map(x -> n[1]*x, S)
+@inline Base.:/(S::AbstractTensor, n::Tensor{1,1,T,1}) where {T} = _map(x -> x/n[1], S)
+
 Base.:+(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimension and order must match"))
 Base.:-(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimension and order must match"))
 

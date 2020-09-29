@@ -160,8 +160,8 @@ end
 
 Compute the pseudo-inverse of a tensor.
 """
-function LinearAlgebra.pinv(t::Vec{dim}) where {dim}
-    t / LinearAlgebra.norm(t)
+function LinearAlgebra.pinv(t::Vec{dim, T}) where {dim, T}
+    LinearAlgebra.Transpose{T, Vec{dim, T}}(t / LinearAlgebra.norm(t))
 end
 
 function LinearAlgebra.pinv(t::Tensor{2, dim}) where {dim}
