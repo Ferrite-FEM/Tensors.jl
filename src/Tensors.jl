@@ -167,7 +167,7 @@ include("symmetric.jl")
 include("math_ops.jl")
 include("eigen.jl")
 include("special_ops.jl")
-include("simd.jl")
+# include("simd.jl")
 include("voigt.jl")
 
 end # module
