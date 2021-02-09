@@ -4,7 +4,7 @@
 
 | **Documentation**                                                               | **Build Status**                                                                                |
 |:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
-| [![][docs-stable-img]][docs-stable-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] |
+| [![][docs-stable-img]][docs-stable-url] | [![][ci-img]][ci-url] [![][codecov-img]][codecov-url] |
 
 ## Introduction
 
@@ -70,17 +70,12 @@ Both the packages below provide a convenience macro to provide einstein summatio
 * [Einsum.jl](https://github.com/ahwillia/Einsum.jl)
 * [TensorOperations.jl](https://github.com/Jutho/TensorOperations.jl)
 
-[docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
-[docs-latest-url]: https://kristofferc.github.io/Tensors.jl/latest/
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://kristofferc.github.io/Tensors.jl/stable
 
-[travis-img]: https://travis-ci.org/KristofferC/Tensors.jl.svg?branch=master
-[travis-url]: https://travis-ci.org/KristofferC/Tensors.jl
-
-[appveyor-img]: https://ci.appveyor.com/api/projects/status/xe0ghtyas12wv555/branch/master?svg=true
-[appveyor-url]: https://ci.appveyor.com/project/KristofferC/Tensors-jl/branch/master
+[ci-img]: https://github.com/KristofferC/Tensors.jl/workflows/CI/badge.svg
+[ci-url]: https://github.com/KristofferC/Tensors.jl/actions?query=workflows/CI
 
 [issues-url]: https://github.com/KristofferC/Tensors.jl/issues
 
