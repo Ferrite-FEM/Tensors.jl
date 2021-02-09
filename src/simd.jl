@@ -30,9 +30,6 @@ const AllSIMDTensors{T <: SIMDTypes} = Union{Tensor{1, 1, T, 1}, Tensor{1, 2, T,
                                              SymmetricTensor{2, 1, T, 1}, SymmetricTensor{2, 2, T, 3}, SymmetricTensor{2, 3, T, 6},
                                              SymmetricTensor{4, 1, T, 1}, SymmetricTensor{4, 2, T, 9}, SymmetricTensor{4, 3, T, 36}}
 
-# SIMD sizes accepted by LLVM between 1 and 100
-const SIMD_CHUNKS = (1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 16, 17, 18, 20, 24, 32, 33, 34, 36, 40, 48, 64, 65, 66, 68, 72, 80, 96)
-
 # factors for the symmetric tensors, return a quote
 function symmetric_factors(order, dim, T)
     if order == 2
@@ -99,36 +96,12 @@ end
         return get_base(TT)(r)
     end
 end
-@generated function Base.:+(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T}) where {T <: SIMDTypes}
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds begin
-            D1 = get_data(S1); SV180 = tosimd(D1, Val{1}, Val{80})
-            D2 = get_data(S2); SV280 = tosimd(D2, Val{1}, Val{80})
-            r = SV180 + SV280
-            r81 = D1[81] + D2[81]
-            return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
-        end
-    end
-end
 @inline function Base.:-(S1::TT, S2::TT) where {TT <: AllSIMDTensors}
     @inbounds begin
         D1 = get_data(S1); SV1 = tosimd(D1)
         D2 = get_data(S2); SV2 = tosimd(D2)
         r = SV1 - SV2
         return get_base(TT)(r)
-    end
-end
-@generated function Base.:-(S1::Tensor{4, 3, T}, S2::Tensor{4, 3, T}) where {T <: SIMDTypes}
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds begin
-            D1 = get_data(S1); SV180 = tosimd(D1, Val{1}, Val{80})
-            D2 = get_data(S2); SV280 = tosimd(D2, Val{1}, Val{80})
-            r = SV180 - SV280
-            r81 = D1[81] - D2[81]
-            return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
-        end
     end
 end
 
@@ -154,36 +127,6 @@ end
         D = get_data(S); SV = tosimd(D)
         r = SV / n
         return get_base(typeof(S))(r)
-    end
-end
-@generated function Base.:*(n::T, S::Tensor{4, 3, T}) where {T <: SIMDTypes}
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds begin
-            D = get_data(S); SV80 = tosimd(D, Val{1}, Val{80})
-            r = n * SV80; r81 = n * D[81]
-            return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
-        end
-    end
-end
-@generated function Base.:*(S::Tensor{4, 3, T}, n::T) where {T <: SIMDTypes}
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds begin
-            D = get_data(S); SV80 = tosimd(D, Val{1}, Val{80})
-            r = SV80 * n; r81 = D[81] * n
-            return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
-        end
-    end
-end
-@generated function Base.:/(S::Tensor{4, 3, T}, n::T) where {T <: SIMDTypes}
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds begin
-            D = get_data(S); SV80 = tosimd(D, Val{1}, Val{80})
-            r = SV80 / n; r81 = D[81] / n
-            return Tensor{4, 3}($(Expr(:tuple, [:(r[$i]) for i in 1:80]..., :(r81))))
-        end
     end
 end
 
@@ -482,25 +425,12 @@ end
 # (6): norm #
 #############
 # order 1 and order 2 norms rely on dot and dcontract respectively
-@inline function LinearAlgebra.norm(S::Tensor{4, 2, T}) where {T <: SIMDTypes}
+@inline function LinearAlgebra.norm(S::Tensor{4, dim, T}) where {dim, T <: SIMDTypes}
     @inbounds begin
         SV = tosimd(get_data(S))
         SVSV = SV * SV
         r = sum(SVSV)
         return sqrt(r)
-    end
-end
-@generated function LinearAlgebra.norm(S::Tensor{4, 3, T}) where {T <: SIMDTypes}
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds begin
-            D = get_data(S)
-            SV80 = tosimd(D, Val{1}, Val{80})
-            SV80SV80 = SV80 * SV80
-            r80 = sum(SV80SV80)
-            r = r80 + D[81] * D[81]
-            return sqrt(r)
-        end
     end
 end
 @generated function LinearAlgebra.norm(S::SymmetricTensor{4, dim, T}) where {dim, T <: SIMDTypes}
