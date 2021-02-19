@@ -74,7 +74,7 @@ Both the packages below provide a convenience macro to provide einstein summatio
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://kristofferc.github.io/Tensors.jl/stable
 
-[ci-img]: https://github.com/Ferrite-FEM/Tensors.jl/workflows/CI/badge.svg
+[ci-img]: https://github.com/Ferrite-FEM/Tensors.jl/workflows/CI/badge.svg?branch=master
 [ci-url]: https://github.com/Ferrite-FEM/Tensors.jl/actions?query=workflows/CI
 
 [issues-url]: https://github.com/Ferrite-FEM/Tensors.jl/issues
