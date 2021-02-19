@@ -4,7 +4,7 @@
 
 | **Documentation**                                                               | **Build Status**                                                                                |
 |:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
-| [![][docs-stable-img]][docs-stable-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] |
+| [![][docs-stable-img]][docs-stable-url] | [![][ci-img]][ci-url] [![][codecov-img]][codecov-url] |
 
 ## Introduction
 
@@ -70,19 +70,14 @@ Both the packages below provide a convenience macro to provide einstein summatio
 * [Einsum.jl](https://github.com/ahwillia/Einsum.jl)
 * [TensorOperations.jl](https://github.com/Jutho/TensorOperations.jl)
 
-[docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
-[docs-latest-url]: https://kristofferc.github.io/Tensors.jl/latest/
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://kristofferc.github.io/Tensors.jl/stable
 
-[travis-img]: https://travis-ci.org/KristofferC/Tensors.jl.svg?branch=master
-[travis-url]: https://travis-ci.org/KristofferC/Tensors.jl
+[ci-img]: https://github.com/Ferrite-FEM/Tensors.jl/workflows/CI/badge.svg?branch=master
+[ci-url]: https://github.com/Ferrite-FEM/Tensors.jl/actions?query=workflows%3ACI+branch%3Amaster
 
-[appveyor-img]: https://ci.appveyor.com/api/projects/status/xe0ghtyas12wv555/branch/master?svg=true
-[appveyor-url]: https://ci.appveyor.com/project/KristofferC/Tensors-jl/branch/master
+[issues-url]: https://github.com/Ferrite-FEM/Tensors.jl/issues
 
-[issues-url]: https://github.com/KristofferC/Tensors.jl/issues
-
-[codecov-img]: https://codecov.io/gh/KristofferC/Tensors.jl/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/KristofferC/Tensors.jl
+[codecov-img]: https://codecov.io/gh/Ferrite-FEM/Tensors.jl/branch/master/graph/badge.svg?branch=master
+[codecov-url]: https://codecov.io/gh/Ferrite-FEM/Tensors.jl?branch=master

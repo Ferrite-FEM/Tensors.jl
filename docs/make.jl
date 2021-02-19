@@ -29,5 +29,5 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/KristofferC/Tensors.jl.git",
+    repo = "github.com/Ferrite-FEM/Tensors.jl.git",
 )
