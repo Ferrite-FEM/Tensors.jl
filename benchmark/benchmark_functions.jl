@@ -129,7 +129,7 @@ for dim in (ALL_DIMENSIONS ? (1,2,3) : (3,))
     SUITE["promotion"]["SymmetricTensor{4, $dim, Float32} -> SymmetricTensor{4, $dim, Float64}"] = @benchmarkable promote($A64s, $A32s)
 
     # test just some operations with mixed tensortype and eltype and hope it catches things like
-    # https://github.com/KristofferC/Tensors.jl/pull/5#issuecomment-282518974
+    # https://github.com/Ferrite-FEM/Tensors.jl/pull/5#issuecomment-282518974
     if MIXED_ELTYPES
         n = 5
         SUITE["promotion"]["Tensor{2, $dim, Float64} * $Int"]                     = @benchmarkable *($A64, $n)

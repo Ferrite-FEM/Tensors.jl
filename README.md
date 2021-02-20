@@ -2,8 +2,8 @@
 
 *Efficient computations with symmetric and non-symmetric tensors with support for automatic differentiation.*
 
-| **Documentation**                                                               | **Build Status**                                                                                |
-|:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
+| **Documentation**                       | **Build Status**                                      |
+|:---------------------------------------:|:-----------------------------------------------------:|
 | [![][docs-stable-img]][docs-stable-url] | [![][ci-img]][ci-url] [![][codecov-img]][codecov-url] |
 
 ## Introduction
@@ -72,7 +72,7 @@ Both the packages below provide a convenience macro to provide einstein summatio
 
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://kristofferc.github.io/Tensors.jl/stable
+[docs-stable-url]: https://ferrite-fem.github.io/Tensors.jl/stable
 
 [ci-img]: https://github.com/Ferrite-FEM/Tensors.jl/workflows/CI/badge.svg?branch=master
 [ci-url]: https://github.com/Ferrite-FEM/Tensors.jl/actions?query=workflows%3ACI+branch%3Amaster
