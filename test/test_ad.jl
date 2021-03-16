@@ -178,4 +178,13 @@ S(C) = S(C, μ, Kb)
             @test hessian(f, x, :all)[3] ≈ f(x) ≈ x^3 * S
         end
     end
+    @testsection "mixed scalar/vec" begin
+        f(v::Vec, s::Number) = s * v[1] * v[2]
+        v = Vec((2.0, 3.0))
+        s = 4.0
+        @test gradient(x -> f(v, x), s)::Float64 ≈ v[1] * v[2]
+        @test gradient(x -> f(x, s), v)::Vec{2} ≈ Vec((s * v[2], s * v[1]))
+        @test gradient(y -> gradient(x -> f(y, x), s), v)::Vec{2} ≈ Vec((v[2], v[1]))
+        @test gradient(y -> gradient(x -> f(x, y), v), s)::Vec{2} ≈ Vec((v[2], v[1]))
+    end
 end # testsection
