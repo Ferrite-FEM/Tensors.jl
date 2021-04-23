@@ -32,7 +32,6 @@ julia> import Pkg; Pkg.add("Tensors")
 ## Documentation
 
 - [**STABLE**][docs-stable-url] &mdash; **most recently tagged version of the documentation.**
-- [**LATEST**][docs-latest-url] &mdash; *in-development version of the documentation.*
 
 ## Project Status
 
