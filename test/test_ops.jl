@@ -228,8 +228,12 @@ end
     x = zeros(T, nc(AA_sym) + 1, nc(AA_sym) + 1); tovoigt!(x, AA_sym; offset_i=1, offset_j=1)
     @test x[2:end, 2:end] == tovoigt(AA_sym)
 
+    x = zeros(T, nc(A) + 1); tomandel!(x, A; offset=1)
+    @test x[2:end] == tomandel(A)
     x = zeros(T, nc(A_sym) + 1); tomandel!(x, A_sym; offset=1)
     @test x[2:end] == tomandel(A_sym)
+    x = zeros(T, nc(AA) + 1, nc(AA) + 1); tomandel!(x, AA; offset_i=1, offset_j=1)
+    @test x[2:end, 2:end] == tomandel(AA)
     x = zeros(T, nc(AA_sym) + 1, nc(AA_sym) + 1); tomandel!(x, AA_sym; offset_i=1, offset_j=1)
     @test x[2:end, 2:end] == tomandel(AA_sym)
 
@@ -244,6 +248,9 @@ end
     @test (@inferred tomandel(AA_sym)) * (@inferred tomandel(A_sym)) ≈ tomandel(AA_sym ⊡ A_sym)
     @test (@inferred frommandel(SymmetricTensor{2,dim}, tomandel(A_sym))) ≈ A_sym
     @test (@inferred frommandel(SymmetricTensor{4,dim}, tomandel(AA_sym))) ≈ AA_sym
+    @test (@inferred tomandel(AA)) * (@inferred tomandel(A)) ≈ tomandel(AA ⊡ A)
+    @test (@inferred frommandel(Tensor{2,dim}, tomandel(A))) ≈ A
+    @test (@inferred frommandel(Tensor{4,dim}, tomandel(AA))) ≈ AA
 end
 end # of testsection
 end # of testsection
