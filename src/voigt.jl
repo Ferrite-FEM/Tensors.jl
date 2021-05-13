@@ -131,8 +131,17 @@ Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix{T}, A::SymmetricTen
     return v
 end
 
+@inline function tomandel(A::Tensor{o, dim, T}; order=DEFAULT_VOIGT_ORDER[dim]) where {o, dim, T}
+    return @inbounds tovoigt(A; order=order)
+end
 @inline function tomandel(A::SymmetricTensor{o, dim, T}; order=DEFAULT_VOIGT_ORDER[dim]) where {o, dim, T}
     return @inbounds tovoigt(A; offdiagscale=T(√2), order=order)
+end
+Base.@propagate_inbounds function tomandel!(v::AbstractVector{T}, A::Tensor{2, dim}; offset::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T}
+    tovoigt!(v, A; offset=offset, order=order)
+end
+Base.@propagate_inbounds function tomandel!(v::AbstractMatrix{T}, A::Tensor{4, dim}; offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T}
+    tovoigt!(v, A; offset_i=offset_i, offset_j=offset_j, order=order)
 end
 Base.@propagate_inbounds function tomandel!(v::AbstractVector{T}, A::SymmetricTensor{2, dim}; offset::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T}
     tovoigt!(v, A; offdiagscale=T(√2), offset=offset, order=order)
@@ -192,4 +201,11 @@ Base.@propagate_inbounds function frommandel(TT::Type{<: SymmetricTensor{2,dim}}
 end
 Base.@propagate_inbounds function frommandel(TT::Type{<: SymmetricTensor{4,dim}}, v::AbstractMatrix{T}; offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {T,dim}
     fromvoigt(TT, v, offdiagscale=T(√2), offset_i=offset_i, offset_j=offset_j, order=order)
+end
+
+Base.@propagate_inbounds function frommandel(TT::Type{<: Tensor{2,dim}}, v::AbstractVector{T}; offset::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {T,dim}
+    fromvoigt(TT, v, offset=offset, order=order)
+end
+Base.@propagate_inbounds function frommandel(TT::Type{<: Tensor{4,dim}}, v::AbstractMatrix{T}; offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {T,dim}
+    fromvoigt(TT, v, offset_i=offset_i, offset_j=offset_j, order=order)
 end
