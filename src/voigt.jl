@@ -5,9 +5,10 @@ const DEFAULT_VOIGT_ORDER = ([1], [1 3; 4 2], [1 6 5; 9 2 4; 8 7 3])
 Converts a tensor to "Voigt"-format.
 
 Keyword arguments:
- - `offdiagscale`: determines the scaling factor for the offdiagonal elements.
-   `frommandel` can also be used for "Mandel"-format which sets `offdiagscale = √2`.
-   This argument is only applicable for `SymmetricTensor`s.
+ - `offdiagscale`: determines the scaling factor for the offdiagonal elements. 
+   This argument is only applicable for `SymmetricTensor`s. `tomandel` can also 
+   be used for the "Mandel"-format which sets `offdiagscale = √2` for `SymmetricTensor`s,
+   and is equivalent to `tovoigt` for `Tensor`s.
  - `order`: matrix of the linear indices determining the Voigt order. The default
    index order is `[11, 22, 33, 23, 13, 12, 32, 31, 21]`, corresponding to
    `order = [1 6 5; 9 2 4; 8 7 3]`.
@@ -68,9 +69,10 @@ Keyword arguments:
  - `offset`: offset index for where in the array `A` the tensor should be stored.
    For 4th order tensors the keyword arguments are `offset_i` and `offset_j`,
    respectively. Defaults to `0`.
- - `offdiagscale`: determines the scaling factor for the offdiagonal elements.
-   `frommandel` can also be used for "Mandel"-format which sets `offdiagscale = √2`.
-   This argument is only applicable for `SymmetricTensor`s.
+ - `offdiagscale`: determines the scaling factor for the offdiagonal elements. 
+   This argument is only applicable for `SymmetricTensor`s. `frommandel!` can also 
+   be used for the "Mandel"-format which sets `offdiagscale = √2` for `SymmetricTensor`s,
+   and is equivalent to `fromvoigt!` for `Tensor`s.
  - `order`: matrix of the linear indices determining the Voigt order. The default
    index order is `[11, 22, 33, 23, 13, 12, 32, 31, 21]`.
 
@@ -146,9 +148,13 @@ Keyword arguments:
  - `offset`: offset index for where in the array `A` the tensor starts. For 4th order
    tensors the keyword arguments are `offset_i` and `offset_j`, respectively.
    Defaults to `0`.
- - `offdiagscale`: determines the inverse scaling factor on the offdiagonal elements.
-   `frommandel` can also be used for "Mandel"-format which sets `offdiagscale = √2`.
-   This argument is only applicable for `SymmetricTensor`s.
+ - `offdiagscale`: determines the scaling factor for the offdiagonal elements. 
+   This argument is only applicable for `SymmetricTensor`s. `frommandel` can also 
+   be used for the "Mandel"-format which sets `offdiagscale = √2` for `SymmetricTensor`s,
+   and is equivalent to `fromvoigt` for `Tensor`s.
+ - `order`: matrix of the linear indices determining the Voigt order. The default
+   index order is `[11, 22, 33, 23, 13, 12, 32, 31, 21]`, corresponding to
+   `order = [1 6 5; 9 2 4; 8 7 3]`.
 
 See also [`tovoigt`](@ref).
 
