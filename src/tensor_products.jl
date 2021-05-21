@@ -101,7 +101,7 @@ julia> A = rand(SymmetricTensor{2, 2});
 julia> B = rand(SymmetricTensor{2, 2});
 
 julia> A ⊗ B
-2×2×2×2 SymmetricTensor{4,2,Float64,9}:
+2×2×2×2 SymmetricTensor{4, 2, Float64, 9}:
 [:, :, 1, 1] =
  0.271839  0.352792
  0.352792  0.260518
@@ -139,12 +139,12 @@ Return a `SymmetricTensor`.
 # Examples
 ```jldoctest
 julia> A = rand(Vec{2})
-2-element Tensor{1,2,Float64,2}:
+2-element Vec{2, Float64}:
  0.5908446386657102
  0.7667970365022592
 
 julia> otimes(A)
-2×2 SymmetricTensor{2,2,Float64,3}:
+2×2 SymmetricTensor{2, 2, Float64, 3}:
  0.349097  0.453058
  0.453058  0.587978
 ```
@@ -165,7 +165,7 @@ julia> A = rand(SymmetricTensor{2, 2});
 julia> B = rand(SymmetricTensor{2, 2});
 
 julia> otimesu(A, B)
-2×2×2×2 Tensor{4,2,Float64,16}:
+2×2×2×2 Tensor{4, 2, Float64, 16}:
 [:, :, 1, 1] =
  0.271839  0.469146
  0.352792  0.608857
@@ -199,7 +199,7 @@ julia> A = rand(SymmetricTensor{2, 2});
 julia> B = rand(SymmetricTensor{2, 2});
 
 julia> otimesl(A, B)
-2×2×2×2 Tensor{4,2,Float64,16}:
+2×2×2×2 Tensor{4, 2, Float64, 16}:
 [:, :, 1, 1] =
  0.271839  0.469146
  0.352792  0.608857
@@ -233,22 +233,22 @@ The symbol `⋅`, written `\\cdot`, is overloaded for single contraction.
 # Examples
 ```jldoctest
 julia> A = rand(Tensor{2, 2})
-2×2 Tensor{2,2,Float64,4}:
+2×2 Tensor{2, 2, Float64, 4}:
  0.590845  0.566237
  0.766797  0.460085
 
 julia> B = rand(Tensor{1, 2})
-2-element Tensor{1,2,Float64,2}:
+2-element Vec{2, Float64}:
  0.7940257103317943
  0.8541465903790502
 
 julia> dot(A, B)
-2-element Tensor{1,2,Float64,2}:
+2-element Vec{2, Float64}:
  0.9527955925660736
  1.0018368881367576
 
 julia> A ⋅ B
-2-element Tensor{1,2,Float64,2}:
+2-element Vec{2, Float64}:
  0.9527955925660736
  1.0018368881367576
 ```
@@ -315,13 +315,13 @@ Return a `SymmetricTensor`.
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
-3×3 SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2, 3, Float64, 6}:
  0.590845  0.766797  0.566237
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147
 
 julia> dot(A)
-3×3 SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2, 3, Float64, 6}:
  1.2577   1.25546  1.42706
  1.25546  1.43013  1.47772
  1.42706  1.47772  1.68067
@@ -338,13 +338,13 @@ Return a `SymmetricTensor`.
 # Examples
 ```jldoctest
 julia> A = rand(Tensor{2,3})
-3×3 Tensor{2,3,Float64,9}:
+3×3 Tensor{2, 3, Float64, 9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
 
 julia> tdot(A)
-3×3 SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2, 3, Float64, 6}:
  1.2577   1.36435   0.48726
  1.36435  1.57172   0.540229
  0.48726  0.540229  0.190334
@@ -374,13 +374,13 @@ Return a `SymmetricTensor`.
 # Examples
 ```jldoctest
 julia> A = rand(Tensor{2,3})
-3×3 Tensor{2,3,Float64,9}:
+3×3 Tensor{2, 3, Float64, 9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
 
 julia> dott(A)
-3×3 SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2, 3, Float64, 6}:
  0.601011  0.878275  0.777051
  0.878275  1.30763   1.18611
  0.777051  1.18611   1.11112
@@ -397,19 +397,19 @@ are expanded to 3D first. The infix operator `×` (written `\\times`) can also b
 # Examples
 ```jldoctest
 julia> a = rand(Vec{3})
-3-element Tensor{1,3,Float64,3}:
+3-element Vec{3, Float64}:
  0.5908446386657102
  0.7667970365022592
  0.5662374165061859
 
 julia> b = rand(Vec{3})
-3-element Tensor{1,3,Float64,3}:
+3-element Vec{3, Float64}:
  0.4600853424625171
  0.7940257103317943
  0.8541465903790502
 
 julia> a × b
-3-element Tensor{1,3,Float64,3}:
+3-element Vec{3, Float64}:
   0.20535000738340053
  -0.24415039787171888
   0.11635375677388776

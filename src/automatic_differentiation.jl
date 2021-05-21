@@ -294,7 +294,7 @@ is given, the value of the function is also returned as a second output argument
 julia> A = rand(SymmetricTensor{2, 2});
 
 julia> ∇f = gradient(norm, A)
-2×2 SymmetricTensor{2,2,Float64,3}:
+2×2 SymmetricTensor{2, 2, Float64, 3}:
  0.434906  0.56442
  0.56442   0.416793
 
@@ -326,7 +326,7 @@ also returned as a second and third output argument.
 julia> A = rand(SymmetricTensor{2, 2});
 
 julia> ∇∇f = hessian(norm, A)
-2×2×2×2 SymmetricTensor{4,2,Float64,9}:
+2×2×2×2 SymmetricTensor{4, 2, Float64, 9}:
 [:, :, 1, 1] =
   0.596851  -0.180684
  -0.180684  -0.133425
@@ -386,7 +386,7 @@ julia> f(x) = Vec{3}((x[2], x[3], -x[1]));
 julia> x = rand(Vec{3});
 
 julia> curl(f, x)
-3-element Tensor{1,3,Float64,3}:
+3-element Vec{3, Float64}:
  -1.0
   1.0
  -1.0
@@ -420,7 +420,7 @@ julia> laplace(f, x)
 julia> g(x) = x*norm(x);
 
 julia> laplace.(g, x)
-3-element Tensor{1,3,Float64,3}:
+3-element Vec{3, Float64}:
  2.107389336871036
  2.7349658311504834
  2.019621767876747
