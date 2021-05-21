@@ -232,10 +232,60 @@ Tensors.dotdot
 For some operations it is convenient to easily switch to the so called "Voigt"-format.
 For example when solving a local problem in a plasticity model. To simplify the conversion
 between tensors and Voigt format, see [`tovoigt`](@ref), [`tovoigt!`](@ref) and
-[`fromvoigt`](@ref) documented below.
+[`fromvoigt`](@ref) documented below. Care must be exercised when combined with
+differentiation, see [Differentiation of Voigt format](@ref) further down.
 
 ```@docs
 Tensors.tovoigt
 Tensors.tovoigt!
 Tensors.fromvoigt
+```
+
+### Differentiation of Voigt format
+
+Differentiating with a Voigt representation of a symmetric tensor may lead to incorrect
+results when converted back to tensors.
+The `tomandel`, `tomandel!`, and `frommandel` versions of
+[`tovoigt`](@ref), [`tovoigt!`](@ref), and [`fromvoigt`](@ref) can then be used. As
+illustrated by the following example, this will give the correct result. In general,
+however, direct differentiation of `Tensor`s is faster (see
+[Automatic Differentiation](@ref)).
+
+```jldoctest
+julia> using Tensors, ForwardDiff
+
+julia> fun(X::SymmetricTensor{2}) = X;
+
+julia> A = rand(SymmetricTensor{2,2});
+
+# Differentiation of a tensor directly (correct)
+julia> tovoigt(gradient(fun, A))
+3×3 Matrix{Float64}:
+ 1.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  0.5
+
+# Converting to Voigt format, perform differentiation, convert back (WRONG!)
+julia> ForwardDiff.jacobian(
+           v -> tovoigt(fun(fromvoigt(SymmetricTensor{2,2}, v))),
+           tovoigt(A)
+       )
+3×3 Matrix{Float64}:
+ 1.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  1.0
+
+# Converting to Mandel format, perform differentiation, convert back (correct)
+julia> tovoigt(
+           frommandel(SymmetricTensor{4,2},
+                ForwardDiff.jacobian(
+                    v -> tomandel(fun(frommandel(SymmetricTensor{2,2}, v))),
+                    tomandel(A)
+                )
+           )
+       )
+3×3 Matrix{Float64}:
+ 1.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  0.5
 ```

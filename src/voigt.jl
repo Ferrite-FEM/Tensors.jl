@@ -5,9 +5,10 @@ const DEFAULT_VOIGT_ORDER = ([1], [1 3; 4 2], [1 6 5; 9 2 4; 8 7 3])
 Converts a tensor to "Voigt"-format.
 
 Keyword arguments:
- - `offdiagscale`: determines the scaling factor for the offdiagonal elements.
-   `frommandel` can also be used for "Mandel"-format which sets `offdiagscale = √2`.
-   This argument is only applicable for `SymmetricTensor`s.
+ - `offdiagscale`: determines the scaling factor for the offdiagonal elements. 
+   This argument is only applicable for `SymmetricTensor`s. `tomandel` can also 
+   be used for the "Mandel"-format which sets `offdiagscale = √2` for `SymmetricTensor`s,
+   and is equivalent to `tovoigt` for `Tensor`s.
  - `order`: matrix of the linear indices determining the Voigt order. The default
    index order is `[11, 22, 33, 23, 13, 12, 32, 31, 21]`, corresponding to
    `order = [1 6 5; 9 2 4; 8 7 3]`.
@@ -68,9 +69,10 @@ Keyword arguments:
  - `offset`: offset index for where in the array `A` the tensor should be stored.
    For 4th order tensors the keyword arguments are `offset_i` and `offset_j`,
    respectively. Defaults to `0`.
- - `offdiagscale`: determines the scaling factor for the offdiagonal elements.
-   `frommandel` can also be used for "Mandel"-format which sets `offdiagscale = √2`.
-   This argument is only applicable for `SymmetricTensor`s.
+ - `offdiagscale`: determines the scaling factor for the offdiagonal elements. 
+   This argument is only applicable for `SymmetricTensor`s. `frommandel!` can also 
+   be used for the "Mandel"-format which sets `offdiagscale = √2` for `SymmetricTensor`s,
+   and is equivalent to `fromvoigt!` for `Tensor`s.
  - `order`: matrix of the linear indices determining the Voigt order. The default
    index order is `[11, 22, 33, 23, 13, 12, 32, 31, 21]`.
 
@@ -131,15 +133,11 @@ Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix{T}, A::SymmetricTen
     return v
 end
 
-@inline function tomandel(A::SymmetricTensor{o, dim, T}; order=DEFAULT_VOIGT_ORDER[dim]) where {o, dim, T}
-    return @inbounds tovoigt(A; offdiagscale=T(√2), order=order)
-end
-Base.@propagate_inbounds function tomandel!(v::AbstractVector{T}, A::SymmetricTensor{2, dim}; offset::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T}
-    tovoigt!(v, A; offdiagscale=T(√2), offset=offset, order=order)
-end
-Base.@propagate_inbounds function tomandel!(v::AbstractMatrix{T}, A::SymmetricTensor{4, dim}; offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T}
-    tovoigt!(v, A; offdiagscale=T(√2), offset_i=offset_i, offset_j=offset_j, order=order)
-end
+@inline tomandel(A::SymmetricTensor{o, dim, T}; kwargs...) where{o,dim,T} = tovoigt(A; offdiagscale=T(√2), kwargs...)
+@inline tomandel(A::Tensor; kwargs...) = tovoigt(A; kwargs...)
+
+Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat{T}, A::SymmetricTensor; kwargs...) where{T} = tovoigt!(v, A; offdiagscale=T(√2), kwargs...)
+Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat, A::Tensor; kwargs...) = tovoigt!(v, A; kwargs...)
 
 """
     fromvoigt(S::Type{<:AbstractTensor}, A::Array{T}; kwargs...)
@@ -150,9 +148,13 @@ Keyword arguments:
  - `offset`: offset index for where in the array `A` the tensor starts. For 4th order
    tensors the keyword arguments are `offset_i` and `offset_j`, respectively.
    Defaults to `0`.
- - `offdiagscale`: determines the inverse scaling factor on the offdiagonal elements.
-   `frommandel` can also be used for "Mandel"-format which sets `offdiagscale = √2`.
-   This argument is only applicable for `SymmetricTensor`s.
+ - `offdiagscale`: determines the scaling factor for the offdiagonal elements. 
+   This argument is only applicable for `SymmetricTensor`s. `frommandel` can also 
+   be used for the "Mandel"-format which sets `offdiagscale = √2` for `SymmetricTensor`s,
+   and is equivalent to `fromvoigt` for `Tensor`s.
+ - `order`: matrix of the linear indices determining the Voigt order. The default
+   index order is `[11, 22, 33, 23, 13, 12, 32, 31, 21]`, corresponding to
+   `order = [1 6 5; 9 2 4; 8 7 3]`.
 
 See also [`tovoigt`](@ref).
 
@@ -187,9 +189,5 @@ Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{4, dim}}
         end)
 end
 
-Base.@propagate_inbounds function frommandel(TT::Type{<: SymmetricTensor{2,dim}}, v::AbstractVector{T}; offset::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {T,dim}
-    fromvoigt(TT, v, offdiagscale=T(√2), offset=offset, order=order)
-end
-Base.@propagate_inbounds function frommandel(TT::Type{<: SymmetricTensor{4,dim}}, v::AbstractMatrix{T}; offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {T,dim}
-    fromvoigt(TT, v, offdiagscale=T(√2), offset_i=offset_i, offset_j=offset_j, order=order)
-end
+Base.@propagate_inbounds frommandel(TT::Type{<: SymmetricTensor}, v::AbstractVecOrMat{T}; kwargs...) where{T} = fromvoigt(TT, v; offdiagscale=T(√2), kwargs...)
+Base.@propagate_inbounds frommandel(TT::Type{<: Tensor}, v::AbstractVecOrMat; kwargs...) = fromvoigt(TT, v; kwargs...)
