@@ -9,12 +9,12 @@ Return a `SymmetricTensor`.
 # Examples
 ```jldoctest
 julia> A = rand(Tensor{2,2})
-2×2 Tensor{2,2,Float64,4}:
+2×2 Tensor{2, 2, Float64, 4}:
  0.590845  0.566237
  0.766797  0.460085
 
 julia> symmetric(A)
-2×2 SymmetricTensor{2,2,Float64,3}:
+2×2 SymmetricTensor{2, 2, Float64, 3}:
  0.590845  0.666517
  0.666517  0.460085
 ```

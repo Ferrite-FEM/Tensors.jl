@@ -37,7 +37,7 @@ Symmetric tensor type supported for `order ∈ (2,4)` and `dim ∈ (1,2,3)`.
 # Examples
 ```jldoctest
 julia> SymmetricTensor{2,2,Float64}((1.0, 2.0, 3.0))
-2×2 SymmetricTensor{2,2,Float64,3}:
+2×2 SymmetricTensor{2, 2, Float64, 3}:
  1.0  2.0
  2.0  3.0
 ```
@@ -55,7 +55,7 @@ Tensor type supported for `order ∈ (1,2,4)` and `dim ∈ (1,2,3)`.
 # Examples
 ```jldoctest
 julia> Tensor{1,3,Float64}((1.0, 2.0, 3.0))
-3-element Tensor{1,3,Float64,3}:
+3-element Vec{3, Float64}:
  1.0
  2.0
  3.0

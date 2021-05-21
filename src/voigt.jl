@@ -17,7 +17,7 @@ See also [`tovoigt!`](@ref) and [`fromvoigt`](@ref).
 
 ```jldoctest
 julia> tovoigt(Tensor{2,3}(1:9))
-9-element Array{Int64,1}:
+9-element Vector{Int64}:
  1
  5
  9
@@ -29,7 +29,7 @@ julia> tovoigt(Tensor{2,3}(1:9))
  2
 
 julia> tovoigt(SymmetricTensor{2,3}(1:6); offdiagscale = 2)
-6-element Array{Int64,1}:
+6-element Vector{Int64}:
   1
   4
   6
@@ -38,7 +38,7 @@ julia> tovoigt(SymmetricTensor{2,3}(1:6); offdiagscale = 2)
   4
 
 julia> tovoigt(Tensor{4,2}(1:16))
-4×4 Array{Int64,2}:
+4×4 Matrix{Int64}:
  1  13   9  5
  4  16  12  8
  3  15  11  7
@@ -80,14 +80,14 @@ See also [`tovoigt`](@ref) and [`fromvoigt`](@ref).
 
 ```jldoctest
 julia> T = rand(Tensor{2,2})
-2×2 Tensor{2,2,Float64,4}:
+2×2 Tensor{2, 2, Float64, 4}:
  0.590845  0.566237
  0.766797  0.460085
 
 julia> x = zeros(4);
 
 julia> tovoigt!(x, T)
-4-element Array{Float64,1}:
+4-element Vector{Float64}:
  0.5908446386657102
  0.4600853424625171
  0.5662374165061859
@@ -96,7 +96,7 @@ julia> tovoigt!(x, T)
 julia> x = zeros(5);
 
 julia> tovoigt!(x, T; offset=1)
-5-element Array{Float64,1}:
+5-element Vector{Float64}:
  0.0
  0.5908446386657102
  0.4600853424625171
@@ -160,7 +160,7 @@ See also [`tovoigt`](@ref).
 
 ```jldoctest
 julia> fromvoigt(Tensor{2,3}, 1.0:1.0:9.0)
-3×3 Tensor{2,3,Float64,9}:
+3×3 Tensor{2, 3, Float64, 9}:
  1.0  6.0  5.0
  9.0  2.0  4.0
  8.0  7.0  3.0

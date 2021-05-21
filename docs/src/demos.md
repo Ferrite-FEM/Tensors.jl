@@ -128,13 +128,13 @@ julia> F = one(Tensor{2,3}) + rand(Tensor{2,3});
 julia> C = tdot(F);
 
 julia> S_AD = 2 * gradient(C -> Ψ(C, μ, Kb), C)
-3×3 SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2, 3, Float64, 6}:
   4.30534e11  -2.30282e11  -8.52861e10
  -2.30282e11   4.38793e11  -2.64481e11
  -8.52861e10  -2.64481e11   7.85515e11
 
 julia> S(C, μ, Kb)
-3×3 SymmetricTensor{2,3,Float64,6}:
+3×3 SymmetricTensor{2, 3, Float64, 6}:
   4.30534e11  -2.30282e11  -8.52861e10
  -2.30282e11   4.38793e11  -2.64481e11
  -8.52861e10  -2.64481e11   7.85515e11
