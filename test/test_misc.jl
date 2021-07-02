@@ -58,6 +58,8 @@ for dim in (1, 2, 3)
               SymmetricTensor{order,dim,Float32}(z)::SymmetricTensor{order,dim,Float32}
     end
 end
+# Number type which is not <: Real but <: Number (Tensors#154)
+@test Vec{3, NotReal}((1, 2, 3)) isa Vec{3, NotReal}
 end # of testset
 
 @testsection "diagm, one" begin

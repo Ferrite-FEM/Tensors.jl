@@ -40,3 +40,8 @@ Base.convert(::Type{F64}, a::T) where {T <: Number} = F64(a)
 Base.acos(a::F64) = F64(acos(a.x))
 Base.cos(a::F64) = F64(cos(a.x))
 Base.sin(a::F64) = F64(sin(a.x))
+
+# Number type which is not <: Real (Tensors#154)
+struct NotReal <: Number
+    x::Float64
+end
