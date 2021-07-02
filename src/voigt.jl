@@ -133,10 +133,10 @@ Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix{T}, A::SymmetricTen
     return v
 end
 
-@inline tomandel(A::SymmetricTensor{o, dim, T}; kwargs...) where{o,dim,T} = tovoigt(A; offdiagscale=T(√2), kwargs...)
+@inline tomandel(A::SymmetricTensor{o, dim, T}; kwargs...) where{o,dim,T} = tovoigt(A; offdiagscale=√(T(2)), kwargs...)
 @inline tomandel(A::Tensor; kwargs...) = tovoigt(A; kwargs...)
 
-Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat{T}, A::SymmetricTensor; kwargs...) where{T} = tovoigt!(v, A; offdiagscale=T(√2), kwargs...)
+Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat{T}, A::SymmetricTensor; kwargs...) where{T} = tovoigt!(v, A; offdiagscale=√(T(2)), kwargs...)
 Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat, A::Tensor; kwargs...) = tovoigt!(v, A; kwargs...)
 
 """
@@ -189,5 +189,5 @@ Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{4, dim}}
         end)
 end
 
-Base.@propagate_inbounds frommandel(TT::Type{<: SymmetricTensor}, v::AbstractVecOrMat{T}; kwargs...) where{T} = fromvoigt(TT, v; offdiagscale=T(√2), kwargs...)
+Base.@propagate_inbounds frommandel(TT::Type{<: SymmetricTensor}, v::AbstractVecOrMat{T}; kwargs...) where{T} = fromvoigt(TT, v; offdiagscale=√(T(2)), kwargs...)
 Base.@propagate_inbounds frommandel(TT::Type{<: Tensor}, v::AbstractVecOrMat; kwargs...) = fromvoigt(TT, v; kwargs...)

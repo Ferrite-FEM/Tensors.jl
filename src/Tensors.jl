@@ -25,10 +25,10 @@ export tovoigt, tovoigt!, fromvoigt, tomandel, tomandel!, frommandel
 #########
 # Types #
 #########
-abstract type AbstractTensor{order, dim, T <: Real} <: AbstractArray{T, order} end
+abstract type AbstractTensor{order, dim, T <: Number} <: AbstractArray{T, order} end
 
 """
-    SymmetricTensor{order,dim,T<:Real}
+    SymmetricTensor{order,dim,T<:Number}
 
 Symmetric tensor type supported for `order ∈ (2,4)` and `dim ∈ (1,2,3)`.
 `SymmetricTensor{4}` is a minor symmetric tensor, such that
@@ -48,7 +48,7 @@ struct SymmetricTensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
 end
 
 """
-    Tensor{order,dim,T<:Real}
+    Tensor{order,dim,T<:Number}
 
 Tensor type supported for `order ∈ (1,2,4)` and `dim ∈ (1,2,3)`.
 
