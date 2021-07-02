@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Automatic Differentiation · Tensors.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Tensors.jl</span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../constructing_tensors/">Constructing tensors</a></li><li><a class="tocitem" href="../indexing/">Indexing</a></li><li><a class="tocitem" href="../binary_operators/">Binary Operations</a></li><li><a class="tocitem" href="../other_operators/">Other operators</a></li><li><a class="tocitem" href="../storing_tensors/">Storing tensors</a></li><li class="is-active"><a class="tocitem" href>Automatic Differentiation</a><ul class="internal"><li><a class="tocitem" href="#Examples"><span>Examples</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../benchmarks/">Benchmarks</a></li><li><a class="tocitem" href="../../demos/">Demos</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Manual</a></li><li class="is-active"><a href>Automatic Differentiation</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Automatic Differentiation</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/master/docs/src/man/automatic_differentiation.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Automatic-Differentiation"><a class="docs-heading-anchor" href="#Automatic-Differentiation">Automatic Differentiation</a><a id="Automatic-Differentiation-1"></a><a class="docs-heading-anchor-permalink" href="#Automatic-Differentiation" title="Permalink"></a></h1><ul><li><a href="#Tensors.curl"><code>Tensors.curl</code></a></li><li><a href="#Tensors.divergence"><code>Tensors.divergence</code></a></li><li><a href="#Tensors.gradient"><code>Tensors.gradient</code></a></li><li><a href="#Tensors.hessian"><code>Tensors.hessian</code></a></li><li><a href="#Tensors.laplace"><code>Tensors.laplace</code></a></li></ul><p><code>Tensors</code> supports forward mode automatic differentiation (AD) of tensorial functions to compute first order derivatives (gradients) and second order derivatives (Hessians). It does this by exploiting the <code>Dual</code> number defined in <code>ForwardDiff.jl</code>. While <code>ForwardDiff.jl</code> can itself be used to differentiate tensor functions it is a bit awkward because <code>ForwardDiff.jl</code> is written to work with standard Julia <code>Array</code>s. One therefore has to send the input argument as an <code>Array</code> to <code>ForwardDiff.jl</code>, convert it to a <code>Tensor</code> and then convert the output <code>Array</code> to a <code>Tensor</code> again. This can also be inefficient since these <code>Array</code>s are allocated on the heap so one needs to preallocate which can be annoying.</p><p>Instead, it is simpler to use <code>Tensors</code> own AD API to do the differentiation. This does not require any conversions and everything will be stack allocated so there is no need to preallocate.</p><p>The API for AD in <code>Tensors</code> is <code>gradient(f, A)</code> and <code>hessian(f, A)</code> where <code>f</code> is a function and <code>A</code> is a first or second order tensor. For <code>gradient</code> the function can return a scalar, vector (in case the input is a vector) or a second order tensor. For <code>hessian</code> the function should return a scalar.</p><p>When evaluating the function with dual numbers, the value (value and gradient in the case of hessian) is obtained automatically, along with the gradient. To obtain the lower order results <code>gradient</code> and <code>hessian</code> accepts a third arguement, a <code>Symbol</code>. Note that the symbol is only used to dispatch to the correct function, and thus it can be any symbol. In the examples the symbol <code>:all</code> is used to obtain all the lower order derivatives and values.</p><article class="docstring"><header><a class="docstring-binding" id="Tensors.gradient" href="#Tensors.gradient"><code>Tensors.gradient</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">gradient(f::Function, v::Union{SecondOrderTensor, Vec, Number})
+gradient(f::Function, v::Union{SecondOrderTensor, Vec, Number}, :all)</code></pre><p>Computes the gradient of the input function. If the (pseudo)-keyword <code>all</code> is given, the value of the function is also returned as a second output argument.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; A = rand(SymmetricTensor{2, 2});
+
+julia&gt; ∇f = gradient(norm, A)
+2×2 SymmetricTensor{2, 2, Float64, 3}:
+ 0.434906  0.56442
+ 0.56442   0.416793
+
+julia&gt; ∇f, f = gradient(norm, A, :all);</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/380ca525d792c12c0b51c192f0a8f94be0243fb7/src/automatic_differentiation.jl#L285-L303">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Tensors.hessian" href="#Tensors.hessian"><code>Tensors.hessian</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">hessian(f::Function, v::Union{SecondOrderTensor, Vec, Number})
+hessian(f::Function, v::Union{SecondOrderTensor, Vec, Number}, :all)</code></pre><p>Computes the hessian of the input function. If the (pseudo)-keyword <code>all</code> is given, the lower order results (gradient and value) of the function is also returned as a second and third output argument.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; A = rand(SymmetricTensor{2, 2});
+
+julia&gt; ∇∇f = hessian(norm, A)
+2×2×2×2 SymmetricTensor{4, 2, Float64, 9}:
+[:, :, 1, 1] =
+  0.596851  -0.180684
+ -0.180684  -0.133425
+
+[:, :, 2, 1] =
+ -0.180684   0.133546
+  0.133546  -0.173159
+
+[:, :, 1, 2] =
+ -0.180684   0.133546
+  0.133546  -0.173159
+
+[:, :, 2, 2] =
+ -0.133425  -0.173159
+ -0.173159   0.608207
+
+julia&gt; ∇∇f, ∇f, f = hessian(norm, A, :all);</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/380ca525d792c12c0b51c192f0a8f94be0243fb7/src/automatic_differentiation.jl#L316-L348">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Tensors.divergence" href="#Tensors.divergence"><code>Tensors.divergence</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">divergence(f, x)</code></pre><p>Calculate the divergence of the vector field <code>f</code>, in the point <code>x</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; f(x) = 2x;
+
+julia&gt; x = rand(Vec{3});
+
+julia&gt; divergence(f, x)
+6.0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/380ca525d792c12c0b51c192f0a8f94be0243fb7/src/automatic_differentiation.jl#L360-L374">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Tensors.curl" href="#Tensors.curl"><code>Tensors.curl</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">curl(f, x)</code></pre><p>Calculate the curl of the vector field <code>f</code>, in the point <code>x</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; f(x) = Vec{3}((x[2], x[3], -x[1]));
+
+julia&gt; x = rand(Vec{3});
+
+julia&gt; curl(f, x)
+3-element Vec{3, Float64}:
+ -1.0
+  1.0
+ -1.0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/380ca525d792c12c0b51c192f0a8f94be0243fb7/src/automatic_differentiation.jl#L377-L394">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Tensors.laplace" href="#Tensors.laplace"><code>Tensors.laplace</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">laplace(f, x)</code></pre><p>Calculate the laplacian of the field <code>f</code>, in the point <code>x</code>. If <code>f</code> is a vector field, use broadcasting.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; x = rand(Vec{3});
+
+julia&gt; f(x) = norm(x);
+
+julia&gt; laplace(f, x)
+1.7833701103136868
+
+julia&gt; g(x) = x*norm(x);
+
+julia&gt; laplace.(g, x)
+3-element Vec{3, Float64}:
+ 2.107389336871036
+ 2.7349658311504834
+ 2.019621767876747</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/380ca525d792c12c0b51c192f0a8f94be0243fb7/src/automatic_differentiation.jl#L405-L428">source</a></section></article><h2 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h2><p>We here give a few examples of differentiating various functions and compare with the analytical solution.</p><h3 id="Norm-of-a-vector"><a class="docs-heading-anchor" href="#Norm-of-a-vector">Norm of a vector</a><a id="Norm-of-a-vector-1"></a><a class="docs-heading-anchor-permalink" href="#Norm-of-a-vector" title="Permalink"></a></h3><p class="math-container">\[f(\mathbf{x}) = |\mathbf{x}| \quad \Rightarrow \quad \partial f / \partial \mathbf{x} = \mathbf{x} / |\mathbf{x}|\]</p><pre><code class="language-julia-repl">julia&gt; x = rand(Vec{2});
+
+julia&gt; gradient(norm, x)
+2-element Vec{2, Float64}:
+ 0.6103600560550116
+ 0.7921241076829584
+
+julia&gt; x / norm(x)
+2-element Vec{2, Float64}:
+ 0.6103600560550116
+ 0.7921241076829584</code></pre><h3 id="Determinant-of-a-second-order-symmetric-tensor"><a class="docs-heading-anchor" href="#Determinant-of-a-second-order-symmetric-tensor">Determinant of a second order symmetric tensor</a><a id="Determinant-of-a-second-order-symmetric-tensor-1"></a><a class="docs-heading-anchor-permalink" href="#Determinant-of-a-second-order-symmetric-tensor" title="Permalink"></a></h3><p class="math-container">\[f(\mathbf{A}) = \det \mathbf{A} \quad \Rightarrow \quad \partial f / \partial \mathbf{A} = \mathbf{A}^{-T} \det \mathbf{A}\]</p><pre><code class="language-julia-repl">julia&gt; A = rand(SymmetricTensor{2,2});
+
+julia&gt; gradient(det, A)
+2×2 SymmetricTensor{2, 2, Float64, 3}:
+  0.566237  -0.766797
+ -0.766797   0.590845
+
+julia&gt; inv(A)&#39; * det(A)
+2×2 SymmetricTensor{2, 2, Float64, 3}:
+  0.566237  -0.766797
+ -0.766797   0.590845</code></pre><h3 id="Hessian-of-a-quadratic-potential"><a class="docs-heading-anchor" href="#Hessian-of-a-quadratic-potential">Hessian of a quadratic potential</a><a id="Hessian-of-a-quadratic-potential-1"></a><a class="docs-heading-anchor-permalink" href="#Hessian-of-a-quadratic-potential" title="Permalink"></a></h3><p class="math-container">\[\psi(\mathbf{e}) = 1/2 \mathbf{e} : \mathsf{E} : \mathbf{e} \quad \Rightarrow \quad \partial \psi / (\partial \mathbf{e} \otimes \partial \mathbf{e}) = \mathsf{E}^\text{sym}\]</p><p>where <span>$\mathsf{E}^\text{sym}$</span> is the major symmetric part of <span>$\mathsf{E}$</span>.</p><pre><code class="language-julia-repl">julia&gt; E = rand(Tensor{4,2});
+
+julia&gt; ψ(ϵ) = 1/2 * ϵ ⊡ E ⊡ ϵ;
+
+julia&gt; E_sym = hessian(ψ, rand(Tensor{2,2}));
+
+julia&gt; norm(majorsymmetric(E) - E_sym)
+0.0</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../storing_tensors/">« Storing tensors</a><a class="docs-footer-nextpage" href="../../benchmarks/">Benchmarks »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 2 July 2021 10:56">Friday 2 July 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
