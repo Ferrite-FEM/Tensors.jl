@@ -63,10 +63,7 @@ julia> Tensor{1,3,Float64}((1.0, 2.0, 3.0))
 """
 struct Tensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
     data::NTuple{M, T}
-
-    # this is needed to make Vec{3, Float64}(f::Function) work properly
     Tensor{order, dim, T, M}(data::NTuple) where {order, dim, T, M} = new{order, dim, T, M}(data)
-    #Tensor{order, dim, T, M}(f::Function) where {order, dim, T, M} = new{order, dim, T, M}(NTuple{M, T}(ntuple(f, Val(M))))
 end
 
 ###############
