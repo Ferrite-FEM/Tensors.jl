@@ -63,10 +63,7 @@ julia> Tensor{1,3,Float64}((1.0, 2.0, 3.0))
 """
 struct Tensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
     data::NTuple{M, T}
-
-    # this is needed to make Vec{3, Float64}(f::Function) work properly
     Tensor{order, dim, T, M}(data::NTuple) where {order, dim, T, M} = new{order, dim, T, M}(data)
-    Tensor{order, dim, T, M}(f::Function) where {order, dim, T, M} = new{order, dim, T, M}(NTuple{M, T}(ntuple(f, Val(M))))
 end
 
 ###############
@@ -151,8 +148,8 @@ end
 # General fallbacks
 @inline          Tensor{order, dim, T}(data::Union{AbstractArray, Tuple, Function}) where {order, dim, T} = convert(Tensor{order, dim, T}, Tensor{order, dim}(data))
 @inline SymmetricTensor{order, dim, T}(data::Union{AbstractArray, Tuple, Function}) where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, SymmetricTensor{order, dim}(data))
-# @inline          Tensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = Tensor{order, dim, T}(data)
-# @inline SymmetricTensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = SymmetricTensor{order, dim, T}(data)
+@inline          Tensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = Tensor{order, dim, T}(data)
+@inline SymmetricTensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = SymmetricTensor{order, dim, T}(data)
 
 include("indexing.jl")
 include("utilities.jl")

@@ -201,6 +201,17 @@ for T in (Float32, Float64, F64)
                  @test AAf_sym[i,j,k,l] == T(fijkl(i,j,k,l))
             end
         end
+
+        # Test fully specified constructors
+        for vec in (vf,af)
+            @test vec == typeof(vec)(i->vec[i])
+        end
+        for t2 in (Af, Af_sym)
+            @test t2 == typeof(t2)((i,j)->t2[i,j])
+        end
+        for t4 in (AAf, AAf_sym)
+            @test t4 == typeof(t4)((i,j,k,l) -> t4[i,j,k,l])
+        end 
     end
 end
 end # of testset
