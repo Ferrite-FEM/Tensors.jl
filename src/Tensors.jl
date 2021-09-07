@@ -66,7 +66,7 @@ struct Tensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
 
     # this is needed to make Vec{3, Float64}(f::Function) work properly
     Tensor{order, dim, T, M}(data::NTuple) where {order, dim, T, M} = new{order, dim, T, M}(data)
-    Tensor{order, dim, T, M}(f::Function) where {order, dim, T, M} = new{order, dim, T, M}(NTuple{M, T}(ntuple(f, Val(M))))
+    #Tensor{order, dim, T, M}(f::Function) where {order, dim, T, M} = new{order, dim, T, M}(NTuple{M, T}(ntuple(f, Val(M))))
 end
 
 ###############
