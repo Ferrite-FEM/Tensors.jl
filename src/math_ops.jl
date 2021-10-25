@@ -374,11 +374,11 @@ julia> tr(dev(A))
     )
 end
 
-# http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+# https://web.archive.org/web/20150311224314/http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
 """
-    rotate(x::Vec{3}, u::Vec{3}, θ::Number)
+    rotate(x::AbstractTensor{3}, u::Vec{3}, θ::Number)
 
-Rotate a three dimensional vector `x` around another vector `u` a total of `θ` radians.
+Rotate a three dimensional tensor `x` around the vector `u` a total of `θ` radians.
 
 # Examples
 ```jldoctest
@@ -401,6 +401,8 @@ julia> rotate(x, u, π/2)
  6.123233995736766e-17
 ```
 """
+rotate(x::AbstractTensor, u::Vec{3}, θ::Number)
+
 function rotate(x::Vec{3}, u::Vec{3}, θ::Number)
     ux = u ⋅ x
     u² = u ⋅ u
@@ -409,3 +411,23 @@ function rotate(x::Vec{3}, u::Vec{3}, θ::Number)
     (u * ux * (1 - c) + u² * x * c + sqrt(u²) * (u × x) * s) / u²
 end
 
+function rotation_matrix(u::Vec{3, T}, θ::Number) where T
+    # See http://mathworld.wolfram.com/RodriguesRotationFormula.html
+    u = u / norm(u)
+    z = zero(T)
+    ω = Tensor{2, 3}((z, u[3], -u[2], -u[3], z, u[1], u[2], -u[1], z))
+    return one(ω) + sin(θ) * ω + (1 - cos(θ)) * ω^2
+end
+
+function rotate(x::SymmetricTensor{2, 3}, u::Vec{3}, θ::Number)
+    R = rotation_matrix(u, θ)
+    return symmetric(R ⋅ x ⋅ R')
+end
+function rotate(x::Tensor{2, 3}, u::Vec{3}, θ::Number)
+    R = rotation_matrix(u, θ)
+    return R ⋅ x ⋅ R'
+end
+function rotate(x::FourthOrderTensor{3}, u::Vec{3}, θ::Number)
+    R = rotation_matrix(u, θ)
+    return (R ⋅ R) ⋅ x ⋅ (R' ⋅ R')
+end
