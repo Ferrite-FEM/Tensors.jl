@@ -306,6 +306,36 @@ end
     end
 end
 
+@generated function LinearAlgebra.dot(S1::FourthOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
+    idxS1(i, j, k, l) = compute_index(get_base(S1), i, j, k, l)
+    idxS2(i, j) = compute_index(get_base(S2), i, j)
+    exps = Expr(:tuple)
+    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, k, m))]) for m in 1:dim]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(m, l))]) for m in 1:dim]
+        push!(exps.args, reducer(ex1, ex2))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Tensor{4, dim}($exps)
+    end
+end
+
+@generated function LinearAlgebra.dot(S1::SecondOrderTensor{dim}, S2::FourthOrderTensor{dim}) where {dim}
+    idxS1(i, j) = compute_index(get_base(S1), i, j)
+    idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
+    exps = Expr(:tuple)
+    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, m))]) for m in 1:dim]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(m, j, k, l))]) for m in 1:dim]
+        push!(exps.args, reducer(ex1, ex2))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Tensor{4, dim}($exps)
+    end
+end
+
 """
     dot(::SymmetricTensor{2})
 
