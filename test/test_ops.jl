@@ -91,6 +91,15 @@ end # of testsection
     @test (@inferred tdot(A_sym))::SymmetricTensor{2, dim, T} ≈ dot(transpose(A_sym), A_sym)
     @test (@inferred dott(A))::SymmetricTensor{2, dim, T}     ≈ dot(A, transpose(A))
     @test (@inferred dott(A_sym))::SymmetricTensor{2, dim, T} ≈ dot(A_sym, transpose(A_sym))
+    # 2 - 4
+    @test (@inferred dot(AA, B))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(AA), (dim^3, dim))) * collect(reshape(vec(B), (dim, dim))), (dim, dim, dim, dim))
+    @test (@inferred dot(B, AA))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(B), (dim, dim))) * collect(reshape(vec(AA), (dim, dim^3))), (dim, dim, dim, dim))
+    @test (@inferred dot(AA_sym, B))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(AA_sym), (dim^3, dim))) * collect(reshape(vec(B), (dim, dim))), (dim, dim, dim, dim))
+    @test (@inferred dot(B, AA_sym))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(B), (dim, dim))) * collect(reshape(vec(AA_sym), (dim, dim^3))), (dim, dim, dim, dim))
+    @test (@inferred dot(AA, B_sym))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(AA), (dim^3, dim))) * collect(reshape(vec(B_sym), (dim, dim))), (dim, dim, dim, dim))
+    @test (@inferred dot(B_sym, AA))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(B_sym), (dim, dim))) * collect(reshape(vec(AA), (dim, dim^3))), (dim, dim, dim, dim))
+    @test (@inferred dot(AA_sym, B_sym))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(AA_sym), (dim^3, dim))) * collect(reshape(vec(B_sym), (dim, dim))), (dim, dim, dim, dim))
+    @test (@inferred dot(B_sym, AA_sym))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(B_sym), (dim, dim))) * collect(reshape(vec(AA_sym), (dim, dim^3))), (dim, dim, dim, dim))
 end # of testsection
 
 @testsection "symmetric/skew-symmetric" begin
