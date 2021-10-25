@@ -211,11 +211,29 @@ if dim == 3
         @test rotate(3*z, y, π) ≈ -3*z
         @test rotate(x+y+z, z, π/4) ≈ Vec{3}((0.0,√2,1.0))
 
-        a = rand(Vec{3, T})
-        b = rand(Vec{3, T})
         @test rotate(a, b, 0) ≈ a
         @test rotate(a, b, π) ≈ rotate(a, b, -π)
         @test rotate(a, b, π/2) ≈ rotate(a, -b, -π/2)
+
+        @test rotate(A, x, π) ≈ rotate(A, x, -π)
+        @test rotate(rotate(rotate(A, x, π), y, π), z, π) ≈ A
+        @test rotate(A, a, 0) ≈ A
+        @test rotate(A, a, π/2) ≈ rotate(A, -a, -π/2)
+        A_sym_T = convert(Tensor{2,3}, A_sym)
+        @test rotate(A_sym, x, π)::SymmetricTensor ≈ rotate(A_sym, x, -π)::SymmetricTensor ≈ rotate(A_sym_T, x, -π)
+        @test rotate(rotate(rotate(A_sym, x, π), y, π), z, π)::SymmetricTensor ≈ A_sym
+        @test rotate(A_sym, a, 0) ≈ A_sym
+        @test rotate(A_sym, a, π/2) ≈ rotate(A_sym, -a, -π/2)
+
+        @test rotate(AA, x, π)::Tensor ≈ rotate(AA, x, -π)
+        @test rotate(rotate(rotate(AA, x, π), y, π), z, π) ≈ AA
+        @test rotate(AA, a, 0) ≈ AA
+        @test rotate(AA, a, π/2) ≈ rotate(AA, -a, -π/2)
+        AA_sym_T = convert(Tensor{4,3}, AA_sym)
+        @test rotate(AA_sym, x, π)::Tensor ≈ rotate(AA_sym, x, -π) ≈ rotate(AA_sym_T, x, π)
+        @test rotate(rotate(rotate(AA_sym, x, π), y, π), z, π) ≈ AA_sym
+        @test rotate(AA_sym, a, 0) ≈ AA_sym
+        @test rotate(AA_sym, a, π/2) ≈ rotate(AA_sym, -a, -π/2)
     end
 end
 
