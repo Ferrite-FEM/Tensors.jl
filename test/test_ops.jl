@@ -236,7 +236,7 @@ if dim == 3
         @test rotate(AA_sym, a, π/2) ≈ rotate(AA_sym, -a, -π/2)
 
         v1, v2, v3, v4, axis = [rand(Vec{3,T}) for _ in 1:5]
-        α = rand() * π
+        α = rand(T) * π
         R = Tensors.rotation_matrix(axis, α)
         v1v2v3v4 = (v1 ⊗ v2) ⊗ (v3 ⊗ v4)
         Rv1v2v3v4 = ((R ⋅ v1) ⊗ (R ⋅ v2)) ⊗ ((R ⋅ v3) ⊗ (R ⋅ v4))
