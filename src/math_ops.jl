@@ -427,7 +427,11 @@ function rotate(x::Tensor{2, 3}, u::Vec{3}, θ::Number)
     R = rotation_matrix(u, θ)
     return R ⋅ x ⋅ R'
 end
-function rotate(x::FourthOrderTensor{3}, u::Vec{3}, θ::Number)
+function rotate(x::Tensor{4, 3}, u::Vec{3}, θ::Number)
     R = rotation_matrix(u, θ)
-    return (R ⋅ R) ⋅ x ⋅ (R' ⋅ R')
+    return otimesu(R, R) ⊡ x ⊡ otimesu(R', R')
+end
+function rotate(x::SymmetricTensor{4, 3}, u::Vec{3}, θ::Number)
+    R = rotation_matrix(u, θ)
+    return symmetric(otimesu(R, R) ⊡ x ⊡ otimesu(R', R'))
 end

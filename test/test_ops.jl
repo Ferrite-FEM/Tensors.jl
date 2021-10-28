@@ -230,10 +230,20 @@ if dim == 3
         @test rotate(AA, a, 0) ≈ AA
         @test rotate(AA, a, π/2) ≈ rotate(AA, -a, -π/2)
         AA_sym_T = convert(Tensor{4,3}, AA_sym)
-        @test rotate(AA_sym, x, π)::Tensor ≈ rotate(AA_sym, x, -π) ≈ rotate(AA_sym_T, x, π)
+        @test rotate(AA_sym, x, π)::SymmetricTensor ≈ rotate(AA_sym, x, -π) ≈ rotate(AA_sym_T, x, π)
         @test rotate(rotate(rotate(AA_sym, x, π), y, π), z, π) ≈ AA_sym
         @test rotate(AA_sym, a, 0) ≈ AA_sym
         @test rotate(AA_sym, a, π/2) ≈ rotate(AA_sym, -a, -π/2)
+
+        v1, v2, v3, v4, axis = [rand(Vec{3,T}) for _ in 1:5]
+        α = rand() * π
+        R = Tensors.rotation_matrix(axis, α)
+        v1v2v3v4 = (v1 ⊗ v2) ⊗ (v3 ⊗ v4)
+        Rv1v2v3v4 = ((R ⋅ v1) ⊗ (R ⋅ v2)) ⊗ ((R ⋅ v3) ⊗ (R ⋅ v4))
+        @test rotate(v1v2v3v4, axis, α) ≈ Rv1v2v3v4
+        v1v1v2v2 = otimes(v1) ⊗ otimes(v2)
+        Rv1v1v2v2 = otimes(R ⋅ v1) ⊗ otimes(R ⋅ v2)
+        @test rotate(v1v1v2v2, axis, α) ≈ Rv1v1v2v2
     end
 end
 
