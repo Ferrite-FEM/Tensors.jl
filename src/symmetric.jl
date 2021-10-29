@@ -65,6 +65,15 @@ Compute the major symmetric part of a fourth order tensor.
     )
 end
 
+# Unsafe versions that just truncates
+@inline unsafe_symmetric(S::SymmetricTensors) = S
+@inline function unsafe_symmetric(S::Tensor{2, dim}) where {dim}
+    SymmetricTensor{2, dim}(@inline function(i, j) @inbounds S[i,j] end)
+end
+@inline function unsafe_symmetric(S::Tensor{4, dim}) where {dim}
+    SymmetricTensor{4, dim}(@inline function(i, j, k, l) @inbounds return S[i,j,k,l] end)
+end
+
 """
     skew(::SecondOrderTensor)
 
