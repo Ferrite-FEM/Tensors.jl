@@ -380,20 +380,7 @@ julia> tdot(A)
  0.48726  0.540229  0.190334
 ```
 """
-@generated function tdot(S::SecondOrderTensor{dim}) where {dim}
-    idxS(i,j) = compute_index(get_base(S), i, j)
-    ex = Expr(:tuple)
-    for j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S)[$(idxS(k, i))]) for k in 1:dim]
-        ex2 = Expr[:(get_data(S)[$(idxS(k, j))]) for k in 1:dim]
-        push!(ex.args, reducer(ex1, ex2))
-    end
-    expr = remove_duplicates(SymmetricTensor{2, dim}, ex)
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return SymmetricTensor{2, dim}($expr)
-    end
-end
+@inline tdot(S::SecondOrderTensor) = unsafe_symmetric(S' ⋅ S)
 
 """
     dott(::SecondOrderTensor)
@@ -416,7 +403,7 @@ julia> dott(A)
  0.777051  1.18611   1.11112
 ```
 """
-@inline dott(S::SecondOrderTensor) = tdot(transpose(S))
+@inline dott(S::SecondOrderTensor) = unsafe_symmetric(S ⋅ S')
 
 """
     cross(::Vec, ::Vec)

@@ -289,7 +289,7 @@ function Base.sqrt(S::SymmetricTensor{2,3,T}) where T
     Φ = E.vectors
     z = zero(T)
     Λ = Tensor{2,3}((√(λ[1]), z, z, z, √(λ[2]), z, z, z, √(λ[3])))
-    return symmetric(Φ⋅Λ⋅Φ')
+    return unsafe_symmetric(Φ⋅Λ⋅Φ')
 end
 
 """
@@ -421,7 +421,7 @@ end
 
 function rotate(x::SymmetricTensor{2, 3}, u::Vec{3}, θ::Number)
     R = rotation_matrix(u, θ)
-    return symmetric(R ⋅ x ⋅ R')
+    return unsafe_symmetric(R ⋅ x ⋅ R')
 end
 function rotate(x::Tensor{2, 3}, u::Vec{3}, θ::Number)
     R = rotation_matrix(u, θ)
@@ -433,5 +433,5 @@ function rotate(x::Tensor{4, 3}, u::Vec{3}, θ::Number)
 end
 function rotate(x::SymmetricTensor{4, 3}, u::Vec{3}, θ::Number)
     R = rotation_matrix(u, θ)
-    return symmetric(otimesu(R, R) ⊡ x ⊡ otimesu(R', R'))
+    return unsafe_symmetric(otimesu(R, R) ⊡ x ⊡ otimesu(R', R'))
 end
