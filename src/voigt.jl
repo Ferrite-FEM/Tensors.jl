@@ -176,7 +176,7 @@ Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{2, dim}}
     return TT(function (i, j)
             i > j && ((i, j) = (j, i))
             i == j ? (return v[offset + order[i, j]]) :
-                     (return v[offset + order[i, j]] / offdiagscale)
+                     (return v[offset + order[i, j]] * T(1 / offdiagscale) )
         end)
 end
 Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{4, dim}}, v::AbstractMatrix{T}; offdiagscale::T = T(1), offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T}
@@ -184,8 +184,8 @@ Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{4, dim}}
             i > j && ((i, j) = (j, i))
             k > l && ((k, l) = (l, k))
             i == j && k == l ? (return v[offset_i + order[i, j], offset_j + order[k, l]]) :
-            i == j || k == l ? (return v[offset_i + order[i, j], offset_j + order[k, l]] / offdiagscale) :
-                               (return v[offset_i + order[i, j], offset_j + order[k, l]] / (offdiagscale * offdiagscale))
+            i == j || k == l ? (return v[offset_i + order[i, j], offset_j + order[k, l]] * T(one(T) / offdiagscale)) :
+                               (return v[offset_i + order[i, j], offset_j + order[k, l]] * T(one(T) / (offdiagscale * offdiagscale)))
         end)
 end
 
