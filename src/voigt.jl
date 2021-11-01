@@ -184,8 +184,8 @@ Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{4, dim}}
             i > j && ((i, j) = (j, i))
             k > l && ((k, l) = (l, k))
             i == j && k == l ? (return v[offset_i + order[i, j], offset_j + order[k, l]]) :
-            i == j || k == l ? (return v[offset_i + order[i, j], offset_j + order[k, l]] * T(one(T) / offdiagscale)) :
-                               (return v[offset_i + order[i, j], offset_j + order[k, l]] * T(one(T) / (offdiagscale * offdiagscale)))
+            i == j || k == l ? (return v[offset_i + order[i, j], offset_j + order[k, l]] * T(1 / offdiagscale)) :
+                               (return v[offset_i + order[i, j], offset_j + order[k, l]] * T(1 / (offdiagscale * offdiagscale)))
         end)
 end
 
