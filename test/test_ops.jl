@@ -288,6 +288,12 @@ end
     @test (@inferred tomandel(AA)) * (@inferred tomandel(A)) ≈ tomandel(AA ⊡ A)
     @test (@inferred frommandel(Tensor{2,dim}, tomandel(A))) ≈ A
     @test (@inferred frommandel(Tensor{4,dim}, tomandel(AA))) ≈ AA
+
+    if T==Float64
+        num_components = Int((dim^2+dim)/2)
+        @test isa(fromvoigt(SymmetricTensor{2,dim}, rand(num_components) .> 0.5), SymmetricTensor{2,dim,Bool})
+        @test isa(fromvoigt(SymmetricTensor{4,dim}, rand(num_components,num_components) .> 0.5), SymmetricTensor{4,dim,Bool})
+    end
 end
 end # of testsection
 end # of testsection
