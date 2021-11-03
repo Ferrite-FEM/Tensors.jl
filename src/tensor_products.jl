@@ -184,7 +184,9 @@ julia> otimesu(A, B)
 ```
 """
 @inline function otimesu(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    return Tensor{4, dim}((i,j,k,l) -> S1[i,k] * S2[j,l])
+    S1_ = Tensor{2,dim}(S1) # Convert to full tensor if symmetric to make 10x faster...
+    S2_ = Tensor{2,dim}(S2)
+    return Tensor{4, dim}((i,j,k,l) -> S1_[i,k] * S2_[j,l])
 end
 
 """
@@ -218,7 +220,9 @@ julia> otimesl(A, B)
 ```
 """
 @inline function otimesl(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    return Tensor{4, dim}((i,j,k,l) -> S1[i,l] * S2[j,k])
+    S1_ = Tensor{2,dim}(S1) # Convert to full tensor if symmetric to make 10x faster...
+    S2_ = Tensor{2,dim}(S2)
+    return Tensor{4, dim}((i,j,k,l) -> S1_[i,l] * S2_[j,k])
 end
 
 """
