@@ -220,8 +220,8 @@ julia> otimesl(A, B)
 ```
 """
 @inline function otimesl(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    S1_ = Tensor{2,dim}(S1) # Convert to full tensor if symmetric to make 10x faster...
-    S2_ = Tensor{2,dim}(S2)
+    S1_ = convert(Tensor{2,dim}, S1) # Convert to full tensor if symmetric to make 10x faster... (see Tensors.jl#164)
+    S2_ = convert(Tensor{2,dim}, S2)
     return Tensor{4, dim}((i,j,k,l) -> S1_[i,l] * S2_[j,k])
 end
 
