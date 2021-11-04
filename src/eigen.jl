@@ -41,175 +41,199 @@ function LinearAlgebra.eigen(S::SymmetricTensor{2, 2, T}) where {T}
     end
 end
 
-# A small part of the code in the following method was inspired by works of David
-# Eberly, Geometric Tools LLC, in code released under the Boost Software
-# License. See LICENSE.md
-function LinearAlgebra.eigen(S::SymmetricTensor{2, 3, T}) where {T}
-    @inbounds begin
-        R = typeof((one(T)*zero(T) + zero(T))/one(T))
-        SR = convert(SymmetricTensor{2, 3, R}, S)
-
-        S11 = SR[1, 1]; S22 = SR[2, 2]; S33 = SR[3, 3]
-        S12 = SR[1, 2]; S13 = SR[1, 3]; S23 = SR[2, 3]
-
-        p1 = abs2(S12) + abs2(S13) + abs2(S23)
-        if (p1 == 0) # diagonal tensor
-            v1, v2, v3 = basevec(Vec{3, R})
-            if S11 < S22
-                if S22 < S33
-                    return Eigen(Vec{3, R}((S11, S22, S33)), Tensor{2, 3, R}((v1[1], v1[2], v1[3], v2[1], v2[2], v2[3], v3[1], v3[2], v3[3])))
-                elseif S33 < S11
-                    return Eigen(Vec{3, R}((S33, S11, S22)), Tensor{2, 3, R}((v3[1], v3[2], v3[3], v1[1], v1[2], v1[3], v2[1], v2[2], v2[3])))
-                else
-                    return Eigen(Vec{3, R}((S11, S33, S22)), Tensor{2, 3, R}((v1[1], v1[2], v1[3], v3[1], v3[2], v3[3], v2[1], v2[2], v2[3])))
-                end
-            else #S22 < S11
-                if S11 < S33
-                    return Eigen(Vec{3, R}((S22, S11, S33)), Tensor{2, 3, R}((v2[1], v2[2], v2[3], v1[1], v1[2], v1[3], v3[1], v3[2], v3[3])))
-                elseif S33 < S22
-                    return Eigen(Vec{3, R}((S33, S22, S11)), Tensor{2, 3, R}((v3[1], v3[2], v3[3], v2[1], v2[2], v2[3], v1[1], v1[2], v1[3])))
-                else
-                    return Eigen(Vec{3, R}((S22, S33, S11)), Tensor{2, 3, R}((v2[1], v2[2], v2[3], v3[1], v3[2], v3[3], v1[1], v1[2], v1[3])))
-                end
-            end
-        end
-
-        q = (S11 + S22 + S33) / 3
-        p2 = abs2(S11 - q) + abs2(S22 - q) + abs2(S33 - q) + 2 * p1
-        p = sqrt(p2 / 6)
-        invp = inv(p)
-        b11 = (S11 - q) * invp
-        b22 = (S22 - q) * invp
-        b33 = (S33 - q) * invp
-        b12 = S12 * invp
-        b13 = S13 * invp
-        b23 = S23 * invp
-        B = SymmetricTensor{2, 3, R}((b11, b12, b13, b22, b23, b33))
-        r = det(B) / 2
-
-        # In exact arithmetic for a symmetric matrix -1 <= r <= 1
-        # but computation error can leave it slightly outside this range.
-        if (r <= -1)
-            phi = R(pi) / 3
-        elseif (r >= 1)
-            phi = zero(R)
+# Port of https://www.geometrictools.com/GTEngine/Include/Mathematics/GteSymmetricEigensolver3x3.h
+# released by David Eberly, Geometric Tools, Redmond WA 98052
+# under the Boost Software License, Version 1.0 (included at the end of this file)
+# The original documentation states
+# (see https://www.geometrictools.com/Documentation/RobustEigenSymmetric3x3.pdf )
+# [This] is an implementation of Algorithm 8.2.3 (Symmetric QR Algorithm) described in
+# Matrix Computations,2nd edition, by G. H. Golub and C. F. Van Loan, The Johns Hopkins
+# University Press, Baltimore MD, Fourth Printing 1993. Algorithm 8.2.1 (Householder
+# Tridiagonalization) is used to reduce matrix A to tridiagonal D′. Algorithm 8.2.2
+# (Implicit Symmetric QR Step with Wilkinson Shift) is used for the iterative reduction
+# from tridiagonal to diagonal. Numerically, we have errors E=RTAR−D. Algorithm 8.2.3
+# mentions that one expects |E| is approximately μ|A|, where |M| denotes the Frobenius norm
+# of M and where μ is the unit roundoff for the floating-point arithmetic: 2−23 for float,
+# which is FLTEPSILON = 1.192092896e-7f, and 2−52 for double, which is
+# DBLEPSILON = 2.2204460492503131e-16.
+# TODO ensure right-handedness of the eigenvalue matrix
+# TODO extend the method to complex hermitian
+@inline function LinearAlgebra.eigen(A::SymmetricTensor{2,3,T}) where T
+    function converged(aggressive, bdiag0, bdiag1, bsuper)
+        if aggressive
+            bsuper == 0
         else
-            phi = acos(r) / 3
+            diag_sum = abs(bdiag0) + abs(bdiag1)
+            diag_sum + bsuper == diag_sum
         end
-
-        λ3 = q + 2 * p * cos(phi)
-        λ1 = q + 2 * p * cos(phi + (2*R(pi)/3))
-        λ2 = 3 * q - λ1 - λ3 # since tr(S) = λ1 + λ2 + λ3
-
-        if r > 0 # Helps with conditioning the eigenvector calculation
-            (λ1, λ3) = (λ3, λ1)
-        end
-
-        # Calculate the first eigenvector
-        # This should be orthogonal to these three rows of A - λ1*I
-        # Use all combinations of cross products and choose the "best" one
-        r₁ = Vec{3, R}((S11 - λ1, S12, S13))
-        r₂ = Vec{3, R}((S12, S22 - λ1, S23))
-        r₃ = Vec{3, R}((S13, S23, S33 - λ1))
-        n₁ = r₁ ⋅ r₁
-        n₂ = r₂ ⋅ r₂
-        n₃ = r₃ ⋅ r₃
-
-        r₁₂ = r₁ × r₂
-        r₂₃ = r₂ × r₃
-        r₃₁ = r₃ × r₁
-        n₁₂ = r₁₂ ⋅ r₁₂
-        n₂₃ = r₂₃ ⋅ r₂₃
-        n₃₁ = r₃₁ ⋅ r₃₁
-
-        # we want best angle so we put all norms on same footing
-        # (cheaper to multiply by third nᵢ rather than divide by the two involved)
-        if n₁₂ * n₃ > n₂₃ * n₁
-            if n₁₂ * n₃ > n₃₁ * n₂
-                Φ1 = r₁₂ / sqrt(n₁₂)
-            else
-                Φ1 = r₃₁ / sqrt(n₃₁)
-            end
-        else
-            if n₂₃ * n₁ > n₃₁ * n₂
-                Φ1 = r₂₃ / sqrt(n₂₃)
-            else
-                Φ1 = r₃₁ / sqrt(n₃₁)
-            end
-        end
-
-        # Calculate the second eigenvector
-        # This should be orthogonal to the previous eigenvector and the three
-        # rows of A - λ2*I. However, we need to "solve" the remaining 2x2 subspace
-        # problem in case the cross products are identically or nearly zero
-
-        # The remaing 2x2 subspace is:
-        if abs(Φ1[1]) < abs(Φ1[2]) # safe to set one component to zero, depending on this
-            orthogonal1 = Vec{3, R}((-Φ1[3], zero(R), Φ1[1])) / sqrt(abs2(Φ1[1]) + abs2(Φ1[3]))
-        else
-            orthogonal1 = Vec{3, R}((zero(R), Φ1[3], -Φ1[2])) / sqrt(abs2(Φ1[2]) + abs2(Φ1[3]))
-        end
-        orthogonal2 = Φ1 × orthogonal1
-
-        # The projected 2x2 eigenvalue problem is C x = 0 where C is the projection
-        # of (A - λ2*I) onto the subspace {orthogonal1, orthogonal2}
-        a_orth1_1 = S11 * orthogonal1[1] + S12 * orthogonal1[2] + S13 * orthogonal1[3]
-        a_orth1_2 = S12 * orthogonal1[1] + S22 * orthogonal1[2] + S23 * orthogonal1[3]
-        a_orth1_3 = S13 * orthogonal1[1] + S23 * orthogonal1[2] + S33 * orthogonal1[3]
-
-        a_orth2_1 = S11 * orthogonal2[1] + S12 * orthogonal2[2] + S13 * orthogonal2[3]
-        a_orth2_2 = S12 * orthogonal2[1] + S22 * orthogonal2[2] + S23 * orthogonal2[3]
-        a_orth2_3 = S13 * orthogonal2[1] + S23 * orthogonal2[2] + S33 * orthogonal2[3]
-
-        c11 = orthogonal1[1]*a_orth1_1 + orthogonal1[2]*a_orth1_2 + orthogonal1[3]*a_orth1_3 - λ2
-        c12 = orthogonal1[1]*a_orth2_1 + orthogonal1[2]*a_orth2_2 + orthogonal1[3]*a_orth2_3
-        c22 = orthogonal2[1]*a_orth2_1 + orthogonal2[2]*a_orth2_2 + orthogonal2[3]*a_orth2_3 - λ2
-
-        # Solve this robustly (some values might be small or zero)
-        c11² = abs2(c11)
-        c12² = abs2(c12)
-        c22² = abs2(c22)
-        if c11² >= c22²
-            if c11² > 0 || c12² > 0
-                if c11² >= c12²
-                    tmp = c12 / c11
-                    p2 = inv(sqrt(1 + abs2(tmp)))
-                    p1 = tmp * p2
-                else
-                    tmp = c11 / c12 # TODO check for compex input
-                    p1 = inv(sqrt(1 + abs2(tmp)))
-                    p2 = tmp * p1
-                end
-                Φ2 = p1*orthogonal1 - p2*orthogonal2
-            else # c11 == 0 && c12 == 0 && c22 == 0 (smaller than c11)
-                Φ2 = orthogonal1
-            end
-        else
-            if c22² >= c12²
-                tmp = c12 / c22
-                p1 = inv(sqrt(1 + abs2(tmp)))
-                p2 = tmp * p1
-            else
-                tmp = c22 / c12
-                p2 = inv(sqrt(1 + abs2(tmp)))
-                p1 = tmp * p2
-            end
-            Φ2 = p1*orthogonal1 - p2*orthogonal2
-        end
-
-        # The third eigenvector is a simple cross product of the other two
-        Φ3 = Φ1 × Φ2 # should be normalized already
-
-        # Sort them back to the original ordering, if necessary
-        if r > 0
-            (λ1, λ3) = (λ3, λ1)
-            (Φ1, Φ3) = (Φ3, Φ1)
-        end
-
-        λ = Vec{3}((λ1, λ2, λ3))
-        Φ = Tensor{2, 3}((Φ1[1], Φ1[2], Φ1[3],
-                          Φ2[1], Φ2[2], Φ2[3],
-                          Φ3[1], Φ3[2], Φ3[3]))
-        return Eigen(λ, Φ)
     end
+
+    function get_cos_sin(u::T,v::T) where {T}
+        max_abs = max(abs(u), abs(v))
+        if max_abs > 0
+            u,v = (u,v) ./ max_abs
+            len = sqrt(u^2 + v^2)
+            cs, sn = (u,v) ./ len
+            if cs > 0
+                cs = -cs
+                sn = -sn
+            end
+            T(cs), T(sn)
+        else
+            T(-1), T(0)
+        end
+    end
+
+    function _sortperm3(v)
+        local perm = (1,2,3)
+        # unrolled bubble-sort
+        (v[perm[1]] > v[perm[2]]) && (perm = (perm[2], perm[1], perm[3]))
+        (v[perm[2]] > v[perm[3]]) && (perm = (perm[1], perm[3], perm[2]))
+        (v[perm[1]] > v[perm[2]]) && (perm = (perm[2], perm[1], perm[3]))
+        perm
+    end
+
+    # Givens reflections
+    update0(Q, c::T, s::T) where T = Q ⋅ Tensor{2,3}((c, s, T(0), T(0), T(0), T(1), -s, c, T(0)))
+    update1(Q, c::T, s::T) where T = Q ⋅ Tensor{2,3}((T(0), c, -s, T(1), T(0), T(0), T(0), s, c))
+    # Householder reflections
+    update2(Q, c::T, s::T) where T = Q ⋅ Tensor{2,3}((c, s, T(0), s, -c, T(0), T(0), T(0), T(1)))
+    update3(Q, c::T, s::T) where T = Q ⋅ Tensor{2,3}((T(1), T(0), T(0), T(0), c, s, T(0), s, -c))
+
+    is_rotation = false
+
+    # If `aggressive` is `true`, the iterations occur until a superdiagonal
+    # entry is exactly zero, otherwise they occur until it is effectively zero
+    # compared to the magnitude of its diagonal neighbors. Generally the non-
+    # aggressive convergence is acceptable.
+    #
+    # Even with `aggressive = true` this method is faster than the one it
+    # replaces and in order to keep the old interface, aggressive is set to true
+    aggressive = true
+
+    # the input is symmetric, so we only consider the unique elements:
+    a00, a01, a02, a11, a12, a22 = A[1,1], A[1,2], A[1,3], A[2,2], A[2,3], A[3,3]
+
+    # Compute the Householder reflection H and B = H * A * H where b02 = 0
+
+    c, s = get_cos_sin(a12, -a02)
+
+    Q = Tensor{2,3}((c, s, T(0), s, -c, T(0), T(0), T(0), T(1)))
+
+    term0 = c * a00 + s * a01
+    term1 = c * a01 + s * a11
+    b00 = c * term0 + s * term1
+    b01 = s * term0 - c * term1
+    term0 = s * a00 - c * a01
+    term1 = s * a01 - c * a11
+    b11 = s * term0 - c * term1
+    b12 = s * a02 - c * a12
+    b22 = a22
+
+    # Givens reflections, B' = G^T * B * G, preserve tridiagonal matrices
+    max_iteration = 2 * (1 + precision(T) - exponent(floatmin(T)))
+
+    if abs(b12) <= abs(b01)
+        saveB00, saveB01, saveB11 = b00, b01, b11
+        for iteration in 1:max_iteration
+            # compute the Givens reflection
+            c2, s2 = get_cos_sin((b00 - b11) / 2, b01)
+            s = sqrt((1 - c2) / 2)
+            c = s2 / 2s
+
+            # update Q by the Givens reflection
+            Q = update0(Q, c, s)
+            is_rotation = !is_rotation
+
+            # update B ← Q^T * B * Q, ensuring that b02 is zero and |b12| has
+            # strictly decreased
+            saveB00, saveB01, saveB11 = b00, b01, b11
+            term0 = c * saveB00 + s * saveB01
+            term1 = c * saveB01 + s * saveB11
+            b00 = c * term0 + s * term1
+            b11 = b22
+            term0 = c * saveB01 - s * saveB00
+            term1 = c * saveB11 - s * saveB01
+            b22 = c * term1 - s * term0
+            b01 = s * b12
+            b12 = c * b12
+
+            if converged(aggressive, b00, b11, b01)
+                # compute the Householder reflection
+                c2, s2 = get_cos_sin((b00 - b11) / 2, b01)
+                s = sqrt((1 - c2) / 2)
+                c = s2 / 2s
+
+                # update Q by the Householder reflection
+                Q = update2(Q, c, s)
+                is_rotation = !is_rotation
+
+                # update D = Q^T * B * Q
+                saveB00, saveB01, saveB11 = b00, b01, b11
+                term0 = c * saveB00 + s * saveB01
+                term1 = c * saveB01 + s * saveB11
+                b00 = c * term0 + s * term1
+                term0 = s * saveB00 - c * saveB01
+                term1 = s * saveB01 - c * saveB11
+                b11 = s * term0 - c * term1
+                break
+            end
+        end
+    else
+        saveB11, saveB12, saveB22 = b11, b12, b22
+        for iteration in 1:max_iteration
+            # compute the Givens reflection
+            c2, s2 = get_cos_sin((b22 - b11) / 2, b12)
+            s = sqrt((1 - c2) / 2)
+            c = s2 / 2s
+
+            # update Q by the Givens reflection
+            Q = update1(Q, c, s)
+            is_rotation = !is_rotation
+
+            # update B ← Q^T * B * Q ensuring that b02 is zero and |b12| has
+            # strictly decreased.
+            saveB11, saveB12, saveB22 = b11, b12, b22
+
+            term0 = c * saveB22 + s * saveB12
+            term1 = c * saveB12 + s * saveB11
+            b22 = c * term0 + s * term1
+            b11 = b00
+            term0 = c * saveB12 - s * saveB22
+            term1 = c * saveB11 - s * saveB12
+            b00 = c * term1 - s * term0
+            b12 = s * b01
+            b01 = c * b01
+
+            if converged(aggressive, b11, b22, b12)
+                # compute the Householder reflection
+                c2, s2 = get_cos_sin((b11 - b22) / 2, b12)
+                s = sqrt((1 - c2) / 2)
+                c = s2 / 2s
+
+                # update Q by the Householder reflection
+                Q = update3(Q, c, s)
+                is_rotation = !is_rotation
+
+                # update D = Q^T * B * Q
+                saveB11, saveB12, saveB22 = b11, b12, b22
+                term0 = c * saveB11 + s * saveB12
+                term1 = c * saveB12 + s * saveB22
+                b11 = c * term0 + s * term1
+                term0 = s * saveB11 - c * saveB12
+                term1 = s * saveB12 - c * saveB22
+                b22 = s * term0 - c * term1
+                break
+            end
+        end
+    end
+    evals = Vec{3}((b00, b11, b22))
+    perm = _sortperm3(evals)
+    evals_sorted = Vec{3}((evals[perm[1]], evals[perm[2]], evals[perm[3]]))
+    Q_sorted = Tensor{2,3}((
+        Q[1, perm[1]], Q[2, perm[1]], Q[3, perm[1]],
+        Q[1, perm[2]], Q[2, perm[2]], Q[3, perm[2]],
+        Q[1, perm[3]], Q[2, perm[3]], Q[3, perm[3]],
+    ))
+    return Eigen(evals_sorted, Q_sorted)
 end

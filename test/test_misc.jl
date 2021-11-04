@@ -555,6 +555,17 @@ end end
     end
 end
 
+@testset "issue #166: NaN in eigenvectors" begin
+    M = [ 50.0  -10.0  0.0
+         -10.0   40.0  0.0
+           0.0    0.0  0.0]
+    ME = eigen(Hermitian(M))
+    S = SymmetricTensor{2,3}(M)
+    SE = eigen(S)
+    @test eigvals(SE) ≈ eigvals(ME)
+    @test eigvecs(SE) ≈ eigvecs(ME)
+end
+
 @testsection "exceptions" begin
     # normal multiplication
     A = rand(Tensor{2, 3})
