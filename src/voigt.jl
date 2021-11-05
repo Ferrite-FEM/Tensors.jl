@@ -172,20 +172,20 @@ end
 Base.@propagate_inbounds function fromvoigt(TT::Type{<: Tensor{4, dim}}, v::AbstractMatrix; offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim}
     return TT(function (i, j, k, l); return v[offset_i + order[i, j], offset_j + order[k, l]]; end)
 end
-Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{2, dim}}, v::AbstractVector{T}; offdiagscale::T = T(1), offset::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T}
+Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{2, dim}}, v::AbstractVector{T}; offdiagscale = one(T), offset::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T}
     return TT(function (i, j)
             i > j && ((i, j) = (j, i))
             i == j ? (return v[offset + order[i, j]]) :
-                     (return v[offset + order[i, j]] * T(1 / offdiagscale) )
+                     (return T(v[offset + order[i, j]] / offdiagscale))
         end)
 end
-Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{4, dim}}, v::AbstractMatrix{T}; offdiagscale::T = T(1), offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T}
+Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{4, dim}}, v::AbstractMatrix{T}; offdiagscale = one(T), offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T}
     return TT(function (i, j, k, l)
             i > j && ((i, j) = (j, i))
             k > l && ((k, l) = (l, k))
             i == j && k == l ? (return v[offset_i + order[i, j], offset_j + order[k, l]]) :
-            i == j || k == l ? (return v[offset_i + order[i, j], offset_j + order[k, l]] * T(1 / offdiagscale)) :
-                               (return v[offset_i + order[i, j], offset_j + order[k, l]] * T(1 / (offdiagscale * offdiagscale)))
+            i == j || k == l ? (return T(v[offset_i + order[i, j], offset_j + order[k, l]] / offdiagscale)) :
+                               (return T(v[offset_i + order[i, j], offset_j + order[k, l]] / (offdiagscale * offdiagscale)))
         end)
 end
 

@@ -538,6 +538,26 @@ using Unitful
         As = rand(SymmetricTensor{2,dim})
         @test one(A * 1u"Pa")::Tensor{2,dim,Float64} == one(A)::Tensor{2,dim,Float64}
         @test one(As * 1u"Pa")::SymmetricTensor{2,dim,Float64} == one(As)::SymmetricTensor{2,dim,Float64}
+
+        # Eigen of 2nd order
+        M = rand(dim, dim) + 5I; M = M'M
+        S = SymmetricTensor{2,dim}(M)
+        SU = SymmetricTensor{2,dim}(M * 1u"Pa")
+        @test eigvals(Hermitian(M)) ≈ eigvals(S) ≈ ustrip.(eigvals(SU))
+        same_no_sign(args...) = all(args) do arg; all(1:dim) do i
+            args[1][:, i] ≈ arg[:, i] || args[1][:, i] ≈ -arg[:, i]
+        end end
+        @test same_no_sign(eigvecs(Hermitian(M)), eigvecs(S), ustrip.(eigvecs(SU)))
+        @test eltype(eigvals(SU)) == typeof(1.0u"Pa")
+        @test eltype(eigvecs(SU)) == typeof(one(1.0u"Pa"))
+        # Eigen of 4th order
+        M = rand(dim+dim, dim+dim) + 5I; M = M'M
+        S = fromvoigt(SymmetricTensor{4,dim}, M)
+        SU = fromvoigt(SymmetricTensor{4,dim}, M * 1u"Pa")
+        @test eigvals(S) ≈ ustrip.(eigvals(SU))
+        @test eigvecs(S) ≈ eigvecs(SU)
+        @test eltype(eigvals(SU)) == typeof(1.0u"Pa")
+        @test eltype(eigvecs(SU)[1]) == typeof(one(1.0u"Pa"))
 end end
 
 @testset "issues #100, #101: orders of eigenvectors" begin
