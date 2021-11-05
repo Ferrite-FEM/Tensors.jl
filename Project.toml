@@ -1,6 +1,6 @@
 name = "Tensors"
 uuid = "48a634ad-e948-5137-8d70-aa71f2a747f4"
-version = "1.8.0"
+version = "1.8.1"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -17,6 +17,7 @@ julia = "1"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["Random", "Test", "TimerOutputs"]
+test = ["Random", "Test", "TimerOutputs", "Unitful"]

@@ -532,6 +532,14 @@ for dim in (1,2,3), order in (1,2,4)
 end
 end  # of testset
 
+using Unitful
+@testset "unitful" begin; for dim in 1:3
+        A = rand(Tensor{2,dim})
+        As = rand(SymmetricTensor{2,dim})
+        @test one(A * 1u"Pa")::Tensor{2,dim,Float64} == one(A)::Tensor{2,dim,Float64}
+        @test one(As * 1u"Pa")::SymmetricTensor{2,dim,Float64} == one(As)::SymmetricTensor{2,dim,Float64}
+end end
+
 @testset "issues #100, #101: orders of eigenvectors" begin
     for (i, j) in ((1, 2), (2, 1))
         S = SymmetricTensor{2,2,Float64}((i, 0, j))

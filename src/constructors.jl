@@ -89,7 +89,7 @@ for TensorType in (SymmetricTensor, Tensor)
             return quote
                 $(Expr(:meta, :inline))
                 o = one(T)
-                z = zero(T)
+                z = zero(o) # zero-no-unit(T)
                 $ReturnTensor($exp)
             end
         end
