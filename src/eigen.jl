@@ -5,7 +5,9 @@
     @inbounds Eigen(Vec{1, T}((S[1, 1],)), one(Tensor{2, 1, T}))
 end
 
-function LinearAlgebra.eigen(S::SymmetricTensor{2, 2, T}) where {T}
+function LinearAlgebra.eigen(R::SymmetricTensor{2, 2, T′}) where T′
+    S = ustrip(R)
+    T = eltype(S)
     @inbounds begin
         if S[2,1] == 0 # diagonal tensor
             S11 = S[1,1]
@@ -37,7 +39,7 @@ function LinearAlgebra.eigen(S::SymmetricTensor{2, 2, T}) where {T}
             Φ = Tensor{2, 2}((Φ11, Φ12,
                               Φ21, Φ22))
         end
-        return Eigen(λ, Φ)
+        return Eigen(convert(Vec{2,T′}, λ), Φ)
     end
 end
 
@@ -57,8 +59,9 @@ end
 # which is FLTEPSILON = 1.192092896e-7f, and 2−52 for double, which is
 # DBLEPSILON = 2.2204460492503131e-16.
 # TODO ensure right-handedness of the eigenvalue matrix
-# TODO extend the method to complex hermitian
-@inline function LinearAlgebra.eigen(A::SymmetricTensor{2,3,T}) where T
+function LinearAlgebra.eigen(R::SymmetricTensor{2,3,T′}) where T′
+    A = ustrip(R)
+    T = eltype(A)
     function converged(aggressive, bdiag0, bdiag1, bsuper)
         if aggressive
             bsuper == 0
@@ -135,7 +138,7 @@ end
 
     if abs(b12) <= abs(b01)
         saveB00, saveB01, saveB11 = b00, b01, b11
-        for iteration in 1:max_iteration
+        for _ in 1:max_iteration
             # compute the Givens reflection
             c2, s2 = get_cos_sin((b00 - b11) / 2, b01)
             s = sqrt((1 - c2) / 2)
@@ -181,7 +184,7 @@ end
         end
     else
         saveB11, saveB12, saveB22 = b11, b12, b22
-        for iteration in 1:max_iteration
+        for _ in 1:max_iteration
             # compute the Givens reflection
             c2, s2 = get_cos_sin((b22 - b11) / 2, b12)
             s = sqrt((1 - c2) / 2)
@@ -227,7 +230,7 @@ end
             end
         end
     end
-    evals = Vec{3}((b00, b11, b22))
+    evals = convert(Vec{3,T′}, Vec{3}((b00, b11, b22)))
     perm = _sortperm3(evals)
     evals_sorted = Vec{3}((evals[perm[1]], evals[perm[2]], evals[perm[3]]))
     Q_sorted = Tensor{2,3}((

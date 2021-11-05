@@ -171,14 +171,14 @@ Compute the eigenvectors of a symmetric tensor.
 """
 @inline LinearAlgebra.eigvecs(S::SymmetricTensor) = eigvecs(eigen(S))
 
-struct Eigen{T, dim, M}
+struct Eigen{T, S, dim, M}
     values::Vec{dim, T}
-    vectors::Tensor{2, dim, T, M}
+    vectors::Tensor{2, dim, S, M}
 end
 
-struct FourthOrderEigen{dim,T,M}
+struct FourthOrderEigen{dim,T,S,M}
     values::Vector{T}
-    vectors::Vector{SymmetricTensor{2,dim,T,M}}
+    vectors::Vector{SymmetricTensor{2,dim,S,M}}
 end
 
 # destructure via iteration
@@ -239,13 +239,15 @@ eigentensors are sorted in ascending order of the eigenvalues.
 
 See also [`eigvals`](@ref) and [`eigvecs`](@ref).
 """
-function LinearAlgebra.eigen(S::SymmetricTensor{4,dim,T}) where {dim,T}
+function LinearAlgebra.eigen(R::SymmetricTensor{4,dim,T′}) where {dim,T′}
+    S = ustrip(R)
+    T = eltype(S)
     # Scale from the right only; tovoigt(S; offdiagscale=2) scales from left and right.
     S′ = SymmetricTensor{4,dim,T}((i,j,k,l) -> k == l ? S[i,j,k,l] : 2*S[i,j,k,l])
     v = tovoigt(S′)
     E = eigen(v)
     perm = sortperm(E.values)
-    values = T[E.values[i] for i in perm]
+    values = T′[T′(E.values[i]) for i in perm]
     vectors = [fromvoigt(SymmetricTensor{2,dim,T}, view(E.vectors, :, i)) for i in perm]
     return FourthOrderEigen(values, vectors)
 end

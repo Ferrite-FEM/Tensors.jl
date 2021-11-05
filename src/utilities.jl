@@ -86,3 +86,13 @@ function otimes end
 @pure getreturntype(::typeof(otimes), ::Type{<:Tensor{1, dim}}, ::Type{<:Tensor{1, dim}}) where {dim} = Tensor{2, dim}
 @pure getreturntype(::typeof(otimes), ::Type{<:SecondOrderTensor{dim}}, ::Type{<:SecondOrderTensor{dim}}) where {dim} = Tensor{4, dim}
 @pure getreturntype(::typeof(otimes), ::Type{<:SymmetricTensor{2, dim}}, ::Type{<:SymmetricTensor{2, dim}}) where {dim} = SymmetricTensor{4, dim}
+
+# unit stripping if necessary
+function ustrip(S::SymmetricTensor{order,dim,T}) where {order, dim, T}
+    ou = oneunit(T)
+    if typeof(ou / ou) === T # no units
+        return S
+    else # units, so strip them by dividing with oneunit(T)
+        return SymmetricTensor{order,dim}(map(x -> x / ou, S.data))
+    end
+end
