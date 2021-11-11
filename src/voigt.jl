@@ -52,10 +52,10 @@ end
 @inline function tovoigt(A::Tensor{4, dim, T, M}; order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T, M}
     @inbounds tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A; order=order)
 end
-@inline function tovoigt(A::SymmetricTensor{2, dim, T, M}; offdiagscale::T=one(T), order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T, M}
+@inline function tovoigt(A::SymmetricTensor{2, dim, T, M}; offdiagscale=one(T), order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T, M}
     @inbounds tovoigt!(Vector{T}(undef, M), A; offdiagscale=offdiagscale, order=order)
 end
-@inline function tovoigt(A::SymmetricTensor{4, dim, T, M}; offdiagscale::T=one(T), order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T, M}
+@inline function tovoigt(A::SymmetricTensor{4, dim, T, M}; offdiagscale=one(T), order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T, M}
     @inbounds tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A; offdiagscale=offdiagscale, order=order)
 end
 
@@ -117,13 +117,13 @@ Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix, A::Tensor{4, dim};
     end
     return v
 end
-Base.@propagate_inbounds function tovoigt!(v::AbstractVector{T}, A::SymmetricTensor{2, dim}; offdiagscale::T=one(T), offset::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {T, dim}
+Base.@propagate_inbounds function tovoigt!(v::AbstractVector{T}, A::SymmetricTensor{2, dim}; offdiagscale=one(T), offset::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {T, dim}
     for j in 1:dim, i in 1:j
         v[offset + order[i, j]] = i == j ? A[i, j] : A[i, j] * offdiagscale
     end
     return v
 end
-Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix{T}, A::SymmetricTensor{4, dim}; offdiagscale::T=one(T), offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {T, dim}
+Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix{T}, A::SymmetricTensor{4, dim}; offdiagscale=one(T), offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {T, dim}
     for l in 1:dim, k in 1:l, j in 1:dim, i in 1:j
         v[offset_i + order[i, j], offset_j + order[k, l]] =
             (i == j && k == l) ? A[i, j, k, l] :
@@ -133,10 +133,10 @@ Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix{T}, A::SymmetricTen
     return v
 end
 
-@inline tomandel(A::SymmetricTensor{o, dim, T}; kwargs...) where{o,dim,T} = tovoigt(A; offdiagscale=√(T(2)), kwargs...)
+@inline tomandel(A::SymmetricTensor{o, dim, T}; kwargs...) where{o,dim,T} = tovoigt(A; offdiagscale=√(2one(T)), kwargs...)
 @inline tomandel(A::Tensor; kwargs...) = tovoigt(A; kwargs...)
 
-Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat{T}, A::SymmetricTensor; kwargs...) where{T} = tovoigt!(v, A; offdiagscale=√(T(2)), kwargs...)
+Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat{T}, A::SymmetricTensor; kwargs...) where{T} = tovoigt!(v, A; offdiagscale=√(2one(T)), kwargs...)
 Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat, A::Tensor; kwargs...) = tovoigt!(v, A; kwargs...)
 
 """
@@ -189,5 +189,5 @@ Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{4, dim}}
         end)
 end
 
-Base.@propagate_inbounds frommandel(TT::Type{<: SymmetricTensor}, v::AbstractVecOrMat{T}; kwargs...) where{T} = fromvoigt(TT, v; offdiagscale=√(T(2)), kwargs...)
+Base.@propagate_inbounds frommandel(TT::Type{<: SymmetricTensor}, v::AbstractVecOrMat{T}; kwargs...) where{T} = fromvoigt(TT, v; offdiagscale=√(2one(T)), kwargs...)
 Base.@propagate_inbounds frommandel(TT::Type{<: Tensor}, v::AbstractVecOrMat; kwargs...) = fromvoigt(TT, v; kwargs...)

@@ -543,6 +543,8 @@ using Unitful
         M = rand(dim, dim) + 5I; M = M'M
         S = SymmetricTensor{2,dim}(M)
         SU = SymmetricTensor{2,dim}(M * 1u"Pa")
+        ST = convert(Tensor, S)
+        SUT = convert(Tensor, SU)
         @test eigvals(Hermitian(M)) ≈ eigvals(S) ≈ ustrip.(eigvals(SU))
         same_no_sign(args...) = all(args) do arg; all(1:dim) do i
             args[1][:, i] ≈ arg[:, i] || args[1][:, i] ≈ -arg[:, i]
@@ -550,6 +552,14 @@ using Unitful
         @test same_no_sign(eigvecs(Hermitian(M)), eigvecs(S), ustrip.(eigvecs(SU)))
         @test eltype(eigvals(SU)) == typeof(1.0u"Pa")
         @test eltype(eigvecs(SU)) == typeof(one(1.0u"Pa"))
+        # inv
+        @test inv(M) ≈ inv(S) ≈ inv(ST) ≈
+              ustrip.(inv(SU)) ≈ ustrip.(inv(SUT))
+        # (to|from)(voigt|mandel)
+        @test fromvoigt(SymmetricTensor{2,dim}, tovoigt(SU)) == SU
+        @test fromvoigt(SymmetricTensor{2,dim}, tovoigt(SU; offdiagscale=5.0); offdiagscale=5.0) ≈ SU
+        @test frommandel(SymmetricTensor{2,dim}, tomandel(SU)) ≈ SU
+        @test fromvoigt(Tensor{2,dim}, tovoigt(SUT)) == SUT
         # Eigen of 4th order
         M = rand(dim+dim, dim+dim) + 5I; M = M'M
         S = fromvoigt(SymmetricTensor{4,dim}, M)
@@ -558,6 +568,17 @@ using Unitful
         @test eigvecs(S) ≈ eigvecs(SU)
         @test eltype(eigvals(SU)) == typeof(1.0u"Pa")
         @test eltype(eigvecs(SU)[1]) == typeof(one(1.0u"Pa"))
+        # inv
+        @test inv(S) ⊡ S ≈ inv(SU) ⊡ SU ≈ one(S)
+        M = rand(dim^2, dim^2) + 5I; M = M'M
+        ST = fromvoigt(Tensor{4,dim}, M)
+        SUT = fromvoigt(Tensor{4,dim}, M * 1u"Pa")
+        @test inv(ST) ⊡ ST ≈ inv(SUT) ⊡ SUT ≈ one(ST)
+        # (to|from)(voigt|mandel)
+        @test fromvoigt(SymmetricTensor{4,dim}, tovoigt(SU)) == SU
+        @test fromvoigt(SymmetricTensor{4,dim}, tovoigt(SU; offdiagscale=5.0); offdiagscale=5.0) ≈ SU
+        @test frommandel(SymmetricTensor{4,dim}, tomandel(SU)) ≈ SU
+        @test fromvoigt(Tensor{4,dim}, tovoigt(SUT)) == SUT
 end end
 
 @testset "issues #100, #101: orders of eigenvectors" begin
