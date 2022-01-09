@@ -4,6 +4,8 @@ module Tensors
 
 import Base.@pure
 
+import ForwardDiff: Dual, partials, value, Tag
+
 import Statistics
 using Statistics: mean
 using LinearAlgebra

@@ -1,5 +1,3 @@
-import ForwardDiff: Dual, partials, value, Tag
-
 @static if isdefined(LinearAlgebra, :gradient)
     import LinearAlgebra.gradient
 end

@@ -1,3 +1,7 @@
+# Support functions
+get_max_iterations(::Type{T}) where{T} = 2 * (1 + precision(T) - exponent(floatmin(T)))
+get_max_iterations(::Type{T}) where{T<:Dual{TT,VT}} where{TT,VT} = get_max_iterations(VT)
+
 # MIT License: Copyright (c) 2016: Andy Ferris.
 # See LICENSE.md for further licensing test
 
@@ -134,7 +138,7 @@ function LinearAlgebra.eigen(R::SymmetricTensor{2,3,T′}) where T′
     b22 = a22
 
     # Givens reflections, B' = G^T * B * G, preserve tridiagonal matrices
-    max_iteration = 2 * (1 + precision(T) - exponent(floatmin(T)))
+    max_iteration = get_max_iterations(T)
 
     if abs(b12) <= abs(b01)
         saveB00, saveB01, saveB11 = b00, b01, b11
