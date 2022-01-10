@@ -19,6 +19,8 @@ AA_sym = rand(SymmetricTensor{4, dim, T})
 BB_sym = rand(SymmetricTensor{4, dim, T})
 A_sym = rand(SymmetricTensor{2, dim, T})
 B_sym = rand(SymmetricTensor{2, dim, T})
+symA = symmetric(A)
+symB = symmetric(B)
 
 i,j,k,l = rand(1:dim,4)
 
@@ -133,6 +135,7 @@ end # of testsection
     @test minorsymmetric(AA_sym) ≈ AA_sym
     @test issymmetric(convert(Tensor,minorsymmetric(AA_sym)))
     @test isminorsymmetric(convert(Tensor,minorsymmetric(AA_sym)))
+    @test minorsymmetric(A⊗B) ≈ symA⊗symB
 
     @test convert(typeof(AA_sym),convert(Tensor,minorsymmetric(AA))) ≈ minorsymmetric(AA)
 
