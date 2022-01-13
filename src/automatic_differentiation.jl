@@ -186,6 +186,41 @@ for TensorType in (Tensor, SymmetricTensor)
     end
 end
 
+######################
+# Gradient insertion #
+######################
+
+# Inserters are supposed to take a tensor of real values and convert it
+# into a tensor of dual values where the seeds are correctly defined.
+
+# Insertions get the real value and derivative of a function, as well 
+# a tensor of dual values that was the initial input to that function. 
+# A new tensor of dual values are then created, to emulate the function
+# being run with dual numbers (i.e. inserting the analytical gradient)
+# As opposed to with gradient extraction, we cannot know the input given 
+# to the previous function, except by inspection of the input tensor with 
+# dual entries: The number of partials (of the entry) together with order 
+# and dimension of the input tensor allow us to deduce this for a regular 
+# tensor. 
+
+_get_prev_input_for_type_info(x::Tensor{order,dim,<:Dual}) where{order,dim} = _get_prev_input_for_type_info(x[1], Val{order}(), Val{dim}())
+_get_prev_input_for_type_info(::Dual{Tg, V, dim}, ::Val{1}, ::Val{dim}) where{Tg,V,dim} = one(Tensor{1,dim,V})
+_get_prev_input_for_type_info(::Dual{Tg, V, 1}, ::Val{2}, ::Val{1}) where{Tg,V} = one(Tensor{2,1,V})
+_get_prev_input_for_type_info(::Dual{Tg, V, 4}, ::Val{2}, ::Val{2}) where{Tg,V} = one(Tensor{2,2,V})
+_get_prev_input_for_type_info(::Dual{Tg, V, 9}, ::Val{2}, ::Val{3}) where{Tg,V} = one(Tensor{2,3,V})
+
+function _insert_gradient(f::Tensor{2,dim}, ∇f::Tensor{4,dim}, x::Tensor{2,dim,<:Dual{Tg}}) where{dim,Tg}
+    fdata = get_data(f)
+    prev_input_for_type_info = _get_prev_input_for_type_info(x)
+    diffdata = get_data(_extract_gradient(x, prev_input_for_type_info) ⊡ ∇f)
+    dim2 = Int(dim^2)
+    @inbounds begin
+    y = Tensor{2,dim}(ntuple(i->Dual{Tg}(fdata[i], ntuple(j->diffdata[i+dim2*(j-1)],dim2)), dim2))
+    end
+    return y
+end
+
+
 ##################
 # Load functions #
 ##################
