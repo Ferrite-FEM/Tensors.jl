@@ -212,7 +212,7 @@ _get_prev_input_for_type_info(::Dual{Tg, V, 9}, ::Val{2}, ::Val{3}) where{Tg,V} 
 function _insert_gradient(f::Tensor{2,dim}, ∇f::Tensor{4,dim}, x::Tensor{2,dim,<:Dual{Tg}}) where{dim,Tg}
     fdata = get_data(f)
     prev_input_for_type_info = _get_prev_input_for_type_info(x)
-    diffdata = get_data(_extract_gradient(x, prev_input_for_type_info) ⊡ ∇f)
+    diffdata = get_data(∇f ⊡ _extract_gradient(x, prev_input_for_type_info))
     dim2 = Int(dim^2)
     @inbounds begin
     y = Tensor{2,dim}(ntuple(i->Dual{Tg}(fdata[i], ntuple(j->diffdata[i+dim2*(j-1)],dim2)), dim2))
@@ -222,7 +222,7 @@ end
 
 function _insert_gradient(f::Number, ∇f::Tensor{2,dim}, x::Tensor{2,dim,<:Dual{Tg}}) where{dim,Tg}
     prev_input_for_type_info = _get_prev_input_for_type_info(x)
-    diffdata = get_data(_extract_gradient(x, prev_input_for_type_info) ⊡ ∇f)
+    diffdata = get_data(∇f ⊡ _extract_gradient(x, prev_input_for_type_info))
     dim2 = dim^2
     @inbounds begin
     y = Dual{Tg}(f, ntuple(j->diffdata[j],dim2))
