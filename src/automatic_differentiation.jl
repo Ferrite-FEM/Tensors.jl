@@ -225,7 +225,7 @@ function _insert_gradient(f::Number, ∇f::Tensor{2,dim}, x::Tensor{2,dim,<:Dual
     diffdata = get_data(∇f ⊡ _extract_gradient(x, prev_input_for_type_info))
     dim2 = dim^2
     @inbounds begin
-    y = Dual{Tg}(f, ntuple(j->diffdata[j],dim2))
+    y = Dual{Tg}(f, diffdata)
     end
     return y
 end
