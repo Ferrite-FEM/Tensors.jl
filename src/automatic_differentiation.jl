@@ -220,6 +220,16 @@ function _insert_gradient(f::Tensor{2,dim}, ∇f::Tensor{4,dim}, x::Tensor{2,dim
     return y
 end
 
+function _insert_gradient(f::Number, ∇f::Tensor{2,dim}, x::Tensor{2,dim,<:Dual{Tg}}) where{dim,Tg}
+    prev_input_for_type_info = _get_prev_input_for_type_info(x)
+    diffdata = get_data(_extract_gradient(x, prev_input_for_type_info) ⊡ ∇f)
+    dim2 = dim^2
+    @inbounds begin
+    y = Dual{Tg}(f, ntuple(j->diffdata[j],dim2))
+    end
+    return y
+end
+
 
 ##################
 # Load functions #
