@@ -197,25 +197,48 @@ end
 # As opposed to with gradient extraction, we don't have the original input 
 # (scalar or tensor) to the gradient function. But we can create this based
 # on the tag created in the `gradient` function. 
+# Specifically, consider a function y=f(g(x)) where we want to supply the 
+# derivative df/dg (at g(x)). We then have "dy/dx = df/dg dg/dx" where
+# the type of product is given by the type of g:
+# g is 0th order: regular multiplication
+# g is 1st order: single contraction
+# g is 2nd order: double contraction
+# 
+# Support is given for the following function configurations
+# g (input)     f (output)  dfdg (derivative)
+# 2nd order     0th order   2nd order
+# 1st order     1st order   2nd order
+# 2nd order     2nd order   4th order
 
 _get_original_gradient_input(::Tensor{<:Any,<:Any,<:Dual{Tag{Tf,Tv}}}) where{Tf,Tv} = zero(Tv)
+_get_original_gradient_input(::SymmetricTensor{<:Any,<:Any,<:Dual{Tag{Tf,Tv}}}) where{Tf,Tv} = zero(Tv)
 
-function _insert_gradient(f::Tensor{2,dim}, ∇f::Tensor{4,dim}, x::Tensor{2,dim,<:Dual{Tg}}) where{dim,Tg}
+# Required to ensure that if one input is symmetric, the other is also symmetric (but one will have dual value entries...)
+const SecondOrderTensorN{dim, T, N}   = Union{SymmetricTensor{2, dim, T, N}, Tensor{2, dim, T, N}}
+
+function _insert_gradient(f::Number, dfdg::SecondOrderTensor{dim}, g::SecondOrderTensor{dim,<:Dual{Tg}}) where{dim,Tg}
+    dgdx = _extract_gradient(g, _get_original_gradient_input(g))
+    dfdx = dfdg ⊡ dgdx
+    return Dual{Tg}(f, get_data(dfdx))
+end
+
+function _insert_gradient(f::Vec{dim}, dfdg::Tensor{2,dim}, g::Vec{dim, <:Dual{Tg}}) where{dim,Tg}
     fdata = get_data(f)
-    diffdata = get_data(∇f ⊡ _extract_gradient(x, _get_original_gradient_input(x)))
-    dim2 = Int(dim^2)
-    @inbounds begin
-    y = Tensor{2,dim}(ntuple(i->Dual{Tg}(fdata[i], ntuple(j->diffdata[i+dim2*(j-1)],dim2)), dim2))
-    end
+    dgdx = _extract_gradient(g, _get_original_gradient_input(g))
+    dfdx = dfdg ⋅ dgdx
+    diffdata = get_data(dfdx)
+    TT = Tensors.get_base(typeof(f))
+    @inbounds y = TT(ntuple(i->Dual{Tg}(fdata[i], ntuple(j->diffdata[i+dim*(j-1)],dim)), dim))
     return y
 end
 
-function _insert_gradient(f::Number, ∇f::Tensor{2,dim}, x::Tensor{2,dim,<:Dual{Tg}}) where{dim,Tg}
-    diffdata = get_data(∇f ⊡ _extract_gradient(x, _get_original_gradient_input(x)))
-    dim2 = dim^2
-    @inbounds begin
-    y = Dual{Tg}(f, diffdata)
-    end
+function _insert_gradient(f::SecondOrderTensorN{dim, <:Any, N}, dfdg::FourthOrderTensor{dim}, g::SecondOrderTensorN{dim,<:Dual{Tg},N}) where{dim,Tg,N}
+    fdata = get_data(f)
+    dgdx = _extract_gradient(g, _get_original_gradient_input(g))
+    dfdx = dfdg ⊡ dgdx
+    diffdata = get_data(dfdx)
+    TT = Tensors.get_base(typeof(f))
+    @inbounds y = TT(ntuple(i->Dual{Tg}(fdata[i], ntuple(j->diffdata[i+N*(j-1)],N)), N))
     return y
 end
 
