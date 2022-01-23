@@ -28,6 +28,8 @@ hessian
 divergence
 curl
 laplace
+insert_gradient
+extract_value
 ```
 
 ## Examples

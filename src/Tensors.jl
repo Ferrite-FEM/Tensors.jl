@@ -19,6 +19,7 @@ export otimesu, otimesl
 export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric
 export tdot, dott, dotdot
 export hessian, gradient, curl, divergence, laplace
+export insert_gradient, extract_value
 export basevec, eᵢ
 export rotate
 export tovoigt, tovoigt!, fromvoigt, tomandel, tomandel!, frommandel
