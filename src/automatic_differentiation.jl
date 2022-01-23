@@ -251,7 +251,7 @@ function insert_gradient(f::Number, dfdg::SecondOrderTensor{dim}, g::SecondOrder
     return Dual{Tg}(f, get_data(dfdx))
 end
 
-function _insert_gradient(f::Vec{dim}, dfdg::Tensor{2,dim}, g::Vec{dim, <:Dual{Tg}}) where{dim,Tg}
+function insert_gradient(f::Vec{dim}, dfdg::Tensor{2,dim}, g::Vec{dim, <:Dual{Tg}}) where{dim,Tg}
     fdata = get_data(f)
     dgdx = _extract_gradient(g, _get_original_gradient_input(g))
     dfdx = dfdg ⋅ dgdx
@@ -261,7 +261,7 @@ function _insert_gradient(f::Vec{dim}, dfdg::Tensor{2,dim}, g::Vec{dim, <:Dual{T
     return y
 end
 
-function _insert_gradient(f::SecondOrderTensorN{dim, <:Any, N}, dfdg::FourthOrderTensor{dim}, g::SecondOrderTensorN{dim,<:Dual{Tg},N}) where{dim,Tg,N}
+function insert_gradient(f::SecondOrderTensorN{dim, <:Any, N}, dfdg::FourthOrderTensor{dim}, g::SecondOrderTensorN{dim,<:Dual{Tg},N}) where{dim,Tg,N}
     fdata = get_data(f)
     dgdx = _extract_gradient(g, _get_original_gradient_input(g))
     dfdx = dfdg ⊡ dgdx
