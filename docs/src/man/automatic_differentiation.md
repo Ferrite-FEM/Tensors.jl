@@ -28,8 +28,6 @@ hessian
 divergence
 curl
 laplace
-insert_gradient
-extract_value
 ```
 
 ## Examples
@@ -93,4 +91,59 @@ julia> E_sym = hessian(ψ, rand(Tensor{2,2}));
 
 julia> norm(majorsymmetric(E) - E_sym)
 0.0
+```
+
+## Inserting a known derivative
+When conditionals are used in a function evaluation, automatic differentiation may yield the wrong result. 
+Consider, the simplified example of the function `f(x) = is_zero(x) ? zero(x) : sin(x)`. If evaluated at `x=0`, 
+the returning of `zero(x)` gives a zero derivative because `zero(x)` is constant, while the correct value is 1. 
+In such cases, it is possible to insert a known derivative of a function which is part of a larger function to
+be automatically differentiated.
+
+Another use case is when the analytical derivative can be computed more efficiently than the automatically 
+differentiatiated derivative.
+
+```@docs
+insert_gradient
+extract_value
+```
+
+### Example
+Lets consider the function ``h(\mathbf{f}(\mathbf{g}(\mathbf{x})))`` where `h(x)=norm(x)`, `f(x)=x ⋅ x`, and `g(x)=dev(x)`. For `f(x)` we 
+then have the analytical derivative 
+```math
+\frac{\partial f_{ij}}{\partial x_{kl}} = \delta_{ik} x_{lj} + x_{ik} \delta_{jl}
+```
+which we can insert into our function by overloading the behavior if the input tensor has dual entries. 
+Below, we compare with the result if we don't overload, and see that the resulting gradients match:
+
+```jldoctest
+# Define functions
+julia> h(x) = norm(x);
+
+julia> f1(x) = x ⋅ x;
+
+julia> f2(x) = f1(x);
+
+julia> g(x) = dev(x);
+
+# Define composed functions
+julia> cfun1(x) = h(f1(g(x)));
+
+julia> cfun2(x) = h(f2(g(x)));
+
+# Insert known derivative for f2 function
+julia> function f2(x::Tensor{2,dim,T}) where{dim, T<:ForwardDiff.Dual}
+    xval = extract_value(x)
+    fval = f2(xval)
+    I2 = one(Tensor{2,dim})
+    ∇f = otimesu(I2, transpose(xval)) + otimesu(xval, I2)
+    return insert_gradient(fval, ∇f, x)
+end;
+
+# Calculate gradients
+julia> x = rand(Tensor{2,2});
+
+julia> gradient(cfun1, x) ≈ gradient(cfun2, x)
+true
 ```
