@@ -128,6 +128,10 @@ end
     TensorType(@inline function(i,j,k,l) @inbounds S1[i,j] * S2[k,l]; end)
 end
 
+@inline otimes(S1::Number, S2::Number) = S1*S2
+@inline otimes(S1::AbstractTensor, S2::Number) = S1*S2
+@inline otimes(S1::Number, S2::AbstractTensor) = S1*S2
+
 const ⊗ = otimes
 
 """
