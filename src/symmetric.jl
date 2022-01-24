@@ -38,7 +38,7 @@ Compute the minor symmetric part of a fourth order tensor, return a `SymmetricTe
             @inbounds if i == j && k == l
                 return S[i,j,k,l]
             else
-                return (S[i,j,k,l] + S[j,i,k,l] + S[i,j,k,l] + S[i,j,l,k]) / 4
+                return (S[i,j,k,l] + S[j,i,k,l] + S[i,j,l,k] + S[j,i,l,k]) / 4
             end
         end
     )
