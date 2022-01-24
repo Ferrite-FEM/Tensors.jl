@@ -1,6 +1,6 @@
 name = "Tensors"
 uuid = "48a634ad-e948-5137-8d70-aa71f2a747f4"
-version = "1.9.1"
+version = "1.9.2"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
