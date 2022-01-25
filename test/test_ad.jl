@@ -187,4 +187,146 @@ S(C) = S(C, μ, Kb)
         @test gradient(y -> gradient(x -> f(y, x), s), v)::Vec{2} ≈ Vec((v[2], v[1]))
         @test gradient(y -> gradient(x -> f(x, y), v), s)::Vec{2} ≈ Vec((v[2], v[1]))
     end
+    
+
+    @testsection "analytical gradient implementation" begin
+        # Consider the function f(g(x)), we need to test the following variations to cover all cases
+        # * x::Number
+        #   - g::Number,             f:: Number, Vec, Tensor{2}, SymmetricTensor{2}
+        #   - g::Vec,                f:: Number, Vec
+        #   - g::Tensor{2},          f:: Number, Tensor{2}
+        #   - g::SymmetricTensor{2}, f:: Number, SymmetricTensor{2}
+        # * x::Vec
+        #   - g::Number,             f:: Number, Vec
+        #   - g::Vec,                f:: Number, Vec
+        # * x::Tensor{2}
+        #   - g::Number,             f:: Number, Tensor{2}
+        #   - g::Tensor{2},          f:: Number, Tensor{2}
+        # * x::SymmetricTensor{2}
+        #   - g::Number,             f:: Number, SymmetricTensor{2}
+        #   - g::SymmetricTensor{2}, f:: Number, SymmetricTensor{2}
+        # 
+        # Define the different types of functions required to test the cases above. Naming convention:
+        # tm_tn: Function taking in tensor of order n and outputting tensor of order m. (Number=0, SymmetricTensor{2}=s)
+        # _ana:  Suffix for the function for which the analytical derivative is implemented for
+        #        Define this function with AbstractFloat input to give error if not properly overloaded for Dual
+        #        as `isa(ForwardDiff.Dual(1, 1), AbstractFloat) = false`
+        for dim = 1:3
+                
+            a0 = rand(); a1 = rand(Vec{dim}); a2 = rand(Tensor{2,dim}); as = rand(SymmetricTensor{2,dim})
+            x0 = rand(); x1 = rand(Vec{dim}); x2 = rand(Tensor{2,dim}); xs = rand(SymmetricTensor{2,dim})
+    
+            # Scalar input (t0)
+            t0_t0(x) = sin(x); t0_t0_ana(x::AbstractFloat) = t0_t0(x); d_t0_t0(x_) = reverse(gradient(t0_t0, x_, :all)); @implement_gradient t0_t0_ana d_t0_t0
+            t1_t0(x) = x*a1;   t1_t0_ana(x::AbstractFloat) = t1_t0(x); d_t1_t0(x_) = reverse(gradient(t1_t0, x_, :all)); @implement_gradient t1_t0_ana d_t1_t0
+            t2_t0(x) = x*a2;   t2_t0_ana(x::AbstractFloat) = t2_t0(x); d_t2_t0(x_) = reverse(gradient(t2_t0, x_, :all)); @implement_gradient t2_t0_ana d_t2_t0
+            ts_t0(x) = x*as;   ts_t0_ana(x::AbstractFloat) = ts_t0(x); d_ts_t0(x_) = reverse(gradient(ts_t0, x_, :all)); @implement_gradient ts_t0_ana d_ts_t0
+    
+            @test gradient(t0_t0, x0) ≈ gradient(t0_t0_ana, x0)
+            @test gradient(t1_t0, x0) ≈ gradient(t1_t0_ana, x0)
+            @test gradient(t2_t0, x0) ≈ gradient(t2_t0_ana, x0)
+            @test gradient(ts_t0, x0) ≈ gradient(ts_t0_ana, x0)
+    
+            # Vector input (t1)
+            t0_t1(x) = norm(x); t0_t1_ana(x::Vec{<:Any,<:AbstractFloat}) = t0_t1(x);   d_t0_t1(x_) = reverse(gradient(t0_t1, x_, :all));   @implement_gradient t0_t1_ana d_t0_t1
+            t1_t1(x) = a0*x;    t1_t1_ana(x::Vec{<:Any,<:AbstractFloat}) = t1_t1(x);   d_t1_t1(x_) = reverse(gradient(t1_t1, x_, :all));   @implement_gradient t1_t1_ana d_t1_t1
+    
+            @test gradient(t0_t1, x1) ≈ gradient(t0_t1_ana, x1)
+            @test gradient(t1_t1, x1) ≈ gradient(t1_t1_ana, x1)
+    
+            # 2nd order tensor input (t2)
+            t0_t2(x) = norm(x);  t0_t2_ana(x::Tensor{2,<:Any,<:AbstractFloat}) = t0_t2(x); d_t0_t2(x_) = reverse(gradient(t0_t2, x_, :all)); @implement_gradient t0_t2_ana d_t0_t2
+            t2_t2(x) = dot(x,x); t2_t2_ana(x::Tensor{2,<:Any,<:AbstractFloat}) = t2_t2(x); d_t2_t2(x_) = reverse(gradient(t2_t2, x_, :all)); @implement_gradient t2_t2_ana d_t2_t2
+    
+            @test gradient(t0_t2, x2) ≈ gradient(t0_t2_ana, x2)
+            @test gradient(t2_t2, x2) ≈ gradient(t2_t2_ana, x2)
+    
+            # 2nd order symmetric tensor input (ts)
+            t0_ts(x) = norm(x); t0_ts_ana(x::SymmetricTensor{2,<:Any,<:AbstractFloat}) = t0_ts(x); d_t0_ts(x_) = reverse(gradient(t0_ts, x_, :all)); @implement_gradient t0_ts_ana d_t0_ts
+            ts_ts(x) = dot(x);  ts_ts_ana(x::SymmetricTensor{2,<:Any,<:AbstractFloat}) = ts_ts(x); d_ts_ts(x_) = reverse(gradient(ts_ts, x_, :all)); @implement_gradient ts_ts_ana d_ts_ts
+            
+            @test gradient(t0_ts, xs) ≈ gradient(t0_ts_ana, xs)
+            @test gradient(ts_ts, xs) ≈ gradient(ts_ts_ana, xs)
+    
+            # Test combined functions. The important is that another function is called first!
+            # f(g(x)): naming "f_g_x"
+            # x scalar, g scalar, f: scalar,Vec,Tensor{2},SymmetricTensor{2}: 
+            t0_t0_t0(x) = t0_t0(t0_t0(x)); t0_t0_t0_ana(x) = t0_t0_ana(t0_t0(x))
+            t1_t0_t0(x) = t1_t0(t0_t0(x)); t1_t0_t0_ana(x) = t1_t0_ana(t0_t0(x))
+            t2_t0_t0(x) = t2_t0(t0_t0(x)); t2_t0_t0_ana(x) = t2_t0_ana(t0_t0(x))
+            ts_t0_t0(x) = ts_t0(t0_t0(x)); ts_t0_t0_ana(x) = ts_t0_ana(t0_t0(x))
+    
+            @test gradient(t0_t0_t0, x0) ≈ gradient(t0_t0_t0_ana, x0)
+            @test gradient(t1_t0_t0, x0) ≈ gradient(t1_t0_t0_ana, x0)
+            @test gradient(t2_t0_t0, x0) ≈ gradient(t2_t0_t0_ana, x0)
+            @test gradient(ts_t0_t0, x0) ≈ gradient(ts_t0_t0_ana, x0)
+    
+            # f(g(x)): x scalar, g vector, f: scalar,vector
+            t0_t1_t0(x) = t0_t1(t1_t0(x)); t0_t1_t0_ana(x) = t0_t1_ana(t1_t0(x))
+            t1_t1_t0(x) = t1_t1(t1_t0(x)); t1_t1_t0_ana(x) = t1_t1_ana(t1_t0(x))
+    
+            @test gradient(t0_t1_t0, x0) ≈ gradient(t0_t1_t0_ana, x0)
+            @test gradient(t1_t1_t0, x0) ≈ gradient(t1_t1_t0_ana, x0)
+    
+            # f(g(x)): x scalar, g Tensor{2}, f:scalar, Tensor{2}
+            t0_t2_t0(x) = t0_t2(t2_t0(x)); t0_t2_t0_ana(x) = t0_t2_ana(t2_t0(x))
+            t2_t2_t0(x) = t2_t2(t2_t0(x)); t2_t2_t0_ana(x) = t2_t2_ana(t2_t0(x));
+    
+            @test gradient(t0_t2_t0, x0) ≈ gradient(t0_t2_t0_ana, x0)
+            @test gradient(t2_t2_t0, x0) ≈ gradient(t2_t2_t0_ana, x0)
+    
+            # f(g(x)): x scalar, g SymmetricTensor{2}, f:scalar, SymmetricTensor{2}
+            t0_ts_t0(x) = t0_ts(ts_t0(x)); t0_ts_t0_ana(x) = t0_ts_ana(ts_t0(x))
+            ts_ts_t0(x) = ts_ts(ts_t0(x)); ts_ts_t0_ana(x) = ts_ts_ana(ts_t0(x))
+    
+            @test gradient(t0_ts_t0, x0) ≈ gradient(t0_ts_t0_ana, x0)
+            @test gradient(ts_ts_t0, x0) ≈ gradient(ts_ts_t0_ana, x0)
+    
+            # x Vec, g scalar, f: scalar, Vec
+            t0_t0_t1(x) = t0_t0(t0_t1(x)); t0_t0_t1_ana(x) = t0_t0_ana(t0_t1(x))
+            t1_t0_t1(x) = t1_t0(t0_t1(x)); t1_t0_t1_ana(x) = t1_t0_ana(t0_t1(x))
+    
+            @test gradient(t1_t0_t1, x1) ≈ gradient(t1_t0_t1_ana, x1)
+            @test gradient(t1_t0_t1, x1) ≈ gradient(t1_t0_t1_ana, x1)
+            
+            # x Vec, g Vec, f: scalar, Vec
+            t0_t1_t1(x) = t0_t1(t1_t1(x)); t0_t1_t1_ana(x) = t0_t1_ana(t1_t1(x))
+            t1_t1_t1(x) = t1_t1(t1_t1(x)); t1_t1_t1_ana(x) = t1_t1_ana(t1_t1(x))
+    
+            @test gradient(t0_t1_t1, x1) ≈ gradient(t0_t1_t1_ana, x1)
+            @test gradient(t1_t1_t1, x1) ≈ gradient(t1_t1_t1_ana, x1)
+    
+            # x Tensor{2}, g scalar, f: scalar, Tensor{2}
+            t0_t0_t2(x) = t0_t0(t0_t1(x)); t0_t0_t2_ana(x) = t0_t0_ana(t0_t2(x))
+            t2_t0_t2(x) = t2_t0(t0_t2(x)); t2_t0_t2_ana(x) = t2_t0_ana(t0_t2(x))
+    
+            @test gradient(t0_t0_t2, x2) ≈ gradient(t0_t0_t2_ana, x2)
+            @test gradient(t2_t0_t2, x2) ≈ gradient(t2_t0_t2_ana, x2)
+    
+            # x Tensor{2}, g Tensor{2}, f: scalar, Tensor{2}
+            t0_t2_t2(x) = t0_t2(t2_t2(x)); t0_t2_t2_ana(x) = t0_t2_ana(t2_t2(x))
+            t2_t2_t2(x) = t2_t2(t2_t2(x)); t2_t2_t2_ana(x) = t2_t2_ana(t2_t2(x))
+    
+            @test gradient(t0_t2_t2, x2) ≈ gradient(t0_t2_t2_ana, x2)
+            @test gradient(t2_t2_t2, x2) ≈ gradient(t2_t2_t2_ana, x2)
+    
+            # x SymmetricTensor{2}, g scalar, f: scalar, SymmetricTensor{2}
+            t0_t0_ts(x) = t0_t0(t0_t1(x)); t0_t0_ts_ana(x) = t0_t0_ana(t0_ts(x))
+            ts_t0_ts(x) = ts_t0(t0_ts(x)); ts_t0_ts_ana(x) = ts_t0_ana(t0_ts(x))
+    
+            @test gradient(t0_t0_ts, xs) ≈ gradient(t0_t0_ts_ana, xs)
+            @test gradient(ts_t0_ts, xs) ≈ gradient(ts_t0_ts_ana, xs)
+            
+            # x SymmetricTensor{2}, g SymmetricTensor{2}, f: scalar, SymmetricTensor{2}
+            t0_ts_ts(x) = t0_ts(ts_ts(x)); t0_ts_ts_ana(x) = t0_ts_ana(ts_ts(x))
+            ts_ts_ts(x) = ts_ts(ts_ts(x)); ts_ts_ts_ana(x) = ts_ts_ana(ts_ts(x))
+    
+            @test gradient(t0_ts_ts, xs) ≈ gradient(t0_ts_ts_ana, xs)
+            @test gradient(ts_ts_ts, xs) ≈ gradient(ts_ts_ts_ana, xs)
+    
+        end
+    
+    end
+
+    
 end # testsection
