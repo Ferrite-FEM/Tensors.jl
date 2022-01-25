@@ -102,7 +102,7 @@ correct value is 1. In such cases, it is possible to insert a known
 derivative of a function which is part of a larger function to be 
 automatically differentiated.
 
-Another use case is when the analytical derivative can be computed more 
+Another use case is when the analytical derivative can be computed much more 
 efficiently than the automatically differentiatiated derivative.
 
 ```@docs
