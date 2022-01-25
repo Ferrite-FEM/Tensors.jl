@@ -243,10 +243,10 @@ of input and output types are supported:
 | `SecondOrderTensor` | `SecondOrderTensor` | `FourthOrderTensor` |
 """
 macro implement_gradient(f, f_dfdx)
-    return :($(esc(f))(x :: AbstractTensor{<:Any, <:Any, <:Dual}) = _propagate_gradient($(esc(f_dfdx)), x))
+    return :($(esc(f))(x :: Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = _propagate_gradient($(esc(f_dfdx)), x))
 end
 # which calls the general function _propagate_gradient that calls the specialized _insert_gradient method below
-function _propagate_gradient(f_dfdx::Function, x::AbstractTensor{<:Any, <:Any, <:Dual})
+function _propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual})
     fval, dfdx_val = f_dfdx(_extract_value(x))
     return _insert_gradient(fval, dfdx_val, x)
 end
@@ -292,8 +292,8 @@ function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,Ab
 end
 
 # Define helper function to figure out original input to gradient function
-_get_original_gradient_input(::Tensor{<:Any,<:Any,<:Dual{Tag{Tf,Tv}}}) where{Tf,Tv} = zero(Tv)
-_get_original_gradient_input(::SymmetricTensor{<:Any,<:Any,<:Dual{Tag{Tf,Tv}}}) where{Tf,Tv} = zero(Tv)
+_get_original_gradient_input(::Dual{Tag{Tf,Tv}}) where{Tf,Tv} = zero(Tv)
+_get_original_gradient_input(::AbstractTensor{<:Any,<:Any,<:Dual{Tag{Tf,Tv}}}) where{Tf,Tv} = zero(Tv)
 
 # Define helper function to insert_the_full_gradient calculated in _insert_gradient
 _insert_full_gradient(f::Number, dfdx::Number, ::Tg) where{Tg} = Dual{Tg}(f, dfdx)
@@ -303,7 +303,7 @@ function _insert_full_gradient(f::TT, dfdx::TT, ::Tg) where{TT<:AbstractTensor,T
     fdata = get_data(f)
     diffdata = get_data(dfdx)
     TTb = get_base(TT)
-    @inbounds y = TTb(i -> Dual{Tg}(fdata[i], diffdata[i]))
+    @inbounds y = TTb(ntuple(i -> Dual{Tg}(fdata[i], diffdata[i]), length(fdata)))
     return y
 end
 
