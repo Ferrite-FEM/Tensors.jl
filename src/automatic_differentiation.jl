@@ -20,6 +20,14 @@ end
 ####################
 
 # Scalar output -> Scalar value
+"""
+    function _extract_value(v::ForwardDiff.Dual)
+    function _extract_value(v::AbstractTensor{<:Any,<:Any,<:Dual})
+    
+Extract the non-dual part of a tensor with dual entries. This 
+function is useful when inserting analytical derivatives using
+the [`_insert_gradient`](@ref) function
+"""
 @inline function _extract_value(v::Dual)
     return value(v)
 end
@@ -185,6 +193,147 @@ for TensorType in (Tensor, SymmetricTensor)
         end
     end
 end
+
+######################
+# Gradient insertion #
+######################
+
+# Insertions get the real value and derivative of a function, as well 
+# a tensor of dual values that was the initial input to that function. 
+# A new tensor of dual values are then created, to emulate the function
+# being run with dual numbers (i.e. inserting the analytical gradient)
+# As opposed to with gradient extraction, we don't have the original input 
+# (scalar or tensor) to the gradient function. But we can create this based
+# on the tag created in the `gradient` function. 
+# Specifically, consider a function y=f(g(x)) where we want to supply the 
+# derivative df/dg (at g(x)). We then have "dy/dx = df/dg dg/dx" where
+# the type of product is given by the type of g:
+# g is 0th order: open product ^1 
+# g is 1st order: single contraction
+# g is 2nd order: double contraction
+# 
+# ^1: Regular multiplication for scalars, but in case x and f
+#     are vectors, then it is open product.
+#
+# Support is given for the following function configurations
+# g (input)     f (output)  dfdg (derivative)
+# 2nd order     0th order   2nd order
+# 1st order     1st order   2nd order
+# 2nd order     2nd order   4th order
+
+# First, we define the API macro used to supply the analytical derivative
+"""
+    @implement_gradient(f, f_dfdx)
+
+This macro allows specifying a function `f_dfdx` that provides an analytical 
+derivative of the function `f`, and is invoked when `f` is differentiated 
+using automatic differentiation based on `ForwardDiff.jl`
+(e.g. when using `Tensors.jl`'s 
+[`gradient`](@ref) or [`hessian`](@ref)), or one of `ForwardDiff.jl`'s API).
+The function `f_dfdx` must take
+the same argument as `f` and should return both the value of `f` and 
+the gradient, i.e. `fval, dfdx_val = f_dfdx(x)`. The following combinations
+of input and output types are supported:
+
+| `x`                 | `f(x)`              | `dfdx`              |
+|:--------------------|:--------------------|:--------------------|
+| `Number`            | `Number`            | `Number`            |
+| `Number`            | `Vec`               | `Vec`               |
+| `Number`            | `SecondOrderTensor` | `SecondOrderTensor` |
+| `Vec`               | `Number`            | `Vec`               |
+| `Vec`               | `Vec`               | `Tensor{2}`         |
+| `SecondOrderTensor` | `Number`            | `SecondOrderTensor` |
+| `SecondOrderTensor` | `SecondOrderTensor` | `FourthOrderTensor` |
+
+Note that if one tensor if of symmetric type, then all tensors must 
+be of symmetric type
+
+"""
+macro implement_gradient(f, f_dfdx)
+    return :($(esc(f))(x :: Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = _propagate_gradient($(esc(f_dfdx)), x))
+end
+# which calls the general function _propagate_gradient that calls the specialized _insert_gradient method below
+function _propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual})
+    fval, dfdx_val = f_dfdx(_extract_value(x))
+    return _insert_gradient(fval, dfdx_val, x)
+end
+
+# Define the _insert_gradient method
+"""
+    _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::ForwardDiff.Dual)
+    _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Vec{<:Any,<:ForwardDiff.Dual})
+    _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::SecondOrderTensor{<:Any,<:ForwardDiff.Dual})
+
+Allows inserting an analytical gradient for use with automatic differentiation.
+Consider a composed function ``h(f(g(x)))``, where you have an efficient way to
+calculate ``\\partial f/\\partial g``, but want to use automatic 
+differentiation for the other functions. Then, you can make another definition 
+of ``f(g)`` to dispatch on if ``g`` is a tensor with `ForwardDiff.Dual` 
+entires, i.e.
+```julia
+function f(g::Tensor{2,dim,T}) where{dim, T<:ForwardDiff.Dual}
+    gval = _extract_value(g)               # Get the non-dual tensor value
+    fval = f(gval)                        # Calculate function value
+    dfdg = dfdg_analytical(fval, gval)    # Calculate analytical derivative
+    return _insert_gradient(fval, dfdg, g) # Return the updated dual tensor
+end
+```
+
+"""
+function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Dual{Tg}) where{Tg}
+    dgdx = _extract_gradient(g, _get_original_gradient_input(g))
+    dfdx = dfdg ⊗ dgdx
+    return _insert_full_gradient(f, dfdx, Tg())
+end
+
+function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Vec{<:Any, <:Dual{Tg}}) where{Tg}
+    dgdx = _extract_gradient(g, _get_original_gradient_input(g))
+    dfdx = dfdg ⋅ dgdx
+    return _insert_full_gradient(f, dfdx, Tg())
+end
+
+function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::SecondOrderTensor{<:Any,<:Dual{Tg}}) where{Tg}
+    dgdx = _extract_gradient(g, _get_original_gradient_input(g))
+    dfdx = dfdg ⊡ dgdx
+    return _insert_full_gradient(f, dfdx, Tg())
+end
+
+# Define helper function to figure out original input to gradient function
+_get_original_gradient_input(::Dual{Tag{Tf,Tv}}) where{Tf,Tv} = zero(Tv)
+_get_original_gradient_input(::AbstractTensor{<:Any,<:Any,<:Dual{Tag{Tf,Tv}}}) where{Tf,Tv} = zero(Tv)
+
+# Define helper function to insert_the_full_gradient calculated in _insert_gradient
+_insert_full_gradient(f::Number, dfdx::Number, ::Tg) where{Tg} = Dual{Tg}(f, dfdx)
+_insert_full_gradient(f::Number, dfdx::AbstractTensor, ::Tg) where{Tg} = Dual{Tg}(f, get_data(dfdx))
+
+function _insert_full_gradient(f::TT, dfdx::TT, ::Tg) where{TT<:AbstractTensor,Tg}
+    fdata = get_data(f)
+    diffdata = get_data(dfdx)
+    TTb = get_base(TT)
+    @inbounds y = TTb(ntuple(i -> Dual{Tg}(fdata[i], diffdata[i]), length(fdata)))
+    return y
+end
+
+function _insert_full_gradient(f::Vec{dim}, dfdx::Tensor{2,dim}, ::Tg) where{dim, Tg}
+    fdata = get_data(f)
+    diffdata = get_data(dfdx)
+    @inbounds y = Vec{dim}(i -> Dual{Tg}(fdata[i], ntuple(j->diffdata[i+dim*(j-1)], dim)))
+    return y
+end
+
+function _insert_full_gradient(f::Tensor{2,dim,<:Any,N}, dfdx::Tensor{4,dim}, ::Tg) where{dim, N, Tg}
+    fdata = get_data(f)
+    diffdata = get_data(dfdx)
+    @inbounds y = Tensor{2,dim}(ntuple(i->Dual{Tg}(fdata[i], ntuple(j->diffdata[i+N*(j-1)],N)), N))
+    return y
+end
+function _insert_full_gradient(f::SymmetricTensor{2,dim,<:Any,N}, dfdx::SymmetricTensor{4,dim}, ::Tg) where{dim, N, Tg}
+    fdata = get_data(f)
+    diffdata = get_data(dfdx)
+    @inbounds y = SymmetricTensor{2,dim}(ntuple(i->Dual{Tg}(fdata[i], ntuple(j->diffdata[i+N*(j-1)],N)), N))
+    return y
+end
+
 
 ##################
 # Load functions #
