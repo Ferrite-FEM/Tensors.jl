@@ -111,13 +111,20 @@ Tensors.majortranspose
 
 ## Symmetric
 
-The symmetric part of a second and fourth order tensor is defined by:
+The symmetric part of a second order tensor is defined by:
 
 ```math
 \mathbf{A}^\text{sym} = \frac{1}{2}(\mathbf{A} + \mathbf{A}^\text{T}) \Leftrightarrow A_{ij}^\text{sym} = \frac{1}{2}(A_{ij} + A_{ji}),
 ```
+
+The major symmetric part of a fourth order tensor is defined by
 ```math
-\mathsf{A}^\text{sym} = \frac{1}{2}(\mathsf{A} + \mathsf{A}^\text{t}) \Leftrightarrow A_{ijkl}^\text{sym} = \frac{1}{2}(A_{ijkl} + A_{jilk}).
+\mathsf{A}^\text{majsym} = \frac{1}{2}(\mathsf{A} + \mathsf{A}^\text{T}) \Leftrightarrow A_{ijkl}^\text{majsym} = \frac{1}{2}(A_{ijkl} + A_{klij}).
+```
+
+The minor symmetric part of a fourth order tensor is defined by 
+```math
+A_{ijkl}^\text{minsym} = \frac{1}{4}(A_{ijkl} + A_{ijlk} + A_{jikl} + A_{jilk}).
 ```
 
 ```@docs
