@@ -250,10 +250,24 @@ be of symmetric type
 
 """
 macro implement_gradient(f, f_dfdx)
-    return :($(esc(f))(x :: Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = _propagate_gradient($(esc(f_dfdx)), x))
+    return :($(esc(f))(x :: Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = propagate_gradient($(esc(f_dfdx)), x))
 end
 # which calls the general function _propagate_gradient that calls the specialized _insert_gradient method below
-function _propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual})
+"""
+    function propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual})    
+
+`propagate_gradient` takes in the function `f_dfdx` that, given a 
+tensor input calculates the value and gradient of a function `f` 
+wrt. that input, i.e. `fval, dfdx_val = f_dfdx(y::AbstractTensor)`
+`y` should not have dual entries. 
+`propagate_gradient` is used to override `f` when `f`'s input is 
+tensor with Dual numbers (i.e. when it is used to calculate a 
+derivative), and can, for example, be used as follows
+`f(x::Tensor{2,<:Any,<:Tensors.Dual}) = propagate_gradient(f_dfdx, x)`
+where the key part is that the type of x must be specified to be of
+type `Tensors.Dual` (which is equivalent to `ForwardDiff.Dual`)
+"""
+function propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual})
     fval, dfdx_val = f_dfdx(_extract_value(x))
     return _insert_gradient(fval, dfdx_val, x)
 end
