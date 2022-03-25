@@ -295,22 +295,40 @@ end
 
 """
 function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Dual{Tg}) where{Tg}
+    @assert isa(dfdg, _get_expected_gradient_type(f, g))
     dgdx = _extract_gradient(g, _get_original_gradient_input(g))
     dfdx = dfdg ⊗ dgdx
     return _insert_full_gradient(f, dfdx, Tg())
 end
 
 function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Vec{<:Any, <:Dual{Tg}}) where{Tg}
+    @assert isa(dfdg, _get_expected_gradient_type(f, g))
     dgdx = _extract_gradient(g, _get_original_gradient_input(g))
     dfdx = dfdg ⋅ dgdx
     return _insert_full_gradient(f, dfdx, Tg())
 end
 
 function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::SecondOrderTensor{<:Any,<:Dual{Tg}}) where{Tg}
+    @assert isa(dfdg, _get_expected_gradient_type(f, g))
     dgdx = _extract_gradient(g, _get_original_gradient_input(g))
     dfdx = dfdg ⊡ dgdx
     return _insert_full_gradient(f, dfdx, Tg())
 end
+
+_get_expected_gradient_type(f::Number, g::Number) = Number
+_get_expected_gradient_type(f::Tensor{1}, g::Tensor{1}) = Tensor{2}
+_get_expected_gradient_type(f::Tensor{2}, g::Number) = Tensor{2}
+_get_expected_gradient_type(f::Number, g::Tensor{2}) = Tensor{2}
+_get_expected_gradient_type(f::Tensor{2}, g::Tensor{2}) = Tensor{4}
+_get_expected_gradient_type(f::Tensor{4}, g::Number) = Tensor{4}
+_get_expected_gradient_type(f::Number, g::Tensor{4}) = Tensor{4}
+
+_get_expected_gradient_type(f::SymmetricTensor{2}, g::Number) = SymmetricTensor{2}
+_get_expected_gradient_type(f::Number, g::SymmetricTensor{2}) = SymmetricTensor{2}
+_get_expected_gradient_type(f::SymmetricTensor{2}, g::SymmetricTensor{2}) = SymmetricTensor{4}
+_get_expected_gradient_type(f::SymmetricTensor{4}, g::Number) = SymmetricTensor{4}
+_get_expected_gradient_type(f::Number, g::SymmetricTensor{4}) = SymmetricTensor{4}
+
 
 # Define helper function to figure out original input to gradient function
 _get_original_gradient_input(::Dual{Tag{Tf,Tv}}) where{Tf,Tv} = zero(Tv)
