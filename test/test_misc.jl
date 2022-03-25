@@ -368,21 +368,31 @@ for T in (Float32, Float64), dim in (1, 2, 3)
     # construct positive definite Voigt-tensor
     n = dim*dim - div((dim-1)*dim, 2)
     A = rand(T, n, n); A = A'A + I
-    Aval, Avec = eigen(A)
+    Aval, Avec = eigen(Hermitian(A))
     perm = sortperm(Aval)
     Aval = Aval[perm]
     Avec = [Avec[:, i] for i in perm]
 
-    # construct tensor with "inverse scaling"
-    S = fromvoigt(SymmetricTensor{4,dim,T}, A)
-    S′ = SymmetricTensor{4,dim}((i,j,k,l) -> k == l ? S[i,j,k,l] : S[i,j,k,l]/2)
+    S = frommandel(SymmetricTensor{4,dim,T}, A)
 
-    E = eigen(S′)
+    E = eigen(S)
     @test eigvals(E) ≈ Aval
-    @test tovoigt.(eigvecs(E)) ≈ Avec
+    S′ = zero(S)
     for i in 1:n
-        @test S′ ⊡ E.vectors[i] ≈ E.values[i] * E.vectors[i]
+        m = tomandel(eigvecs(E)[i])
+        @test m / m[1] ≈ Avec[i] / Avec[i][1]
+        @test S ⊡ E.vectors[i] ≈ E.values[i] * E.vectors[i]
+        @test norm(E.vectors[i]) ≈ 1
+        for j in 1:n
+            if i == j
+                @test E.vectors[i] ⊡ E.vectors[j] ≈ 1
+            else
+                @test E.vectors[i] ⊡ E.vectors[j] ≈ 0 atol=5eps(T)
+            end
+        end
+        S′ += E.values[i] * (E.vectors[i] ⊗ E.vectors[i])
     end
+    @test S ≈ S′
     a, b = E # iteration
     @test a == eigvals(E) == E.values
     @test b == eigvecs(E) == E.vectors
