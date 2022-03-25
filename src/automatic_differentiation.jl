@@ -295,40 +295,37 @@ end
 
 """
 function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Dual{Tg}) where{Tg}
-    @assert isa(dfdg, _get_expected_gradient_type(f, g))
+    _check_gradient_shape(f,g,dfdg)
     dgdx = _extract_gradient(g, _get_original_gradient_input(g))
     dfdx = dfdg ⊗ dgdx
     return _insert_full_gradient(f, dfdx, Tg())
 end
 
 function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Vec{<:Any, <:Dual{Tg}}) where{Tg}
-    @assert isa(dfdg, _get_expected_gradient_type(f, g))
+    _check_gradient_shape(f,g,dfdg)
     dgdx = _extract_gradient(g, _get_original_gradient_input(g))
     dfdx = dfdg ⋅ dgdx
     return _insert_full_gradient(f, dfdx, Tg())
 end
 
 function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::SecondOrderTensor{<:Any,<:Dual{Tg}}) where{Tg}
-    @assert isa(dfdg, _get_expected_gradient_type(f, g))
+    _check_gradient_shape(f,g,dfdg)
     dgdx = _extract_gradient(g, _get_original_gradient_input(g))
     dfdx = dfdg ⊡ dgdx
     return _insert_full_gradient(f, dfdx, Tg())
 end
 
-_get_expected_gradient_type(f::Number, g::Number) = Number
-_get_expected_gradient_type(f::Tensor{1}, g::Tensor{1}) = Tensor{2}
-_get_expected_gradient_type(f::Tensor{2}, g::Number) = Tensor{2}
-_get_expected_gradient_type(f::Number, g::Tensor{2}) = Tensor{2}
-_get_expected_gradient_type(f::Tensor{2}, g::Tensor{2}) = Tensor{4}
-_get_expected_gradient_type(f::Tensor{4}, g::Number) = Tensor{4}
-_get_expected_gradient_type(f::Number, g::Tensor{4}) = Tensor{4}
+function _check_gradient_shape(f,g,dfdg)
+    expected_shape = _get_expected_gradient_shape(f, g)
+    @assert isa(dfdg, expected_shape) "Gradient is a $(typeof(dfdg)), but should be a $expected_shape"
+end
 
-_get_expected_gradient_type(f::SymmetricTensor{2}, g::Number) = SymmetricTensor{2}
-_get_expected_gradient_type(f::Number, g::SymmetricTensor{2}) = SymmetricTensor{2}
-_get_expected_gradient_type(f::SymmetricTensor{2}, g::SymmetricTensor{2}) = SymmetricTensor{4}
-_get_expected_gradient_type(f::SymmetricTensor{4}, g::Number) = SymmetricTensor{4}
-_get_expected_gradient_type(f::Number, g::SymmetricTensor{4}) = SymmetricTensor{4}
-
+# _get_expected_gradient_shape(f_val, g_val), f is function output and g is function input
+_get_expected_gradient_shape(::Number, ::Number) = Number
+_get_expected_gradient_shape(::TT, ::Number) where{TT<:AbstractTensor} = get_base(TT)
+_get_expected_gradient_shape(::Number, ::TT) where{TT<:AbstractTensor} = get_base(TT)
+_get_expected_gradient_shape(::Tensor{forder,dim}, ::Tensor{gorder,dim}) where{forder,gorder,dim} = Tensor{forder+gorder,dim}
+_get_expected_gradient_shape(::SymmetricTensor{forder,dim}, ::SymmetricTensor{gorder,dim}) where{forder,gorder,dim} = SymmetricTensor{forder+gorder,dim}
 
 # Define helper function to figure out original input to gradient function
 _get_original_gradient_input(::Dual{Tag{Tf,Tv}}) where{Tf,Tv} = zero(Tv)
