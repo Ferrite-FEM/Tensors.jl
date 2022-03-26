@@ -269,6 +269,7 @@ type `Tensors.Dual` (which is equivalent to `ForwardDiff.Dual`)
 """
 function propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual})
     fval, dfdx_val = f_dfdx(_extract_value(x))
+    _check_gradient_shape(fval,x,dfdx_val)
     return _insert_gradient(fval, dfdx_val, x)
 end
 
@@ -295,21 +296,18 @@ end
 
 """
 function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Dual{Tg}) where{Tg}
-    _check_gradient_shape(f,g,dfdg)
     dgdx = _extract_gradient(g, _get_original_gradient_input(g))
     dfdx = dfdg ⊗ dgdx
     return _insert_full_gradient(f, dfdx, Tg())
 end
 
 function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Vec{<:Any, <:Dual{Tg}}) where{Tg}
-    _check_gradient_shape(f,g,dfdg)
     dgdx = _extract_gradient(g, _get_original_gradient_input(g))
     dfdx = dfdg ⋅ dgdx
     return _insert_full_gradient(f, dfdx, Tg())
 end
 
 function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::SecondOrderTensor{<:Any,<:Dual{Tg}}) where{Tg}
-    _check_gradient_shape(f,g,dfdg)
     dgdx = _extract_gradient(g, _get_original_gradient_input(g))
     dfdx = dfdg ⊡ dgdx
     return _insert_full_gradient(f, dfdx, Tg())

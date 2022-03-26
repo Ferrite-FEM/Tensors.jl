@@ -116,7 +116,8 @@ The method relies on multiple dispatch to run your gradient function instead of
 the calling the regular function with dual numbers. Julia will always prefer the 
 most specific type definition, but it can sometimes be hard to know which is most 
 specific. Therefore, it is always recommended to test that your gradient function 
-is called when testing, by e.g. inserting a print statement at the beginning. 
+is called when testing, by e.g. inserting a print statement at the beginning as 
+in the example below. 
 
 ### Example
 Lets consider the function ``h(\mathbf{f}(\mathbf{g}(\mathbf{x})))`` 
