@@ -7,6 +7,7 @@ import Base.@pure
 import Statistics
 using Statistics: mean
 using LinearAlgebra
+using StaticArrays
 # re-exports from LinearAlgebra
 export ⋅, ×, dot, diagm, tr, det, norm, eigvals, eigvecs, eigen
 # re-exports from Statistics
