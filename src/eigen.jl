@@ -8,14 +8,16 @@
 
 Compute the eigenvalues of a symmetric tensor.
 """
-@inline LinearAlgebra.eigvals(S::SymmetricTensor) = eigvals(eigen(S))
+@inline LinearAlgebra.eigvals(S::SymmetricTensor{4}) = eigvals(eigen(S))
+@inline LinearAlgebra.eigvals(S::SymmetricTensor{2,dim,T}) where{dim,T} = convert(Vec{dim,T}, Vec{dim}(eigvals(SMatrix(ustrip(S)))))
 
 """
     eigvecs(::SymmetricTensor)
 
 Compute the eigenvectors of a symmetric tensor.
 """
-@inline LinearAlgebra.eigvecs(S::SymmetricTensor) = eigvecs(eigen(S))
+@inline LinearAlgebra.eigvecs(S::SymmetricTensor{4}) = eigvecs(eigen(S))
+@inline LinearAlgebra.eigvecs(S::SymmetricTensor{4}) = eigvecs(SMatrix(ustrip(S)))
 
 struct Eigen{T, S, dim, M}
     values::Vec{dim, T}
