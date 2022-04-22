@@ -1,6 +1,6 @@
 # Specify conversion to static arrays for 2nd order tensors
-@inline StaticArrays.SMatrix(a::Tensor{2,dim}) where{dim} = SMatrix{dim,dim}(a)
-@inline StaticArrays.SMatrix(a::SymmetricTensor{2,dim}) where{dim} = Symmetric(SMatrix{dim,dim}(a))
+to_smatrix(a::Tensor{2, dim, T}) where {dim, T} = SMatrix{dim, dim, T}(a)
+to_smatrix(a::SymmetricTensor{2, dim, T}) where {dim, T} = Symmetric(SMatrix{dim, dim, T}(a))
 
 
 """
@@ -9,7 +9,7 @@
 Compute the eigenvalues of a symmetric tensor.
 """
 @inline LinearAlgebra.eigvals(S::SymmetricTensor{4}) = eigvals(eigen(S))
-@inline LinearAlgebra.eigvals(S::SymmetricTensor{2,dim,T}) where{dim,T} = convert(Vec{dim,T}, Vec{dim}(eigvals(SMatrix(ustrip(S)))))
+@inline LinearAlgebra.eigvals(S::SymmetricTensor{2,dim,T}) where{dim,T} = convert(Vec{dim,T}, Vec{dim}(eigvals(to_smatrix(ustrip(S)))))
 
 """
     eigvecs(::SymmetricTensor)
@@ -17,7 +17,7 @@ Compute the eigenvalues of a symmetric tensor.
 Compute the eigenvectors of a symmetric tensor.
 """
 @inline LinearAlgebra.eigvecs(S::SymmetricTensor{4}) = eigvecs(eigen(S))
-@inline LinearAlgebra.eigvecs(S::SymmetricTensor{4}) = eigvecs(SMatrix(ustrip(S)))
+@inline LinearAlgebra.eigvecs(S::SymmetricTensor{4}) = eigvecs(to_smatrix(ustrip(S)))
 
 struct Eigen{T, S, dim, M}
     values::Vec{dim, T}
@@ -102,6 +102,6 @@ end
 end
 
 function LinearAlgebra.eigen(R::SymmetricTensor{2,dim,T}) where{dim,T}
-    e=eigen(SMatrix(ustrip(R)))
+    e = eigen(to_smatrix(ustrip(R)))
     return Tensors.Eigen(convert(Vec{dim,T}, Vec{dim}(e.values)), Tensor{2,dim}(e.vectors))
 end
