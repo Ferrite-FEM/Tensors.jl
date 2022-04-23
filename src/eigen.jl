@@ -1,5 +1,4 @@
-# Specify conversion to static arrays for 2nd order tensors
-to_smatrix(a::Tensor{2, dim, T}) where {dim, T} = SMatrix{dim, dim, T}(a)
+# Specify conversion to static arrays for 2nd order symmetric tensors
 to_smatrix(a::SymmetricTensor{2, dim, T}) where {dim, T} = Symmetric(SMatrix{dim, dim, T}(a))
 
 
