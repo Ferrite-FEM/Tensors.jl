@@ -30,6 +30,8 @@ Base.eps(::Type{F64}) = eps(Float64)
 # promotion
 Base.promote_type(::Type{Float32}, ::Type{F64}) = Float64 # for eig
 Base.promote_type(::Type{Float64}, ::Type{F64}) = Float64 # for vecnorm
+Base.promote_type(::Type{Int64}, ::Type{F64}) = F64 # for eig in StaticArrays
+Base.promote_type(::Type{F64}, ::Type{Int64}) = F64 # for eig in StaticArrays
 Base.promote(a::F64, b::T) where {T <: Number} = a, F64(b)
 Base.promote(a::T, b::F64) where {T <: Number} = F64(a), b
 Base.convert(::Type{F64}, a::F64) = a
