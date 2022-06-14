@@ -7,7 +7,7 @@ This section contain a few demos of applying `Tensors` to continuum mechanics.
 The linear elasticity tensor ``\mathbf{C}`` can be defined from the Lamé parameters ``\lambda`` and ``\mu`` by the expression
 
 ```math
-\mathbf{C}_{ijkl} = \lambda \delta_{ij}\delta_{kl} + \mu(\delta_{ij}\delta_{jl} + \delta_{il}\delta_{jk}),
+\mathbf{C}_{ijkl} = \lambda \delta_{ij}\delta_{kl} + \mu(\delta_{ik}\delta_{jl} + \delta_{il}\delta_{jk}),
 ```
 
 where ``\delta_{ij} = 1`` if ``i = j`` otherwise ``0``. It can also be computed in terms of the Young's modulus ``E`` and Poisson's ratio ``\nu`` by the conversion formulas ``\lambda = E\nu / [(1 + \nu)(1 - 2\nu)]`` and ``\mu = E / [2(1 + \nu)]``.
@@ -32,7 +32,7 @@ C = SymmetricTensor{4, dim}(f)
 For a deformation gradient
 
 ```math
-\mathbf{F} = \mathbf{I} + \nabla \otimes \mathbf{u},
+\mathbf{F} = \mathbf{I} + \mathbf{u} \otimes \nabla,
 ```
 
 where ``\mathbf{u}`` is the deformation from the reference to the current configuration, the right Cauchy-Green deformation tensor is defined by
