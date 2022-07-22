@@ -389,7 +389,7 @@ for T in (Float32, Float64), dim in (1, 2, 3)
             if i == j
                 @test E.vectors[i] ⊡ E.vectors[j] ≈ 1
             else
-                @test E.vectors[i] ⊡ E.vectors[j] ≈ 0 atol=5eps(T)
+                @test E.vectors[i] ⊡ E.vectors[j] ≈ 0 atol=10eps(T)
             end
         end
         S′ += E.values[i] * (E.vectors[i] ⊗ E.vectors[i])
