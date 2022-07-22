@@ -42,20 +42,22 @@ for dim in (1, 2, 3)
     z(i, jkl...) = i % 2 == 0 ? 0 : float(0)
     @test Vec{dim}(ntuple(z, dim))::Vec{dim,Float64} ==
           Vec{dim}(z)::Vec{dim,Float64}
-    # @test Vec{dim,Float32}(ntuple(z, dim))::Vec{dim,Float32} ==
-    #       Vec{dim,Float32}(z)::Vec{dim,Float32}
+    @test Vec{dim,Float32}(ntuple(z, dim))::Vec{dim,Float32} ==
+          Vec{dim,Float32}(z)::Vec{dim,Float32}
     for order in (1, 2, 4)
         N = Tensors.n_components(Tensor{order,dim})
         @test Tensor{order,dim}(ntuple(z, N))::Tensor{order,dim,Float64} ==
               Tensor{order,dim}(z)::Tensor{order,dim,Float64}
         @test Tensor{order,dim,Float32}(ntuple(z, N))::Tensor{order,dim,Float32} ==
               Tensor{order,dim,Float32}(z)::Tensor{order,dim,Float32}
+        @test_throws MethodError Tensor{order,dim}(ntuple(z, N+1))
         order == 1 && continue
         N = Tensors.n_components(SymmetricTensor{order,dim})
         @test SymmetricTensor{order,dim}(ntuple(z, N))::SymmetricTensor{order,dim,Float64} ==
               SymmetricTensor{order,dim}(z)::SymmetricTensor{order,dim,Float64}
         @test SymmetricTensor{order,dim,Float32}(ntuple(z, N))::SymmetricTensor{order,dim,Float32} ==
               SymmetricTensor{order,dim,Float32}(z)::SymmetricTensor{order,dim,Float32}
+        @test_throws MethodError SymmetricTensor{order,dim}(ntuple(z, N+1))
     end
 end
 # Number type which is not <: Real but <: Number (Tensors#154)

@@ -57,16 +57,6 @@ end
     end
 end
 
-# Tensor from heterogeneous Tuple
-function Tensor{order, dim}(data::Tuple) where {order, dim}
-    return Tensor{order,dim}(promote(data...))
-end
-
-# SymmetricTensor from heterogeneous Tuple
-function SymmetricTensor{order, dim}(data::Tuple) where {order, dim}
-    return SymmetricTensor{order,dim}(promote(data...))
-end
-
 # one (identity tensor)
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
