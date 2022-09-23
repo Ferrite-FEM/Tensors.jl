@@ -289,17 +289,9 @@ Rotate a three dimensional tensor `x` around the vector `u` a total of `θ` radi
 
 # Examples
 ```jldoctest
-julia> x = Vec{3}((0.0, 0.0, 1.0))
-3-element Vec{3, Float64}:
- 0.0
- 0.0
- 1.0
+julia> x = Vec{3}((0.0, 0.0, 1.0));
 
-julia> u = Vec{3}((0.0, 1.0, 0.0))
-3-element Vec{3, Float64}:
- 0.0
- 1.0
- 0.0
+julia> u = Vec{3}((0.0, 1.0, 0.0));
 
 julia> rotate(x, u, π/2)
 3-element Vec{3, Float64}:
@@ -308,37 +300,79 @@ julia> rotate(x, u, π/2)
  6.123233995736766e-17
 ```
 """
-rotate(x::AbstractTensor, u::Vec{3}, θ::Number)
+rotate(x::AbstractTensor{<:Any,3}, u::Vec{3}, θ::Number)
 
 function rotate(x::Vec{3}, u::Vec{3}, θ::Number)
     ux = u ⋅ x
     u² = u ⋅ u
-    c = cos(θ)
-    s = sin(θ)
+    s, c = sincos(θ)
     (u * ux * (1 - c) + u² * x * c + sqrt(u²) * (u × x) * s) / u²
 end
 
-function rotation_matrix(u::Vec{3, T}, θ::Number) where T
+"""
+    rotate(x::AbstractTensor{2}, θ::Number)
+
+Rotate a two dimensional tensor `x` `θ` radians around the out-of-plane axis.
+
+# Examples
+```jldoctest
+julia> x = Vec{2}((0.0, 1.0));
+
+julia> rotate(x, π/4)
+2-element Vec{2, Float64}:
+ -0.7071067811865475
+  0.7071067811865476
+```
+"""
+rotate(x::AbstractTensor{<:Any, 2}, θ::Number)
+
+function rotate(x::Vec{2}, θ::Number)
+    s, c = sincos(θ)
+    return Vec{2}((c * x[1] - s * x[2], s * x[1] + c * x[2]))
+end
+
+@deprecate rotation_matrix rotation_tensor false
+
+"""
+    rotation_tensor(θ::Number)
+
+Return the two-dimensional rotation matrix corresponding to rotation of `θ` radians around
+the out-of-plane axis (i.e. around `(0, 0, 1)`).
+"""
+function rotation_tensor(θ::Number)
+    s, c = sincos(θ)
+    return Tensor{2, 2}((c, s, -s, c))
+end
+
+"""
+    rotation_tensor(u::Vec{3}, θ::Number)
+
+Return the three-dimensional rotation matrix corresponding to rotation of `θ` radians around
+the vector `u`.
+"""
+function rotation_tensor(u::Vec{3, T}, θ::Number) where T
     # See http://mathworld.wolfram.com/RodriguesRotationFormula.html
     u = u / norm(u)
     z = zero(T)
     ω = Tensor{2, 3}((z, u[3], -u[2], -u[3], z, u[1], u[2], -u[1], z))
-    return one(ω) + sin(θ) * ω + (1 - cos(θ)) * ω^2
+    s, c = sincos(θ)
+    return one(ω) + s * ω + (1 - c) * ω^2
 end
 
-function rotate(x::SymmetricTensor{2, 3}, u::Vec{3}, θ::Number)
-    R = rotation_matrix(u, θ)
+# args is (u::Vec{3}, θ::Number) for 3D tensors, and (θ::number,) for 2D
+function rotate(x::SymmetricTensor{2}, args...)
+    R = rotation_tensor(args...)
     return unsafe_symmetric(R ⋅ x ⋅ R')
 end
-function rotate(x::Tensor{2, 3}, u::Vec{3}, θ::Number)
-    R = rotation_matrix(u, θ)
+function rotate(x::Tensor{2}, args...)
+    R = rotation_tensor(args...)
     return R ⋅ x ⋅ R'
 end
-function rotate(x::Tensor{4, 3}, u::Vec{3}, θ::Number)
-    R = rotation_matrix(u, θ)
+function rotate(x::Tensor{4}, args...)
+    R = rotation_tensor(args...)
     return otimesu(R, R) ⊡ x ⊡ otimesu(R', R')
 end
-function rotate(x::SymmetricTensor{4, 3}, u::Vec{3}, θ::Number)
-    R = rotation_matrix(u, θ)
+function rotate(x::SymmetricTensor{4}, args...)
+    R = rotation_tensor(args...)
     return unsafe_symmetric(otimesu(R, R) ⊡ x ⊡ otimesu(R', R'))
 end
