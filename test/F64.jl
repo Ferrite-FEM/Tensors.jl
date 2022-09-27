@@ -42,6 +42,7 @@ Base.convert(::Type{F64}, a::T) where {T <: Number} = F64(a)
 Base.acos(a::F64) = F64(acos(a.x))
 Base.cos(a::F64) = F64(cos(a.x))
 Base.sin(a::F64) = F64(sin(a.x))
+Base.sincos(a::F64) = (F64(sin(a.x)), F64(cos(a.x)))
 Base.precision(::Type{F64}) = precision(Float64)
 Base.floatmin(::Type{F64}) = floatmin(Float64)
 

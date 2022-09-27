@@ -203,8 +203,8 @@ end # of testsection
     @test AAT ⊡ (b ⊗ a) ≈ (@inferred dotdot(a, AA_sym, b))::Tensor{2, dim, T}
 end # of testsection
 
-if dim == 3
-    @testsection "rotation" begin
+@testsection "rotation" begin
+    if dim == 3
         x = eᵢ(Vec{3, T}, 1)
         y = eᵢ(Vec{3, T}, 2)
         z = eᵢ(Vec{3, T}, 3)
@@ -214,9 +214,11 @@ if dim == 3
         @test rotate(3*z, y, π) ≈ -3*z
         @test rotate(x+y+z, z, π/4) ≈ Vec{3}((0.0,√2,1.0))
 
-        @test rotate(a, b, 0) ≈ a
+        @test rotate(a, b, 0) ≈ a ≈ rotation_tensor(b, 0) ⋅ a
         @test rotate(a, b, π) ≈ rotate(a, b, -π)
+        @test rotate(a, b, π) ≈ rotation_tensor(b, π) ⋅ a rtol=1e-6
         @test rotate(a, b, π/2) ≈ rotate(a, -b, -π/2)
+        @test rotate(a, b, π/2) ≈ rotation_tensor(b, π/2) ⋅ a rtol=1e-6
 
         @test rotate(A, x, π) ≈ rotate(A, x, -π)
         @test rotate(rotate(rotate(A, x, π), y, π), z, π) ≈ A
@@ -240,13 +242,32 @@ if dim == 3
 
         v1, v2, v3, v4, axis = [rand(Vec{3,T}) for _ in 1:5]
         α = rand(T) * π
-        R = Tensors.rotation_matrix(axis, α)
+        R = rotation_tensor(axis, α)
         v1v2v3v4 = (v1 ⊗ v2) ⊗ (v3 ⊗ v4)
         Rv1v2v3v4 = ((R ⋅ v1) ⊗ (R ⋅ v2)) ⊗ ((R ⋅ v3) ⊗ (R ⋅ v4))
         @test rotate(v1v2v3v4, axis, α) ≈ Rv1v2v3v4
         v1v1v2v2 = otimes(v1) ⊗ otimes(v2)
         Rv1v1v2v2 = otimes(R ⋅ v1) ⊗ otimes(R ⋅ v2)
         @test rotate(v1v1v2v2, axis, α) ≈ Rv1v1v2v2
+    end
+    if dim == 2
+        θ = T(pi/2)
+        zT = zero(T)
+        z = Vec{3}((zT, zT, one(T)))
+        r = 1:2
+        R = rotation_tensor(θ)
+        R3 = rotation_tensor(z, θ)
+        @test R ≈ R3[r, r]
+        a3 = Vec{3}((a[1], a[2], zT))
+        @test rotate(a, θ) ≈ R ⋅ a ≈ rotate(a3, z, θ)[r]
+        A3 = Tensor{2,3}((i,j) -> i < 3 && j < 3 ? A[i, j] : zT)
+        @test rotate(A, θ) ≈ rotate(A3, z, θ)[r, r]
+        A3s = SymmetricTensor{2,3}((i,j) -> i < 3 && j < 3 ? A_sym[i, j] : zT)
+        @test rotate(A_sym, θ) ≈ rotate(A3s, z, θ)[r, r]
+        AA3 = Tensor{4,3}((i,j,k,l) -> i < 3 && j < 3 && k < 3 && l < 3 ? AA[i, j, k, l] : zT)
+        @test rotate(AA, θ) ≈ rotate(AA3, z, θ)[r, r, r, r]
+        AA3s = SymmetricTensor{4,3}((i,j,k,l) -> i < 3 && j < 3 && k < 3 && l < 3 ? AA_sym[i, j, k, l] : zT)
+        @test rotate(AA_sym, θ) ≈ rotate(AA3s, z, θ)[r, r, r, r]
     end
 end
 
