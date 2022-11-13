@@ -169,6 +169,9 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Te
         @test (@inferred fp2(t))::typeof(t) ≈ t ⋅ t
         @test (@inferred fp3(t))::typeof(t) ≈ t ⋅ t ⋅ t
     end
+
+    @test iszero(zero(TensorType{order,dim,T}))
+    @test !iszero(ones(TensorType{order,dim,T}))
 end
 end # of testset
 
