@@ -37,6 +37,8 @@ julia> norm(A)
     end
 end
 
+LinearAlgebra.normalize(t::AbstractTensor) = t/norm(t)
+
 """
     det(::SecondOrderTensor)
 
