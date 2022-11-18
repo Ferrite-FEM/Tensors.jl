@@ -272,7 +272,7 @@ deps = ["ArgTools", "SHA"]
 uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 
 [[Tensors]]
-deps = ["ForwardDiff", "LinearAlgebra", "SIMD", "Statistics"]
+deps = ["ForwardDiff", "LinearAlgebra", "SIMD", "StaticArrays", "Statistics"]
 path = ".."
 uuid = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 version = "1.10.0"

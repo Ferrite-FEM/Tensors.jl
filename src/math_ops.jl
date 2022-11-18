@@ -158,101 +158,6 @@ end
 Base.:\(S1::SecondOrderTensor, S2::AbstractTensor) = inv(S1) ⋅ S2
 
 """
-    eigvals(::SymmetricTensor)
-
-Compute the eigenvalues of a symmetric tensor.
-"""
-@inline LinearAlgebra.eigvals(S::SymmetricTensor) = eigvals(eigen(S))
-
-"""
-    eigvecs(::SymmetricTensor)
-
-Compute the eigenvectors of a symmetric tensor.
-"""
-@inline LinearAlgebra.eigvecs(S::SymmetricTensor) = eigvecs(eigen(S))
-
-struct Eigen{T, S, dim, M}
-    values::Vec{dim, T}
-    vectors::Tensor{2, dim, S, M}
-end
-
-struct FourthOrderEigen{dim,T,S,M}
-    values::Vector{T}
-    vectors::Vector{SymmetricTensor{2,dim,S,M}}
-end
-
-# destructure via iteration
-function Base.iterate(E::Union{Eigen,FourthOrderEigen}, state::Int=1)
-    return iterate((eigvals(E), eigvecs(E)), state)
-end
-
-"""
-    eigen(A::SymmetricTensor{2})
-
-Compute the eigenvalues and eigenvectors of a symmetric second order tensor
-and return an `Eigen` object. The eigenvalues are stored in a `Vec`,
-sorted in ascending order. The corresponding eigenvectors are stored
-as the columns of a `Tensor`.
-
-See [`eigvals`](@ref) and [`eigvecs`](@ref).
-
-# Examples
-```jldoctest
-julia> A = rand(SymmetricTensor{2, 2});
-
-julia> E = eigen(A);
-
-julia> E.values
-2-element Vec{2, Float64}:
- -0.1883547111127678
-  1.345436766284664
-
-julia> E.vectors
-2×2 Tensor{2, 2, Float64, 4}:
- -0.701412  0.712756
-  0.712756  0.701412
-```
-"""
-LinearAlgebra.eigen(::SymmetricTensor{2})
-
-"""
-    eigvals(::Union{Eigen,FourthOrderEigen})
-
-Extract eigenvalues from an `Eigen` or `FourthOrderEigen` object,
-returned by [`eigen`](@ref).
-"""
-@inline LinearAlgebra.eigvals(E::Union{Eigen,FourthOrderEigen}) = E.values
-"""
-    eigvecs(::Union{Eigen,FourthOrderEigen})
-
-Extract eigenvectors from an `Eigen` or `FourthOrderEigen` object,
-returned by [`eigen`](@ref).
-"""
-@inline LinearAlgebra.eigvecs(E::Union{Eigen,FourthOrderEigen}) = E.vectors
-
-"""
-    eigen(A::SymmetricTensor{4})
-
-Compute the eigenvalues and second order eigentensors of a symmetric fourth
-order tensor and return an `FourthOrderEigen` object. The eigenvalues and
-eigentensors are sorted in ascending order of the eigenvalues.
-
-See also [`eigvals`](@ref) and [`eigvecs`](@ref).
-"""
-function LinearAlgebra.eigen(R::SymmetricTensor{4,dim,T′}) where {dim,T′}
-    S = ustrip(R)
-    T = eltype(S)
-    # Scale from the right only; tovoigt(S; offdiagscale=2) scales from left and right.
-    S′ = SymmetricTensor{4,dim,T}((i,j,k,l) -> k == l ? S[i,j,k,l] : 2*S[i,j,k,l])
-    v = tovoigt(S′)
-    E = eigen(v)
-    perm = sortperm(E.values)
-    values = T′[T′(E.values[i]) for i in perm]
-    vectors = [fromvoigt(SymmetricTensor{2,dim,T}, view(E.vectors, :, i)) for i in perm]
-    return FourthOrderEigen(values, vectors)
-end
-
-"""
     sqrt(S::SymmetricTensor{2})
 
 Calculate the square root of the positive definite symmetric
@@ -384,17 +289,9 @@ Rotate a three dimensional tensor `x` around the vector `u` a total of `θ` radi
 
 # Examples
 ```jldoctest
-julia> x = Vec{3}((0.0, 0.0, 1.0))
-3-element Vec{3, Float64}:
- 0.0
- 0.0
- 1.0
+julia> x = Vec{3}((0.0, 0.0, 1.0));
 
-julia> u = Vec{3}((0.0, 1.0, 0.0))
-3-element Vec{3, Float64}:
- 0.0
- 1.0
- 0.0
+julia> u = Vec{3}((0.0, 1.0, 0.0));
 
 julia> rotate(x, u, π/2)
 3-element Vec{3, Float64}:
@@ -403,37 +300,79 @@ julia> rotate(x, u, π/2)
  6.123233995736766e-17
 ```
 """
-rotate(x::AbstractTensor, u::Vec{3}, θ::Number)
+rotate(x::AbstractTensor{<:Any,3}, u::Vec{3}, θ::Number)
 
 function rotate(x::Vec{3}, u::Vec{3}, θ::Number)
     ux = u ⋅ x
     u² = u ⋅ u
-    c = cos(θ)
-    s = sin(θ)
+    s, c = sincos(θ)
     (u * ux * (1 - c) + u² * x * c + sqrt(u²) * (u × x) * s) / u²
 end
 
-function rotation_matrix(u::Vec{3, T}, θ::Number) where T
+"""
+    rotate(x::AbstractTensor{2}, θ::Number)
+
+Rotate a two dimensional tensor `x` `θ` radians around the out-of-plane axis.
+
+# Examples
+```jldoctest
+julia> x = Vec{2}((0.0, 1.0));
+
+julia> rotate(x, π/4)
+2-element Vec{2, Float64}:
+ -0.7071067811865475
+  0.7071067811865476
+```
+"""
+rotate(x::AbstractTensor{<:Any, 2}, θ::Number)
+
+function rotate(x::Vec{2}, θ::Number)
+    s, c = sincos(θ)
+    return Vec{2}((c * x[1] - s * x[2], s * x[1] + c * x[2]))
+end
+
+@deprecate rotation_matrix rotation_tensor false
+
+"""
+    rotation_tensor(θ::Number)
+
+Return the two-dimensional rotation matrix corresponding to rotation of `θ` radians around
+the out-of-plane axis (i.e. around `(0, 0, 1)`).
+"""
+function rotation_tensor(θ::Number)
+    s, c = sincos(θ)
+    return Tensor{2, 2}((c, s, -s, c))
+end
+
+"""
+    rotation_tensor(u::Vec{3}, θ::Number)
+
+Return the three-dimensional rotation matrix corresponding to rotation of `θ` radians around
+the vector `u`.
+"""
+function rotation_tensor(u::Vec{3, T}, θ::Number) where T
     # See http://mathworld.wolfram.com/RodriguesRotationFormula.html
     u = u / norm(u)
     z = zero(T)
     ω = Tensor{2, 3}((z, u[3], -u[2], -u[3], z, u[1], u[2], -u[1], z))
-    return one(ω) + sin(θ) * ω + (1 - cos(θ)) * ω^2
+    s, c = sincos(θ)
+    return one(ω) + s * ω + (1 - c) * ω^2
 end
 
-function rotate(x::SymmetricTensor{2, 3}, u::Vec{3}, θ::Number)
-    R = rotation_matrix(u, θ)
+# args is (u::Vec{3}, θ::Number) for 3D tensors, and (θ::number,) for 2D
+function rotate(x::SymmetricTensor{2}, args...)
+    R = rotation_tensor(args...)
     return unsafe_symmetric(R ⋅ x ⋅ R')
 end
-function rotate(x::Tensor{2, 3}, u::Vec{3}, θ::Number)
-    R = rotation_matrix(u, θ)
+function rotate(x::Tensor{2}, args...)
+    R = rotation_tensor(args...)
     return R ⋅ x ⋅ R'
 end
-function rotate(x::Tensor{4, 3}, u::Vec{3}, θ::Number)
-    R = rotation_matrix(u, θ)
+function rotate(x::Tensor{4}, args...)
+    R = rotation_tensor(args...)
     return otimesu(R, R) ⊡ x ⊡ otimesu(R', R')
 end
-function rotate(x::SymmetricTensor{4, 3}, u::Vec{3}, θ::Number)
-    R = rotation_matrix(u, θ)
+function rotate(x::SymmetricTensor{4}, args...)
+    R = rotation_tensor(args...)
     return unsafe_symmetric(otimesu(R, R) ⊡ x ⊡ otimesu(R', R'))
 end

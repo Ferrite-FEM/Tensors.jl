@@ -42,20 +42,22 @@ for dim in (1, 2, 3)
     z(i, jkl...) = i % 2 == 0 ? 0 : float(0)
     @test Vec{dim}(ntuple(z, dim))::Vec{dim,Float64} ==
           Vec{dim}(z)::Vec{dim,Float64}
-    # @test Vec{dim,Float32}(ntuple(z, dim))::Vec{dim,Float32} ==
-    #       Vec{dim,Float32}(z)::Vec{dim,Float32}
+    @test Vec{dim,Float32}(ntuple(z, dim))::Vec{dim,Float32} ==
+          Vec{dim,Float32}(z)::Vec{dim,Float32}
     for order in (1, 2, 4)
         N = Tensors.n_components(Tensor{order,dim})
         @test Tensor{order,dim}(ntuple(z, N))::Tensor{order,dim,Float64} ==
               Tensor{order,dim}(z)::Tensor{order,dim,Float64}
         @test Tensor{order,dim,Float32}(ntuple(z, N))::Tensor{order,dim,Float32} ==
               Tensor{order,dim,Float32}(z)::Tensor{order,dim,Float32}
+        @test_throws MethodError Tensor{order,dim}(ntuple(z, N+1))
         order == 1 && continue
         N = Tensors.n_components(SymmetricTensor{order,dim})
         @test SymmetricTensor{order,dim}(ntuple(z, N))::SymmetricTensor{order,dim,Float64} ==
               SymmetricTensor{order,dim}(z)::SymmetricTensor{order,dim,Float64}
         @test SymmetricTensor{order,dim,Float32}(ntuple(z, N))::SymmetricTensor{order,dim,Float32} ==
               SymmetricTensor{order,dim,Float32}(z)::SymmetricTensor{order,dim,Float32}
+        @test_throws MethodError SymmetricTensor{order,dim}(ntuple(z, N+1))
     end
 end
 # Number type which is not <: Real but <: Number (Tensors#154)
@@ -167,6 +169,9 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Te
         @test (@inferred fp2(t))::typeof(t) ≈ t ⋅ t
         @test (@inferred fp3(t))::typeof(t) ≈ t ⋅ t ⋅ t
     end
+
+    @test iszero(zero(TensorType{order,dim,T}))
+    @test !iszero(ones(TensorType{order,dim,T}))
 end
 end # of testset
 
@@ -368,21 +373,31 @@ for T in (Float32, Float64), dim in (1, 2, 3)
     # construct positive definite Voigt-tensor
     n = dim*dim - div((dim-1)*dim, 2)
     A = rand(T, n, n); A = A'A + I
-    Aval, Avec = eigen(A)
+    Aval, Avec = eigen(Hermitian(A))
     perm = sortperm(Aval)
     Aval = Aval[perm]
     Avec = [Avec[:, i] for i in perm]
 
-    # construct tensor with "inverse scaling"
-    S = fromvoigt(SymmetricTensor{4,dim,T}, A)
-    S′ = SymmetricTensor{4,dim}((i,j,k,l) -> k == l ? S[i,j,k,l] : S[i,j,k,l]/2)
+    S = frommandel(SymmetricTensor{4,dim,T}, A)
 
-    E = eigen(S′)
+    E = eigen(S)
     @test eigvals(E) ≈ Aval
-    @test tovoigt.(eigvecs(E)) ≈ Avec
+    S′ = zero(S)
     for i in 1:n
-        @test S′ ⊡ E.vectors[i] ≈ E.values[i] * E.vectors[i]
+        m = tomandel(eigvecs(E)[i])
+        @test m / m[1] ≈ Avec[i] / Avec[i][1]
+        @test S ⊡ E.vectors[i] ≈ E.values[i] * E.vectors[i]
+        @test norm(E.vectors[i]) ≈ 1
+        for j in 1:n
+            if i == j
+                @test E.vectors[i] ⊡ E.vectors[j] ≈ 1
+            else
+                @test E.vectors[i] ⊡ E.vectors[j] ≈ 0 atol=10eps(T)
+            end
+        end
+        S′ += E.values[i] * (E.vectors[i] ⊗ E.vectors[i])
     end
+    @test S ≈ S′
     a, b = E # iteration
     @test a == eigvals(E) == E.values
     @test b == eigvecs(E) == E.vectors

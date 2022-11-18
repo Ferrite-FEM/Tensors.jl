@@ -61,3 +61,5 @@ end
         @inbounds return SymmetricTensor{2, dim}($exps)
     end
 end
+
+Base.iszero(a::AbstractTensor) = all(iszero, get_data(a))

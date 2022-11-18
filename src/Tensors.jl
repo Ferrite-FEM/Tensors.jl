@@ -7,6 +7,7 @@ import Base.@pure
 import Statistics
 using Statistics: mean
 using LinearAlgebra
+using StaticArrays
 # re-exports from LinearAlgebra
 export ⋅, ×, dot, diagm, tr, det, norm, eigvals, eigvecs, eigen
 # re-exports from Statistics
@@ -21,7 +22,7 @@ export tdot, dott, dotdot
 export hessian, gradient, curl, divergence, laplace
 export @implement_gradient, propagate_gradient
 export basevec, eᵢ
-export rotate
+export rotate, rotation_tensor
 export tovoigt, tovoigt!, fromvoigt, tomandel, tomandel!, frommandel
 #########
 # Types #
@@ -134,10 +135,18 @@ for TensorType in (SymmetricTensor, Tensor)
             @inline $TensorType{$order, $dim}(t::NTuple{$N, T}) where {T} = $TensorType{$order, $dim, T, $N}(t)
             @inline $TensorType{$order, $dim, T1}(t::NTuple{$N, T2}) where {T1, T2} = $TensorType{$order, $dim, T1, $N}(t)
         end
+        if N > 1 # To avoid overwriting ::Tuple{Any}
+            # Heterogeneous tuple
+            @eval @inline $TensorType{$order, $dim}(t::Tuple{Vararg{<:Any,$N}}) = $TensorType{$order, $dim}(promote(t...))
+        end
     end
     if TensorType == Tensor
         for dim in (1, 2, 3)
             @eval @inline Tensor{1, $dim}(t::NTuple{$dim, T}) where {T} = Tensor{1, $dim, T, $dim}(t)
+            if dim > 1 # To avoid overwriting ::Tuple{Any}
+                # Heterogeneous tuple
+                @eval @inline Tensor{1, $dim}(t::Tuple{Vararg{<:Any,$dim}}) = Tensor{1, $dim}(promote(t...))
+            end
         end
     end
 end
