@@ -305,9 +305,11 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     for order in (1,2,4)
         t = rand(Tensor{order, dim, T})
         @test (@inferred norm(t))::T ≈ sqrt(sum(abs2, Array(t)[:]))
+        @test norm((@inferred normalize(t))::Tensor{order, dim, T}) ≈ one(T)
         if order != 1
             t_sym = rand(SymmetricTensor{order, dim, T})
             @test (@inferred norm(t_sym))::T ≈ sqrt(sum(abs2, Array(t_sym)[:]))
+            @test norm((@inferred normalize(t_sym))::SymmetricTensor{order, dim, T}) ≈ one(T)
         end
     end
 
