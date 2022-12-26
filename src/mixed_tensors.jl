@@ -159,7 +159,9 @@ makemixed(t::Tensor{2,dim}) where dim = MixedTensor{2,(dim,dim)}(get_data(t))
 makemixed(t::Tensor{4,dim}) where dim = MixedTensor{4,(dim,dim,dim,dim)}(get_data(t))
 
 
-# Slow implementations just for testing 
+# Slow (not all) implementations just for testing 
+dcontract(S1::MixedTensor, S2::Tensor) = dcontract(S1, makemixed(S2))
+dcontract(S1::Tensor, S2::MixedTensor) = dcontract(makemixed(S1), S2)
 function dcontract(S1::MixedTensor{2,dims}, S2::MixedTensor{2,dims}) where dims
     mapreduce(*, +, get_data(S1), get_data(S2))
 end
@@ -194,6 +196,9 @@ function dcontract(S1::MixedTensor{4,dims1}, S2::MixedTensor{4,dims2}) where {di
         ntuple(o-> (rem(o,K)+1,div(o-1,K)+1), K*L)
         )))
 end
+
+otimes(S1::Tensor, S2::MixedTensor) = otimes(makemixed(S1), S2)
+otimes(S1::MixedTensor, S2::Tensor) = otimes(S1, makemixed(S2))
 
 function otimes(S1::Vec{d1}, S2::Vec{d2}) where {d1, d2}
     return MixedTensor{2, (d1, d2)}(@inline function(i,j) @inbounds S1[i]*S2[j]; end)

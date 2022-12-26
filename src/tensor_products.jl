@@ -261,6 +261,14 @@ julia> A ⊗ B
 """
 function otimes end 
 
+@inline function otimes(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
+    TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
+    TensorType(@inline function(i,j,k,l) @inbounds S1[i,j] * S2[k,l]; end)
+end
+@inline function otimes(S1::Tensor{2,dim}, S2::Tensor{2,dim}) where {dim}
+    TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
+    TensorType(@inline function(i,j,k,l) @inbounds S1[i,j] * S2[k,l]; end)
+end
 
 @inline otimes(S1::Number, S2::Number) = S1*S2
 @inline otimes(S1::AbstractTensor, S2::Number) = S1*S2
