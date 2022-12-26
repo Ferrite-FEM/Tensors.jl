@@ -238,3 +238,9 @@ end
 # Lazy for now, depends on performance of mixed tensors if this is fine. 
 LinearAlgebra.dot(S1::MixedTensor, S2::Tensor) = dot(S1, makemixed(S2))
 LinearAlgebra.dot(S1::Tensor, S2::MixedTensor) = dot(makemixed(S1), S2)
+
+@inline function Base.transpose(S::MixedTensor{2, dims}) where {dims}
+    MixedTensor{2, (dims[2],dims[1])}(@inline function(i, j) @inbounds S[j,i]; end)
+end
+
+@inline Base.adjoint(S::MixedTensor) = transpose(S)
