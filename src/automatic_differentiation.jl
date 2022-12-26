@@ -80,6 +80,10 @@ end
     return Tensor{2, dim}(partials(v).values)
 end
 
+@inline function _extract_gradient(v::Dual, ::MixedTensor{order,dims}) where {order,dims}
+    return MixedTensor{order,dims}(partials(v).values)
+end
+
 # Vec output, Vec input -> Tensor{2} gradient
 @inline function _extract_gradient(v::Vec{1, <: Dual}, ::Vec{1})
     @inbounds begin
@@ -101,6 +105,14 @@ end
     @inbounds begin
         p1, p2, p3 = partials(v[1]), partials(v[2]), partials(v[3])
         ∇f = Tensor{2, 3}((p1[1], p2[1], p3[1], p1[2], p2[2], p3[2], p1[3], p2[3], p3[3]))
+    end
+    return ∇f
+end
+
+@inline function _extract_gradient(v::Vec{d1, <:Dual}, ::Vec{d2}) where {d1, d2}
+    @inbounds begin
+        p = tuple((partials(vi) for vi in v)...)
+        ∇f = MixedTensor{2,(d1,d2)}(ntuple(i->p[rem(i-1,d1)+1][div(i-1,d1)+1], d1*d2))
     end
     return ∇f
 end
@@ -160,6 +172,23 @@ end
     end
     return ∇f
 end
+
+# Quickfix to make it work. If solving for mixed is fast this should be fast...
+@inline _extract_gradient(v::MixedTensor, u::AbstractTensor) = _extract_gradient(v, makemixed(u))
+@inline _extract_gradient(v::AbstractTensor, u::MixedTensor) = _extract_gradient(makemixed(v), u)
+
+@inline function _extract_gradient(v::MixedTensor{2, dims1, <:Dual}, ::MixedTensor{2, dims2}) where {dims1, dims2}
+    @inbounds begin
+        p = tuple((partials(vi) for vi in get_data(v))...)
+        N1 = n_components(MixedTensor{2,dims1})
+        N2 = n_components(MixedTensor{2,dims2})
+        ∇f = MixedTensor{4, (dims1[1],dims1[2],dims2[1],dims2[2])}(
+            ntuple(i->p[rem(i-1,N1)+1][div(i-1,N1)+1], N1*N2)
+        )
+    end
+    return makeregular(∇f)
+end
+
 # SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
 @inline function _extract_gradient(v::SymmetricTensor{2, 3, <: Dual}, ::SymmetricTensor{2, 3})
     @inbounds begin
@@ -431,6 +460,16 @@ end
     return v_dual
 end
 
+@inline function _load(v::MixedTensor{2,dims, T}, ::Tg) where {dims, T, Tg}
+    data = get_data(v)
+    N = n_components(MixedTensor{2,dims})
+    makedual(data::NTuple{N,T}, i) where {N,T} = Dual{Tg}(data[i], ntuple(j->j==i ? one(T) : zero(T), N)) 
+    @inbounds begin
+        v_dual = MixedTensor{2,dims}(ntuple(i-> makedual(data, i), N))
+    end
+    return v_dual
+end
+
 """
     gradient(f::Function, v::Union{SecondOrderTensor, Vec, Number})
     gradient(f::Function, v::Union{SecondOrderTensor, Vec, Number}, :all)
@@ -450,7 +489,7 @@ julia> ∇f = gradient(norm, A)
 julia> ∇f, f = gradient(norm, A, :all);
 ```
 """
-function gradient(f::F, v::V) where {F, V <: Union{SecondOrderTensor, Vec, Number}}
+function gradient(f::F, v::V) where {F, V <: Union{SecondOrderTensor, Vec, Number, MixedTensor}}
     v_dual = _load(v, Tag(f, V))
     res = f(v_dual)
     return _extract_gradient(res, v)
