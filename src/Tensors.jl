@@ -1,5 +1,3 @@
-__precompile__()
-
 module Tensors
 
 import Base.@pure
@@ -176,5 +174,6 @@ include("eigen.jl")
 include("special_ops.jl")
 include("simd.jl")
 include("voigt.jl")
+include("precompile.jl")
 
 end # module
