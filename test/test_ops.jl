@@ -318,6 +318,20 @@ end
         @test isa(fromvoigt(SymmetricTensor{2,dim}, rand(num_components) .> 0.5), SymmetricTensor{2,dim,Bool})
         @test isa(fromvoigt(SymmetricTensor{4,dim}, rand(num_components,num_components) .> 0.5), SymmetricTensor{4,dim,Bool})
     end
+
+    # Static voigt/mandel that use default order
+    s2 = [rand(SymmetricTensor{2,dim}) for dim in 1:3]
+    s4 = [rand(SymmetricTensor{4,dim}) for dim in 1:3]
+    t2 = [rand(Tensor{2,dim}) for dim in 1:3]
+    t4 = [rand(Tensor{4,dim}) for dim in 1:3]
+    for a in (s2, s4, t2, t4)
+        for b in a
+            @test tosvoigt(b) == tovoigt(b)
+            @test tosmandel(b) ≈ tomandel(b)
+            @test fromvoigt(Tensors.get_base(typeof(b)), tosvoigt(b)) ≈ b
+            @test frommandel(Tensors.get_base(typeof(b)), tosmandel(b)) ≈ b
+        end
+    end
 end
 end # of testsection
 end # of testsection
