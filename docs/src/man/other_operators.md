@@ -246,6 +246,8 @@ differentiation, see [Differentiation of Voigt format](@ref) further down.
 Tensors.tovoigt
 Tensors.tovoigt!
 Tensors.fromvoigt
+Tensors.tosvoigt
+Tensors.tosmandel
 ```
 
 ### Differentiation of Voigt format
