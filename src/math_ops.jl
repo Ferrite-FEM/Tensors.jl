@@ -346,6 +346,26 @@ function rotation_tensor(θ::Number)
     return Tensor{2, 2}((c, s, -s, c))
 end
 
+@doc raw"""
+    rotation_tensor(ψ::Number,θ::Number,ϕ::Number)
+
+Return the three-dimensional rotation matrix corresponding to the rotation described
+by the three Euler angles $ψ, θ, ϕ$.
+
+```math
+R(ψ,θ,ϕ) = R_x(ψ)R_y(θ)R_z(ϕ)
+```
+"""
+function rotation_tensor(ψ::Number,θ::Number,ϕ::Number)
+    # See http://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf
+    sψ, cψ = sincos(ψ)
+    sθ, cθ = sincos(θ)
+    sϕ, cϕ = sincos(ϕ)
+    return Tensor{2,3}((cθ * cϕ, cθ * sϕ, -sθ,                                    #first column
+                        sψ * sθ * cϕ - cψ * sϕ, sψ * sθ * sϕ + cψ * cϕ, sψ * cθ,  #second column
+                        cψ * sθ * cϕ + sψ * sϕ, cψ * sθ * sϕ - sψ * cϕ, cψ * cθ)) #third column
+end
+
 """
     rotation_tensor(u::Vec{3}, θ::Number)
 
