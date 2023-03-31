@@ -355,6 +355,9 @@ by the three Euler angles $ψ, θ, ϕ$.
 ```math
 R(ψ,θ,ϕ) = R_x(ψ)R_y(θ)R_z(ϕ)
 ```
+
+Note that the [gimbal lock phenomena](https://en.wikipedia.org/wiki/Gimbal_lock) can occur when using
+this rotation tensor parametrization.
 """
 function rotation_tensor(ψ::Number,θ::Number,ϕ::Number)
     # See http://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf
