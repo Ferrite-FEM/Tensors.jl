@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+title: Tensors.jl
+message: >-
+  If you use this software, please cite this software using
+  the metadata from "preferred-citation".
+type: software
+authors:
+  - family-names: Carlsson
+    given-names: Kristoffer
+    orcid: "https://orcid.org/0000-0001-9092-3092"
+  - family-names: Ekre
+    given-names: Fredrik
+    orcid: "https://orcid.org/0000-0003-2476-5406"
+  - name: "Tensors.jl contributors"
+repository-code: "https://github.com/Ferrite-FEM/Tensors.jl"
+license: MIT
+preferred-citation:
+  authors:
+    - family-names: Carlsson
+      given-names: Kristoffer
+      orcid: "https://orcid.org/0000-0001-9092-3092"
+    - family-names: Ekre
+      given-names: Fredrik
+      orcid: "https://orcid.org/0000-0003-2476-5406"
+  doi: "10.5334/jors.182"
+  journal: "Journal of Open Research Software"
+  title: "Tensors.jl — Tensor Computations in Julia"
+  type: article
+  year: 2019
