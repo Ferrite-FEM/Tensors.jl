@@ -224,6 +224,7 @@ Tensors.sqrt
 
 ```@docs
 Tensors.rotate
+Tensors.rotation_tensor
 ```
 
 ## Special operations
