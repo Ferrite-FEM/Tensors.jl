@@ -1,6 +1,6 @@
-using SnoopPrecompile
+using PrecompileTools
 
-@precompile_all_calls begin
+@compile_workload begin
     for dim in (2, 3)
         v = ones(Tensor{1, dim, Float64,})
         σ = one(SymmetricTensor{2, dim, Float64})
