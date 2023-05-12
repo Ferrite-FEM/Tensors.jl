@@ -229,6 +229,9 @@ end # of testsection
         @test rotate(rotate(rotate(A_sym, x, π), y, π), z, π)::SymmetricTensor ≈ A_sym
         @test rotate(A_sym, a, 0) ≈ A_sym
         @test rotate(A_sym, a, π/2) ≈ rotate(A_sym, -a, -π/2)
+        @test rotate(A_sym, π/4, π/4, π/4) ≈ rotate(A_sym, -3π/4, 3π/4, -3π/4)
+        @test rotate(A, π/4, π/4, π/4) ≈ rotate(A, -3π/4, 3π/4, -3π/4)
+        @test rotate(one(A), π/4, π/4, π/4) ≈ rotate(one(A), -3π/4, 3π/4, -3π/4) ≈ one(A)
 
         @test rotate(AA, x, π)::Tensor ≈ rotate(AA, x, -π)
         @test rotate(rotate(rotate(AA, x, π), y, π), z, π) ≈ AA

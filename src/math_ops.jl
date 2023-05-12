@@ -347,6 +347,29 @@ function rotation_tensor(θ::Number)
 end
 
 """
+    rotation_tensor(ψ::Number, θ::Number, ϕ::Number)
+
+Return the three-dimensional rotation matrix corresponding to the rotation described
+by the three Euler angles ``ψ``, ``θ``, ``ϕ``.
+
+```math
+R(ψ,θ,ϕ) = R_x(ψ)R_y(θ)R_z(ϕ)
+```
+see e.g. <http://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf> for a complete description.
+
+Note that the [gimbal lock phenomena](https://en.wikipedia.org/wiki/Gimbal_lock) can occur when using
+this rotation tensor parametrization.
+"""
+function rotation_tensor(ψ::Number,θ::Number,ϕ::Number)
+    sψ, cψ = sincos(ψ)
+    sθ, cθ = sincos(θ)
+    sϕ, cϕ = sincos(ϕ)
+    return Tensor{2,3}((cθ * cϕ, cθ * sϕ, -sθ,                                    #first column
+                        sψ * sθ * cϕ - cψ * sϕ, sψ * sθ * sϕ + cψ * cϕ, sψ * cθ,  #second column
+                        cψ * sθ * cϕ + sψ * sϕ, cψ * sθ * sϕ - sψ * cϕ, cψ * cθ)) #third column
+end
+
+"""
     rotation_tensor(u::Vec{3}, θ::Number)
 
 Return the three-dimensional rotation matrix corresponding to rotation of `θ` radians around
