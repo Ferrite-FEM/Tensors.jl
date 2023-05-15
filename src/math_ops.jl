@@ -157,6 +157,31 @@ function Base.inv(t::SymmetricTensor{4, dim, T}) where {dim, T}
     frommandel(SymmetricTensor{4, dim}, inv(tomandel(t)))
 end
 
+"""
+    inv(::Tensor{order, dim})
+
+Compute the pseudo-inverse of a tensor.
+"""
+function LinearAlgebra.pinv(t::Vec{dim, T}) where {dim, T}
+    LinearAlgebra.Transpose{T, Vec{dim, T}}(t / sum(t.^2))
+end
+
+function LinearAlgebra.pinv(t::Tensor{2, dim}) where {dim}
+    Base.inv(t)
+end
+
+function LinearAlgebra.pinv(t::SymmetricTensor{2, dim}) where {dim}
+    Base.inv(t)
+end
+
+function LinearAlgebra.pinv(t::Tensor{4, dim}) where {dim}
+    Base.inv(t)
+end
+
+function LinearAlgebra.pinv(t::SymmetricTensor{4, dim, T}) where {dim, T}
+    Base.inv(t)
+end
+
 Base.:\(S1::SecondOrderTensor, S2::AbstractTensor) = inv(S1) ⋅ S2
 
 """

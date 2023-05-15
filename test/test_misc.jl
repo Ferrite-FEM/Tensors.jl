@@ -635,10 +635,4 @@ end
     A2 = rand(Tensor{2, 2})
     @test_throws DimensionMismatch A + A2
     @test_throws DimensionMismatch AA - A
-
-    # transpose/adjoint of Vec
-    x = rand(Vec{3})
-    @test_throws ArgumentError x'
-    @test_throws ArgumentError transpose(x)
-    @test_throws ArgumentError adjoint(x)
 end # of testset

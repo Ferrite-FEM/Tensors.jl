@@ -69,7 +69,7 @@ end
 ###############
 # Typealiases #
 ###############
-const Vec{dim, T, M} = Tensor{1, dim, T, dim}
+const Vec{dim, T} = Tensor{1, dim, T, dim}
 
 const AllTensors{dim, T} = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T},
                                  SymmetricTensor{4, dim, T}, Tensor{4, dim, T},
