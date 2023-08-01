@@ -213,7 +213,7 @@ The output can be converted back to a tensor with the standard [`frommandel`](@r
 tosmandel(A::Union{Tensor{2},Tensor{4}}) = _tosvoigt(A)
 tosmandel(A::Union{SymmetricTensor{2},SymmetricTensor{4}}) = _tosvoigt(A, sqrt(2*one(eltype(A))))
 
-@generated function _tosvoigt(A::TT, s::T=one(T)) where {TT<:SecondOrderTensor{dim,T}} where {dim,T}
+function __to_voigt_tuple(A::Type{TT}, s::Type{T}=one(T)) where {TT<:SecondOrderTensor{dim,T}} where {dim,T}
     # Define internals for generation
     idx_fun(i, j) = compute_index(get_base(A), i, j)
     maxind(j) = TT<:SymmetricTensor ? j : dim
@@ -230,16 +230,12 @@ tosmandel(A::Union{SymmetricTensor{2},SymmetricTensor{4}}) = _tosvoigt(A, sqrt(2
             exps.args[voigt_ind] = :(s*get_data(A)[$(idx_fun(i, j))])
         end
     end
-
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return SVector{$N, $T}($exps)
-    end
+    return exps, N
 end
 
-@generated function _tosvoigt(A::TT, s::T=one(T)) where {TT<:FourthOrderTensor{dim,T}} where {dim,T}
+function __to_voigt_tuple(A::Type{TT}, s::Type{T}=one(T)) where {TT<:FourthOrderTensor{dim,T}} where {dim,T}
     # Define internals for generation
-    idx_fun(i, j, k, l) = compute_index(get_base(A), i, j, k, l)
+    idx_fun(i, j, k, l) = compute_index(get_base(A), i, j, k, l) # why no change needed above?
     maxind(j) = TT<:SymmetricTensor ? j : dim
     voigt_lin_index(vi, vj) = (vj-1)*N + vi 
     N = Int(sqrt(n_components(get_base(A))))
@@ -257,9 +253,33 @@ end
             exps.args[voigt_lin_ind] = :(s*get_data(A)[$(idx_fun(i, j, k, l))])
         end
     end
-    
+    return exps, N
+end
+
+@generated function _to_voigt_tuple(A::AbstractTensor{order, dim, T}, s::T=one(T)) where {order,dim,T}
+    exps, N = __to_voigt_tuple(A, s)
     quote
         $(Expr(:meta, :inline))
-        @inbounds return SMatrix{$N, $N, $T}($exps)
+        @inbounds return $exps, $N
     end
 end
+
+# return StaticArrays
+function _tosvoigt(A::TT, s::T=one(T)) where {TT<:SecondOrderTensor{dim,T}} where {dim,T}
+    tuple_data, N = _to_voigt_tuple(A, s)
+    return SVector{N, T}(tuple_data)
+end
+function _tosvoigt(A::TT, s::T=one(T)) where {TT<:FourthOrderTensor{dim,T}} where {dim,T}
+    tuple_data, N = _to_voigt_tuple(A, s)
+    return SMatrix{N, N, T}(tuple_data)
+end
+
+# faster tovoigt! function for default index order
+function new_tovoigt!(v::AbstractVecOrMat{T}, A::AbstractTensor{order,dim,T}, s::T=one(T)) where {order,dim,T}
+    tuple_data, = _to_voigt_tuple(A, s)
+    for i in eachindex(tuple_data)
+        v[i] = tuple_data[i]
+    end
+    return v
+end
+
