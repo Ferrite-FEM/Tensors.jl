@@ -46,17 +46,22 @@ julia> tovoigt(Tensor{4,2}(1:16))
 ```
 """
 function tovoigt end
-@inline function tovoigt(A::Tensor{2, dim, T, M}; order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T, M}
-    @inbounds tovoigt!(Vector{T}(undef, M), A; order=order)
+# default to regular Array
+@inline function tovoigt(A::AbstractTensor; kwargs...)
+    return tovoigt(Array, A; kwargs...)
 end
-@inline function tovoigt(A::Tensor{4, dim, T, M}; order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T, M}
-    @inbounds tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A; order=order)
+
+@inline function tovoigt(::Type{<:Array}, A::Tensor{2, dim, T, M}; order=nothing) where {dim, T, M}
+    @inbounds _tovoigt!(Vector{T}(undef, M), A, order)
 end
-@inline function tovoigt(A::SymmetricTensor{2, dim, T, M}; offdiagscale=one(T), order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T, M}
-    @inbounds tovoigt!(Vector{T}(undef, M), A; offdiagscale=offdiagscale, order=order)
+@inline function tovoigt(::Type{<:Array}, A::Tensor{4, dim, T, M}; order=nothing) where {dim, T, M}
+    @inbounds _tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A, order)
 end
-@inline function tovoigt(A::SymmetricTensor{4, dim, T, M}; offdiagscale=one(T), order=DEFAULT_VOIGT_ORDER[dim]) where {dim, T, M}
-    @inbounds tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A; offdiagscale=offdiagscale, order=order)
+@inline function tovoigt(::Type{<:Array}, A::SymmetricTensor{2, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
+    @inbounds _tovoigt!(Vector{T}(undef, M), A, order; offdiagscale=offdiagscale)
+end
+@inline function tovoigt(::Type{<:Array}, A::SymmetricTensor{4, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
+    @inbounds _tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A, order; offdiagscale=offdiagscale)
 end
 
 """
@@ -105,25 +110,56 @@ julia> tovoigt!(x, T; offset=1)
 ```
 """
 function tovoigt! end
-Base.@propagate_inbounds function tovoigt!(v::AbstractVector, A::Tensor{2, dim}; offset::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim}
+Base.@propagate_inbounds function tovoigt!(v::AbstractVector, A::Tensor{2}; offset::Int=0, order=nothing)
+    _tovoigt!(v, A, order; offset=offset)
+end
+Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix, A::Tensor{4}; offset_i::Int=0, offset_j::Int=0, order=nothing)
+    _tovoigt!(v, A, order; offset_i=offset_i, offset_j=offset_j)
+end
+Base.@propagate_inbounds function tovoigt!(v::AbstractVector{T}, A::SymmetricTensor{2}; offdiagscale=one(T), offset::Int=0, order=nothing) where T
+    _tovoigt!(v, A, order; offdiagscale=offdiagscale, offset=offset)
+end
+Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix{T}, A::SymmetricTensor{4}; offdiagscale=one(T), offset_i::Int=0, offset_j::Int=0, order=nothing) where T
+    _tovoigt!(v, A, order; offdiagscale=offdiagscale, offset_i=offset_i, offset_j=offset_j)
+end
+
+# default voigt order (faster than custom voigt order)
+Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::SecondOrderTensor{dim,T}, ::Nothing; offset=0, offdiagscale=one(T)) where {dim,T}
+    tuple_data, = _to_voigt_tuple(A, offdiagscale)
+    for i in eachindex(tuple_data)
+        v[offset+i] = tuple_data[i]
+    end
+    return v
+end
+Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::FourthOrderTensor{dim,T}, ::Nothing; offdiagscale=one(T), offset_i=0, offset_j=0) where {dim,T}
+    tuple_data, N = _to_voigt_tuple(A, offdiagscale)
+    cartesian = CartesianIndices(((offset_i+1):(offset_i+N), (offset_j+1):(offset_j+N)))
+    for i in eachindex(tuple_data)
+        v[cartesian[i]] = tuple_data[i]
+    end
+    return v
+end
+
+# custom voigt order (slower than default voigt order)
+Base.@propagate_inbounds function _tovoigt!(v::AbstractVector, A::Tensor{2, dim}, order::AbstractVecOrMat; offset::Int=0) where {dim}
     for j in 1:dim, i in 1:dim
         v[offset + order[i, j]] = A[i, j]
     end
     return v
 end
-Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix, A::Tensor{4, dim}; offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {dim}
+Base.@propagate_inbounds function _tovoigt!(v::AbstractMatrix, A::Tensor{4, dim}, order::AbstractVecOrMat; offset_i::Int=0, offset_j::Int=0) where {dim}
     for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
         v[offset_i + order[i, j], offset_j + order[k, l]] = A[i, j, k, l]
     end
     return v
 end
-Base.@propagate_inbounds function tovoigt!(v::AbstractVector{T}, A::SymmetricTensor{2, dim}; offdiagscale=one(T), offset::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {T, dim}
+Base.@propagate_inbounds function _tovoigt!(v::AbstractVector{T}, A::SymmetricTensor{2, dim}, order::AbstractVecOrMat; offdiagscale=one(T), offset::Int=0) where {T, dim}
     for j in 1:dim, i in 1:j
         v[offset + order[i, j]] = i == j ? A[i, j] : A[i, j] * offdiagscale
     end
     return v
 end
-Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix{T}, A::SymmetricTensor{4, dim}; offdiagscale=one(T), offset_i::Int=0, offset_j::Int=0, order=DEFAULT_VOIGT_ORDER[dim]) where {T, dim}
+Base.@propagate_inbounds function _tovoigt!(v::AbstractMatrix{T}, A::SymmetricTensor{4, dim}, order::AbstractVecOrMat; offdiagscale=one(T), offset_i::Int=0, offset_j::Int=0) where {T, dim}
     for l in 1:dim, k in 1:l, j in 1:dim, i in 1:j
         v[offset_i + order[i, j], offset_j + order[k, l]] =
             (i == j && k == l) ? A[i, j, k, l] :
@@ -133,8 +169,9 @@ Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix{T}, A::SymmetricTen
     return v
 end
 
-@inline tomandel(A::SymmetricTensor{o, dim, T}; kwargs...) where{o,dim,T} = tovoigt(A; offdiagscale=√(2one(T)), kwargs...)
-@inline tomandel(A::Tensor; kwargs...) = tovoigt(A; kwargs...)
+@inline tomandel(A::AbstractTensor; kwargs...) = tomandel(Array, A; kwargs...)
+@inline tomandel(::Type{AT}, A::SymmetricTensor{o, dim, T}; kwargs...) where{AT,o,dim,T} = tovoigt(AT, A; offdiagscale=√(2one(T)), kwargs...)
+@inline tomandel(::Type{AT}, A::Tensor; kwargs...) where AT = tovoigt(AT, A; kwargs...)
 
 Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat{T}, A::SymmetricTensor; kwargs...) where{T} = tovoigt!(v, A; offdiagscale=√(2one(T)), kwargs...)
 Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat, A::Tensor; kwargs...) = tovoigt!(v, A; kwargs...)
@@ -192,28 +229,10 @@ end
 Base.@propagate_inbounds frommandel(TT::Type{<: SymmetricTensor}, v::AbstractVecOrMat{T}; kwargs...) where{T} = fromvoigt(TT, v; offdiagscale=√(2one(T)), kwargs...)
 Base.@propagate_inbounds frommandel(TT::Type{<: Tensor}, v::AbstractVecOrMat; kwargs...) = fromvoigt(TT, v; kwargs...)
 
-# Static voigt format
-"""
-    tosvoigt(A::Union{SecondOrderTensor,FourthOrderTensor}; offdiagscale=1)
-
-`SVector` version of [`tovoigt`](@ref): converts the tensor `A` to a voigt `SVector` with the default voigt ordering. 
-The keyword `offdiagscale` is only available for symmetric tensors. See also [`tosmandel`](@ref).
-The output can be converted back to a tensor with the standard [`fromvoigt`](@ref) function.
-"""
-tosvoigt(A::Union{Tensor{2},Tensor{4}}) = _tosvoigt(A)
-tosvoigt(A::Union{SymmetricTensor{2},SymmetricTensor{4}}; offdiagscale=one(eltype(A))) = _tosvoigt(A, offdiagscale)
-
-"""
-    tosmandel(A::Union{SecondOrderTensor,FourthOrderTensor})
-
-`SVector` version of [`tomandel`](@ref): converts the tensor `A` to a mandel (`offdiagscale=√2` for symmetric tensors)
-`SVector` with the default voigt ordering. See also [`tosvoigt`](@ref). 
-The output can be converted back to a tensor with the standard [`frommandel`](@ref) function.
-"""
-tosmandel(A::Union{Tensor{2},Tensor{4}}) = _tosvoigt(A)
-tosmandel(A::Union{SymmetricTensor{2},SymmetricTensor{4}}) = _tosvoigt(A, sqrt(2*one(eltype(A))))
-
-function __to_voigt_tuple(A::Type{TT}, s::Type{T}=one(T)) where {TT<:SecondOrderTensor{dim,T}} where {dim,T}
+##############################################################
+# Reorder tensor data to tuple in default voigt format order #
+##############################################################
+function __to_voigt_tuple(A::Type{TT}, s=one(T)) where {TT<:SecondOrderTensor{dim,T}} where {dim,T}
     # Define internals for generation
     idx_fun(i, j) = compute_index(get_base(A), i, j)
     maxind(j) = TT<:SymmetricTensor ? j : dim
@@ -233,7 +252,7 @@ function __to_voigt_tuple(A::Type{TT}, s::Type{T}=one(T)) where {TT<:SecondOrder
     return exps, N
 end
 
-function __to_voigt_tuple(A::Type{TT}, s::Type{T}=one(T)) where {TT<:FourthOrderTensor{dim,T}} where {dim,T}
+function __to_voigt_tuple(A::Type{TT}, s=one(T)) where {TT<:FourthOrderTensor{dim,T}} where {dim,T}
     # Define internals for generation
     idx_fun(i, j, k, l) = compute_index(get_base(A), i, j, k, l) # why no change needed above?
     maxind(j) = TT<:SymmetricTensor ? j : dim
@@ -256,7 +275,7 @@ function __to_voigt_tuple(A::Type{TT}, s::Type{T}=one(T)) where {TT<:FourthOrder
     return exps, N
 end
 
-@generated function _to_voigt_tuple(A::AbstractTensor{order, dim, T}, s::T=one(T)) where {order,dim,T}
+@generated function _to_voigt_tuple(A::AbstractTensor{order, dim, T}, s=one(T)) where {order,dim,T}
     exps, N = __to_voigt_tuple(A, s)
     quote
         $(Expr(:meta, :inline))
@@ -264,22 +283,52 @@ end
     end
 end
 
-# return StaticArrays
-function _tosvoigt(A::TT, s::T=one(T)) where {TT<:SecondOrderTensor{dim,T}} where {dim,T}
-    tuple_data, N = _to_voigt_tuple(A, s)
+########################
+# StaticArrays support #
+########################
+@inline function tovoigt(::Type{<:SArray}, A::Tensor{2, dim, T, M}; order=nothing) where {dim, T, M}
+    @inbounds _to_static_voigt(A, order)
+end
+@inline function tovoigt(::Type{<:SArray}, A::Tensor{4, dim, T, M}; order=nothing) where {dim, T, M}
+    @inbounds _to_static_voigt(A, order)
+end
+@inline function tovoigt(::Type{<:SArray}, A::SymmetricTensor{2, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
+    @inbounds _to_static_voigt(A, order; offdiagscale=offdiagscale)
+end
+@inline function tovoigt(::Type{<:SArray}, A::SymmetricTensor{4, dim, T}; offdiagscale=one(T), order=nothing) where {dim, T}
+    @inbounds _to_static_voigt(A, order; offdiagscale=offdiagscale)
+end
+
+# default voigt order
+function _to_static_voigt(A::TT, ::Nothing; offdiagscale=one(T)) where {TT<:SecondOrderTensor{dim,T}} where {dim,T}
+    tuple_data, N = _to_voigt_tuple(A, offdiagscale)
     return SVector{N, T}(tuple_data)
 end
-function _tosvoigt(A::TT, s::T=one(T)) where {TT<:FourthOrderTensor{dim,T}} where {dim,T}
-    tuple_data, N = _to_voigt_tuple(A, s)
+function _to_static_voigt(A::TT, ::Nothing; offdiagscale=one(T)) where {TT<:FourthOrderTensor{dim,T}} where {dim,T}
+    tuple_data, N = _to_voigt_tuple(A, offdiagscale)
     return SMatrix{N, N, T}(tuple_data)
 end
 
-# faster tovoigt! function for default index order
-function new_tovoigt!(v::AbstractVecOrMat{T}, A::AbstractTensor{order,dim,T}, s::T=one(T)) where {order,dim,T}
-    tuple_data, = _to_voigt_tuple(A, s)
-    for i in eachindex(tuple_data)
-        v[i] = tuple_data[i]
-    end
-    return v
+# custom voigt order
+@inline function _to_static_voigt(A::Tensor{2, dim, T, M}, order::AbstractVecOrMat) where {dim, T, M}
+    v = MVector{M, T}(undef)
+    @inbounds _tovoigt!(v, A, order)
+    return SVector(v)
 end
+@inline function _to_static_voigt(A::Tensor{4, dim, T, M}, order::AbstractVecOrMat) where {dim, T, M}
+    m = MMatrix{Int(√M), Int(√M), T}(undef)
+    @inbounds _tovoigt!(m, A, order)
+    return SMatrix(m)
+end
+@inline function _to_static_voigt(A::SymmetricTensor{2, dim, T, M}, order::AbstractVecOrMat; offdiagscale=one(T)) where {dim, T, M}
+    v = MVector{M, T}(undef)
+    @inbounds _tovoigt!(v, A, order; offdiagscale=offdiagscale)
+    return SVector(v)
+end
+@inline function _to_static_voigt(A::SymmetricTensor{4, dim, T, M}, order::AbstractVecOrMat; offdiagscale=one(T)) where {dim, T, M}
+    m = MMatrix{Int(√M), Int(√M), T}(undef)
+    @inbounds _tovoigt!(m, A, order; offdiagscale=offdiagscale)
+    return SMatrix(m)
+end
+
 
