@@ -183,10 +183,20 @@ Base.@propagate_inbounds function _tovoigt!(v::AbstractMatrix{T}, A::SymmetricTe
     return v
 end
 
+"""
+    tomandel(A; kwargs...)
+
+Convert the tensor `A` to voigt-form using the Mandel convention, see [`tovoigt`](@ref).
+"""
 @inline tomandel(A::AbstractTensor; kwargs...) = tomandel(Array, A; kwargs...)
 @inline tomandel(::Type{AT}, A::SymmetricTensor{o, dim, T}; kwargs...) where{AT,o,dim,T} = tovoigt(AT, A; offdiagscale=√(2one(T)), kwargs...)
 @inline tomandel(::Type{AT}, A::Tensor; kwargs...) where AT = tovoigt(AT, A; kwargs...)
 
+"""
+    tomandel!(v, A; kwargs...)
+
+Fill the array `v` with the values in `A` on voigt-form using the Mandel convention, see [`tovoigt!`](@ref).
+"""
 Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat{T}, A::SymmetricTensor; kwargs...) where{T} = tovoigt!(v, A; offdiagscale=√(2one(T)), kwargs...)
 Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat, A::Tensor; kwargs...) = tovoigt!(v, A; kwargs...)
 
@@ -240,6 +250,11 @@ Base.@propagate_inbounds function fromvoigt(TT::Type{<: SymmetricTensor{4, dim}}
         end)
 end
 
+"""
+    frommandel(TT, v; kwargs...)
+
+Convert the Array `v` in voigt-format, following the Mandel convention, to a tensor of type `TT`, see [`fromvoigt`](@ref).
+"""
 Base.@propagate_inbounds frommandel(TT::Type{<: SymmetricTensor}, v::AbstractVecOrMat{T}; kwargs...) where{T} = fromvoigt(TT, v; offdiagscale=√(2one(T)), kwargs...)
 Base.@propagate_inbounds frommandel(TT::Type{<: Tensor}, v::AbstractVecOrMat; kwargs...) = fromvoigt(TT, v; kwargs...)
 
