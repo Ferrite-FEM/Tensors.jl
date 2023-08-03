@@ -335,11 +335,11 @@ end
 end
 
 # default voigt order
-function _to_static_voigt(A::TT, ::Nothing; offdiagscale=one(T)) where {TT<:SecondOrderTensor{dim,T}} where {dim,T}
+Base.@propagate_inbounds function _to_static_voigt(A::TT, ::Nothing; offdiagscale=one(T)) where {TT<:SecondOrderTensor{dim,T}} where {dim,T}
     tuple_data, N = _to_voigt_tuple(A, offdiagscale)
     return SVector{N, T}(tuple_data)
 end
-function _to_static_voigt(A::TT, ::Nothing; offdiagscale=one(T)) where {TT<:FourthOrderTensor{dim,T}} where {dim,T}
+Base.@propagate_inbounds function _to_static_voigt(A::TT, ::Nothing; offdiagscale=one(T)) where {TT<:FourthOrderTensor{dim,T}} where {dim,T}
     tuple_data, N = _to_voigt_tuple(A, offdiagscale)
     return SMatrix{N, N, T}(tuple_data)
 end
