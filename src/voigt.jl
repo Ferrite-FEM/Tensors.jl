@@ -1,9 +1,13 @@
 const DEFAULT_VOIGT_ORDER = ([1], [1 3; 4 2], [1 6 5; 9 2 4; 8 7 3])
 """
-    tovoigt(A::Union{SecondOrderTensor, FourthOrderTensor}; kwargs...)
+    tovoigt([type::Type{<:AbstractArray}, ]A::Union{SecondOrderTensor, FourthOrderTensor}; kwargs...)
 
 Converts a tensor to "Voigt"-format.
 
+Optional argument:
+- `type`: determines the returned Array type. Possible types are `Array` and `SArray` (see
+  [`StaticArrays`](https://juliaarrays.github.io/StaticArrays.jl/stable/)). 
+  
 Keyword arguments:
  - `offdiagscale`: determines the scaling factor for the offdiagonal elements. 
    This argument is only applicable for `SymmetricTensor`s. `tomandel` can also 
@@ -43,29 +47,39 @@ julia> tovoigt(Tensor{4,2}(1:16))
  4  16  12  8
  3  15  11  7
  2  14  10  6
+
+julia> tovoigt(SMatrix, Tensor{4,2}(1:16))
+4×4 SMatrix{4, 4, Int64, 16} with indices SOneTo(4)×SOneTo(4):
+ 1  13   9  5
+ 4  16  12  8
+ 3  15  11  7
+ 2  14  10  6
 ```
+
 """
 function tovoigt end
 # default to regular Array
 @inline function tovoigt(A::AbstractTensor; kwargs...)
     return tovoigt(Array, A; kwargs...)
 end
+@inline tovoigt(::Type{Array}, A::SecondOrderTensor; kwargs...) = tovoigt(Vector, A; kwargs...)
+@inline tovoigt(::Type{Array}, A::FourthOrderTensor; kwargs...) = tovoigt(Matrix, A; kwargs...)
 
-@inline function tovoigt(::Type{<:Array}, A::Tensor{2, dim, T, M}; order=nothing) where {dim, T, M}
+@inline function tovoigt(::Type{<:Vector}, A::Tensor{2, dim, T, M}; order=nothing) where {dim, T, M}
     @inbounds _tovoigt!(Vector{T}(undef, M), A, order)
 end
-@inline function tovoigt(::Type{<:Array}, A::Tensor{4, dim, T, M}; order=nothing) where {dim, T, M}
+@inline function tovoigt(::Type{<:Matrix}, A::Tensor{4, dim, T, M}; order=nothing) where {dim, T, M}
     @inbounds _tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A, order)
 end
-@inline function tovoigt(::Type{<:Array}, A::SymmetricTensor{2, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
+@inline function tovoigt(::Type{<:Vector}, A::SymmetricTensor{2, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
     @inbounds _tovoigt!(Vector{T}(undef, M), A, order; offdiagscale=offdiagscale)
 end
-@inline function tovoigt(::Type{<:Array}, A::SymmetricTensor{4, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
+@inline function tovoigt(::Type{<:Matrix}, A::SymmetricTensor{4, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
     @inbounds _tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A, order; offdiagscale=offdiagscale)
 end
 
 """
-    tovoigt!(v::Array, A::Union{SecondOrderTensor, FourthOrderTensor}; kwargs...)
+    tovoigt!(v::AbstractArray, A::Union{SecondOrderTensor, FourthOrderTensor}; kwargs...)
 
 Converts a tensor to "Voigt"-format using the following index order:
 `[11, 22, 33, 23, 13, 12, 32, 31, 21]`.
@@ -177,7 +191,7 @@ Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat{T}, A::SymmetricTensor; k
 Base.@propagate_inbounds tomandel!(v::AbstractVecOrMat, A::Tensor; kwargs...) = tovoigt!(v, A; kwargs...)
 
 """
-    fromvoigt(S::Type{<:AbstractTensor}, A::Array{T}; kwargs...)
+    fromvoigt(S::Type{<:AbstractTensor}, A::AbstractArray{T}; kwargs...)
 
 Converts an array `A` stored in Voigt format to a Tensor of type `S`.
 
@@ -286,16 +300,18 @@ end
 ########################
 # StaticArrays support #
 ########################
-@inline function tovoigt(::Type{<:SArray}, A::Tensor{2, dim, T, M}; order=nothing) where {dim, T, M}
+@inline tovoigt(::Type{SArray}, A::SecondOrderTensor; kwargs...) = tovoigt(SVector, A; kwargs...)
+@inline tovoigt(::Type{SArray}, A::FourthOrderTensor; kwargs...) = tovoigt(SMatrix, A; kwargs...)
+@inline function tovoigt(::Type{<:SVector}, A::Tensor{2, dim, T, M}; order=nothing) where {dim, T, M}
     @inbounds _to_static_voigt(A, order)
 end
-@inline function tovoigt(::Type{<:SArray}, A::Tensor{4, dim, T, M}; order=nothing) where {dim, T, M}
+@inline function tovoigt(::Type{<:SMatrix}, A::Tensor{4, dim, T, M}; order=nothing) where {dim, T, M}
     @inbounds _to_static_voigt(A, order)
 end
-@inline function tovoigt(::Type{<:SArray}, A::SymmetricTensor{2, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
+@inline function tovoigt(::Type{<:SVector}, A::SymmetricTensor{2, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
     @inbounds _to_static_voigt(A, order; offdiagscale=offdiagscale)
 end
-@inline function tovoigt(::Type{<:SArray}, A::SymmetricTensor{4, dim, T}; offdiagscale=one(T), order=nothing) where {dim, T}
+@inline function tovoigt(::Type{<:SMatrix}, A::SymmetricTensor{4, dim, T}; offdiagscale=one(T), order=nothing) where {dim, T}
     @inbounds _to_static_voigt(A, order; offdiagscale=offdiagscale)
 end
 
