@@ -145,13 +145,17 @@ Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::SecondOrd
     end
     return v
 end
-Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::FourthOrderTensor{dim,T}, ::Nothing; offdiagscale=one(T), offset_i=0, offset_j=0) where {dim,T}
+Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::SymmetricTensor{4,dim,T}, ::Nothing; offdiagscale=one(T), offset_i=0, offset_j=0) where {dim,T}
     tuple_data, N = _to_voigt_tuple(A, offdiagscale)
     cartesian = CartesianIndices(((offset_i+1):(offset_i+N), (offset_j+1):(offset_j+N)))
     for i in eachindex(tuple_data)
         v[cartesian[i]] = tuple_data[i]
     end
     return v
+end
+
+Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::Tensor{4,dim,T}, ::Nothing; kwargs...) where {dim,T}
+    return _tovoigt!(v, A, DEFAULT_VOIGT_ORDER[dim]; kwargs...)
 end
 
 # custom voigt order (slower than default voigt order)
