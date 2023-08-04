@@ -354,6 +354,8 @@ end
 Compute the dot product of a symmetric second order tensor with itself.
 Return a `SymmetricTensor`.
 
+See also [`tdot`](@ref) and [`dott`](@ref).
+
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
@@ -372,9 +374,9 @@ julia> dot(A)
 @inline LinearAlgebra.dot(S::SymmetricTensor{2}) = tdot(S)
 
 """
-    tdot(::SecondOrderTensor)
+    tdot(A::SecondOrderTensor)
 
-Compute the transpose-dot product of a second order tensor with itself.
+Compute the transpose-dot product of `A` with itself, i.e. `dot(A', A)`.
 Return a `SymmetricTensor`.
 
 # Examples
@@ -395,9 +397,9 @@ julia> tdot(A)
 @inline tdot(S::SecondOrderTensor) = unsafe_symmetric(S' ⋅ S)
 
 """
-    dott(::SecondOrderTensor)
+    dott(A::SecondOrderTensor)
 
-Compute the dot-transpose product of a second order tensor with itself.
+Compute the dot-transpose product of `A` with itself, i.e. `dot(A, A')`.
 Return a `SymmetricTensor`.
 
 # Examples

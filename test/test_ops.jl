@@ -229,6 +229,9 @@ end # of testsection
         @test rotate(rotate(rotate(A_sym, x, π), y, π), z, π)::SymmetricTensor ≈ A_sym
         @test rotate(A_sym, a, 0) ≈ A_sym
         @test rotate(A_sym, a, π/2) ≈ rotate(A_sym, -a, -π/2)
+        @test rotate(A_sym, π/4, π/4, π/4) ≈ rotate(A_sym, -3π/4, 3π/4, -3π/4)
+        @test rotate(A, π/4, π/4, π/4) ≈ rotate(A, -3π/4, 3π/4, -3π/4)
+        @test rotate(one(A), π/4, π/4, π/4) ≈ rotate(one(A), -3π/4, 3π/4, -3π/4) ≈ one(A)
 
         @test rotate(AA, x, π)::Tensor ≈ rotate(AA, x, -π)
         @test rotate(rotate(rotate(AA, x, π), y, π), z, π) ≈ AA
@@ -317,6 +320,20 @@ end
         num_components = Int((dim^2+dim)/2)
         @test isa(fromvoigt(SymmetricTensor{2,dim}, rand(num_components) .> 0.5), SymmetricTensor{2,dim,Bool})
         @test isa(fromvoigt(SymmetricTensor{4,dim}, rand(num_components,num_components) .> 0.5), SymmetricTensor{4,dim,Bool})
+    end
+
+    # Static voigt/mandel that use default order
+    s2 = [rand(SymmetricTensor{2,dim}) for dim in 1:3]
+    s4 = [rand(SymmetricTensor{4,dim}) for dim in 1:3]
+    t2 = [rand(Tensor{2,dim}) for dim in 1:3]
+    t4 = [rand(Tensor{4,dim}) for dim in 1:3]
+    for a in (s2, s4, t2, t4)
+        for b in a
+            @test tovoigt(SArray, b) == tovoigt(b)
+            @test tomandel(SArray, b) ≈ tomandel(b)
+            @test fromvoigt(Tensors.get_base(typeof(b)), tovoigt(SArray, b)) ≈ b
+            @test frommandel(Tensors.get_base(typeof(b)), tomandel(SArray, b)) ≈ b
+        end
     end
 end
 end # of testsection

@@ -1,5 +1,3 @@
-__precompile__()
-
 module Tensors
 
 import Base.@pure
@@ -137,7 +135,7 @@ for TensorType in (SymmetricTensor, Tensor)
         end
         if N > 1 # To avoid overwriting ::Tuple{Any}
             # Heterogeneous tuple
-            @eval @inline $TensorType{$order, $dim}(t::Tuple{Vararg{<:Any,$N}}) = $TensorType{$order, $dim}(promote(t...))
+            @eval @inline $TensorType{$order, $dim}(t::Tuple{Vararg{Any,$N}}) = $TensorType{$order, $dim}(promote(t...))
         end
     end
     if TensorType == Tensor
@@ -145,7 +143,7 @@ for TensorType in (SymmetricTensor, Tensor)
             @eval @inline Tensor{1, $dim}(t::NTuple{$dim, T}) where {T} = Tensor{1, $dim, T, $dim}(t)
             if dim > 1 # To avoid overwriting ::Tuple{Any}
                 # Heterogeneous tuple
-                @eval @inline Tensor{1, $dim}(t::Tuple{Vararg{<:Any,$dim}}) = Tensor{1, $dim}(promote(t...))
+                @eval @inline Tensor{1, $dim}(t::Tuple{Vararg{Any,$dim}}) = Tensor{1, $dim}(promote(t...))
             end
         end
     end
@@ -177,5 +175,6 @@ include("eigen.jl")
 include("special_ops.jl")
 include("simd.jl")
 include("voigt.jl")
+include("precompile.jl")
 
 end # module
