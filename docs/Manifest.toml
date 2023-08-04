@@ -302,7 +302,7 @@ version = "1.10.0"
 deps = ["ForwardDiff", "LinearAlgebra", "PrecompileTools", "SIMD", "StaticArrays", "Statistics"]
 path = ".."
 uuid = "48a634ad-e948-5137-8d70-aa71f2a747f4"
-version = "1.14.1"
+version = "1.15.0"
 
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
