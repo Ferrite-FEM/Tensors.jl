@@ -4,6 +4,7 @@ using TimerOutputs
 using LinearAlgebra
 using Random
 using Statistics: mean
+using StaticArrays
 
 macro testsection(str, block)
     return quote
