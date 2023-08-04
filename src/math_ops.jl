@@ -157,6 +157,15 @@ function Base.inv(t::SymmetricTensor{4, dim, T}) where {dim, T}
     frommandel(SymmetricTensor{4, dim}, inv(tomandel(t)))
 end
 
+function Base.inv(t::Tensor{4, dim, <:Real}) where {dim}
+    fromvoigt(Tensor{4, dim}, inv(tovoigt(SMatrix, t)))
+end
+
+function Base.inv(t::SymmetricTensor{4, dim, T}) where {dim, T<:Real}
+    frommandel(SymmetricTensor{4, dim}, inv(tomandel(SMatrix, t)))
+end
+
+
 Base.:\(S1::SecondOrderTensor, S2::AbstractTensor) = inv(S1) ⋅ S2
 
 """
