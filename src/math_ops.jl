@@ -21,6 +21,19 @@ julia> norm(A)
 @inline LinearAlgebra.norm(v::Vec) = sqrt(dot(v, v))
 @inline LinearAlgebra.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
 
+@generated function LinearAlgebra.norm(S::Tensor{3,dim}) where {dim}
+    idx(i,j,k) = compute_index(get_base(S), i, j, k)
+    ex = Expr[]
+    for k in 1:dim, j in 1:dim, i in 1:dim
+        push!(ex, :(get_data(S)[$(idx(i,j,k))]))
+    end
+    exp = reducer(ex, ex)
+    return quote
+      $(Expr(:meta, :inline))
+      @inbounds return sqrt($exp)
+    end
+end
+
 # special case for Tensor{4, 3} since it is faster than unrolling
 @inline LinearAlgebra.norm(S::Tensor{4, 3}) = sqrt(mapreduce(abs2, +, S))
 
@@ -401,6 +414,10 @@ end
 function rotate(x::Tensor{2}, args...)
     R = rotation_tensor(args...)
     return R ⋅ x ⋅ R'
+end
+function rotate(x::Tensor{3}, args...)
+    R = rotation_tensor(args...)
+    return otimesu(R, R) ⊡ x ⋅ R'
 end
 function rotate(x::Tensor{4}, args...)
     R = rotation_tensor(args...)

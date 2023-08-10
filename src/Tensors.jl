@@ -118,16 +118,17 @@ Base.IndexStyle(::Type{<:Tensor}) = IndexLinear()
 ########
 Base.size(::Vec{dim})               where {dim} = (dim,)
 Base.size(::SecondOrderTensor{dim}) where {dim} = (dim, dim)
+Base.size(::Tensor{3,dim})          where {dim} = (dim, dim, dim)
 Base.size(::FourthOrderTensor{dim}) where {dim} = (dim, dim, dim, dim)
 
-# Also define lnegth for the type itself
+# Also define length for the type itself
 Base.length(::Type{Tensor{order, dim, T, M}}) where {order, dim, T, M} = M
 
 #########################
 # Internal constructors #
 #########################
-for TensorType in (SymmetricTensor, Tensor)
-    for order in (2, 4), dim in (1, 2, 3)
+for (TensorType, orders) in ((SymmetricTensor, (2,4)), (Tensor, (2,3,4)))
+    for order in orders, dim in (1, 2, 3)
         N = n_components(TensorType{order, dim})
         @eval begin
             @inline $TensorType{$order, $dim}(t::NTuple{$N, T}) where {T} = $TensorType{$order, $dim, T, $N}(t)
