@@ -343,6 +343,10 @@ S(C) = S(C, μ, Kb)
         @test_throws MethodError gradient(a -> mutating_fun(a, state; use_extract=false, contract=false), x)
         # Do not allow extract_value on a <:Real
         @test_throws MethodError gradient(a -> mutating_fun(a, state; use_extract=false, contract=true), x)
+        # Check that it get correctly modified when not differentiating 
+        x = rand(TT);
+        mutating_fun(x, state; use_extract=true, contract=true)
+        @test state[1] == x
     end
     
 end # testsection
