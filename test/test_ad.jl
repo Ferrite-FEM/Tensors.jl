@@ -327,6 +327,17 @@ S(C) = S(C, μ, Kb)
         end
     
     end
-
+    
+    @testset "value_extraction" begin
+        function mutating_fun(x::Vec, state::Vector, use_extract::Bool)
+            state[1] = use_extract ? Tensors.extract_value(x) : x
+            return x
+        end
+        T = Vec{2,Float64}
+        x = rand(T); state = zeros(T, 1)
+        gradient(a -> mutating_fun(a, state, true), x)
+        @test state[1] == x # Check that it got correctly modified by the extracted value
+        @test_throws MethodError gradient(a -> mutating_fun(a, state, false), x)
+    end
     
 end # testsection
