@@ -121,6 +121,14 @@ end
     end
     return ∇f
 end
+# Tensor{2} output, Vec input -> Tensor{3} gradient
+@inline function _extract_gradient(v::Tensor{2, 1, <: Dual}, ::Vec{1})
+    @inbounds begin
+        p1 = partials(v[1,1])
+        ∇f = Tensor{3, 1}((p1[1],))
+    end
+    return ∇f
+end
 # Tensor{2} output, Tensor{2} input -> Tensor{4} gradient
 @inline function _extract_gradient(v::Tensor{2, 2, <: Dual}, ::Tensor{2, 2})
     @inbounds begin
@@ -139,6 +147,15 @@ end
         ∇f = SymmetricTensor{4, 2}((p1[1], p2[1], p3[1],
                                     p1[2], p2[2], p3[2],
                                     p1[3], p2[3], p3[3]))
+    end
+    return ∇f
+end
+# Tensor{2} output, Vec input -> Tensor{3} gradient
+@inline function _extract_gradient(v::Tensor{2, 2, <: Dual}, ::Vec{2})
+    @inbounds begin
+        p1, p2, p3, p4 = partials(v[1,1]), partials(v[2,1]), partials(v[1,2]), partials(v[2,2])
+        ∇f = Tensor{3, 2}((p1[1], p2[1], p3[1], p4[1],
+                           p1[2], p2[2], p3[2], p4[2]))
     end
     return ∇f
 end
@@ -171,6 +188,19 @@ end
                                     p1[4], p2[4], p3[4], p4[4], p5[4], p6[4],
                                     p1[5], p2[5], p3[5], p4[5], p5[5], p6[5],
                                     p1[6], p2[6], p3[6], p4[6], p5[6], p6[6]))
+    end
+    return ∇f
+end
+
+# Tensor{2} output, Vec input -> Tensor{3} gradient
+@inline function _extract_gradient(v::Tensor{2, 3, <: Dual}, ::Vec{3})
+    @inbounds begin
+        p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[3,1])
+        p4, p5, p6 = partials(v[1,2]), partials(v[2,2]), partials(v[3,2])
+        p7, p8, p9 = partials(v[1,3]), partials(v[2,3]), partials(v[3,3])
+        ∇f = Tensor{3, 3}((p1[1], p2[1], p3[1], p4[1], p5[1], p6[1], p7[1], p8[1], p9[1],
+                           p1[2], p2[2], p3[2], p4[2], p5[2], p6[2], p7[2], p8[2], p9[2],  
+                           p1[3], p2[3], p3[3], p4[3], p5[3], p6[3], p7[3], p8[3], p9[3]))
     end
     return ∇f
 end
