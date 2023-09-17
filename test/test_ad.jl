@@ -329,15 +329,20 @@ S(C) = S(C, μ, Kb)
     end
     
     @testset "value_extraction" begin
-        function mutating_fun(x::Vec, state::Vector, use_extract::Bool)
-            state[1] = use_extract ? Tensors.extract_value(x) : x
+        function mutating_fun(x::Vec, state::Vector; use_extract::Bool, contract::Bool)
+            v = contract ? x⋅x : x
+            state[1] = use_extract ? Tensors.extract_value(v) : v
             return x
         end
-        T = Vec{2,Float64}
-        x = rand(T); state = zeros(T, 1)
-        gradient(a -> mutating_fun(a, state, true), x)
-        @test state[1] == x # Check that it got correctly modified by the extracted value
-        @test_throws MethodError gradient(a -> mutating_fun(a, state, false), x)
+        TT = Vec{2,Float64}
+        x = rand(TT); state = zeros(TT, 1)
+        gradient(a -> mutating_fun(a, state; use_extract=true, contract=false), x)
+        # Check that it got correctly modified by the extracted value
+        @test state[1] == x 
+        # Check that test works: Should fail if no extract_value is not used
+        @test_throws MethodError gradient(a -> mutating_fun(a, state; use_extract=false, contract=false), x)
+        # Do not allow extract_value on a <:Real
+        @test_throws MethodError gradient(a -> mutating_fun(a, state; use_extract=false, contract=true), x)
     end
     
 end # testsection
