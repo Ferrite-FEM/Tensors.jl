@@ -34,23 +34,6 @@ julia> A ⊡ B
     end
 end
 
-@generated function dcontract(S1::SecondOrderTensor{dim}, S2::Tensor{3,dim}) where {dim}
-    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
-    idxS1(i, j) = compute_index(get_base(S1), i, j)
-    idxS2(i, j, k) = compute_index(get_base(S2), i, j, k)
-    exps = Expr(:tuple)
-    for k in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))])    for i in 1:dim, j in 1:dim][:]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(i, j, k))]) for i in 1:dim, j in 1:dim][:]
-        push!(exps.args, reducer(ex1, ex2, true))
-    end
-    expr = remove_duplicates(TensorType, exps) # TODO: Required?
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
-end
-
 @generated function dcontract(S1::SecondOrderTensor{dim}, S2::FourthOrderTensor{dim}) where {dim}
     TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
     idxS1(i, j) = compute_index(get_base(S1), i, j)
@@ -62,6 +45,40 @@ end
         push!(exps.args, reducer(ex1, ex2, true))
     end
     expr = remove_duplicates(TensorType, exps)
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($expr)
+    end
+end
+
+@generated function dcontract(S1::FourthOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
+    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
+    idxS1(i, j, k, l) = compute_index(get_base(S1), i, j, k, l)
+    idxS2(i, j) = compute_index(get_base(S2), i, j)
+    exps = Expr(:tuple)
+    for j in 1:dim, i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, k, l))]) for k in 1:dim, l in 1:dim][:]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(k, l))])       for k in 1:dim, l in 1:dim][:]
+        push!(exps.args, reducer(ex1, ex2, true))
+    end
+    expr = remove_duplicates(TensorType, exps)
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($expr)
+    end
+end
+
+@generated function dcontract(S1::SecondOrderTensor{dim}, S2::Tensor{3,dim}) where {dim}
+    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
+    idxS1(i, j) = compute_index(get_base(S1), i, j)
+    idxS2(i, j, k) = compute_index(get_base(S2), i, j, k)
+    exps = Expr(:tuple)
+    for k in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))])    for i in 1:dim, j in 1:dim][:]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(i, j, k))]) for i in 1:dim, j in 1:dim][:]
+        push!(exps.args, reducer(ex1, ex2, true))
+    end
+    expr = remove_duplicates(TensorType, exps) # TODO: Required?
     quote
         $(Expr(:meta, :inline))
         @inbounds return $TensorType($expr)
@@ -85,14 +102,31 @@ end
     end
 end
 
-@generated function dcontract(S1::FourthOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
+@generated function dcontract(S1::Tensor{3,dim}, S2::FourthOrderTensor{dim}) where {dim}
     TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
-    idxS1(i, j, k, l) = compute_index(get_base(S1), i, j, k, l)
-    idxS2(i, j) = compute_index(get_base(S2), i, j)
+    idxS1(i, j, k)    = compute_index(get_base(S1), i, j, k)
+    idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
     exps = Expr(:tuple)
-    for j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, k, l))]) for k in 1:dim, l in 1:dim][:]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(k, l))])       for k in 1:dim, l in 1:dim][:]
+    for k in 1:dim, j in 1:dim, i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, m, n))])    for m in 1:dim, n in 1:dim][:]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(m, n, j, k))]) for m in 1:dim, n in 1:dim][:]
+        push!(exps.args, reducer(ex1, ex2, true))
+    end
+    expr = remove_duplicates(TensorType, exps)
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($expr)
+    end
+end
+
+@generated function dcontract(S1::FourthOrderTensor{dim}, S2::Tensor{3,dim}) where {dim}
+    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
+    idxS1(i, j, k, l)    = compute_index(get_base(S1), i, j, k, l)
+    idxS2(i, j, k) = compute_index(get_base(S2), i, j, k)
+    exps = Expr(:tuple)
+    for k in 1:dim, j in 1:dim, i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, m, n))]) for m in 1:dim, n in 1:dim][:]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(m, n, k))])    for m in 1:dim, n in 1:dim][:]
         push!(exps.args, reducer(ex1, ex2, true))
     end
     expr = remove_duplicates(TensorType, exps)
