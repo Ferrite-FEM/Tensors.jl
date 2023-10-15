@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [1.15.1]
+## [1.16.0]
+
 ### Added
  - Partial support for 3rd order Tensors [#205][github-205]
     * All construction methods, e.g. `zero(Tensor{3})`, `rand(Tensor{3})`, `Tensor{3}((i,j,k)->f(i,j,k))`
