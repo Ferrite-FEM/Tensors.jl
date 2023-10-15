@@ -7,6 +7,8 @@
         exp = tensor_create(TensorType, (i) -> :(f($i)))
     elseif order == 2
         exp = tensor_create(TensorType, (i,j) -> :(f($i, $j)))
+    elseif order == 3
+        exp = tensor_create(TensorType, (i,j,k) -> :(f($i, $j, $k)))
     elseif order == 4
         exp = tensor_create(TensorType, (i,j,k,l) -> :(f($i, $j, $k, $l)))
     end
