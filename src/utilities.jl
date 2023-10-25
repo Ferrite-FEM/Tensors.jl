@@ -309,7 +309,7 @@ function get_output_type(ci::IndSyms, dim::Int, A_headinfo, A_bodyinfo, B_headin
     return Tensor{length(ci), dim}
 end
 
-function foodot!(expr)
+function tensor_product!(expr)
     @assert expr.head === :function
     @assert length(expr.args) == 2
     fname, A_headinfo, B_headinfo = extract_header_information(expr.args[1])
@@ -328,7 +328,7 @@ function foodot!(expr)
     return expr
 end
 
-macro foodot(expr)
+macro tensor_product(expr)
     # Plan
     # 1) Analyze the header for information
     # 2) Analyze the function body for information
@@ -337,7 +337,7 @@ macro foodot(expr)
     #    by the generated expression, keeping the function header intact.
     #    This opens up, for example, the possibility of using different performance
     #    annotations for different datatypes.
-    foodot!(expr)
+    tensor_product!(expr)
 end
 
 # Generate a few test cases, just to check that it works.
@@ -345,14 +345,14 @@ function m_dcontract end
 function m_otimes end
 function m_dot end
 
-@foodot (function m_dcontract(A::Tensor{2,3}, B::Tensor{2,3})
+@tensor_product (function m_dcontract(A::Tensor{2,3}, B::Tensor{2,3})
     C = A[i,j]*B[i,j]
 end)
 
-@foodot (function m_otimes(A::Tensor{1,3}, B::Tensor{1,3})
+@tensor_product (function m_otimes(A::Tensor{1,3}, B::Tensor{1,3})
     C[i,j] = A[i]*B[j]
 end)
 
-@foodot (function m_dot(A::Tensor{2,3}, B::Tensor{2,3})
+@tensor_product (function m_dot(A::Tensor{2,3}, B::Tensor{2,3})
     C[i,j] = A[i,k]*B[k,j]
 end)
