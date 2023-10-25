@@ -18,6 +18,13 @@ end
     return dim*(j-1) + i
 end
 
+@inline function compute_index(::Type{Tensor{3, dim}}, i::Int, j::Int, k::Int) where {dim}
+    lower_order = Tensor{2, dim}
+    I = compute_index(lower_order, i, j)
+    n = n_components(lower_order)
+    return (k-1) * n + I
+end
+
 @inline function compute_index(::Type{Tensor{4, dim}}, i::Int, j::Int, k::Int, l::Int) where {dim}
     lower_order = Tensor{2, dim}
     I = compute_index(lower_order, i, j)
@@ -65,8 +72,8 @@ end
 # Slice
 @inline Base.getindex(v::Vec, ::Colon) = v
 
-function Base.getindex(S::Union{SecondOrderTensor, FourthOrderTensor}, ::Colon)
-    throw(ArgumentError("S[:] not defined for S of order 2 or 4, use Array(S) to convert to an Array"))
+function Base.getindex(S::Union{SecondOrderTensor, Tensor{3}, FourthOrderTensor}, ::Colon)
+    throw(ArgumentError("S[:] not defined for S of order 2, 3, or 4, use Array(S) to convert to an Array"))
 end
 
 @inline @generated function Base.getindex(S::SecondOrderTensor{dim}, ::Colon, j::Int) where {dim}
