@@ -1,7 +1,7 @@
 ############
 # Indexing #
 ############
-@inline function Tensors.compute_index(::Type{Tensor{1, dim}}, i::Int) where dim
+@inline function compute_index(::Type{Tensor{1, dim}}, i::Int) where dim
     return i
 end
 

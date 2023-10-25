@@ -136,8 +136,11 @@ end
 """
     get_expression(ci, ai, bi, dims; kwargs...)
 
-Example to calculate `C[i,j] = A[i,l,m]*B[l,m,j]` in `dim=2`
+Examples to get the expression for the following with `dim=2`
+* `C[i] = A[i,j]*B[j]`
+* `C[i,j] = A[i,l,m]*B[l,m,j]` 
 ```julia
+get_expression((:i,), (:i, :j), (:j,), 2)
 get_expression((:i, :j), (:i, :l, :m), (:l, :m, :j), 2)
 ```
 """
