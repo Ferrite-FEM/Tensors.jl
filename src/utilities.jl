@@ -147,15 +147,13 @@ get_expression((:i, :j), (:i, :l, :m), (:l, :m, :j), 2)
 ```
 """
 function get_expression(ci::IndSyms, ai::IndSyms, bi::IndSyms, 
-        dims::NamedTuple;
-        #idxA::Function, idxB::Function,
-        TC=Tensor, TA=Tensor, TB=Tensor,
-        use_muladd=false)
+        dims::NamedTuple; TC, TA, TB, use_muladd=false
+        )
     @assert allequal(values(dims)) # Only required for correct idxA/B funs, to be changed for mixed tensors
     dim = first(values(dims))
-    idxA(args...) = compute_index(TA{length(ai),dim}, args...)
-    idxB(args...) = compute_index(TB{length(bi),dim}, args...)
-    TensorType = TC{length(ci),dim}
+    idxA(args...) = compute_index(TA, args...)
+    idxB(args...) = compute_index(TB, args...)
+
     si = tuple(sort(intersect(ai, bi))...)
     exps = Expr(:tuple)
     for cinds in Iterators.ProductIterator(tuple((1:dims[k] for k in ci)...))
@@ -169,7 +167,7 @@ function get_expression(ci::IndSyms, ai::IndSyms, bi::IndSyms,
         end
         push!(exps.args, reducer(exa, exb, use_muladd))
     end
-    return remove_duplicates(TensorType, exps)
+    return :($TC($(remove_duplicates(TC, exps))))
 end
 
 function get_expression(ci::IndSyms, ai::IndSyms, bi::IndSyms, dim::Int; kwargs...)
@@ -180,15 +178,13 @@ end
 
 
 # For scalar output
-function get_expression(ci::Tuple{}, ai::IndSyms, bi::IndSyms, 
-        dims::NamedTuple;
-        #idxA::Function, idxB::Function,
-        TA=Tensor, TB=Tensor,
-        use_muladd=false)
+function get_expression(::Tuple{}, ai::IndSyms, bi::IndSyms, 
+        dims::NamedTuple; TC::Nothing, TA, TB, use_muladd=false
+        )
     @assert allequal(values(dims)) # Only required for correct idxA/B funs, to be changed for mixed tensors
     dim = first(values(dims))
-    idxA(args...) = compute_index(TA{length(ai),dim}, args...)
-    idxB(args...) = compute_index(TB{length(bi),dim}, args...)
+    idxA(args...) = compute_index(TA, args...)
+    idxB(args...) = compute_index(TB, args...)
     
     si = tuple(sort(intersect(ai, bi))...)
     exa = Expr[]
@@ -207,3 +203,156 @@ function get_expression(ci::Tuple{}, ai::IndSyms, bi::IndSyms, dim::Int; kwargs.
     dims = NamedTuple(k=>dim for k in indsyms)
     return get_expression(ci, ai, bi, dims; kwargs...)
 end
+
+function extract_arginfo(arg_expr::Expr)
+    if arg_expr.head !== :(::)
+        error("Expected type specification arg_expr, but got expr with head $(arg_expr.head)")
+    end
+    @assert length(arg_expr.args) == 2
+    name = arg_expr.args[1]
+    @assert name isa Symbol
+    curly = arg_expr.args[2]
+    @assert curly.head === :curly
+    type = curly.args[1]
+    @assert type in (:Tensor, #=SymmetricTensor, MixedTensor=#)
+    order = curly.args[2]::Int # Use type-assert as sanity check
+    dim = curly.args[3]::Int   # Use type-assert as sanity check
+    basetype = :($type{$order, $dim})
+    return (name=name, type=type, order=order, dim=dim, basetype)
+end
+
+function extract_header_information(header::Expr)
+    header.head === :call || error("header expression with head=$(header.head) is not supported")
+    fname = header.args[1]
+    Ainfo = extract_arginfo(header.args[2])
+    Binfo = extract_arginfo(header.args[3])
+    return fname, Ainfo, Binfo
+end
+
+function extract_terminfo(term::Expr)
+    @assert term.head === :ref
+    name = term.args[1]
+    inds = tuple(term.args[2:end]...)
+    return (name=name, inds=inds)
+end
+
+# Scalar term, no indices
+function extract_terminfo(term::Symbol)
+    return (name=term, inds=())
+end
+
+function extract_body_information(body::Expr)
+    body.head === :block || error("Expecting a block type expression")
+    @assert all(isa(a, LineNumberNode) for a in body.args[1:(length(body.args)-1)])
+    @assert body.args[end].head === :(=) # Should be an assignment
+    expr = body.args[end].args
+    Cinfo = extract_terminfo(expr[1])
+    @assert expr[2].head === :call
+    @assert expr[2].args[1] === :*
+    Ainfo = extract_terminfo(expr[2].args[2])
+    Binfo = extract_terminfo(expr[2].args[3])
+    return Cinfo, Ainfo, Binfo
+end
+
+function check_arg_expr_consistency(head, body)
+    head.name === body.name || error("head ($head) and body ($body) variable names don't match")
+    if length(body.inds) !== head.order
+        ninds = length(body.inds)
+        error("head for $(head.name) specifices tensor of order $(head.order), but index expression has only $ninds ($(body.inds))")
+    end
+end
+
+function check_index_consistency(::Tuple{}, ai::IndSyms, bi::IndSyms)
+    rhs_inds = (ai..., bi...)
+    if !all(count(k==l for l in rhs_inds) == 2 for k in rhs_inds)
+        error("All indices must occur exactly twice on the right-hand side for scalar output")
+    end
+end
+
+function check_index_consistency(ci::IndSyms, ai::IndSyms, bi::IndSyms)
+    rhs_inds = (ai..., bi...)
+    # Check that each index occurs only exactly once or twice
+    if !all(count(k==l for l in rhs_inds) ∈ (1,2) for k in rhs_inds)
+        error("Indices on the right-hand side, i.e. $rhs_inds, can only occur once or twice")
+    end
+    # Find indices that occurs only once
+    free_inds = tuple((k for k in rhs_inds if count(k==l for l in rhs_inds) == 1)...)
+    if Set(ci) != Set(free_inds)
+        error("The free indices on the lhs ($ci), don't match the free indices on the rhs($(free_inds))")
+    end
+    # Check that no double indices are given on the lhs
+    if !all(count(k==l for l in ci) == 1 for k in ci)
+        error("Indices on the left-hand side can only appear once, which is not the case: $ci")
+    end
+end
+
+function check_input_consistency(C_body, A_head, A_body, B_head, B_body)
+    check_arg_expr_consistency(A_head, A_body)
+    check_arg_expr_consistency(B_head, B_body)
+    check_index_consistency(C_body.inds, A_body.inds, B_body.inds)
+end 
+
+function get_index_dims(dimA::Int, ai::IndSyms, dimB::Int, bi::IndSyms)
+    if dimA != dimB
+        # Will need dispatch for `dimA::Tuple`, `dimB::Tuple` instead then.
+        error("This should be fixed for MixedTensor, but for now dims must be equal")
+    end
+    return dimA
+end
+
+get_output_type(ci::Tuple{}, dim::Int, args...) = nothing
+function get_output_type(ci::IndSyms, dim::Int, A_headinfo, A_bodyinfo, B_headinfo, B_bodyinfo)
+    # Should support SymmetricTensors and MixedTensor in the future
+    # For MixedTensor, dim::NamedTuple must be supported.
+    @assert A_headinfo.type === :Tensor
+    @assert B_headinfo.type === :Tensor
+    return Tensor{length(ci), dim}
+end
+
+function foodot!(expr)
+    @assert expr.head === :function
+    @assert length(expr.args) == 2
+    fname, A_headinfo, B_headinfo = extract_header_information(expr.args[1])
+    body = expr.args[2]
+    C_bodyinfo, A_bodyinfo, B_bodyinfo = extract_body_information(body)
+    check_input_consistency(C_bodyinfo, A_headinfo, A_bodyinfo, B_headinfo, B_bodyinfo)
+    dim = get_index_dims(A_headinfo.dim, A_bodyinfo.inds, B_headinfo.dim, B_bodyinfo.inds)
+    TC = get_output_type(C_bodyinfo.inds, dim, A_headinfo, A_bodyinfo, B_headinfo, B_bodyinfo)
+    # Not sure how to avoid eval here...
+    TA = eval(A_headinfo.basetype)
+    TB = eval(B_headinfo.basetype) 
+    # Have checked in extract_body_information that last args in body is the actual expression to be changed.
+    # Here, we overwrite the index expression content with the generated expression
+    body.args[end] = get_expression(C_bodyinfo.inds, A_bodyinfo.inds, B_bodyinfo.inds, dim; TC, TA, TB)    
+    #println(expr)
+    return expr
+end
+
+macro foodot(expr)
+    # Plan
+    # 1) Analyze the header for information
+    # 2) Analyze the function body for information
+    # 3) Given this information, generate the function body
+    # 4) Return the expression in which the function body has been replaced
+    #    by the generated expression, keeping the function header intact.
+    #    This opens up, for example, the possibility of using different performance
+    #    annotations for different datatypes.
+    foodot!(expr)
+end
+
+# Generate a few test cases, just to check that it works.
+function m_dcontract end
+function m_otimes end
+function m_dot end
+
+@foodot (function m_dcontract(A::Tensor{2,3}, B::Tensor{2,3})
+    C = A[i,j]*B[i,j]
+end)
+
+@foodot (function m_otimes(A::Tensor{1,3}, B::Tensor{1,3})
+    C[i,j] = A[i]*B[j]
+end)
+
+@foodot (function m_dot(A::Tensor{2,3}, B::Tensor{2,3})
+    C[i,j] = A[i,k]*B[k,j]
+end)
