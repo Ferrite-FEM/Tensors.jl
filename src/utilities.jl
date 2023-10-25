@@ -96,3 +96,67 @@ function ustrip(S::SymmetricTensor{order,dim,T}) where {order, dim, T}
         return SymmetricTensor{order,dim}(map(x -> x / ou, S.data))
     end
 end
+
+# dotmacro
+#= Aiming for a syntax in the style of 
+@tensorfun function dcontract(A::Tensor{2,dim}, B::Tensor{2,dim}) where dim
+    C = A[i,j]*B[i,j]
+end
+@tensorfun function otimes(A::Tensor{2,dim}, B::Tensor{2,dim}) where dim    
+    C[i,j,k,l] = A[i,j]*B[k,l]
+end
+@tensorfun function otimes(A::Tensor{2,2}, B::Tensor{2,2})    
+    C[i,j,k,l] = A[i,j]*B[k,l]
+end
+=#
+
+const IndSyms{N} = NTuple{N,Symbol}
+const IntVals{N} = NTuple{N,Int}
+
+function find_index(ind::Symbol, ci::IndSyms, cinds::IntVals, si::IndSyms, sinds::IntVals)
+    i = findfirst(Base.Fix1(===, ind), ci)
+    i !== nothing && return cinds[i]
+    i = findfirst(Base.Fix1(===, ind), si)
+    i !== nothing && return sinds[i]
+    error("Could not find $ind in ci=$ci or si=$si")
+end
+
+function get_expression(ci::IndSyms, ai::IndSyms, bi::IndSyms, dim::Int; kwargs...)
+    indsyms = union(ci, ai, bi)
+    dims = NamedTuple(k=>dim for k in indsyms)
+    return get_expression(ci, ai, bi, dims; kwargs...)
+end
+
+"""
+    get_expression(ci, ai, bi, dims; kwargs...)
+
+Example to calculate `C[i,j] = A[i,l,m]*B[l,m,j]` in `dim=2`
+```julia
+get_expression((:i, :j), (:i, :l, :m), (:l, :m, :j), 2)
+```
+"""
+function get_expression(ci::IndSyms, ai::IndSyms, bi::IndSyms, 
+        dims::NamedTuple;
+        #idxA::Function, idxB::Function,
+        TC=Tensor, TA=Tensor, TB=Tensor,
+        use_muladd=false)
+    @assert allequal(values(dims)) # Only required for correct idxA/B funs, to be changed for mixed tensors
+    dim = first(values(dims))
+    idxA(args...) = compute_index(TA{length(ai),dim}, args...)
+    idxB(args...) = compute_index(TB{length(bi),dim}, args...)
+    TensorType = TC{length(ci),dim}
+    si = tuple(sort(intersect(ai, bi))...)
+    exps = Expr(:tuple)
+    for cinds in Iterators.ProductIterator(tuple((1:dims[k] for k in ci)...))
+        exa = Expr[]
+        exb = Expr[]
+        for sinds in Iterators.ProductIterator(tuple((1:dims[k] for k in si)...))
+            ainds = tuple((find_index(a, ci, cinds, si, sinds) for a in ai)...)
+            binds = tuple((find_index(b, ci, cinds, si, sinds) for b in bi)...)
+            push!(exa, :(get_data(A)[$(idxA(ainds...))]))
+            push!(exb, :(get_data(B)[$(idxB(binds...))]))
+        end
+        push!(exps.args, reducer(exa, exb, use_muladd))
+    end
+    return remove_duplicates(TensorType, exps)
+end
