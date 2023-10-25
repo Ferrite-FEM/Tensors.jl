@@ -119,6 +119,12 @@ end
 const IndSyms{N} = NTuple{N,Symbol}
 const IntVals{N} = NTuple{N,Int}
 
+function find_index(ind::Symbol, si::IndSyms, sinds::IntVals)
+    i = findfirst(Base.Fix1(===, ind), si)
+    i !== nothing && return sinds[i]
+    error("Could not find $ind in si=$si")
+end
+
 function find_index(ind::Symbol, ci::IndSyms, cinds::IntVals, si::IndSyms, sinds::IntVals)
     i = findfirst(Base.Fix1(===, ind), ci)
     i !== nothing && return cinds[i]
@@ -127,19 +133,15 @@ function find_index(ind::Symbol, ci::IndSyms, cinds::IntVals, si::IndSyms, sinds
     error("Could not find $ind in ci=$ci or si=$si")
 end
 
-function get_expression(ci::IndSyms, ai::IndSyms, bi::IndSyms, dim::Int; kwargs...)
-    indsyms = union(ci, ai, bi)
-    dims = NamedTuple(k=>dim for k in indsyms)
-    return get_expression(ci, ai, bi, dims; kwargs...)
-end
-
 """
     get_expression(ci, ai, bi, dims; kwargs...)
 
 Examples to get the expression for the following with `dim=2`
+* `C = A[i]*B[i]`
 * `C[i] = A[i,j]*B[j]`
 * `C[i,j] = A[i,l,m]*B[l,m,j]` 
 ```julia
+get_expression((), (:i,), (:i,), 2)
 get_expression((:i,), (:i, :j), (:j,), 2)
 get_expression((:i, :j), (:i, :l, :m), (:l, :m, :j), 2)
 ```
@@ -168,4 +170,40 @@ function get_expression(ci::IndSyms, ai::IndSyms, bi::IndSyms,
         push!(exps.args, reducer(exa, exb, use_muladd))
     end
     return remove_duplicates(TensorType, exps)
+end
+
+function get_expression(ci::IndSyms, ai::IndSyms, bi::IndSyms, dim::Int; kwargs...)
+    indsyms = union(ci, ai, bi)
+    dims = NamedTuple(k=>dim for k in indsyms)
+    return get_expression(ci, ai, bi, dims; kwargs...)
+end
+
+
+# For scalar output
+function get_expression(ci::Tuple{}, ai::IndSyms, bi::IndSyms, 
+        dims::NamedTuple;
+        #idxA::Function, idxB::Function,
+        TA=Tensor, TB=Tensor,
+        use_muladd=false)
+    @assert allequal(values(dims)) # Only required for correct idxA/B funs, to be changed for mixed tensors
+    dim = first(values(dims))
+    idxA(args...) = compute_index(TA{length(ai),dim}, args...)
+    idxB(args...) = compute_index(TB{length(bi),dim}, args...)
+    
+    si = tuple(sort(intersect(ai, bi))...)
+    exa = Expr[]
+    exb = Expr[]
+    for sinds in Iterators.ProductIterator(tuple((1:dims[k] for k in si)...))
+        ainds = tuple((find_index(a, si, sinds) for a in ai)...)
+        binds = tuple((find_index(b, si, sinds) for b in bi)...)
+        push!(exa, :(get_data(A)[$(idxA(ainds...))]))
+        push!(exb, :(get_data(B)[$(idxB(binds...))]))
+    end
+    return reducer(exa, exb, use_muladd)
+end
+
+function get_expression(ci::Tuple{}, ai::IndSyms, bi::IndSyms, dim::Int; kwargs...)
+    indsyms = union(ai, bi)
+    dims = NamedTuple(k=>dim for k in indsyms)
+    return get_expression(ci, ai, bi, dims; kwargs...)
 end
