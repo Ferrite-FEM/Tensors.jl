@@ -149,8 +149,7 @@ get_expression((:i, :j), (:i, :l, :m), (:l, :m, :j), 2)
 function get_expression(ci::IndSyms, ai::IndSyms, bi::IndSyms, 
         dims::NamedTuple; TC, TA, TB, use_muladd=false
         )
-    @assert allequal(values(dims)) # Only required for correct idxA/B funs, to be changed for mixed tensors
-    dim = first(values(dims))
+    
     idxA(args...) = compute_index(TA, args...)
     idxB(args...) = compute_index(TB, args...)
 
@@ -181,8 +180,7 @@ end
 function get_expression(::Tuple{}, ai::IndSyms, bi::IndSyms, 
         dims::NamedTuple; TC::Nothing, TA, TB, use_muladd=false
         )
-    @assert allequal(values(dims)) # Only required for correct idxA/B funs, to be changed for mixed tensors
-    dim = first(values(dims))
+    
     idxA(args...) = compute_index(TA, args...)
     idxB(args...) = compute_index(TB, args...)
     
