@@ -327,9 +327,16 @@ end
     @test (@inferred frommandel(Tensor{4,dim}, tomandel(AA))) ≈ AA
 
     if T==Float64
+        # Check that Boolean values are supported for fromvoigt
         num_components = Int((dim^2+dim)/2)
         @test isa(fromvoigt(SymmetricTensor{2,dim}, rand(num_components) .> 0.5), SymmetricTensor{2,dim,Bool})
         @test isa(fromvoigt(SymmetricTensor{4,dim}, rand(num_components,num_components) .> 0.5), SymmetricTensor{4,dim,Bool})
+        
+        # Check that different types in the vector and tensor is supported via conversion
+        @test tovoigt!(zeros(Float32, nc(A)), A)::Vector{Float32} ≈ tovoigt(A)
+        @test tovoigt!(zeros(Float32, nc(A_sym)), A_sym)::Vector{Float32} ≈ tovoigt(A_sym)
+        @test tovoigt!(zeros(Float32, nc(AA), nc(AA)), AA)::Matrix{Float32} ≈ tovoigt(AA)
+        @test tovoigt!(zeros(Float32, nc(AA_sym), nc(AA_sym)), AA_sym)::Matrix{Float32} ≈ tovoigt(AA_sym)
     end
 
     # Static voigt/mandel that use default order

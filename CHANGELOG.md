@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.16.1]
+
+### Bugfixes
+
+ - Fix that `tovoigt!(::Vector{TA}, ::AbstractTensor{order,dim,TB})` didn't work after v1.15 unless `TA==TB`
+
 ## [1.16.0]
 
 ### Added
