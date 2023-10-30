@@ -201,6 +201,7 @@ function get_expression(ci::Tuple{}, ai::IndSyms, bi::IndSyms, dim::Int; kwargs.
     return get_expression(ci, ai, bi, dims; kwargs...)
 end
 
+# module TensorProductModule
 function extract_arginfo(arg_expr::Expr)
     if arg_expr.head !== :(::)
         error("Expected type specification arg_expr, but got expr with head $(arg_expr.head)")
@@ -211,9 +212,12 @@ function extract_arginfo(arg_expr::Expr)
     curly = arg_expr.args[2]
     @assert curly.head === :curly
     type = curly.args[1]
-    @assert type in (:Tensor, #=SymmetricTensor, MixedTensor=#)
-    order = curly.args[2]::Int # Use type-assert as sanity check
-    dim = curly.args[3]::Int   # Use type-assert as sanity check
+    if type ∉ (:Tensor, :SymmetricTensor, #=MixedTensor=#)
+        error("type = $type was unexpected")
+    end
+    order = curly.args[2]::Int  # Type-assert required, if user pass e.g. Tensor{2,dim},
+    dim = curly.args[3]::Int    # the macro will not work, need to pass explicit numbers in the Expr.
+    isa(dim, Int) || error("dim = $dim was unexpected, curlyargs = $(curly.args)")
     basetype = :($type{$order, $dim})
     return (name=name, type=type, order=order, dim=dim, basetype)
 end
@@ -296,30 +300,61 @@ function get_index_dims(dimA::Int, ai::IndSyms, dimB::Int, bi::IndSyms)
     end
     return dimA
 end
+# end # TensorProductModule
+# import .TensorProductModule as TPM
 
 get_output_type(ci::Tuple{}, dim::Int, args...) = nothing
 function get_output_type(ci::IndSyms, dim::Int, A_headinfo, A_bodyinfo, B_headinfo, B_bodyinfo)
     # Should support SymmetricTensors and MixedTensor in the future
     # For MixedTensor, dim::NamedTuple must be supported.
-    @assert A_headinfo.type === :Tensor
-    @assert B_headinfo.type === :Tensor
+    #@assert A_headinfo.type === :Tensor
+    #@assert B_headinfo.type === :Tensor
+    # TODO: Figure out when it will be a symmetric output. 
     return Tensor{length(ci), dim}
 end
 
-function esc_args!(args; syms=(:A, :B))
+function replace_args!(f, args)
     for i in 1:length(args)
         if args[i] isa Symbol
-            args[i] ∈ syms && (args[i] = esc(args[i]))
+            args[i] = f(args[i])
         elseif args[i] isa Expr
-            esc_args!(args[i].args; syms)
-        end # Could be e.g. line numbers
+            replace_args!(f, args[i].args)
+        end # Could be e.g. LineNumberNode or a number, string etc. 
     end
 end
 
+function esc_args!(args; syms=(:A, :B))
+    f(s::Symbol) = s ∈ syms ? esc(s) : s
+    replace_args!(f, args)
+end
+
 function tensor_product!(expr, args...)
+    # Unpack performance annotations, such as @inbounds and @inline
+    if expr.head === :macrocall
+        # Check that type is allowed macros (so we don't have to escape)
+        @assert expr.args[1] ∈ (Symbol("@inbounds"), Symbol("@inline"))
+        @assert length(expr.args) == 3
+        @assert expr.args[2] isa LineNumberNode
+        tensor_product!(expr.args[3], args...)
+        return expr
+    elseif expr.head === :tuple
+        if expr.args[1].head !== :function
+            error("should be function, but is $(expr.args[1].head)")
+        end
+        if length(args) != 0
+            error("args given in two locations, a: $args, b: $(expr.args[2:end])")
+        end
+        the_args = expr.args[2:end]
+        expr.head = :function
+        expr.args = expr.args[1].args
+        return tensor_product!(expr, the_args...)
+    end
+
     use_muladd = :muladd in args
 
-    @assert expr.head === :function
+    if expr.head !== :function
+        error("Unexpected head = $(expr.head)")
+    end
     @assert length(expr.args) == 2
     # Header 
     fname, A_headinfo, B_headinfo = extract_header_information(expr.args[1])
