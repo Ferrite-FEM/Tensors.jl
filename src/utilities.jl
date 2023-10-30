@@ -175,7 +175,6 @@ function get_expression(ci::IndSyms, ai::IndSyms, bi::IndSyms, dim::Int; kwargs.
     return get_expression(ci, ai, bi, dims; kwargs...)
 end
 
-
 # For scalar output
 function get_expression(::Tuple{}, ai::IndSyms, bi::IndSyms, 
         dims::NamedTuple; TC::Nothing, TA, TB, use_muladd=false
@@ -307,10 +306,25 @@ function get_output_type(ci::IndSyms, dim::Int, A_headinfo, A_bodyinfo, B_headin
     return Tensor{length(ci), dim}
 end
 
-function tensor_product!(expr)
+function esc_args!(args; syms=(:A, :B))
+    for i in 1:length(args)
+        if args[i] isa Symbol
+            args[i] ∈ syms && (args[i] = esc(args[i]))
+        elseif args[i] isa Expr
+            esc_args!(args[i].args; syms)
+        end # Could be e.g. line numbers
+    end
+end
+
+function tensor_product!(expr, args...)
+    use_muladd = :muladd in args
+
     @assert expr.head === :function
     @assert length(expr.args) == 2
+    # Header 
     fname, A_headinfo, B_headinfo = extract_header_information(expr.args[1])
+    expr.args[1] = esc(expr.args[1]) # Escape header as this should be returned as evaluted in the macro-caller's scope
+    # Body 
     body = expr.args[2]
     C_bodyinfo, A_bodyinfo, B_bodyinfo = extract_body_information(body)
     check_input_consistency(C_bodyinfo, A_headinfo, A_bodyinfo, B_headinfo, B_bodyinfo)
@@ -321,12 +335,13 @@ function tensor_product!(expr)
     TB = eval(B_headinfo.basetype) 
     # Have checked in extract_body_information that last args in body is the actual expression to be changed.
     # Here, we overwrite the index expression content with the generated expression
-    body.args[end] = get_expression(C_bodyinfo.inds, A_bodyinfo.inds, B_bodyinfo.inds, dim; TC, TA, TB)    
-    #println(expr)
+    the_expr = get_expression(C_bodyinfo.inds, A_bodyinfo.inds, B_bodyinfo.inds, dim; TC, TA, TB, use_muladd)
+    esc_args!(the_expr.args; syms=(:A, :B))
+    body.args[end] = the_expr
     return expr
 end
 
-macro tensor_product(expr)
+macro tensor_product(expr, args...)
     # Plan
     # 1) Analyze the header for information
     # 2) Analyze the function body for information
@@ -335,7 +350,7 @@ macro tensor_product(expr)
     #    by the generated expression, keeping the function header intact.
     #    This opens up, for example, the possibility of using different performance
     #    annotations for different datatypes.
-    tensor_product!(expr)
+    tensor_product!(expr, args...)
 end
 
 # Generate a few test cases, just to check that it works.
