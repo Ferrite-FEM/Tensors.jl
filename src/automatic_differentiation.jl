@@ -280,11 +280,26 @@ be of symmetric type
 
 """
 macro implement_gradient(f, f_dfdx)
-    return :($(esc(f))(x :: Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = _propagate_gradient($(esc(f_dfdx)), x))
+    return :($(esc(f))(x :: Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = propagate_gradient($(esc(f_dfdx)), x))
 end
 # which calls the general function _propagate_gradient that calls the specialized _insert_gradient method below
-function _propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual})
+"""
+    function propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual})    
+
+`propagate_gradient` takes in the function `f_dfdx` that, given a 
+tensor input calculates the value and gradient of a function `f` 
+wrt. that input, i.e. `fval, dfdx_val = f_dfdx(y::AbstractTensor)`
+`y` should not have dual entries. 
+`propagate_gradient` is used to override `f` when `f`'s input is 
+tensor with Dual numbers (i.e. when it is used to calculate a 
+derivative), and can, for example, be used as follows
+`f(x::Tensor{2,<:Any,<:Tensors.Dual}) = propagate_gradient(f_dfdx, x)`
+where the key part is that the type of x must be specified to be of
+type `Tensors.Dual` (which is equivalent to `ForwardDiff.Dual`)
+"""
+function propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual})
     fval, dfdx_val = f_dfdx(_extract_value(x))
+    _check_gradient_shape(fval,x,dfdx_val)
     return _insert_gradient(fval, dfdx_val, x)
 end
 
@@ -327,6 +342,18 @@ function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,Ab
     dfdx = dfdg ⊡ dgdx
     return _insert_full_gradient(f, dfdx, Tg())
 end
+
+function _check_gradient_shape(f,g,dfdg)
+    expected_shape = _get_expected_gradient_shape(f, g)
+    @assert isa(dfdg, expected_shape) "Gradient is a $(typeof(dfdg)), but should be a $expected_shape"
+end
+
+# _get_expected_gradient_shape(f_val, g_val), f is function output and g is function input
+_get_expected_gradient_shape(::Number, ::Number) = Number
+_get_expected_gradient_shape(::TT, ::Number) where{TT<:AbstractTensor} = get_base(TT)
+_get_expected_gradient_shape(::Number, ::TT) where{TT<:AbstractTensor} = get_base(TT)
+_get_expected_gradient_shape(::Tensor{forder,dim}, ::Tensor{gorder,dim}) where{forder,gorder,dim} = Tensor{forder+gorder,dim}
+_get_expected_gradient_shape(::SymmetricTensor{forder,dim}, ::SymmetricTensor{gorder,dim}) where{forder,gorder,dim} = SymmetricTensor{forder+gorder,dim}
 
 # Define helper function to figure out original input to gradient function
 _get_original_gradient_input(::Dual{Tag{Tf,Tv}}) where{Tf,Tv} = zero(Tv)
