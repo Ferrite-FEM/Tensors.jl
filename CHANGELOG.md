@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.16.1]
+
+### Bugfixes
+
+ - Fix that `tovoigt!(::Vector{TA}, ::AbstractTensor{order,dim,TB})` didn't work after v1.15 unless `TA==TB` [#212][github-212]
+
 ## [1.16.0]
 
 ### Added
@@ -23,4 +29,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.15.1]: https://github.com/Ferrite-FEM/Tensors.jl/compare/v1.15.0...v1.15.1
 
 <!-- GitHub pull request/issue links -->
+[github-212]: https://github.com/Ferrite-FEM/Tensors.jl/pull/212
 [github-205]: https://github.com/Ferrite-FEM/Tensors.jl/pull/205
