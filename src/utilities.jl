@@ -7,6 +7,8 @@ function tensor_create(::Type{Tensor{order, dim}}, f) where {order, dim}
         ex = Expr(:tuple, [f(i) for i=1:dim]...)
     elseif order == 2
         ex = Expr(:tuple, [f(i,j) for i=1:dim, j=1:dim]...)
+    elseif order == 3
+        ex = Expr(:tuple, [f(i,j,k) for i=1:dim, j=1:dim, k=1:dim]...)
     elseif order == 4
         ex = Expr(:tuple, [f(i,j,k,l) for i=1:dim, j=1:dim, k = 1:dim, l = 1:dim]...)
     end
@@ -80,6 +82,10 @@ function dcontract end
 @pure getreturntype(::typeof(dcontract), ::Type{<:SymmetricTensor{4, dim}}, ::Type{<:SecondOrderTensor{dim}}) where {dim} = SymmetricTensor{2, dim}
 @pure getreturntype(::typeof(dcontract), ::Type{<:SecondOrderTensor{dim}}, ::Type{<:Tensor{4, dim}}) where {dim} = Tensor{2, dim}
 @pure getreturntype(::typeof(dcontract), ::Type{<:SecondOrderTensor{dim}}, ::Type{<:SymmetricTensor{4, dim}}) where {dim} = SymmetricTensor{2, dim}
+@pure getreturntype(::typeof(dcontract), ::Type{<:Tensor{3,dim}}, ::Type{<:SecondOrderTensor{dim}}) where {dim} = Vec{dim}
+@pure getreturntype(::typeof(dcontract), ::Type{<:SecondOrderTensor{dim}}, ::Type{<:Tensor{3,dim}}) where {dim} = Vec{dim}
+@pure getreturntype(::typeof(dcontract), ::Type{<:Tensor{3,dim}}, ::Type{<:FourthOrderTensor{dim}}) where {dim} = Tensor{3,dim}
+@pure getreturntype(::typeof(dcontract), ::Type{<:FourthOrderTensor{dim}}, ::Type{<:Tensor{3,dim}}) where {dim} = Tensor{3,dim}
 
 # otimes
 function otimes end

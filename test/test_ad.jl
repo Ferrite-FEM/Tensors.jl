@@ -117,6 +117,16 @@ S(C) = S(C, μ, Kb)
                 @test ∇∇(A -> T(1), A, :all)[2] ≈ 0*A
                 @test ∇∇(A -> T(1), A, :all)[3] == T(1)
             end
+            @testsection "3rd order" begin
+                δ(i,j) = (i==j ? 1 : 0)
+                #
+                f1(x::Vec) = x⊗x 
+                df1(x::Vec{d}) where d = Tensor{3,d}((i,j,k)-> δ(i,k)*x[j] + δ(j,k)*x[i]);
+                for dim in 1:3
+                    z = rand(Vec{dim})
+                    @test gradient(f1, z) ≈ df1(z)
+                end 
+            end
             end # loop T
         end # testsection
     end # loop dim
@@ -348,5 +358,5 @@ S(C) = S(C, μ, Kb)
         mutating_fun(x, state; use_extract=true, contract=false)
         @test state[1] == x
     end
-    
+
 end # testsection
