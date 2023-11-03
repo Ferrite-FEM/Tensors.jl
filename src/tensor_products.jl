@@ -202,6 +202,10 @@ end
     TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
     TensorType(@inline function(i,j,k,l) @inbounds S1[i,j] * S2[k,l]; end)
 end
+@inline function otimes(S1::Tensor{2,dim}, S2::Tensor{2,dim}) where {dim}
+    TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
+    TensorType(@inline function(i,j,k,l) @inbounds S1[i,j] * S2[k,l]; end)
+end
 
 # Defining {3}⊗{1} and {1}⊗{3} = {4} would also be valid...
 
