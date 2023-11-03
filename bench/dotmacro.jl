@@ -86,9 +86,10 @@ module DotTensorModule
     end
 end
 
-using BenchmarkTools, StaticArrays, DataFrames
+using BenchmarkTools, StaticArrays, DataFrames, Test
 using Tensors
 import .DotTensorModule
+import .DotTensorModule as DTM
 
 # Relevant non-simd number type to check performance
 const DT{T,N} = Tensors.Dual{Nothing, T, N}
@@ -130,7 +131,24 @@ function run_benchmarks(T=DT{Float64,6}; M=Tensors)
         push!(ddot44s, @belapsed $_dcontract($As, $Bs))
         
         push!(otim11, @belapsed $_otimes($u, $v))
-        
+
+        if M===Tensors
+            println("Running tests")
+            @testset "Check" begin
+                @test Tensors.dot(a, b) ≈ DTM.dot(a, b)
+                @test Tensors.dcontract(a, b) ≈ DTM.dcontract(a, b)
+                @test Tensors.otimes(a, b) ≈ DTM.otimes(a, b)
+
+                @test Tensors.dot(as, bs) ≈ DTM.dot(as, bs)
+                @test Tensors.dcontract(as, bs) ≈ DTM.dcontract(as, bs)
+                @test Tensors.otimes(as, bs) ≈ DTM.otimes(as, bs)
+                
+                @test Tensors.dcontract(A, B) ≈ DTM.dcontract(A, B)
+                @test Tensors.dcontract(As, Bs) ≈ DTM.dcontract(As, Bs)
+
+                @test Tensors.otimes(u, v) ≈ DTM.otimes(u, v)
+            end
+        end
     end
     dims = dims
     df = DataFrame((key => (key==:dim ? t : t*1e9) for (key,t) in 
@@ -151,10 +169,10 @@ df
 # DotTensorModule
 #= 
 3×10 DataFrame
- Row │ dim    dot22               dot22s              ddot22              ddot22s         ddot44              ddot44s             otim11              otim22              otim22s                   
-     │ Int64  Tuple…              Tuple…              Tuple…              Tuple…          Tuple…              Tuple…              Tuple…              Tuple…              Tuple…                    
-─────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────       
-   1 │     1  (1.9, 1.9)          (1.6, 2.1)          (2.6, 2.1)          (1.8, 1.8)      (1.9, 2.9)          (1.6, 2.1)          (2.4, 1.8)          (1.8, 1.9)          (1.6, 2.1)
-   2 │     2  (10.3103, 11.3113)  (10.8108, 12.012)   (5.4, 7.4)          (5.6, 5.3)      (75.0257, 83.8342)  (39.3145, 37.9415)  (4.7, 5.1)          (27.5377, 29.9799)  (11.7117, 19.0381)        
-   3 │     3  (39.0121, 42.7273)  (48.1294, 42.7273)  (13.5135, 11.6116)  (14.8297, 7.0)  (2433.33, 2366.67)  (489.744, 747.581)  (15.2457, 15.1303)  (324.464, 309.127)  (71.4724, 114.161)
+ Row │ dim    dot22               dot22s              ddot22              ddot22s            ddot44              ddot44s             otim11              otim22              otim22s                
+     │ Int64  Tuple…              Tuple…              Tuple…              Tuple…             Tuple…              Tuple…              Tuple…              Tuple…              Tuple…                 
+─────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────    
+   1 │     1  (1.9, 1.9)          (1.6, 2.1)          (1.6, 2.1)          (1.8, 1.9)         (1.9, 1.8)          (1.6, 2.1)          (1.8, 1.8)          (1.8, 1.8)          (1.6, 2.1)
+   2 │     2  (10.3103, 11.5115)  (10.8108, 12.4)     (5.4, 7.60761)      (5.60561, 4.9049)  (76.2887, 87.1369)  (38.5081, 42.7273)  (4.7, 5.1)          (29.6891, 32.998)   (11.6116, 12.7127)     
+   3 │     3  (39.3145, 43.7374)  (40.7669, 45.0505)  (12.7127, 11.4114)  (12.6126, 7.0)     (2433.33, 2377.78)  (490.256, 478.571)  (13.3133, 12.9129)  (284.262, 313.061)  (66.6328, 65.0357) 
 =#

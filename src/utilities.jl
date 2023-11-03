@@ -202,6 +202,30 @@ function get_expression(ci::Tuple{}, ai::IndSyms, bi::IndSyms, dim::Int; kwargs.
 end
 
 # module TensorProductModule
+struct ArgInfo
+    name::Symbol
+    type::Symbol
+    order::Int
+    dim::Union{Int,Tuple{<:Any,Int}}
+end
+ArgInfo(;name, type, order, dim) = ArgInfo(name, type, order, dim)
+
+# Not sure how to avoid eval here...
+get_tensor_argtype(info::ArgInfo) = eval(:($(info.type){$(info.order), $(info.dim)}))
+
+struct TermInfo{N}
+    name::Symbol
+    inds::IndSyms{N}
+end
+
+TermInfo(term::Symbol) = TermInfo(term, ())
+function TermInfo(term::Expr)
+    term.head === :ref || error("TermInfo requires expression with head=:ref, but head = ", term.head)
+    name = term.args[1]
+    inds = tuple(term.args[2:end]...)
+    return TermInfo(name, inds)
+end
+
 function extract_arginfo(arg_expr::Expr)
     if arg_expr.head !== :(::)
         error("Expected type specification arg_expr, but got expr with head $(arg_expr.head)")
@@ -218,8 +242,7 @@ function extract_arginfo(arg_expr::Expr)
     order = curly.args[2]::Int  # Type-assert required, if user pass e.g. Tensor{2,dim},
     dim = curly.args[3]::Int    # the macro will not work, need to pass explicit numbers in the Expr.
     isa(dim, Int) || error("dim = $dim was unexpected, curlyargs = $(curly.args)")
-    basetype = :($type{$order, $dim})
-    return (name=name, type=type, order=order, dim=dim, basetype)
+    return ArgInfo(;name, type, order, dim)
 end
 
 function extract_header_information(header::Expr)
@@ -230,28 +253,16 @@ function extract_header_information(header::Expr)
     return fname, Ainfo, Binfo
 end
 
-function extract_terminfo(term::Expr)
-    @assert term.head === :ref
-    name = term.args[1]
-    inds = tuple(term.args[2:end]...)
-    return (name=name, inds=inds)
-end
-
-# Scalar term, no indices
-function extract_terminfo(term::Symbol)
-    return (name=term, inds=())
-end
-
 function extract_body_information(body::Expr)
     body.head === :block || error("Expecting a block type expression")
     @assert all(isa(a, LineNumberNode) for a in body.args[1:(length(body.args)-1)])
     @assert body.args[end].head === :(=) # Should be an assignment
     expr = body.args[end].args
-    Cinfo = extract_terminfo(expr[1])
+    Cinfo = TermInfo(expr[1])
     @assert expr[2].head === :call
     @assert expr[2].args[1] === :*
-    Ainfo = extract_terminfo(expr[2].args[2])
-    Binfo = extract_terminfo(expr[2].args[3])
+    Ainfo = TermInfo(expr[2].args[2])
+    Binfo = TermInfo(expr[2].args[3])
     return Cinfo, Ainfo, Binfo
 end
 
@@ -291,11 +302,11 @@ function check_input_consistency(C_body, A_head, A_body, B_head, B_body)
     check_arg_expr_consistency(A_head, A_body)
     check_arg_expr_consistency(B_head, B_body)
     check_index_consistency(C_body.inds, A_body.inds, B_body.inds)
-end 
+end
 
 function get_index_dims(dimA::Int, ai::IndSyms, dimB::Int, bi::IndSyms)
     if dimA != dimB
-        # Will need dispatch for `dimA::Tuple`, `dimB::Tuple` instead then.
+        # Will need dispatch for `dimA::Tuple`, `dimB::Tuple` instead for MixedTensor.
         error("This should be fixed for MixedTensor, but for now dims must be equal")
     end
     return dimA
@@ -303,14 +314,30 @@ end
 # end # TensorProductModule
 # import .TensorProductModule as TPM
 
-get_output_type(ci::Tuple{}, dim::Int, args...) = nothing
-function get_output_type(ci::IndSyms, dim::Int, A_headinfo, A_bodyinfo, B_headinfo, B_bodyinfo)
-    # Should support SymmetricTensors and MixedTensor in the future
-    # For MixedTensor, dim::NamedTuple must be supported.
-    #@assert A_headinfo.type === :Tensor
-    #@assert B_headinfo.type === :Tensor
-    # TODO: Figure out when it will be a symmetric output. 
-    return Tensor{length(ci), dim}
+get_output_type(ci::Tuple{}, ::Int, ::ArgInfo, ::TermInfo, ::ArgInfo, ::TermInfo) = nothing
+
+function get_output_type(ci::IndSyms, dim::Int, Aarg::ArgInfo, Aterm::TermInfo, Barg::ArgInfo, Bterm::TermInfo)
+    syminds = Set{Tuple{Symbol,Symbol}}()
+    _sort(inds::IndSyms{2}) = inds[1] < inds[2] ? inds : (inds[2], inds[1])
+    for (arg, term) in ((Aarg, Aterm), (Barg, Bterm))
+        arg.type !== :SymmetricTensor && continue
+        length(term.inds) < 2 && continue
+        for i in 2:2:length(term.inds)
+            push!(syminds, _sort(term.inds[(i-1):i]))
+        end
+    end
+    is_sym = iseven(length(ci))
+    if length(ci) > 1
+        for i in 2:2:length(ci)
+            _sort(ci[(i-1):i]) ∉ syminds && (is_sym = false)
+        end
+    end
+    if is_sym
+        return SymmetricTensor{length(ci), dim}
+    else
+        return Tensor{length(ci), dim}
+    end
+    # TODO: Support MixedTensor, requires to support, dim::NamedTuple
 end
 
 function replace_args!(f, args)
@@ -357,20 +384,20 @@ function tensor_product!(expr, args...)
     end
     @assert length(expr.args) == 2
     # Header 
-    fname, A_headinfo, B_headinfo = extract_header_information(expr.args[1])
+    fname, A_arginfo, B_arginfo = extract_header_information(expr.args[1])
     expr.args[1] = esc(expr.args[1]) # Escape header as this should be returned as evaluted in the macro-caller's scope
     # Body 
     body = expr.args[2]
-    C_bodyinfo, A_bodyinfo, B_bodyinfo = extract_body_information(body)
-    check_input_consistency(C_bodyinfo, A_headinfo, A_bodyinfo, B_headinfo, B_bodyinfo)
-    dim = get_index_dims(A_headinfo.dim, A_bodyinfo.inds, B_headinfo.dim, B_bodyinfo.inds)
-    TC = get_output_type(C_bodyinfo.inds, dim, A_headinfo, A_bodyinfo, B_headinfo, B_bodyinfo)
-    # Not sure how to avoid eval here...
-    TA = eval(A_headinfo.basetype)
-    TB = eval(B_headinfo.basetype) 
+    C_terminfo, A_terminfo, B_terminfo = extract_body_information(body)
+    check_input_consistency(C_terminfo, A_arginfo, A_terminfo, B_arginfo, B_terminfo)
+    dim = get_index_dims(A_arginfo.dim, A_terminfo.inds, B_arginfo.dim, B_terminfo.inds)
+    TC = get_output_type(C_terminfo.inds, dim, A_arginfo, A_terminfo, B_arginfo, B_terminfo)
+    
+    TA = get_tensor_argtype(A_arginfo)
+    TB = get_tensor_argtype(B_arginfo)
     # Have checked in extract_body_information that last args in body is the actual expression to be changed.
     # Here, we overwrite the index expression content with the generated expression
-    the_expr = get_expression(C_bodyinfo.inds, A_bodyinfo.inds, B_bodyinfo.inds, dim; TC, TA, TB, use_muladd)
+    the_expr = get_expression(C_terminfo.inds, A_terminfo.inds, B_terminfo.inds, dim; TC, TA, TB, use_muladd)
     esc_args!(the_expr.args; syms=(:A, :B))
     body.args[end] = the_expr
     return expr
