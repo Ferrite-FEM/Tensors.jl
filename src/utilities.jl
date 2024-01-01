@@ -103,19 +103,10 @@ function ustrip(S::SymmetricTensor{order,dim,T}) where {order, dim, T}
     end
 end
 
-# dotmacro
-#= Aiming for a syntax in the style of 
-@tensorfun function dcontract(A::Tensor{2,dim}, B::Tensor{2,dim}) where dim
-    C = A[i,j]*B[i,j]
-end
-@tensorfun function otimes(A::Tensor{2,dim}, B::Tensor{2,dim}) where dim    
-    C[i,j,k,l] = A[i,j]*B[k,l]
-end
-@tensorfun function otimes(A::Tensor{2,2}, B::Tensor{2,2})    
-    C[i,j,k,l] = A[i,j]*B[k,l]
-end
-=#
-
+# tensor_product macro
+# First, `get_expression` gives the logic for generating the expression.
+# Then, the `tensor_product` macro interprets a convenient input format 
+# to return a function with the expression from `get_expression`. 
 const IndSyms{N} = NTuple{N,Symbol}
 const IntVals{N} = NTuple{N,Int}
 
@@ -145,6 +136,8 @@ get_expression((), (:i,), (:i,), 2)
 get_expression((:i,), (:i, :j), (:j,), 2)
 get_expression((:i, :j), (:i, :l, :m), (:l, :m, :j), 2)
 ```
+where the keyword arguments `TA`, `TB`, and `TC` gives the 
+tensor type, e.g. `TA=Tensor` for `A`, `B`, and `C`. 
 """
 function get_expression(ci::IndSyms, ai::IndSyms, bi::IndSyms, 
         dims::NamedTuple; TC, TA, TB, use_muladd=false
@@ -201,7 +194,6 @@ function get_expression(ci::Tuple{}, ai::IndSyms, bi::IndSyms, dim::Int; kwargs.
     return get_expression(ci, ai, bi, dims; kwargs...)
 end
 
-# module TensorProductModule
 struct ArgInfo
     name::Symbol
     type::Symbol
@@ -311,8 +303,6 @@ function get_index_dims(dimA::Int, ai::IndSyms, dimB::Int, bi::IndSyms)
     end
     return dimA
 end
-# end # TensorProductModule
-# import .TensorProductModule as TPM
 
 get_output_type(ci::Tuple{}, ::Int, ::ArgInfo, ::TermInfo, ::ArgInfo, ::TermInfo) = nothing
 
@@ -356,6 +346,10 @@ function esc_args!(args; syms=(:A, :B))
 end
 
 function tensor_product!(expr, args...)
+    # 1) Analyze the header and function body for information
+    # 2) Generate the function body
+    # 3) Replace the function body in ´expr` with the generated function body
+
     # Unpack performance annotations, such as @inbounds and @inline
     if expr.head === :macrocall
         # Check that type is allowed macros (so we don't have to escape)
@@ -364,7 +358,7 @@ function tensor_product!(expr, args...)
         @assert expr.args[2] isa LineNumberNode
         tensor_product!(expr.args[3], args...)
         return expr
-    elseif expr.head === :tuple
+    elseif expr.head === :tuple # get annotations such as muladd
         if expr.args[1].head !== :function
             error("should be function, but is $(expr.args[1].head)")
         end
@@ -404,14 +398,6 @@ function tensor_product!(expr, args...)
 end
 
 macro tensor_product(expr, args...)
-    # Plan
-    # 1) Analyze the header for information
-    # 2) Analyze the function body for information
-    # 3) Given this information, generate the function body
-    # 4) Return the expression in which the function body has been replaced
-    #    by the generated expression, keeping the function header intact.
-    #    This opens up, for example, the possibility of using different performance
-    #    annotations for different datatypes.
     tensor_product!(expr, args...)
 end
 
