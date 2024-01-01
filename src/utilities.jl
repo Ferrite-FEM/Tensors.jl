@@ -397,6 +397,20 @@ function tensor_product!(expr, args...)
     return expr
 end
 
+"""
+    @tensor_product(expr, args...)
+
+Generate a function to evaluate a tensor product based on an index expression.
+```julia 
+@tensor_product function my_op(A::Tensor{2,3}, B::Tensor{1,3})
+    C[i] = A[i,j]*B[j]
+end
+```
+The type specification of `A` and `B` should contain at least the type of tensor, order, and dim. 
+Additional type parameters can optionally be given to dispatch on e.g. the `eltype`.
+The return type of `C`, i.e. `Tensor` or `SymmetricTensor` is inferred from the index 
+expression and the input tensors.
+"""
 macro tensor_product(expr, args...)
     tensor_product!(expr, args...)
 end
