@@ -415,19 +415,72 @@ macro tensor_product(expr, args...)
     tensor_product!(expr, args...)
 end
 
-# Generate a few test cases, just to check that it works.
-function m_dcontract end
-function m_otimes end
-function m_dot end
+# Define the "foreach" macro, to allow generating functions in a loop
+function getrange(expr)
+    @assert expr.head === :call
+    @assert expr.args[1] === :(:)
+    @assert all(x->isa(x,Number), expr.args[2:end])
+    @assert length(expr.args) ∈ (3,4)
+    if length(expr.args) == 3 # from:to range
+        return expr.args[2]:expr.args[3]
+    else #length(expr.args) == 4 # from:step:to range
+        return expr.args[2]:expr.args[3]:expr.args[4]
+    end
+end
 
-@tensor_product (function m_dcontract(A::Tensor{2,3}, B::Tensor{2,3})
-    C = A[i,j]*B[i,j]
-end)
+function getiterable(expr)
+    if expr.head === :call && expr.args[1] === :(:)
+        return getrange(expr)
+    elseif expr.head === :(tuple)
+        return (a for a in expr.args)
+    else
+        error("Don't know what to do with $(expr.head)")
+    end
+end
 
-@tensor_product (function m_otimes(A::Tensor{1,3}, B::Tensor{1,3})
-    C[i,j] = A[i]*B[j]
-end)
+function loop_over_cases(loopsym, cases, expr)
+    exprs = Expr(:tuple)
+    for loopvar in getiterable(cases)
+        tmpexpr = deepcopy(expr)
+        f(s::Symbol) = (s === loopsym ? loopvar : s)
+        Tensors.replace_args!(f, tmpexpr.args)
+        push!(exprs.args, esc(tmpexpr))
+    end
+    return exprs
+end
 
-@tensor_product (function m_dot(A::Tensor{2,3}, B::Tensor{2,3})
-    C[i,j] = A[i,k]*B[k,j]
-end)
+function foreach(expr)
+    @assert expr.head === :for
+    loopsym = expr.args[1].args[1]
+    isa(loopsym, Symbol) || error("Can only loop over one variable")
+    cases = expr.args[1].args[2]
+    codeblock = expr.args[2]::Expr
+    @assert codeblock.head === :block
+    return loop_over_cases(loopsym, cases, codeblock)
+end
+
+"""
+    @foreach expr
+
+Given an expression of the form
+```julia
+for <val> in <range_or_tuple>
+    <any code>
+end
+```
+Return one expression for each item in `<range_or_tuple>`, in which all instances of `<val>` 
+in `<any code>` is replaced by the value in `<range_or_tuple>`. `<range_or_tuple>` must be
+hard-coded. Example 
+```julia
+@foreach for dim in 1:3
+    @foreach for TT in (Tensor, SymmetricTensor)
+        Tensors.@tensor_product(@inline @inbounds function my_dot(A::TT{2,dim}, B::TT{2,dim})
+            C[i,j] = A[i,k]*B[k,j]
+        end)
+    end
+end
+```
+"""
+macro foreach(expr)
+    return foreach(expr)
+end

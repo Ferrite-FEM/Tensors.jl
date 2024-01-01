@@ -18,7 +18,6 @@ end
 
 reset_timer!()
 
-include("test_dotmacro.jl")
 include("F64.jl")
 include("test_misc.jl")
 include("test_ops.jl")

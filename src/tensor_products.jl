@@ -1,4 +1,94 @@
-# dcontract, dot, tdot, otimes, cross
+# dcontract, dot, tdot, otimes, crossa:\:TT{
+
+@foreach for dim in 1:3
+    @foreach for TA in (Tensor, SymmetricTensor)
+        @foreach for TB in (Tensor, SymmetricTensor)
+            # dcontract with both tensors of even order
+            @tensor_product(@inline @inbounds function dcontract(A::TA{2,dim}, B::TB{2,dim})
+                C = A[i,j]*B[i,j]
+            end, muladd)
+            @tensor_product(@inline @inbounds function dcontract(A::TA{4,dim}, B::TB{2,dim})
+                C[i,j] = A[i,j,k,l]*B[k,l]
+            end, muladd)
+            @tensor_product(@inline @inbounds function dcontract(A::TA{2,dim}, B::TB{4,dim})
+                C[k,l] = A[i,j]*B[i,j,k,l]
+            end, muladd)
+            @tensor_product(@inline @inbounds function dcontract(A::TA{4,dim}, B::TB{4,dim})
+                C[i,j,k,l] = A[i,j,m,n]*B[m,n,k,l]
+            end, muladd)
+            
+            # otimes between 2nd order tensors
+            @tensor_product(@inline @inbounds function otimes(A::TA{2,dim}, B::TB{2,dim})
+                C[i,j,k,l] = A[i,j]*B[k,l]
+            end)
+
+            # dot between two tensors with even order
+            @tensor_product(@inline @inbounds function LinearAlgebra.dot(A::TA{2,dim}, B::TB{2,dim})
+                C[i,j] = A[i,k]*B[k,j]
+            end)
+            @tensor_product(@inline @inbounds function LinearAlgebra.dot(A::TA{4,dim}, B::TB{2,dim})
+                C[i,j,k,l] = A[i,j,k,m]*B[m,l]
+            end)
+            @tensor_product(@inline @inbounds function LinearAlgebra.dot(A::TA{2,dim}, B::TB{4,dim})
+                C[i,j,k,l] = A[i,m]*B[m,j,k,l]
+            end)
+        end
+
+        # dcontract with 3rd order tensors
+        @tensor_product(@inline @inbounds function dcontract(A::TA{2,dim}, B::Tensor{3,dim})
+            C[i] = A[k,l]*B[k,l,i]
+        end, muladd)
+        @tensor_product(@inline @inbounds function dcontract(A::Tensor{3,dim}, B::TA{2,dim})
+            C[i] = A[i,k,l]*B[k,l]
+        end, muladd)
+        @tensor_product(@inline @inbounds function dcontract(A::TA{4,dim}, B::Tensor{3,dim})
+            C[i,j,m] = A[i,j,k,l]*B[k,l,m]
+        end, muladd)
+        @tensor_product(@inline @inbounds function dcontract(A::Tensor{3,dim}, B::TA{4,dim})
+            C[i,m,n] = A[i,k,l]*B[k,l,m,n]
+        end, muladd)
+
+        # otimes where one argument has an odd order, and one has even order
+        @tensor_product(@inline @inbounds function otimes(A::Tensor{1,dim}, B::TA{2,dim})
+            C[i,j,k] = A[i]*B[j,k]
+        end)
+        @tensor_product(@inline @inbounds function otimes(A::TA{2,dim}, B::Tensor{1,dim})
+            C[i,j,k] = A[i,j]*B[k]
+        end)
+
+        # dot where one argument has odd order, and one has even order
+        @tensor_product(@inline @inbounds function LinearAlgebra.dot(A::TA{2,dim}, B::Tensor{1,dim})
+            C[i] = A[i,j]*B[j]
+        end)
+        @tensor_product(@inline @inbounds function LinearAlgebra.dot(A::Tensor{1,dim}, B::TA{2,dim})
+            C[j] = A[i]*B[i,j]
+        end)
+        @tensor_product(@inline @inbounds function LinearAlgebra.dot(A::Tensor{3,dim}, B::TA{2,dim})
+            C[i,j,k] = A[i,j,m]*B[m,k]
+        end)
+        @tensor_product(@inline @inbounds function LinearAlgebra.dot(A::TA{2,dim}, B::Tensor{3,dim})
+            C[i,j,k] = A[i,m]*B[m,j,k]
+        end)
+        
+    end
+    # otimes where both tensors have odd orders
+    @tensor_product(@inline @inbounds function otimes(A::Tensor{1,dim}, B::Tensor{1,dim})
+        C[i,j] = A[i]*B[j]
+    end)
+    # Defining {3}⊗{1} and {1}⊗{3} = {4} would also be valid...
+
+    # dot where both tensors have odd orders
+    @tensor_product(@inline @inbounds function LinearAlgebra.dot(A::Tensor{1,dim}, B::Tensor{1,dim})
+        C = A[i]*B[i]
+    end)
+    @tensor_product(@inline @inbounds function LinearAlgebra.dot(A::Tensor{3,dim}, B::Tensor{1,dim})
+        C[i,j] = A[i,j,k]*B[k]
+    end)
+    @tensor_product(@inline @inbounds function LinearAlgebra.dot(A::Tensor{1,dim}, B::Tensor{3,dim})
+        C[i,j] = A[k]*B[k,i,j]
+    end)
+end
+
 """
     dcontract(::SecondOrderTensor, ::SecondOrderTensor)
     dcontract(::SecondOrderTensor, ::FourthOrderTensor)
@@ -22,136 +112,7 @@ julia> A ⊡ B
 1.9732018397544984
 ```
 """
-@generated function dcontract(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    idxS1(i, j) = compute_index(get_base(S1), i, j)
-    idxS2(i, j) = compute_index(get_base(S2), i, j)
-    ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))]) for i in 1:dim, j in 1:dim][:]
-    ex2 = Expr[:(get_data(S2)[$(idxS2(i, j))]) for i in 1:dim, j in 1:dim][:]
-    exp = reducer(ex1, ex2)
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $exp
-    end
-end
-
-@generated function dcontract(S1::SecondOrderTensor{dim}, S2::FourthOrderTensor{dim}) where {dim}
-    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
-    idxS1(i, j) = compute_index(get_base(S1), i, j)
-    idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
-    exps = Expr(:tuple)
-    for l in 1:dim, k in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))])       for i in 1:dim, j in 1:dim][:]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(i, j, k, l))]) for i in 1:dim, j in 1:dim][:]
-        push!(exps.args, reducer(ex1, ex2, true))
-    end
-    expr = remove_duplicates(TensorType, exps)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
-end
-
-@generated function dcontract(S1::FourthOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
-    idxS1(i, j, k, l) = compute_index(get_base(S1), i, j, k, l)
-    idxS2(i, j) = compute_index(get_base(S2), i, j)
-    exps = Expr(:tuple)
-    for j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, k, l))]) for k in 1:dim, l in 1:dim][:]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(k, l))])       for k in 1:dim, l in 1:dim][:]
-        push!(exps.args, reducer(ex1, ex2, true))
-    end
-    expr = remove_duplicates(TensorType, exps)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
-end
-
-@generated function dcontract(S1::SecondOrderTensor{dim}, S2::Tensor{3,dim}) where {dim}
-    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
-    idxS1(i, j) = compute_index(get_base(S1), i, j)
-    idxS2(i, j, k) = compute_index(get_base(S2), i, j, k)
-    exps = Expr(:tuple)
-    for k in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))])    for i in 1:dim, j in 1:dim][:]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(i, j, k))]) for i in 1:dim, j in 1:dim][:]
-        push!(exps.args, reducer(ex1, ex2, true))
-    end
-    expr = remove_duplicates(TensorType, exps) # TODO: Required?
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
-end
-
-@generated function dcontract(S1::Tensor{3,dim}, S2::SecondOrderTensor{dim}) where {dim}
-    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
-    idxS1(i, j, k) = compute_index(get_base(S1), i, j, k)
-    idxS2(i, j) = compute_index(get_base(S2), i, j)
-    exps = Expr(:tuple)
-    for i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, k, l))]) for k in 1:dim, l in 1:dim][:]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(k, l))])    for k in 1:dim, l in 1:dim][:]
-        push!(exps.args, reducer(ex1, ex2, true))
-    end
-    expr = remove_duplicates(TensorType, exps)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
-end
-
-@generated function dcontract(S1::Tensor{3,dim}, S2::FourthOrderTensor{dim}) where {dim}
-    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
-    idxS1(i, j, k)    = compute_index(get_base(S1), i, j, k)
-    idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
-    exps = Expr(:tuple)
-    for k in 1:dim, j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, m, n))])    for m in 1:dim, n in 1:dim][:]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(m, n, j, k))]) for m in 1:dim, n in 1:dim][:]
-        push!(exps.args, reducer(ex1, ex2, true))
-    end
-    expr = remove_duplicates(TensorType, exps)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
-end
-
-@generated function dcontract(S1::FourthOrderTensor{dim}, S2::Tensor{3,dim}) where {dim}
-    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
-    idxS1(i, j, k, l)    = compute_index(get_base(S1), i, j, k, l)
-    idxS2(i, j, k) = compute_index(get_base(S2), i, j, k)
-    exps = Expr(:tuple)
-    for k in 1:dim, j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, m, n))]) for m in 1:dim, n in 1:dim][:]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(m, n, k))])    for m in 1:dim, n in 1:dim][:]
-        push!(exps.args, reducer(ex1, ex2, true))
-    end
-    expr = remove_duplicates(TensorType, exps)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
-end
-
-@generated function dcontract(S1::FourthOrderTensor{dim}, S2::FourthOrderTensor{dim}) where {dim}
-    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
-    idxS1(i, j, k, l) = compute_index(get_base(S1), i, j, k, l)
-    idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
-    exps = Expr(:tuple)
-    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, m, n))]) for m in 1:dim, n in 1:dim][:]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(m, n, k, l))]) for m in 1:dim, n in 1:dim][:]
-        push!(exps.args, reducer(ex1, ex2, true))
-    end
-    expr = remove_duplicates(TensorType, exps)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($expr)
-    end
-end
+function dcontract end 
 
 const ⊡ = dcontract
 
@@ -187,23 +148,8 @@ julia> A ⊗ B
  0.654957  0.48365
 ```
 """
-@inline function otimes(S1::Vec{dim}, S2::Vec{dim}) where {dim}
-    return Tensor{2, dim}(@inline function(i,j) @inbounds S1[i] * S2[j]; end)
-end
+function otimes end 
 
-@inline function otimes(S1::Vec{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    return Tensor{3, dim}(@inline function(i,j,k) @inbounds S1[i] * S2[j,k]; end)
-end
-@inline function otimes(S1::SecondOrderTensor{dim}, S2::Vec{dim}) where {dim}
-    return Tensor{3, dim}(@inline function(i,j,k) @inbounds S1[i,j] * S2[k]; end)
-end
-
-@inline function otimes(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
-    TensorType(@inline function(i,j,k,l) @inbounds S1[i,j] * S2[k,l]; end)
-end
-
-# Defining {3}⊗{1} and {1}⊗{3} = {4} would also be valid...
 
 @inline otimes(S1::Number, S2::Number) = S1*S2
 @inline otimes(S1::AbstractTensor, S2::Number) = S1*S2
@@ -338,146 +284,7 @@ julia> A ⋅ B
  1.0018368881367576
 ```
 """
-@generated function LinearAlgebra.dot(S1::Vec{dim}, S2::Vec{dim}) where {dim}
-    ex1 = Expr[:(get_data(S1)[$i]) for i in 1:dim]
-    ex2 = Expr[:(get_data(S2)[$i]) for i in 1:dim]
-    exp = reducer(ex1, ex2)
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $exp
-    end
-end
-
-@generated function LinearAlgebra.dot(S1::SecondOrderTensor{dim}, S2::Vec{dim}) where {dim}
-    idxS1(i, j) = compute_index(get_base(S1), i, j)
-    exps = Expr(:tuple)
-    for i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))]) for j in 1:dim]
-        ex2 = Expr[:(get_data(S2)[$j])             for j in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return Vec{dim}($exps)
-    end
-end
-
-@generated function LinearAlgebra.dot(S1::Vec{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    idxS2(i, j) = compute_index(get_base(S2), i, j)
-    exps = Expr(:tuple)
-    for j in 1:dim
-        ex1 = Expr[:(get_data(S1)[$i])             for i in 1:dim]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(i, j))]) for i in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return Vec{dim}($exps)
-    end
-end
-
-@generated function LinearAlgebra.dot(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    idxS1(i, j) = compute_index(get_base(S1), i, j)
-    idxS2(i, j) = compute_index(get_base(S2), i, j)
-    exps = Expr(:tuple)
-    for j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, k))]) for k in 1:dim]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(k, j))]) for k in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return Tensor{2, dim}($exps)
-    end
-end
-
-@generated function LinearAlgebra.dot(S1::FourthOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    idxS1(i, j, k, l) = compute_index(get_base(S1), i, j, k, l)
-    idxS2(i, j) = compute_index(get_base(S2), i, j)
-    exps = Expr(:tuple)
-    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, k, m))]) for m in 1:dim]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(m, l))]) for m in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return Tensor{4, dim}($exps)
-    end
-end
-
-@generated function LinearAlgebra.dot(S1::SecondOrderTensor{dim}, S2::FourthOrderTensor{dim}) where {dim}
-    idxS1(i, j) = compute_index(get_base(S1), i, j)
-    idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
-    exps = Expr(:tuple)
-    for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, m))]) for m in 1:dim]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(m, j, k, l))]) for m in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return Tensor{4, dim}($exps)
-    end
-end
-
-@generated function LinearAlgebra.dot(S1::Tensor{3,dim}, S2::Vec{dim}) where {dim}
-    idxS1(i, j, k) = compute_index(get_base(S1), i, j, k)
-    exps = Expr(:tuple)
-    for j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, m))]) for m in 1:dim]
-        ex2 = Expr[:(get_data(S2)[$m])                for m in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return Tensor{2, dim}($exps)
-    end
-end
-
-@generated function LinearAlgebra.dot(S1::Vec{dim}, S2::Tensor{3,dim}) where {dim}
-    idxS2(i, j, k) = compute_index(get_base(S2), i, j, k)
-    exps = Expr(:tuple)
-    for j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$m]) for m in 1:dim]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(m, i, j))])                for m in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return Tensor{2, dim}($exps)
-    end
-end
-
-@generated function LinearAlgebra.dot(S1::SecondOrderTensor{dim}, S2::Tensor{3,dim}) where {dim}
-    idxS1(i, j) = compute_index(get_base(S1), i, j)
-    idxS2(i, j, k) = compute_index(get_base(S2), i, j, k)
-    exps = Expr(:tuple)
-    for k in 1:dim, j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, m))]) for m in 1:dim]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(m, j, k))]) for m in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return Tensor{3, dim}($exps)
-    end
-end
-
-@generated function LinearAlgebra.dot(S1::Tensor{3,dim}, S2::SecondOrderTensor{dim}) where {dim}
-    idxS1(i, j, k) = compute_index(get_base(S1), i, j, k)
-    idxS2(i, j) = compute_index(get_base(S2), i, j)
-    exps = Expr(:tuple)
-    for k in 1:dim, j in 1:dim, i in 1:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, m))]) for m in 1:dim]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(m, k))]) for m in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return Tensor{3, dim}($exps)
-    end
-end
+LinearAlgebra.dot(::AbstractTensor, ::AbstractTensor)
 
 """
     dot(::SymmetricTensor{2})
