@@ -109,7 +109,7 @@ _default_eltype(TT::Type{<:AbstractTensor}) = eltype(TT)
 
 function Random.rand(rng::Random.AbstractRNG, ::Random.SamplerType{TT}) where {TT <: Union{Tensor{order, dim}, SymmetricTensor{order, dim}}} where {order, dim}
     T = _default_eltype(TT)
-    return apply_all(get_base(TT), _ -> randn(rng, T))
+    return apply_all(get_base(TT), _ -> rand(rng, T))
 end
 # Always use the `SamplerType` as the value has no influence on the random generation.
 Random.Sampler(::Type{<:Random.AbstractRNG}, t::AllTensors, ::Random.Repetition) = Random.SamplerType{typeof(t)}()
