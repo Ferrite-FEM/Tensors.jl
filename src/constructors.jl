@@ -89,7 +89,7 @@ for TensorType in (SymmetricTensor, Tensor)
 end
 
 # zero, one, rand
-for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
+for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T)))) #, (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
         @inline Base.$op(::Type{$TensorType{order, dim}}) where {order, dim} = $op($TensorType{order, dim, Float64})
@@ -99,6 +99,22 @@ for TensorType in (SymmetricTensor, Tensor)
 end
 @eval @inline Base.$op(S::Type{Vec{dim}}) where {dim} = $op(Vec{dim, Float64})
 @eval @inline Base.$op(t::AllTensors) = $op(typeof(t))
+end
+
+# Random sampling 
+import Random
+_default_eltype(::Type{Tensor{order, dim, T, M} where T}) where {order, dim, M} = Float64
+_default_eltype(::Type{Tensor{order, dim}}) where {order, dim} = Float64
+_default_eltype(::Type{SymmetricTensor{order, dim}}) where {order, dim} = Float64
+_default_eltype(TT::Type{<:AbstractTensor}) = eltype(TT)
+
+function Random.rand(rng::Random.AbstractRNG, ::Random.SamplerType{TT}) where {TT <: AllTensors}
+    T = _default_eltype(TT)
+    return apply_all(get_base(TT), _ -> randn(rng, T))
+end
+function Random.randn(rng::Random.AbstractRNG, ::Random.SamplerType{<:TT}) where {TT <: AbstractTensor}
+    T = _default_eltype(TT)
+    return apply_all(get_base(TT), _ -> randn(rng, T))
 end
 
 @inline Base.fill(el::Number, S::Type{T}) where {T <: Union{Tensor, SymmetricTensor}} = apply_all(get_base(T), i -> el)
