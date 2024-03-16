@@ -25,7 +25,10 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,3,4)
         TT = TensorType{order, dim, T}
         @test rand(MersenneTwister(1), TT) ≈ rand(MersenneTwister(1), TT)       # Check that rng was actually used
         @test rand(MersenneTwister(2), TT) ≈ rand(MersenneTwister(2), rand(TT)) # Check same value when given a value
-        @inferred Vector{<:TT} rand(TT, 2) # Construct a Vector of random tensors
+        # type stability
+        (@inferred rand(TT, 2))::Vector{TT{Tensors.n_components(TensorType{order, dim})}}
+        @inferred rand(MersenneTwister(2), TT)
+
         if order == 1
             @test rand(MersenneTwister(1), Vec{dim, T}) ≈ rand(MersenneTwister(1), TT)
         end
