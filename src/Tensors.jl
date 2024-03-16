@@ -2,7 +2,7 @@ module Tensors
 
 import Base.@pure
 
-import Statistics
+import Statistics, Random
 using Statistics: mean
 using LinearAlgebra
 using StaticArrays

@@ -88,8 +88,10 @@ for TensorType in (SymmetricTensor, Tensor)
     end
 end
 
-# zero, one, rand
-for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
+# zero, one, randn. 
+# rand included here to make rand(::Type{AbstractTensor}) fast on julia 1.6. 
+# When 1.6 support is dropped, the general implementation below can be used instead. 
+for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:randn,:(()->randn(T))), (:rand,:(()->rand(T))))
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
         @inline Base.$op(::Type{$TensorType{order, dim}}) where {order, dim} = $op($TensorType{order, dim, Float64})
@@ -99,6 +101,27 @@ for TensorType in (SymmetricTensor, Tensor)
 end
 @eval @inline Base.$op(S::Type{Vec{dim}}) where {dim} = $op(Vec{dim, Float64})
 @eval @inline Base.$op(t::AllTensors) = $op(typeof(t))
+end
+
+# Helper to construct a fully specified tensor from at least the specification returned by get_base
+function default_concrete_tensor_type(::Type{X}) where {X <: Union{Tensor, SymmetricTensor}}
+    TB = get_base(X)
+    T = eltype(X) === Any ? Float64 : eltype(X)
+    M = n_components(TB)
+    return TB{T, M}
+end
+
+# For `rand`, hook into Random
+function Random.rand(rng::Random.AbstractRNG, ::Random.SamplerType{TT}) where {TT <: Union{Tensor{order, dim}, SymmetricTensor{order, dim}}} where {order, dim}
+    TC = default_concrete_tensor_type(TT)
+    return apply_all(get_base(TT), _ -> rand(rng, eltype(TC)))::TC # typeassert needed on julia 1.6, but ok on 1.8 and later. 
+end
+# Always use the `SamplerType` as the value has no influence on the random generation.
+Random.Sampler(::Type{<:Random.AbstractRNG}, t::AllTensors, ::Random.Repetition) = Random.SamplerType{typeof(t)}()
+# Fix to make `rand([rng], ::Type{AbstractTensor}, d, dims...)` have a concrete eltype
+function Random.rand(r::Random.AbstractRNG, ::Type{X}, dims::Dims) where {X <: Union{Tensor, SymmetricTensor}}
+    TC = default_concrete_tensor_type(X)
+    return Random.rand!(r, Array{TC}(undef, dims), X)
 end
 
 @inline Base.fill(el::Number, S::Type{T}) where {T <: Union{Tensor, SymmetricTensor}} = apply_all(get_base(T), i -> el)

@@ -19,6 +19,20 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,3,4)
             (@inferred (op)(Vec{dim, T}))::Tensor{order, dim, T}
         end
     end
+    # Random numbers with samplers 
+    for TensorType in (Tensor, SymmetricTensor)
+        TensorType == SymmetricTensor && isodd(order) && continue
+        TT = TensorType{order, dim, T}
+        @test rand(MersenneTwister(1), TT) ≈ rand(MersenneTwister(1), TT)       # Check that rng was actually used
+        @test rand(MersenneTwister(2), TT) ≈ rand(MersenneTwister(2), rand(TT)) # Check same value when given a value
+        # type stability
+        (@inferred rand(TT, 2))::Vector{TT{Tensors.n_components(TensorType{order, dim})}}
+        @inferred rand(MersenneTwister(2), TT)
+
+        if order == 1
+            @test rand(MersenneTwister(1), Vec{dim, T}) ≈ rand(MersenneTwister(1), TT)
+        end
+    end
     # Special Vec constructor
     if order == 1
         t = ntuple(i -> T(i), dim)
