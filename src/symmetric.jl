@@ -10,13 +10,13 @@ Return a `SymmetricTensor`.
 ```jldoctest
 julia> A = rand(Tensor{2,2})
 2×2 Tensor{2, 2, Float64, 4}:
- 0.590845  0.566237
- 0.766797  0.460085
+ 0.325977  0.218587
+ 0.549051  0.894245
 
 julia> symmetric(A)
 2×2 SymmetricTensor{2, 2, Float64, 3}:
- 0.590845  0.666517
- 0.666517  0.460085
+ 0.325977  0.383819
+ 0.383819  0.894245
 ```
 """
 @inline symmetric(S1::SymmetricTensors) = S1
