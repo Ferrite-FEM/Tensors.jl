@@ -20,7 +20,7 @@ export tdot, dott, dotdot
 export hessian, gradient, curl, divergence, laplace
 export @implement_gradient
 export basevec, eᵢ
-export rotate, rotation_tensor
+export rotate, rotation_tensor, orthogonal
 export tovoigt, tovoigt!, fromvoigt, tomandel, tomandel!, frommandel
 #########
 # Types #
