@@ -259,21 +259,25 @@ illustrated by the following example, this will give the correct result. In gene
 however, direct differentiation of `Tensor`s is faster (see
 [Automatic Differentiation](@ref)).
 
-```jldoctest
+```jldoctest ad-voigt
 julia> using Tensors, ForwardDiff
 
 julia> fun(X::SymmetricTensor{2}) = X;
 
 julia> A = rand(SymmetricTensor{2,2});
+```
 
-# Differentiation of a tensor directly (correct)
+Differentiation of a tensor directly (correct):
+```jldoctest ad-voigt
 julia> tovoigt(gradient(fun, A))
 3×3 Matrix{Float64}:
  1.0  0.0  0.0
  0.0  1.0  0.0
  0.0  0.0  0.5
+```
 
-# Converting to Voigt format, perform differentiation, convert back (WRONG!)
+Converting to Voigt format, perform differentiation, convert back (WRONG!):
+```jldoctest ad-voigt
 julia> ForwardDiff.jacobian(
            v -> tovoigt(fun(fromvoigt(SymmetricTensor{2,2}, v))),
            tovoigt(A)
@@ -282,8 +286,10 @@ julia> ForwardDiff.jacobian(
  1.0  0.0  0.0
  0.0  1.0  0.0
  0.0  0.0  1.0
+```
 
-# Converting to Mandel format, perform differentiation, convert back (correct)
+Converting to Mandel format, perform differentiation, convert back (correct)
+```jldoctest ad-voigt
 julia> tovoigt(
            frommandel(SymmetricTensor{4,2},
                 ForwardDiff.jacobian(

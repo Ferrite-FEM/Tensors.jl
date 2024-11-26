@@ -50,13 +50,13 @@ julia> E = eigen(A);
 
 julia> E.values
 2-element Vec{2, Float64}:
- -0.1883547111127678
-  1.345436766284664
+ -0.27938877799585415
+  0.8239521616782797
 
 julia> E.vectors
 2×2 Tensor{2, 2, Float64, 4}:
- -0.701412  0.712756
-  0.712756  0.701412
+ -0.671814  0.74072
+  0.74072   0.671814
 ```
 """
 LinearAlgebra.eigen(::SymmetricTensor{2})
