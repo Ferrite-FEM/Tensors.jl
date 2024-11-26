@@ -1,4 +1,4 @@
-# norm, det, inv, eig, trace, dev
+# norm, det, inv, cof, eig, trace, dev
 """
     norm(::Vec)
     norm(::SecondOrderTensor)
@@ -76,6 +76,90 @@ julia> det(A)
                   t[1,2] * (t[2,1]*t[3,3] - t[2,3]*t[3,1]) +
                   t[1,3] * (t[2,1]*t[3,2] - t[2,2]*t[3,1]))
 end
+
+"""
+    cof(::SecondOrderTensor)
+
+Computes the cofactor tensor of a second order tensor.
+
+# Examples
+```jldoctest
+julia> A = rand(Tensor{2,3})
+3×3 Tensor{2, 3, Float64, 9}:
+ 0.452086  0.0233788  0.0577303
+ 0.498501  0.958321   0.0225181
+ 0.494898  0.283346   0.874065
+
+julia> cof(A)
+3×3 Tensor{2, 3, Float64, 9}:
+  0.831254  -0.00407687  -0.0547978
+ -0.424578   0.366581     0.0185985
+ -0.333023  -0.116527     0.421589
+```
+"""
+@generated function cof(t::Tensor{2, dim, T}) where {dim, T}
+    Tt = get_base(t)
+    idx(i,j) = compute_index(Tt, i, j)
+    if dim == 1
+        ex = :($Tt((T(1.0), )))
+    elseif dim == 2
+        ex = quote
+            v = get_data(t)
+            $Tt((v[$(idx(2,2))], -v[$(idx(1,2))],
+                -v[$(idx(2,1))],  v[$(idx(1,1))]))
+        end
+    else # dim == 3
+        ex = quote
+            v = get_data(t)
+            $Tt(((v[$(idx(2,2))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,2))]), #11
+                -(v[$(idx(1,2))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,2))]), #21
+                 (v[$(idx(1,2))]*v[$(idx(2,3))] - v[$(idx(1,3))]*v[$(idx(2,2))]), #31
+
+                -(v[$(idx(2,1))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,1))]), #12
+                 (v[$(idx(1,1))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,1))]), #22
+                -(v[$(idx(1,1))]*v[$(idx(2,3))] - v[$(idx(1,3))]*v[$(idx(2,1))]), #32
+
+                 (v[$(idx(2,1))]*v[$(idx(3,2))] - v[$(idx(2,2))]*v[$(idx(3,1))]), #13
+                -(v[$(idx(1,1))]*v[$(idx(3,2))] - v[$(idx(1,2))]*v[$(idx(3,1))]), #23
+                 (v[$(idx(1,1))]*v[$(idx(2,2))] - v[$(idx(1,2))]*v[$(idx(2,1))])))#33
+        end
+    end
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $ex
+    end
+end
+
+@generated function cof(t::SymmetricTensor{2, dim, T}) where {dim, T}
+    Tt = get_base(t)
+    idx(i,j) = compute_index(Tt, i, j)
+    if dim == 1
+        ex = :($Tt((T(1.0), )))
+    elseif dim == 2
+        ex = quote
+            v = get_data(t)
+            $Tt((v[$(idx(2,2))], -v[$(idx(2,1))],
+                 v[$(idx(1,1))]))
+        end
+    else # dim == 3
+        ex = quote
+            v = get_data(t)
+            $Tt(((v[$(idx(2,2))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,2))]),
+                -(v[$(idx(2,1))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,1))]),
+                 (v[$(idx(2,1))]*v[$(idx(3,2))] - v[$(idx(2,2))]*v[$(idx(3,1))]),
+
+                 (v[$(idx(1,1))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,1))]),
+                -(v[$(idx(1,1))]*v[$(idx(3,2))] - v[$(idx(1,2))]*v[$(idx(3,1))]),
+
+                 (v[$(idx(1,1))]*v[$(idx(2,2))] - v[$(idx(1,2))]*v[$(idx(2,1))])))
+        end
+    end
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $ex
+    end
+end
+
 
 """
     inv(::SecondOrderTensor)
