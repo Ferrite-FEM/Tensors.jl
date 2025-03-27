@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Binary Operations · Tensors.jl</title><meta name="title" content="Binary Operations · Tensors.jl"/><meta property="og:title" content="Binary Operations · Tensors.jl"/><meta property="twitter:title" content="Binary Operations · Tensors.jl"/><meta name="description" content="Documentation for Tensors.jl."/><meta property="og:description" content="Documentation for Tensors.jl."/><meta property="twitter:description" content="Documentation for Tensors.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Tensors.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../constructing_tensors/">Constructing tensors</a></li><li><a class="tocitem" href="../indexing/">Indexing</a></li><li class="is-active"><a class="tocitem" href>Binary Operations</a><ul class="internal"><li><a class="tocitem" href="#Dot-product-(single-contraction)"><span>Dot product (single contraction)</span></a></li><li><a class="tocitem" href="#Double-contraction"><span>Double contraction</span></a></li><li><a class="tocitem" href="#Tensor-product-(open-product)"><span>Tensor product (open product)</span></a></li></ul></li><li><a class="tocitem" href="../other_operators/">Other operators</a></li><li><a class="tocitem" href="../storing_tensors/">Storing tensors</a></li><li><a class="tocitem" href="../automatic_differentiation/">Automatic Differentiation</a></li></ul></li><li><a class="tocitem" href="../../benchmarks/">Benchmarks</a></li><li><a class="tocitem" href="../../demos/">Demos</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Manual</a></li><li class="is-active"><a href>Binary Operations</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Binary Operations</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/Ferrite-FEM/Tensors.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/master/docs/src/man/binary_operators.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Binary-Operations"><a class="docs-heading-anchor" href="#Binary-Operations">Binary Operations</a><a id="Binary-Operations-1"></a><a class="docs-heading-anchor-permalink" href="#Binary-Operations" title="Permalink"></a></h1><ul><li><a href="#LinearAlgebra.dot"><code>LinearAlgebra.dot</code></a></li><li><a href="#Tensors.dcontract"><code>Tensors.dcontract</code></a></li><li><a href="#Tensors.otimes"><code>Tensors.otimes</code></a></li><li><a href="#Tensors.otimesl"><code>Tensors.otimesl</code></a></li><li><a href="#Tensors.otimesu"><code>Tensors.otimesu</code></a></li></ul><h2 id="Dot-product-(single-contraction)"><a class="docs-heading-anchor" href="#Dot-product-(single-contraction)">Dot product (single contraction)</a><a id="Dot-product-(single-contraction)-1"></a><a class="docs-heading-anchor-permalink" href="#Dot-product-(single-contraction)" title="Permalink"></a></h2><p>The dot product (or single contraction) between a tensor of order <code>n</code> and a tensor of order <code>m</code> is a tensor of order <code>m + n - 2</code>. For example, single contraction between two vectors <span>$\mathbf{b}$</span> and <span>$\mathbf{c}$</span> can be written as:</p><p class="math-container">\[a = \mathbf{b} \cdot \mathbf{c} \Leftrightarrow a = b_i c_i\]</p><p>and single contraction between a second order tensor <span>$\mathbf{B}$</span> and a vector <span>$\mathbf{c}$</span>:</p><p class="math-container">\[\mathbf{a} = \mathbf{B} \cdot \mathbf{c} \Leftrightarrow a_i = B_{ij} c_j\]</p><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="LinearAlgebra.dot" href="#LinearAlgebra.dot"><code>LinearAlgebra.dot</code></a> — <span class="docstring-category">Function</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">dot(::Vec, ::Vec)
+dot(::Vec, ::SecondOrderTensor)
+dot(::SecondOrderTensor, ::Vec)
+dot(::SecondOrderTensor, ::SecondOrderTensor)</code></pre><p>Computes the dot product (single contraction) between two tensors. The symbol <code>⋅</code>, written <code>\cdot</code>, is overloaded for single contraction.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; A = rand(Tensor{2, 2})
+2×2 Tensor{2, 2, Float64, 4}:
+ 0.325977  0.218587
+ 0.549051  0.894245
+
+julia&gt; B = rand(Tensor{1, 2})
+2-element Vec{2, Float64}:
+ 0.35311164439921205
+ 0.39425536741585077
+
+julia&gt; dot(A, B)
+2-element Vec{2, Float64}:
+ 0.2012851406726999
+ 0.5464374094589712
+
+julia&gt; A ⋅ B
+2-element Vec{2, Float64}:
+ 0.2012851406726999
+ 0.5464374094589712</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/f1726ac8a1f9d88a6ee84ab4440617c598daaaea/src/tensor_products.jl#L309-L340">source</a></section><section><div><pre><code class="language-julia hljs">dot(::SymmetricTensor{2})</code></pre><p>Compute the dot product of a symmetric second order tensor with itself. Return a <code>SymmetricTensor</code>.</p><p>See also <a href="../other_operators/#Tensors.tdot"><code>tdot</code></a> and <a href="../other_operators/#Tensors.dott"><code>dott</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; A = rand(SymmetricTensor{2,3})
+3×3 SymmetricTensor{2, 3, Float64, 6}:
+ 0.325977  0.549051  0.218587
+ 0.549051  0.894245  0.353112
+ 0.218587  0.353112  0.394255
+
+julia&gt; dot(A)
+3×3 SymmetricTensor{2, 3, Float64, 6}:
+ 0.455498  0.74715  0.351309
+ 0.74715   1.22582  0.575
+ 0.351309  0.575    0.327905</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/f1726ac8a1f9d88a6ee84ab4440617c598daaaea/src/tensor_products.jl#L482-L504">source</a></section></article><h2 id="Double-contraction"><a class="docs-heading-anchor" href="#Double-contraction">Double contraction</a><a id="Double-contraction-1"></a><a class="docs-heading-anchor-permalink" href="#Double-contraction" title="Permalink"></a></h2><p>A double contraction between two tensors contracts the two most inner indices. The result of a double contraction between a tensor of order <code>n</code> and a tensor of order <code>m</code> is a tensor of order <code>m + n - 4</code>. For example, double contraction between two second order tensors <span>$\mathbf{B}$</span> and <span>$\mathbf{C}$</span> can be written as:</p><p class="math-container">\[a = \mathbf{B} : \mathbf{C} \Leftrightarrow a = B_{ij} C_{ij}\]</p><p>and double contraction between a fourth order tensor <span>$\mathsf{B}$</span> and a second order tensor <span>$\mathbf{C}$</span>:</p><p class="math-container">\[\mathbf{A} = \mathsf{B} : \mathbf{C} \Leftrightarrow A_{ij} = B_{ijkl} C_{kl}\]</p><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="Tensors.dcontract" href="#Tensors.dcontract"><code>Tensors.dcontract</code></a> — <span class="docstring-category">Function</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">dcontract(::SecondOrderTensor, ::SecondOrderTensor)
+dcontract(::SecondOrderTensor, ::FourthOrderTensor)
+dcontract(::FourthOrderTensor, ::SecondOrderTensor)
+dcontract(::FourthOrderTensor, ::FourthOrderTensor)</code></pre><p>Compute the double contraction between two tensors. The symbol <code>⊡</code>, written <code>\boxdot</code>, is overloaded for double contraction. The reason <code>:</code> is not used is because it does not have the same precedence as multiplication.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; A = rand(SymmetricTensor{2, 2});
+
+julia&gt; B = rand(SymmetricTensor{2, 2});
+
+julia&gt; dcontract(A,B)
+0.7654348606012742
+
+julia&gt; A ⊡ B
+0.7654348606012742</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/f1726ac8a1f9d88a6ee84ab4440617c598daaaea/src/tensor_products.jl#L2-L24">source</a></section></article><h2 id="Tensor-product-(open-product)"><a class="docs-heading-anchor" href="#Tensor-product-(open-product)">Tensor product (open product)</a><a id="Tensor-product-(open-product)-1"></a><a class="docs-heading-anchor-permalink" href="#Tensor-product-(open-product)" title="Permalink"></a></h2><p>The tensor product (or open product) between a tensor of order <code>n</code> and a tensor of order <code>m</code> is a tensor of order <code>m + n</code>.  For example, open product between two vectors <span>$\mathbf{b}$</span> and <span>$\mathbf{c}$</span> can be written as:</p><p class="math-container">\[\mathbf{A} = \mathbf{b} \otimes \mathbf{c} \Leftrightarrow A_{ij} = b_i c_j\]</p><p>and open product between two second order tensors <span>$\mathbf{B}$</span> and <span>$\mathbf{C}$</span>:</p><p class="math-container">\[\mathsf{A} = \mathbf{B} \otimes \mathbf{C} \Leftrightarrow A_{ijkl} = B_{ij} C_{kl}\]</p><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="Tensors.otimes" href="#Tensors.otimes"><code>Tensors.otimes</code></a> — <span class="docstring-category">Function</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">otimes(::Vec, ::Vec)
+otimes(::SecondOrderTensor, ::SecondOrderTensor)</code></pre><p>Compute the open product between two tensors. The symbol <code>⊗</code>, written <code>\otimes</code>, is overloaded for tensor products.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; A = rand(SymmetricTensor{2, 2});
+
+julia&gt; B = rand(SymmetricTensor{2, 2});
+
+julia&gt; A ⊗ B
+2×2×2×2 SymmetricTensor{4, 2, Float64, 9}:
+[:, :, 1, 1] =
+ 0.291503  0.490986
+ 0.490986  0.19547
+
+[:, :, 2, 1] =
+ 0.115106  0.193876
+ 0.193876  0.0771855
+
+[:, :, 1, 2] =
+ 0.115106  0.193876
+ 0.193876  0.0771855
+
+[:, :, 2, 2] =
+ 0.128518  0.216466
+ 0.216466  0.086179</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/f1726ac8a1f9d88a6ee84ab4440617c598daaaea/src/tensor_products.jl#L158-L189">source</a></section><section><div><pre><code class="language-julia hljs">otimes(::Vec)</code></pre><p>Compute the open product of a vector with itself. Return a <code>SymmetricTensor</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; A = rand(Vec{2})
+2-element Vec{2, Float64}:
+ 0.32597672886359486
+ 0.5490511363155669
+
+julia&gt; otimes(A)
+2×2 SymmetricTensor{2, 2, Float64, 3}:
+ 0.106261  0.178978
+ 0.178978  0.301457</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/f1726ac8a1f9d88a6ee84ab4440617c598daaaea/src/tensor_products.jl#L214-L232">source</a></section></article><h3 id="Permuted-tensor-products"><a class="docs-heading-anchor" href="#Permuted-tensor-products">Permuted tensor products</a><a id="Permuted-tensor-products-1"></a><a class="docs-heading-anchor-permalink" href="#Permuted-tensor-products" title="Permalink"></a></h3><p>Two commonly used permutations of the open product are the &quot;upper&quot; open product (<span>$\bar{\otimes}$</span>) and &quot;lower&quot; open product (<span>$\underline{\otimes}$</span>) defined between second order tensors <span>$\mathbf{B}$</span> and <span>$\mathbf{C}$</span> as</p><p class="math-container">\[\mathsf{A} = \mathbf{B} \bar{\otimes} \mathbf{C} \Leftrightarrow A_{ijkl} = B_{ik} C_{jl}\\
+\mathsf{A} = \mathbf{B} \underline{\otimes} \mathbf{C} \Leftrightarrow A_{ijkl} = B_{il} C_{jk}\]</p><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="Tensors.otimesu" href="#Tensors.otimesu"><code>Tensors.otimesu</code></a> — <span class="docstring-category">Function</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">otimesu(::SecondOrderTensor, ::SecondOrderTensor)</code></pre><p>Compute the &quot;upper&quot; open product between two tensors.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; A = rand(SymmetricTensor{2, 2});
+
+julia&gt; B = rand(SymmetricTensor{2, 2});
+
+julia&gt; otimesu(A, B)
+2×2×2×2 Tensor{4, 2, Float64, 16}:
+[:, :, 1, 1] =
+ 0.291503  0.115106
+ 0.490986  0.193876
+
+[:, :, 2, 1] =
+ 0.490986  0.193876
+ 0.19547   0.0771855
+
+[:, :, 1, 2] =
+ 0.115106  0.128518
+ 0.193876  0.216466
+
+[:, :, 2, 2] =
+ 0.193876   0.216466
+ 0.0771855  0.086179</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/f1726ac8a1f9d88a6ee84ab4440617c598daaaea/src/tensor_products.jl#L237-L266">source</a></section></article><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="Tensors.otimesl" href="#Tensors.otimesl"><code>Tensors.otimesl</code></a> — <span class="docstring-category">Function</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">otimesl(::SecondOrderTensor, ::SecondOrderTensor)</code></pre><p>Compute the &quot;lower&quot; open product between two tensors.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; A = rand(SymmetricTensor{2, 2});
+
+julia&gt; B = rand(SymmetricTensor{2, 2});
+
+julia&gt; otimesl(A, B)
+2×2×2×2 Tensor{4, 2, Float64, 16}:
+[:, :, 1, 1] =
+ 0.291503  0.115106
+ 0.490986  0.193876
+
+[:, :, 2, 1] =
+ 0.115106  0.128518
+ 0.193876  0.216466
+
+[:, :, 1, 2] =
+ 0.490986  0.193876
+ 0.19547   0.0771855
+
+[:, :, 2, 2] =
+ 0.193876   0.216466
+ 0.0771855  0.086179</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Ferrite-FEM/Tensors.jl/blob/f1726ac8a1f9d88a6ee84ab4440617c598daaaea/src/tensor_products.jl#L273-L302">source</a></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../indexing/">« Indexing</a><a class="docs-footer-nextpage" href="../other_operators/">Other operators »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.9.0 on <span class="colophon-date" title="Thursday 27 March 2025 09:26">Thursday 27 March 2025</span>. Using Julia version 1.11.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
