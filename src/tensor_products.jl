@@ -306,6 +306,14 @@ julia> otimesl(A, B)
     return Tensor{4, dim}((i,j,k,l) -> S1_[i,l] * S2_[j,k])
 end
 
+# Ensure that we don't fall back to the default implementation for AbstractArray, 
+# which has a different meaning except in the case for `Vec`. 
+function LinearAlgebra.dot(ta::AbstractTensor, tb::AbstractTensor)
+    TA = get_base(typeof(ta))
+    TB = get_base(typeof(tb))
+    throw(ArgumentError("single contraction not implemented between $TA and $TB"))
+end
+
 """
     dot(::Vec, ::Vec)
     dot(::Vec, ::SecondOrderTensor)
