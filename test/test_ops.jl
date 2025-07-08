@@ -81,6 +81,14 @@ end # of testsection
     @test (@inferred otimesl(A_sym, B))::Tensor{4, dim, T}     ≈ _permutedims(otimes(A_sym, B), (1,3,4,2))
     @test (@inferred otimesl(A, B_sym))::Tensor{4, dim, T}     ≈ _permutedims(otimes(A, B_sym), (1,3,4,2))
     @test (@inferred otimesl(A_sym, B_sym))::Tensor{4, dim, T} ≈ _permutedims(otimes(A_sym, B_sym), (1,3,4,2))
+
+    # Infix operators
+    @test (@inferred (A ⊗̅ B)) ≈ otimesu(A, B)
+    @test (@inferred (A ⊗̲ B)) ≈ otimesl(A, B)
+    # As extra safeguard, we test the operator precedence directly,
+    @test all(k -> Base.operator_precedence(k) == Base.operator_precedence(:*), (:⊗, :⊗̅, :⊗̲))
+    @test A ⊗̅ B + 2A ⊗ B ≈ otimesu(A, B) + otimes(2A, B)
+    @test A ⊗̲ B + 2A ⊗ B ≈ otimesl(A, B) + otimes(2A, B)
 end # of testsection
 
 @testsection "dot products" begin

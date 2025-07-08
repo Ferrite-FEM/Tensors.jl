@@ -237,7 +237,8 @@ end
 """
     otimesu(::SecondOrderTensor, ::SecondOrderTensor)
 
-Compute the "upper" open product between two tensors.
+Compute the "upper" open product between two tensors, ``C_{ijkl} = A_{ik} B_{jl}``.
+The symbol `⊗̅`, written `\\otimes\\overbar`, is overloaded for the upper tensor product.
 
 # Examples
 ```jldoctest
@@ -245,7 +246,7 @@ julia> A = rand(SymmetricTensor{2, 2});
 
 julia> B = rand(SymmetricTensor{2, 2});
 
-julia> otimesu(A, B)
+julia> A ⊗̅ B # Alternatively otimesu(A, B)
 2×2×2×2 Tensor{4, 2, Float64, 16}:
 [:, :, 1, 1] =
  0.291503  0.115106
@@ -270,10 +271,13 @@ julia> otimesu(A, B)
     return Tensor{4, dim}((i,j,k,l) -> S1_[i,k] * S2_[j,l])
 end
 
+const ⊗̅ = otimesu
+
 """
     otimesl(::SecondOrderTensor, ::SecondOrderTensor)
 
-Compute the "lower" open product between two tensors.
+Compute the "lower" open product between two tensors, ``C_{ijkl} = A_{il} B_{jk}``.
+The symbol `⊗̲`, written `\\otimes\\underbar`, is overloaded for the lower tensor product.
 
 # Examples
 ```jldoctest
@@ -281,7 +285,7 @@ julia> A = rand(SymmetricTensor{2, 2});
 
 julia> B = rand(SymmetricTensor{2, 2});
 
-julia> otimesl(A, B)
+julia> A ⊗̲ B # Alternatively otimesl(A, B)
 2×2×2×2 Tensor{4, 2, Float64, 16}:
 [:, :, 1, 1] =
  0.291503  0.115106
@@ -305,6 +309,8 @@ julia> otimesl(A, B)
     S2_ = convert(Tensor, S2)
     return Tensor{4, dim}((i,j,k,l) -> S1_[i,l] * S2_[j,k])
 end
+
+const ⊗̲ = otimesl
 
 """
     dot(::Vec, ::Vec)
