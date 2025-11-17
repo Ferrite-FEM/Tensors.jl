@@ -77,7 +77,7 @@ Inverse of a second order tensor such that
 \mathbf{A}^{-1} \cdot \mathbf{A} = \mathbf{I}
 ```
 
-where ``\mathbf{I}`` is the second order identitiy tensor.
+where ``\mathbf{I}`` is the second order identity tensor.
 
 ```@docs
 Tensors.inv
