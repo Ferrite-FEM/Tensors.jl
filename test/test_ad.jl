@@ -123,9 +123,16 @@ S(C) = S(C, μ, Kb)
                 f1(x::Vec) = x⊗x 
                 df1(x::Vec{d}) where d = Tensor{3,d}((i,j,k)-> δ(i,k)*x[j] + δ(j,k)*x[i]);
                 for dim in 1:3
-                    z = rand(Vec{dim})
+                    z = rand(Vec{dim, T})
                     @test gradient(f1, z) ≈ df1(z)
                 end 
+            end
+            @testsection "curl" begin
+                θ = rand(T)
+                v = rand(Vec{2, T})
+                @test (@inferred curl(x -> rotate(x, θ), v)[3]) ≈ 2 * sin(θ)
+                @test isa(curl(x -> rotate(x, θ), v), Vec{3, T})
+                @test isa(curl(x -> 1.0 * rotate(x, θ), v), Vec{3, promote_type(T, Float64)})
             end
             end # loop T
         end # testsection
