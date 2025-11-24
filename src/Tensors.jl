@@ -7,7 +7,7 @@ using Statistics: mean
 using LinearAlgebra
 using StaticArrays
 # re-exports from LinearAlgebra
-export ⋅, ×, dot, diagm, tr, det, cof, norm, eigvals, eigvecs, eigen
+export ⋅, ×, dot, diagm, tr, det, norm, eigvals, eigvecs, eigen
 # re-exports from Statistics
 export mean
 
@@ -17,7 +17,7 @@ export otimes, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, m
 export otimesu, otimesl
 export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric
 export tdot, dott, dotdot
-export hessian, gradient, curl, divergence, laplace
+export hessian, gradient, curl, divergence, laplace, cof
 export @implement_gradient
 export basevec, eᵢ
 export rotate, rotation_tensor
