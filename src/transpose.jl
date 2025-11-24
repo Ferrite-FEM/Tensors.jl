@@ -11,13 +11,13 @@ For a fourth order tensor, the transpose is the minor transpose.
 ```jldoctest
 julia> A = rand(Tensor{2,2})
 2×2 Tensor{2, 2, Float64, 4}:
- 0.590845  0.566237
- 0.766797  0.460085
+ 0.325977  0.218587
+ 0.549051  0.894245
 
 julia> A'
 2×2 Tensor{2, 2, Float64, 4}:
- 0.590845  0.766797
- 0.566237  0.460085
+ 0.325977  0.549051
+ 0.218587  0.894245
 ```
 """
 @inline function Base.transpose(S::Tensor{2, dim}) where {dim}

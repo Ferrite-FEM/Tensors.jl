@@ -10,12 +10,12 @@ Computes the norm of a tensor.
 ```jldoctest
 julia> A = rand(Tensor{2,3})
 3×3 Tensor{2, 3, Float64, 9}:
- 0.590845  0.460085  0.200586
- 0.766797  0.794026  0.298614
- 0.566237  0.854147  0.246837
+ 0.325977  0.894245  0.953125
+ 0.549051  0.353112  0.795547
+ 0.218587  0.394255  0.49425
 
 julia> norm(A)
-1.7377443667834922
+1.8223398556552728
 ```
 """
 @inline LinearAlgebra.norm(v::Vec) = sqrt(dot(v, v))
@@ -61,12 +61,12 @@ Computes the determinant of a second order tensor.
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
 3×3 SymmetricTensor{2, 3, Float64, 6}:
- 0.590845  0.766797  0.566237
- 0.766797  0.460085  0.794026
- 0.566237  0.794026  0.854147
+ 0.325977  0.549051  0.218587
+ 0.549051  0.894245  0.353112
+ 0.218587  0.353112  0.394255
 
 julia> det(A)
--0.1005427219925894
+-0.002539324113350679
 ```
 """
 @inline LinearAlgebra.det(t::SecondOrderTensor{1}) = @inbounds t[1,1]
@@ -170,15 +170,15 @@ Computes the inverse of a second order tensor.
 ```jldoctest
 julia> A = rand(Tensor{2,3})
 3×3 Tensor{2, 3, Float64, 9}:
- 0.590845  0.460085  0.200586
- 0.766797  0.794026  0.298614
- 0.566237  0.854147  0.246837
+ 0.325977  0.894245  0.953125
+ 0.549051  0.353112  0.795547
+ 0.218587  0.394255  0.49425
 
 julia> inv(A)
 3×3 Tensor{2, 3, Float64, 9}:
-  19.7146   -19.2802    7.30384
-   6.73809  -10.7687    7.55198
- -68.541     81.4917  -38.8361
+ -587.685  -279.668   1583.46
+ -411.743  -199.494   1115.12
+  588.35    282.819  -1587.79
 ```
 """
 @generated function Base.inv(t::Tensor{2, dim}) where {dim}
@@ -275,13 +275,13 @@ second order tensor `S`, such that `√S ⋅ √S == S`.
 ```jldoctest
 julia> S = rand(SymmetricTensor{2,2}); S = tdot(S)
 2×2 SymmetricTensor{2, 2, Float64, 3}:
- 0.937075  0.887247
- 0.887247  0.908603
+ 0.407718  0.298993
+ 0.298993  0.349237
 
 julia> sqrt(S)
 2×2 SymmetricTensor{2, 2, Float64, 3}:
- 0.776178  0.578467
- 0.578467  0.757614
+ 0.578172  0.270989
+ 0.270989  0.525169
 
 julia> √S ⋅ √S ≈ S
 true
@@ -316,12 +316,12 @@ Computes the trace of a second order tensor.
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
 3×3 SymmetricTensor{2, 3, Float64, 6}:
- 0.590845  0.766797  0.566237
- 0.766797  0.460085  0.794026
- 0.566237  0.794026  0.854147
+ 0.325977  0.549051  0.218587
+ 0.549051  0.894245  0.353112
+ 0.218587  0.353112  0.394255
 
 julia> tr(A)
-1.9050765715072775
+1.6144775244804341
 ```
 """
 @generated function LinearAlgebra.tr(S::SecondOrderTensor{dim}) where {dim}
@@ -343,15 +343,15 @@ based on the additive decomposition.
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
 3×3 SymmetricTensor{2, 3, Float64, 6}:
- 0.590845  0.766797  0.566237
- 0.766797  0.460085  0.794026
- 0.566237  0.794026  0.854147
+ 0.325977  0.549051  0.218587
+ 0.549051  0.894245  0.353112
+ 0.218587  0.353112  0.394255
 
 julia> vol(A)
 3×3 SymmetricTensor{2, 3, Float64, 6}:
- 0.635026  0.0       0.0
- 0.0       0.635026  0.0
- 0.0       0.0       0.635026
+ 0.538159  0.0       0.0
+ 0.0       0.538159  0.0
+ 0.0       0.0       0.538159
 
 julia> vol(A) + dev(A) ≈ A
 true
@@ -370,12 +370,12 @@ julia> A = rand(Tensor{2, 3});
 
 julia> dev(A)
 3×3 Tensor{2, 3, Float64, 9}:
- 0.0469421  0.460085   0.200586
- 0.766797   0.250123   0.298614
- 0.566237   0.854147  -0.297065
+ -0.065136   0.894245   0.953125
+  0.549051  -0.0380011  0.795547
+  0.218587   0.394255   0.103137
 
 julia> tr(dev(A))
-0.0
+5.551115123125783e-17
 ```
 """
 @inline function dev(S::SecondOrderTensor)

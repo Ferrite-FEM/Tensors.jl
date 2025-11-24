@@ -474,8 +474,8 @@ julia> A = rand(SymmetricTensor{2, 2});
 
 julia> ∇f = gradient(norm, A)
 2×2 SymmetricTensor{2, 2, Float64, 3}:
- 0.434906  0.56442
- 0.56442   0.416793
+ 0.374672  0.63107
+ 0.63107   0.25124
 
 julia> ∇f, f = gradient(norm, A, :all);
 ```
@@ -507,20 +507,20 @@ julia> A = rand(SymmetricTensor{2, 2});
 julia> ∇∇f = hessian(norm, A)
 2×2×2×2 SymmetricTensor{4, 2, Float64, 9}:
 [:, :, 1, 1] =
-  0.596851  -0.180684
- -0.180684  -0.133425
+  0.988034  -0.271765
+ -0.271765  -0.108194
 
 [:, :, 2, 1] =
- -0.180684   0.133546
-  0.133546  -0.173159
+ -0.271765   0.11695
+  0.11695   -0.182235
 
 [:, :, 1, 2] =
- -0.180684   0.133546
-  0.133546  -0.173159
+ -0.271765   0.11695
+  0.11695   -0.182235
 
 [:, :, 2, 2] =
- -0.133425  -0.173159
- -0.173159   0.608207
+ -0.108194  -0.182235
+ -0.182235   1.07683
 
 julia> ∇∇f, ∇f, f = hessian(norm, A, :all);
 ```
@@ -578,8 +578,16 @@ function curl(f::F, v::Vec{3}) where F
     end
     return c
 end
-curl(f::F, v::Vec{1, T}) where {F, T} = curl(f, Vec{3}((v[1], T(0), T(0))))
-curl(f::F, v::Vec{2, T}) where {F, T} = curl(f, Vec{3}((v[1], v[2], T(0))))
+function curl(f::F, v::Vec{2}) where {F}
+    @inbounds begin
+        ∇f = gradient(f, v)
+        c = Vec{3}((zero(eltype(∇f)), zero(eltype(∇f)), ∇f[2,1] - ∇f[1,2]))
+    end
+    return c
+end
+function curl(f::F, v::Vec{1, T}) where {F, T}
+    return zero(Vec{3, eltype(f(v))}) / oneunit(T)
+end
 
 """
     laplace(f, x)
@@ -594,15 +602,15 @@ julia> x = rand(Vec{3});
 julia> f(x) = norm(x);
 
 julia> laplace(f, x)
-1.7833701103136868
+2.9633756571179273
 
 julia> g(x) = x*norm(x);
 
 julia> laplace.(g, x)
 3-element Vec{3, Float64}:
- 2.107389336871036
- 2.7349658311504834
- 2.019621767876747
+ 1.9319830062026155
+ 3.2540895437409754
+ 1.2955087437219237
 ```
 """
 function laplace(f::F, v) where F
