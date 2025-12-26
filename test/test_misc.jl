@@ -669,4 +669,8 @@ end
     @test_throws ArgumentError x'
     @test_throws ArgumentError transpose(x)
     @test_throws ArgumentError adjoint(x)
+
+    # Non-implemented single contractions
+    t10 = Tensor{10, 1, Float64, 10}(tuple((1.0 for _ in 1:10)...));
+    @test_throws ArgumentError (t10 ⋅ t10)
 end # of testset

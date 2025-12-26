@@ -1,6 +1,6 @@
 # Demos
 
-This section contain a few demos of applying `Tensors` to continuum mechanics.
+This section contains a few demos of applying `Tensors` to continuum mechanics.
 
 ## Creating the linear elasticity tensor
 
@@ -41,7 +41,7 @@ where ``\mathbf{u}`` is the deformation from the reference to the current config
 \mathbf{C} = \mathbf{F}^T \cdot \mathbf{F}.
 ```
 
-The Second Piola Krichoff stress tensor ``\mathbf{S}`` is derived from the Helmholtz free energy ``\Psi`` by the relation
+The Second Piola–Kirchhoff stress tensor ``\mathbf{S}`` is derived from the Helmholtz free energy ``\Psi`` by the relation
 
 ```math
 \mathbf{S} = 2 \frac{\partial \Psi}{\partial \mathbf{C}}.
@@ -66,7 +66,7 @@ function Ψ(C, μ, Kb)
 end
 ```
 
-The analytical expression for the Second Piola Kirchoff tensor is
+The analytical expression for the Second Piola–Kirchhoff tensor is
 
 ```math
 \mathbf{S} = \mu \det(\mathbf{C})^{-1/3}(\mathbf{I} - 1/3 \mathrm{tr}(\mathbf{C})\mathbf{C}^{-1}) + K_b(J-1)J\mathbf{C}^{-1}
@@ -85,7 +85,7 @@ end
 
 ### Automatic differentiation
 
-For some material models it can be cumbersome to compute the analytical expression for the Second Piola Kirchoff tensor. We can then instead use Automatic Differentiation (AD). Below is an example which computes the Second Piola Kirchoff tensor using AD and compares it to the analytical answer.
+For some material models it can be cumbersome to compute the analytical expression for the Second Piola–Kirchhoff tensor. We can then instead use Automatic Differentiation (AD). Below is an example which computes the Second Piola–Kirchhoff tensor using AD and compares it to the analytical answer.
 
 ```@meta
 DocTestSetup = quote
@@ -129,13 +129,13 @@ julia> C = tdot(F);
 
 julia> S_AD = 2 * gradient(C -> Ψ(C, μ, Kb), C)
 3×3 SymmetricTensor{2, 3, Float64, 6}:
-  4.30534e11  -2.30282e11  -8.52861e10
- -2.30282e11   4.38793e11  -2.64481e11
- -8.52861e10  -2.64481e11   7.85515e11
+  2.36415e11  -1.37206e11  -3.15432e10
+ -1.37206e11   2.18256e11  -6.70562e10
+ -3.15432e10  -6.70562e10   1.06713e11
 
 julia> S(C, μ, Kb)
 3×3 SymmetricTensor{2, 3, Float64, 6}:
-  4.30534e11  -2.30282e11  -8.52861e10
- -2.30282e11   4.38793e11  -2.64481e11
- -8.52861e10  -2.64481e11   7.85515e11
+  2.36415e11  -1.37206e11  -3.15432e10
+ -1.37206e11   2.18256e11  -6.70562e10
+ -3.15432e10  -6.70562e10   1.06713e11
 ```
