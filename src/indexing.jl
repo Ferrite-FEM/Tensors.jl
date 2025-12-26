@@ -10,8 +10,8 @@ end
         i, j = j, i
     end
     # We are skipping triangle over the diagonal = (j-1) * j / 2 indices
-    skipped_indicies = div((j-1) * j, 2)
-    return dim*(j-1) + i - skipped_indicies
+    skipped_indices = div((j-1) * j, 2)
+    return dim*(j-1) + i - skipped_indices
 end
 
 @inline function compute_index(::Type{Tensor{2, dim}}, i::Int, j::Int) where {dim}

@@ -91,9 +91,9 @@ A tensor with random numbers is created using the function `rand`, applied to th
 ```jldoctest
 julia> rand(Tensor{2, 3})
 3×3 Tensor{2, 3, Float64, 9}:
- 0.590845  0.460085  0.200586
- 0.766797  0.794026  0.298614
- 0.566237  0.854147  0.246837
+ 0.325977  0.894245  0.953125
+ 0.549051  0.353112  0.795547
+ 0.218587  0.394255  0.49425
 ```
 
 By specifying the type, `T`, a tensor of different type can be obtained:
@@ -101,9 +101,9 @@ By specifying the type, `T`, a tensor of different type can be obtained:
 ```jldoctest
 julia> rand(SymmetricTensor{2,3,Float32})
 3×3 SymmetricTensor{2, 3, Float32, 6}:
- 0.0107703  0.305865  0.2082
- 0.305865   0.405684  0.257278
- 0.2082     0.257278  0.958491
+ 0.325977  0.549051  0.218587
+ 0.549051  0.894245  0.353112
+ 0.218587  0.353112  0.394255
 ```
 
 ## [Identity tensors](@id identity_tensors)
@@ -202,16 +202,16 @@ following code
 ```jldoctest fromarray
 julia> data = rand(2, 5)
 2×5 Matrix{Float64}:
- 0.590845  0.566237  0.794026  0.200586  0.246837
- 0.766797  0.460085  0.854147  0.298614  0.579672
+ 0.579862  0.972136   0.520355  0.839622  0.131026
+ 0.411294  0.0149088  0.639562  0.967143  0.946453
 
 julia> tensor_data = reinterpret(Vec{2, Float64}, vec(data))
 5-element reinterpret(Vec{2, Float64}, ::Vector{Float64}):
- [0.5908446386657102, 0.7667970365022592]
- [0.5662374165061859, 0.4600853424625171]
- [0.7940257103317943, 0.8541465903790502]
- [0.20058603493384108, 0.2986142783434118]
- [0.24683718661000897, 0.5796722333690416]
+ [0.5798621201341324, 0.4112941179498505]
+ [0.9721360824554687, 0.014908849285099945]
+ [0.520354993723718, 0.6395615996802734]
+ [0.8396219340580711, 0.967142768915383]
+ [0.13102565622085904, 0.9464532262313834]
 ```
 
 The data can also be reinterpreted back to a Julia `Array`
@@ -219,6 +219,6 @@ The data can also be reinterpreted back to a Julia `Array`
 ```jldoctest fromarray
 julia> data = reshape(reinterpret(Float64, tensor_data), (2, 5))
 2×5 Matrix{Float64}:
- 0.590845  0.566237  0.794026  0.200586  0.246837
- 0.766797  0.460085  0.854147  0.298614  0.579672
+ 0.579862  0.972136   0.520355  0.839622  0.131026
+ 0.411294  0.0149088  0.639562  0.967143  0.946453
 ```
