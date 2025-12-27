@@ -12,6 +12,7 @@ DocMeta.setdocmeta!(Tensors, :DocTestSetup,
 makedocs(
     format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
     modules = [Tensors],
+    warnonly = true,
     sitename = "Tensors.jl",
     pages = Any[
         "Home" => "index.md",

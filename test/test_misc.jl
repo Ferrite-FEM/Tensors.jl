@@ -1,9 +1,9 @@
 @testsection "constructors" begin
-for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
+for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,3,4)
     for op in (rand, zero, ones, randn)
         # Tensor, SymmetricTensor
         for TensorType in (Tensor, SymmetricTensor)
-            TensorType == SymmetricTensor && order == 1 && continue
+            TensorType == SymmetricTensor && isodd(order) && continue
             N = Tensors.n_components(TensorType{order, dim})
             t = (@inferred (op)(TensorType{order, dim}))::TensorType{order, dim, Float64}
             t = (@inferred (op)(TensorType{order, dim, T}))::TensorType{order, dim, T}
@@ -26,8 +26,8 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
         @test (@inferred Vec(t...))::Tensor{1,dim,T,dim} == Vec{dim}(t)
     end
     for TensorType in (Tensor, SymmetricTensor), (func, el) in ((zeros, zero), (ones, one))
-        TensorType == SymmetricTensor && order == 1 && continue
-        order == 1 && func == ones && continue # one not supported for Vec's
+        TensorType == SymmetricTensor && isodd(order) && continue
+        isodd(order) && func == ones && continue # one not supported for Vec's
         N = Tensors.n_components(TensorType{order, dim})
         tens_arr1 = func(TensorType{order, dim}, 1)
         tens_arr2 = func(TensorType{order, dim, T}, 2, 2)
@@ -44,14 +44,14 @@ for dim in (1, 2, 3)
           Vec{dim}(z)::Vec{dim,Float64}
     @test Vec{dim,Float32}(ntuple(z, dim))::Vec{dim,Float32} ==
           Vec{dim,Float32}(z)::Vec{dim,Float32}
-    for order in (1, 2, 4)
+    for order in (1, 2, 3, 4)
         N = Tensors.n_components(Tensor{order,dim})
         @test Tensor{order,dim}(ntuple(z, N))::Tensor{order,dim,Float64} ==
               Tensor{order,dim}(z)::Tensor{order,dim,Float64}
         @test Tensor{order,dim,Float32}(ntuple(z, N))::Tensor{order,dim,Float32} ==
               Tensor{order,dim,Float32}(z)::Tensor{order,dim,Float32}
         @test_throws MethodError Tensor{order,dim}(ntuple(z, N+1))
-        order == 1 && continue
+        isodd(order) && continue
         N = Tensors.n_components(SymmetricTensor{order,dim})
         @test SymmetricTensor{order,dim}(ntuple(z, N))::SymmetricTensor{order,dim,Float64} ==
               SymmetricTensor{order,dim}(z)::SymmetricTensor{order,dim,Float64}
@@ -140,7 +140,7 @@ end # of testset
 
 @testsection "simple math" begin
 for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Tensor, SymmetricTensor)
-    TensorType == SymmetricTensor && order == 1 && continue
+    TensorType == SymmetricTensor && isodd(order) && continue
     t = rand(TensorType{order, dim, T})
 
     # Binary tensor tensor: +, -
@@ -480,6 +480,34 @@ for T in (Float32, Float64, F64)
         @test II_sym ⊡ A_sym ⊡ A_sym ≈ (tr(A_sym' ⋅ A_sym))
     end
 end
+
+for T in (Float64,)
+    for dim in 1:3
+        # Tested operations
+        # S2 ⋅ S3,  S3 ⋅ S2 
+        # S1 ⊗ S2, S2 ⊗ S1
+        # S3 ⊡ S2, S2 ⊡ S3
+        
+        # Identities involving 3rd order tensors 
+        I2 = one(Tensor{2,dim,T})
+        A2 = rand(Tensor{2,dim,T})
+        S2 = rand(Tensor{2,dim,T})
+        S2s = rand(SymmetricTensor{2,dim,T})
+        S2sr = Tensor{2,dim,T}(S2s)
+        v = rand(Vec{dim,T})
+        u = rand(Vec{dim,T})
+        @test (u⊗I2)⋅v ≈ (u⊗v)
+        @test u⋅(I2⊗v) ≈ (u⊗v)
+        @test I2⋅(v⊗S2) ≈ (v⊗S2)
+        @test v ⊗ (S2⋅A2) ≈ (v ⊗ S2)⋅A2
+        @test v ⊗ S2s ≈ v ⊗ S2sr
+        @test S2s ⊗ v ≈ S2sr ⊗ v
+        @test (v⊗S2)⊡A2 ≈ v*(S2⊡A2)
+        @test (v⊗S2)⊡S2s ≈ v*(S2⊡S2s)
+        @test A2⊡(S2⊗v) ≈ v*(S2⊡A2)
+        @test S2s⊡(S2⊗v) ≈ v*(S2⊡S2s)
+    end
+end
 end # of testset
 
 @testsection "promotion/conversion" begin
@@ -641,4 +669,8 @@ end
     @test_throws ArgumentError x'
     @test_throws ArgumentError transpose(x)
     @test_throws ArgumentError adjoint(x)
+
+    # Non-implemented single contractions
+    t10 = Tensor{10, 1, Float64, 10}(tuple((1.0 for _ in 1:10)...));
+    @test_throws ArgumentError (t10 ⋅ t10)
 end # of testset

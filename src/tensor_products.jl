@@ -16,10 +16,10 @@ julia> A = rand(SymmetricTensor{2, 2});
 julia> B = rand(SymmetricTensor{2, 2});
 
 julia> dcontract(A,B)
-1.9732018397544984
+0.7654348606012742
 
 julia> A ⊡ B
-1.9732018397544984
+0.7654348606012742
 ```
 """
 @generated function dcontract(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
@@ -68,6 +68,74 @@ end
     end
 end
 
+@generated function dcontract(S1::SecondOrderTensor{dim}, S2::Tensor{3,dim}) where {dim}
+    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
+    idxS1(i, j) = compute_index(get_base(S1), i, j)
+    idxS2(i, j, k) = compute_index(get_base(S2), i, j, k)
+    exps = Expr(:tuple)
+    for k in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j))])    for i in 1:dim, j in 1:dim][:]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(i, j, k))]) for i in 1:dim, j in 1:dim][:]
+        push!(exps.args, reducer(ex1, ex2, true))
+    end
+    expr = remove_duplicates(TensorType, exps) # TODO: Required?
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($expr)
+    end
+end
+
+@generated function dcontract(S1::Tensor{3,dim}, S2::SecondOrderTensor{dim}) where {dim}
+    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
+    idxS1(i, j, k) = compute_index(get_base(S1), i, j, k)
+    idxS2(i, j) = compute_index(get_base(S2), i, j)
+    exps = Expr(:tuple)
+    for i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, k, l))]) for k in 1:dim, l in 1:dim][:]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(k, l))])    for k in 1:dim, l in 1:dim][:]
+        push!(exps.args, reducer(ex1, ex2, true))
+    end
+    expr = remove_duplicates(TensorType, exps)
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($expr)
+    end
+end
+
+@generated function dcontract(S1::Tensor{3,dim}, S2::FourthOrderTensor{dim}) where {dim}
+    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
+    idxS1(i, j, k)    = compute_index(get_base(S1), i, j, k)
+    idxS2(i, j, k, l) = compute_index(get_base(S2), i, j, k, l)
+    exps = Expr(:tuple)
+    for k in 1:dim, j in 1:dim, i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, m, n))])    for m in 1:dim, n in 1:dim][:]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(m, n, j, k))]) for m in 1:dim, n in 1:dim][:]
+        push!(exps.args, reducer(ex1, ex2, true))
+    end
+    expr = remove_duplicates(TensorType, exps)
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($expr)
+    end
+end
+
+@generated function dcontract(S1::FourthOrderTensor{dim}, S2::Tensor{3,dim}) where {dim}
+    TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
+    idxS1(i, j, k, l)    = compute_index(get_base(S1), i, j, k, l)
+    idxS2(i, j, k) = compute_index(get_base(S2), i, j, k)
+    exps = Expr(:tuple)
+    for k in 1:dim, j in 1:dim, i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, m, n))]) for m in 1:dim, n in 1:dim][:]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(m, n, k))])    for m in 1:dim, n in 1:dim][:]
+        push!(exps.args, reducer(ex1, ex2, true))
+    end
+    expr = remove_duplicates(TensorType, exps)
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TensorType($expr)
+    end
+end
+
 @generated function dcontract(S1::FourthOrderTensor{dim}, S2::FourthOrderTensor{dim}) where {dim}
     TensorType = getreturntype(dcontract, get_base(S1), get_base(S2))
     idxS1(i, j, k, l) = compute_index(get_base(S1), i, j, k, l)
@@ -103,24 +171,31 @@ julia> B = rand(SymmetricTensor{2, 2});
 julia> A ⊗ B
 2×2×2×2 SymmetricTensor{4, 2, Float64, 9}:
 [:, :, 1, 1] =
- 0.271839  0.352792
- 0.352792  0.260518
+ 0.291503  0.490986
+ 0.490986  0.19547
 
 [:, :, 2, 1] =
- 0.469146  0.608857
- 0.608857  0.449607
+ 0.115106  0.193876
+ 0.193876  0.0771855
 
 [:, :, 1, 2] =
- 0.469146  0.608857
- 0.608857  0.449607
+ 0.115106  0.193876
+ 0.193876  0.0771855
 
 [:, :, 2, 2] =
- 0.504668  0.654957
- 0.654957  0.48365
+ 0.128518  0.216466
+ 0.216466  0.086179
 ```
 """
 @inline function otimes(S1::Vec{dim}, S2::Vec{dim}) where {dim}
     return Tensor{2, dim}(@inline function(i,j) @inbounds S1[i] * S2[j]; end)
+end
+
+@inline function otimes(S1::Vec{dim}, S2::SecondOrderTensor{dim}) where {dim}
+    return Tensor{3, dim}(@inline function(i,j,k) @inbounds S1[i] * S2[j,k]; end)
+end
+@inline function otimes(S1::SecondOrderTensor{dim}, S2::Vec{dim}) where {dim}
+    return Tensor{3, dim}(@inline function(i,j,k) @inbounds S1[i,j] * S2[k]; end)
 end
 
 @inline function otimes(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
@@ -131,6 +206,8 @@ end
     TensorType = getreturntype(otimes, get_base(typeof(S1)), get_base(typeof(S2)))
     TensorType(@inline function(i,j,k,l) @inbounds S1[i,j] * S2[k,l]; end)
 end
+
+# Defining {3}⊗{1} and {1}⊗{3} = {4} would also be valid...
 
 @inline otimes(S1::Number, S2::Number) = S1*S2
 @inline otimes(S1::AbstractTensor, S2::Number) = S1*S2
@@ -148,13 +225,13 @@ Return a `SymmetricTensor`.
 ```jldoctest
 julia> A = rand(Vec{2})
 2-element Vec{2, Float64}:
- 0.5908446386657102
- 0.7667970365022592
+ 0.32597672886359486
+ 0.5490511363155669
 
 julia> otimes(A)
 2×2 SymmetricTensor{2, 2, Float64, 3}:
- 0.349097  0.453058
- 0.453058  0.587978
+ 0.106261  0.178978
+ 0.178978  0.301457
 ```
 """
 @inline function otimes(S::Vec{dim}) where {dim}
@@ -175,20 +252,20 @@ julia> B = rand(SymmetricTensor{2, 2});
 julia> otimesu(A, B)
 2×2×2×2 Tensor{4, 2, Float64, 16}:
 [:, :, 1, 1] =
- 0.271839  0.469146
- 0.352792  0.608857
+ 0.291503  0.115106
+ 0.490986  0.193876
 
 [:, :, 2, 1] =
- 0.352792  0.608857
- 0.260518  0.449607
+ 0.490986  0.193876
+ 0.19547   0.0771855
 
 [:, :, 1, 2] =
- 0.469146  0.504668
- 0.608857  0.654957
+ 0.115106  0.128518
+ 0.193876  0.216466
 
 [:, :, 2, 2] =
- 0.608857  0.654957
- 0.449607  0.48365
+ 0.193876   0.216466
+ 0.0771855  0.086179
 ```
 """
 @inline function otimesu(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
@@ -211,26 +288,34 @@ julia> B = rand(SymmetricTensor{2, 2});
 julia> otimesl(A, B)
 2×2×2×2 Tensor{4, 2, Float64, 16}:
 [:, :, 1, 1] =
- 0.271839  0.469146
- 0.352792  0.608857
+ 0.291503  0.115106
+ 0.490986  0.193876
 
 [:, :, 2, 1] =
- 0.469146  0.504668
- 0.608857  0.654957
+ 0.115106  0.128518
+ 0.193876  0.216466
 
 [:, :, 1, 2] =
- 0.352792  0.608857
- 0.260518  0.449607
+ 0.490986  0.193876
+ 0.19547   0.0771855
 
 [:, :, 2, 2] =
- 0.608857  0.654957
- 0.449607  0.48365
+ 0.193876   0.216466
+ 0.0771855  0.086179
 ```
 """
 @inline function otimesl(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
     S1_ = convert(Tensor, S1) # Convert to full tensor if symmetric to make 10x faster... (see Tensors.jl#164)
     S2_ = convert(Tensor, S2)
     return Tensor{4, dim}((i,j,k,l) -> S1_[i,l] * S2_[j,k])
+end
+
+# Ensure that we don't fall back to the default implementation for AbstractArray, 
+# which has a different meaning except in the case for `Vec`. 
+function LinearAlgebra.dot(ta::AbstractTensor, tb::AbstractTensor)
+    TA = get_base(typeof(ta))
+    TB = get_base(typeof(tb))
+    throw(ArgumentError("single contraction not implemented between $TA and $TB"))
 end
 
 """
@@ -246,23 +331,23 @@ The symbol `⋅`, written `\\cdot`, is overloaded for single contraction.
 ```jldoctest
 julia> A = rand(Tensor{2, 2})
 2×2 Tensor{2, 2, Float64, 4}:
- 0.590845  0.566237
- 0.766797  0.460085
+ 0.325977  0.218587
+ 0.549051  0.894245
 
 julia> B = rand(Tensor{1, 2})
 2-element Vec{2, Float64}:
- 0.7940257103317943
- 0.8541465903790502
+ 0.35311164439921205
+ 0.39425536741585077
 
 julia> dot(A, B)
 2-element Vec{2, Float64}:
- 0.9527955925660736
- 1.0018368881367576
+ 0.2012851406726999
+ 0.5464374094589712
 
 julia> A ⋅ B
 2-element Vec{2, Float64}:
- 0.9527955925660736
- 1.0018368881367576
+ 0.2012851406726999
+ 0.5464374094589712
 ```
 """
 @generated function LinearAlgebra.dot(S1::Vec{dim}, S2::Vec{dim}) where {dim}
@@ -348,6 +433,64 @@ end
     end
 end
 
+@generated function LinearAlgebra.dot(S1::Tensor{3,dim}, S2::Vec{dim}) where {dim}
+    idxS1(i, j, k) = compute_index(get_base(S1), i, j, k)
+    exps = Expr(:tuple)
+    for j in 1:dim, i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, m))]) for m in 1:dim]
+        ex2 = Expr[:(get_data(S2)[$m])                for m in 1:dim]
+        push!(exps.args, reducer(ex1, ex2))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Tensor{2, dim}($exps)
+    end
+end
+
+@generated function LinearAlgebra.dot(S1::Vec{dim}, S2::Tensor{3,dim}) where {dim}
+    idxS2(i, j, k) = compute_index(get_base(S2), i, j, k)
+    exps = Expr(:tuple)
+    for j in 1:dim, i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$m]) for m in 1:dim]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(m, i, j))])                for m in 1:dim]
+        push!(exps.args, reducer(ex1, ex2))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Tensor{2, dim}($exps)
+    end
+end
+
+@generated function LinearAlgebra.dot(S1::SecondOrderTensor{dim}, S2::Tensor{3,dim}) where {dim}
+    idxS1(i, j) = compute_index(get_base(S1), i, j)
+    idxS2(i, j, k) = compute_index(get_base(S2), i, j, k)
+    exps = Expr(:tuple)
+    for k in 1:dim, j in 1:dim, i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, m))]) for m in 1:dim]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(m, j, k))]) for m in 1:dim]
+        push!(exps.args, reducer(ex1, ex2))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Tensor{3, dim}($exps)
+    end
+end
+
+@generated function LinearAlgebra.dot(S1::Tensor{3,dim}, S2::SecondOrderTensor{dim}) where {dim}
+    idxS1(i, j, k) = compute_index(get_base(S1), i, j, k)
+    idxS2(i, j) = compute_index(get_base(S2), i, j)
+    exps = Expr(:tuple)
+    for k in 1:dim, j in 1:dim, i in 1:dim
+        ex1 = Expr[:(get_data(S1)[$(idxS1(i, j, m))]) for m in 1:dim]
+        ex2 = Expr[:(get_data(S2)[$(idxS2(m, k))]) for m in 1:dim]
+        push!(exps.args, reducer(ex1, ex2))
+    end
+    quote
+        $(Expr(:meta, :inline))
+        @inbounds return Tensor{3, dim}($exps)
+    end
+end
+
 """
     dot(::SymmetricTensor{2})
 
@@ -360,15 +503,15 @@ See also [`tdot`](@ref) and [`dott`](@ref).
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
 3×3 SymmetricTensor{2, 3, Float64, 6}:
- 0.590845  0.766797  0.566237
- 0.766797  0.460085  0.794026
- 0.566237  0.794026  0.854147
+ 0.325977  0.549051  0.218587
+ 0.549051  0.894245  0.353112
+ 0.218587  0.353112  0.394255
 
 julia> dot(A)
 3×3 SymmetricTensor{2, 3, Float64, 6}:
- 1.2577   1.25546  1.42706
- 1.25546  1.43013  1.47772
- 1.42706  1.47772  1.68067
+ 0.455498  0.74715  0.351309
+ 0.74715   1.22582  0.575
+ 0.351309  0.575    0.327905
 ```
 """
 @inline LinearAlgebra.dot(S::SymmetricTensor{2}) = tdot(S)
@@ -383,15 +526,15 @@ Return a `SymmetricTensor`.
 ```jldoctest
 julia> A = rand(Tensor{2,3})
 3×3 Tensor{2, 3, Float64, 9}:
- 0.590845  0.460085  0.200586
- 0.766797  0.794026  0.298614
- 0.566237  0.854147  0.246837
+ 0.325977  0.894245  0.953125
+ 0.549051  0.353112  0.795547
+ 0.218587  0.394255  0.49425
 
 julia> tdot(A)
 3×3 SymmetricTensor{2, 3, Float64, 6}:
- 1.2577   1.36435   0.48726
- 1.36435  1.57172   0.540229
- 0.48726  0.540229  0.190334
+ 0.455498  0.571559  0.855529
+ 0.571559  1.0798    1.3281
+ 0.855529  1.3281    1.78562
 ```
 """
 @inline tdot(S::SecondOrderTensor) = unsafe_symmetric(S' ⋅ S)
@@ -406,15 +549,15 @@ Return a `SymmetricTensor`.
 ```jldoctest
 julia> A = rand(Tensor{2,3})
 3×3 Tensor{2, 3, Float64, 9}:
- 0.590845  0.460085  0.200586
- 0.766797  0.794026  0.298614
- 0.566237  0.854147  0.246837
+ 0.325977  0.894245  0.953125
+ 0.549051  0.353112  0.795547
+ 0.218587  0.394255  0.49425
 
 julia> dott(A)
 3×3 SymmetricTensor{2, 3, Float64, 6}:
- 0.601011  0.878275  0.777051
- 0.878275  1.30763   1.18611
- 0.777051  1.18611   1.11112
+ 1.81438   1.253    0.894897
+ 1.253     1.05904  0.65243
+ 0.894897  0.65243  0.4475
 ```
 """
 @inline dott(S::SecondOrderTensor) = unsafe_symmetric(S ⋅ S')
@@ -429,21 +572,21 @@ are expanded to 3D first. The infix operator `×` (written `\\times`) can also b
 ```jldoctest
 julia> a = rand(Vec{3})
 3-element Vec{3, Float64}:
- 0.5908446386657102
- 0.7667970365022592
- 0.5662374165061859
+ 0.32597672886359486
+ 0.5490511363155669
+ 0.21858665481883066
 
 julia> b = rand(Vec{3})
 3-element Vec{3, Float64}:
- 0.4600853424625171
- 0.7940257103317943
- 0.8541465903790502
+ 0.8942454282009883
+ 0.35311164439921205
+ 0.39425536741585077
 
 julia> a × b
 3-element Vec{3, Float64}:
-  0.20535000738340053
- -0.24415039787171888
-  0.11635375677388776
+  0.13928086435138393
+  0.0669520417303531
+ -0.37588028973385323
 ```
 """
 @inline LinearAlgebra.cross(u::Vec{3}, v::Vec{3}) = @inbounds Vec{3}((u[2]*v[3] - u[3]*v[2], u[3]*v[1] - u[1]*v[3], u[1]*v[2] - u[2]*v[1]))

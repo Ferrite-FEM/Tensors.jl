@@ -45,13 +45,13 @@ julia> x = rand(Vec{2});
 
 julia> gradient(norm, x)
 2-element Vec{2, Float64}:
- 0.6103600560550116
- 0.7921241076829584
+ 0.5105128363207563
+ 0.859870132026771
 
 julia> x / norm(x)
 2-element Vec{2, Float64}:
- 0.6103600560550116
- 0.7921241076829584
+ 0.5105128363207563
+ 0.8598701320267711
 ```
 
 ### Determinant of a second order symmetric tensor
@@ -65,13 +65,13 @@ julia> A = rand(SymmetricTensor{2,2});
 
 julia> gradient(det, A)
 2×2 SymmetricTensor{2, 2, Float64, 3}:
-  0.566237  -0.766797
- -0.766797   0.590845
+  0.218587  -0.549051
+ -0.549051   0.325977
 
 julia> inv(A)' * det(A)
 2×2 SymmetricTensor{2, 2, Float64, 3}:
-  0.566237  -0.766797
- -0.766797   0.590845
+  0.218587  -0.549051
+ -0.549051   0.325977
 ```
 
 ### Hessian of a quadratic potential

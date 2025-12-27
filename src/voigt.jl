@@ -48,6 +48,8 @@ julia> tovoigt(Tensor{4,2}(1:16))
  3  15  11  7
  2  14  10  6
 
+julia> using StaticArrays: SMatrix
+
 julia> tovoigt(SMatrix, Tensor{4,2}(1:16))
 4×4 SMatrix{4, 4, Int64, 16} with indices SOneTo(4)×SOneTo(4):
  1  13   9  5
@@ -100,27 +102,27 @@ See also [`tovoigt`](@ref) and [`fromvoigt`](@ref).
 ```jldoctest
 julia> T = rand(Tensor{2,2})
 2×2 Tensor{2, 2, Float64, 4}:
- 0.590845  0.566237
- 0.766797  0.460085
+ 0.325977  0.218587
+ 0.549051  0.894245
 
 julia> x = zeros(4);
 
 julia> tovoigt!(x, T)
 4-element Vector{Float64}:
- 0.5908446386657102
- 0.4600853424625171
- 0.5662374165061859
- 0.7667970365022592
+ 0.32597672886359486
+ 0.8942454282009883
+ 0.21858665481883066
+ 0.5490511363155669
 
 julia> x = zeros(5);
 
 julia> tovoigt!(x, T; offset=1)
 5-element Vector{Float64}:
  0.0
- 0.5908446386657102
- 0.4600853424625171
- 0.5662374165061859
- 0.7667970365022592
+ 0.32597672886359486
+ 0.8942454282009883
+ 0.21858665481883066
+ 0.5490511363155669
 ```
 """
 function tovoigt! end
@@ -138,14 +140,14 @@ Base.@propagate_inbounds function tovoigt!(v::AbstractMatrix{T}, A::SymmetricTen
 end
 
 # default voigt order (faster than custom voigt order)
-Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::SecondOrderTensor{dim,T}, ::Nothing; offset=0, offdiagscale=one(T)) where {dim,T}
+Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::SecondOrderTensor{dim}, ::Nothing; offset=0, offdiagscale=one(T)) where {dim,T}
     tuple_data, = _to_voigt_tuple(A, offdiagscale)
     for i in eachindex(tuple_data)
         v[offset+i] = tuple_data[i]
     end
     return v
 end
-Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::SymmetricTensor{4,dim,T}, ::Nothing; offdiagscale=one(T), offset_i=0, offset_j=0) where {dim,T}
+Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::SymmetricTensor{4,dim}, ::Nothing; offdiagscale=one(T), offset_i=0, offset_j=0) where {dim,T}
     tuple_data, N = _to_voigt_tuple(A, offdiagscale)
     cartesian = CartesianIndices(((offset_i+1):(offset_i+N), (offset_j+1):(offset_j+N)))
     for i in eachindex(tuple_data)
@@ -154,7 +156,7 @@ Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::Symmetric
     return v
 end
 
-Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::Tensor{4,dim,T}, ::Nothing; kwargs...) where {dim,T}
+Base.@propagate_inbounds function _tovoigt!(v::AbstractVecOrMat{T}, A::Tensor{4,dim}, ::Nothing; kwargs...) where {dim,T}
     return _tovoigt!(v, A, DEFAULT_VOIGT_ORDER[dim]; kwargs...)
 end
 

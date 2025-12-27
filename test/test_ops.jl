@@ -10,6 +10,8 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
 println("T = $T, dim = $dim")
 AA = rand(Tensor{4, dim, T})
 BB = rand(Tensor{4, dim, T})
+A3 = rand(Tensor{3, dim, T})
+B3 = rand(Tensor{3, dim, T})
 A = rand(Tensor{2, dim, T})
 B = rand(Tensor{2, dim, T})
 a = rand(Tensor{1, dim, T})
@@ -32,6 +34,10 @@ i,j,k,l = rand(1:dim,4)
     @test vec((@inferred dcontract(AA_sym, BB_sym))::SymmetricTensor{4, dim, T}) ≈ vec(collect(reshape(vec(AA_sym), (dim^2, dim^2))) * collect(reshape(vec(BB_sym), (dim^2, dim^2))))
     @test dcontract(convert(Tensor, AA_sym), convert(Tensor, BB_sym))            ≈ dcontract(AA_sym, BB_sym)
 
+    # 3 - 4
+    @test dcontract(AA, A3) ≈ Tensor{3,dim}((i,j,k) -> sum(AA[i,j,m,n]*A3[m,n,k] for m in 1:dim, n in 1:dim))
+    @test dcontract(A3, AA) ≈ Tensor{3,dim}((i,j,k) -> sum(A3[i,m,n]*AA[m,n,j,k] for m in 1:dim, n in 1:dim))
+
     # 2 - 4
     @test (@inferred dcontract(AA, A))::Tensor{2, dim, T}                  ≈ reshape(collect(reshape(vec(AA), (dim^2, dim^2))) * collect(reshape(vec(A), (dim^2,))), dim, dim)
     @test (@inferred dcontract(AA_sym, A))::SymmetricTensor{2, dim, T}     ≈ reshape(collect(reshape(vec(AA_sym), (dim^2, dim^2))) * collect(reshape(vec(A), (dim^2,))), dim, dim)
@@ -42,6 +48,10 @@ i,j,k,l = rand(1:dim,4)
     @test (@inferred dcontract(A, AA_sym))::SymmetricTensor{2, dim, T}     ≈ reshape(collect(reshape(vec(AA_sym), (dim^2, dim^2))') * collect(reshape(vec(A), (dim^2,))), dim, dim)
     @test (@inferred dcontract(A_sym, AA_sym))::SymmetricTensor{2, dim, T} ≈ reshape(collect(reshape(vec(AA_sym), (dim^2, dim^2))') * collect(reshape(vec(A_sym), (dim^2,))), dim, dim)
     @test dcontract(convert(Tensor, AA_sym), convert(Tensor, A_sym))       ≈ dcontract(AA_sym, A_sym)
+
+    # 2 - 3
+    @test dcontract(A, A3) ≈ Tensor{1,dim}((i) -> sum(A[m,n]*A3[m,n,i] for m in 1:dim, n in 1:dim))
+    @test dcontract(A3, A) ≈ Tensor{1,dim}((i) -> sum(A3[i,m,n]*A[m,n] for m in 1:dim, n in 1:dim))
 
     # 2 - 2
     @test (@inferred dcontract(A, B))::T         ≈ sum(vec(A) .* vec(B))
@@ -317,9 +327,16 @@ end
     @test (@inferred frommandel(Tensor{4,dim}, tomandel(AA))) ≈ AA
 
     if T==Float64
+        # Check that Boolean values are supported for fromvoigt
         num_components = Int((dim^2+dim)/2)
         @test isa(fromvoigt(SymmetricTensor{2,dim}, rand(num_components) .> 0.5), SymmetricTensor{2,dim,Bool})
         @test isa(fromvoigt(SymmetricTensor{4,dim}, rand(num_components,num_components) .> 0.5), SymmetricTensor{4,dim,Bool})
+        
+        # Check that different types in the vector and tensor is supported via conversion
+        @test tovoigt!(zeros(Float32, nc(A)), A)::Vector{Float32} ≈ tovoigt(A)
+        @test tovoigt!(zeros(Float32, nc(A_sym)), A_sym)::Vector{Float32} ≈ tovoigt(A_sym)
+        @test tovoigt!(zeros(Float32, nc(AA), nc(AA)), AA)::Matrix{Float32} ≈ tovoigt(AA)
+        @test tovoigt!(zeros(Float32, nc(AA_sym), nc(AA_sym)), AA_sym)::Matrix{Float32} ≈ tovoigt(AA_sym)
     end
 
     # Static voigt/mandel that use default order

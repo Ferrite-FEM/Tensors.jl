@@ -133,6 +133,14 @@ end
     end
     return ∇f
 end
+# Tensor{2} output, Vec input -> Tensor{3} gradient
+@inline function _extract_gradient(v::Tensor{2, 1, <: Dual}, ::Vec{1})
+    @inbounds begin
+        p1 = partials(v[1,1])
+        ∇f = Tensor{3, 1}((p1[1],))
+    end
+    return ∇f
+end
 # Tensor{2} output, Tensor{2} input -> Tensor{4} gradient
 @inline function _extract_gradient(v::Tensor{2, 2, <: Dual}, ::Tensor{2, 2})
     @inbounds begin
@@ -151,6 +159,15 @@ end
         ∇f = SymmetricTensor{4, 2}((p1[1], p2[1], p3[1],
                                     p1[2], p2[2], p3[2],
                                     p1[3], p2[3], p3[3]))
+    end
+    return ∇f
+end
+# Tensor{2} output, Vec input -> Tensor{3} gradient
+@inline function _extract_gradient(v::Tensor{2, 2, <: Dual}, ::Vec{2})
+    @inbounds begin
+        p1, p2, p3, p4 = partials(v[1,1]), partials(v[2,1]), partials(v[1,2]), partials(v[2,2])
+        ∇f = Tensor{3, 2}((p1[1], p2[1], p3[1], p4[1],
+                           p1[2], p2[2], p3[2], p4[2]))
     end
     return ∇f
 end
@@ -200,6 +217,19 @@ end
                                     p1[4], p2[4], p3[4], p4[4], p5[4], p6[4],
                                     p1[5], p2[5], p3[5], p4[5], p5[5], p6[5],
                                     p1[6], p2[6], p3[6], p4[6], p5[6], p6[6]))
+    end
+    return ∇f
+end
+
+# Tensor{2} output, Vec input -> Tensor{3} gradient
+@inline function _extract_gradient(v::Tensor{2, 3, <: Dual}, ::Vec{3})
+    @inbounds begin
+        p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[3,1])
+        p4, p5, p6 = partials(v[1,2]), partials(v[2,2]), partials(v[3,2])
+        p7, p8, p9 = partials(v[1,3]), partials(v[2,3]), partials(v[3,3])
+        ∇f = Tensor{3, 3}((p1[1], p2[1], p3[1], p4[1], p5[1], p6[1], p7[1], p8[1], p9[1],
+                           p1[2], p2[2], p3[2], p4[2], p5[2], p6[2], p7[2], p8[2], p9[2],  
+                           p1[3], p2[3], p3[3], p4[3], p5[3], p6[3], p7[3], p8[3], p9[3]))
     end
     return ∇f
 end
@@ -483,8 +513,8 @@ julia> A = rand(SymmetricTensor{2, 2});
 
 julia> ∇f = gradient(norm, A)
 2×2 SymmetricTensor{2, 2, Float64, 3}:
- 0.434906  0.56442
- 0.56442   0.416793
+ 0.374672  0.63107
+ 0.63107   0.25124
 
 julia> ∇f, f = gradient(norm, A, :all);
 ```
@@ -516,20 +546,20 @@ julia> A = rand(SymmetricTensor{2, 2});
 julia> ∇∇f = hessian(norm, A)
 2×2×2×2 SymmetricTensor{4, 2, Float64, 9}:
 [:, :, 1, 1] =
-  0.596851  -0.180684
- -0.180684  -0.133425
+  0.988034  -0.271765
+ -0.271765  -0.108194
 
 [:, :, 2, 1] =
- -0.180684   0.133546
-  0.133546  -0.173159
+ -0.271765   0.11695
+  0.11695   -0.182235
 
 [:, :, 1, 2] =
- -0.180684   0.133546
-  0.133546  -0.173159
+ -0.271765   0.11695
+  0.11695   -0.182235
 
 [:, :, 2, 2] =
- -0.133425  -0.173159
- -0.173159   0.608207
+ -0.108194  -0.182235
+ -0.182235   1.07683
 
 julia> ∇∇f, ∇f, f = hessian(norm, A, :all);
 ```
@@ -603,15 +633,15 @@ julia> x = rand(Vec{3});
 julia> f(x) = norm(x);
 
 julia> laplace(f, x)
-1.7833701103136868
+2.9633756571179273
 
 julia> g(x) = x*norm(x);
 
 julia> laplace.(g, x)
 3-element Vec{3, Float64}:
- 2.107389336871036
- 2.7349658311504834
- 2.019621767876747
+ 1.9319830062026155
+ 3.2540895437409754
+ 1.2955087437219237
 ```
 """
 function laplace(f::F, v) where F
