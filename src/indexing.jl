@@ -1,6 +1,9 @@
 ############
 # Indexing #
 ############
+@inline function compute_index(::Type{Tensor{1, dim}}, i::Int) where dim
+    return i
+end
 
 @inline function compute_index(::Type{SymmetricTensor{2, dim}}, i::Int, j::Int) where {dim}
     if i < j

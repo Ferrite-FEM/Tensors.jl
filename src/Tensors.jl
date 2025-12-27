@@ -163,6 +163,7 @@ end
 include("mixed_tensors.jl")
 include("indexing.jl")
 include("utilities.jl")
+include("tensor_product_macro.jl")
 include("tensor_ops_errors.jl")
 include("automatic_differentiation.jl")
 include("promotion_conversion.jl")
