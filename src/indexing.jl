@@ -41,6 +41,19 @@ end
     return (J-1) * n + I
 end
 
+# MixedTensor
+@inline compute_index(::Type{MixedTensor{1, dim}}, i::Int) where {dim} = i
+@inline function compute_index(::Type{MixedTensor{2, dims}}, i::Int, j::Int) where {dims}
+    return (j - 1) * dims[1] + i
+end
+@inline function compute_index(::Type{MixedTensor{3, dims}}, i::Int, j::Int, k::Int) where {dims}
+    return (k - 1) * (dims[2] * dims[1]) + (j - 1) * dims[1] + i
+end
+@inline function compute_index(::Type{MixedTensor{4, dims}}, i::Int, j::Int, k::Int, l::Int) where {dims}
+    n3, n2, n1 = (dims[3] * dims[2], dims[2], 1) .* dims[1]
+    return (l - 1) * n3 + (k - 1) * n2 + (j - 1) * n1 + i
+end
+
 # indexed with [order][dim]
 const SYMMETRIC_INDICES = ((), ([1,], [1, 2, 4], [1, 2, 3, 5, 6, 9]), (),
                           ([1,], [1, 2, 4, 5, 6, 8, 13, 14, 16], [ 1,  2,
@@ -66,6 +79,12 @@ end
 @inline function Base.getindex(S::SymmetricTensor{4, dim}, i::Int, j::Int, k::Int, l::Int) where {dim}
     @boundscheck checkbounds(S, i, j, k, l)
     @inbounds v = get_data(S)[compute_index(SymmetricTensor{4, dim}, i, j, k, l)]
+    return v
+end
+
+@inline function Base.getindex(S::MixedTensor, i::Int)
+    @boundscheck checkbounds(S, i)
+    @inbounds v = get_data(S)[i]
     return v
 end
 

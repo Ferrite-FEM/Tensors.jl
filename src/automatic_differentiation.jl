@@ -196,7 +196,7 @@ end
 
 @inline function _extract_gradient(v::MixedTensor{2, dims1, <:Dual}, ::MixedTensor{2, dims2}) where {dims1, dims2}
     @inbounds begin
-        p = tuple((partials(vi) for vi in get_data(v))...)
+        p = map(partials, get_data(v)) # tuple((partials(vi) for vi in get_data(v))...)
         N1 = n_components(MixedTensor{2,dims1})
         N2 = n_components(MixedTensor{2,dims2})
         ∇f = MixedTensor{4, (dims1[1],dims1[2],dims2[1],dims2[2])}(
