@@ -248,7 +248,7 @@ function get_output_type(out_inds::NTuple{<:Any, Symbol}, term::IndexedTensorTer
     order = length(out_inds)
     order == 0 && return :scalar
     out_dims = map(k -> dims[k], out_inds)
-    if allequal(out_dims)
+    if all(d -> d == out_dims[1], out_dims) # allequal
         # Not MixedTensor, need to see if SymmetricTensor
         dim = dims[first(out_inds)]
         isodd(length(out_inds)) && return Tensor{order, dim}
