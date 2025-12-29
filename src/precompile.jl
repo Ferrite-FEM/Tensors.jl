@@ -27,8 +27,11 @@ using PrecompileTools
     end
 
     # See discussion in https://github.com/Ferrite-FEM/Tensors.jl/pull/190
+    # Fragile? Different definition now??
+    #=
     if @isdefined var"#102#103"
         precompile(Tuple{typeof(apply_all), Type{Tensor{1, 2, T, M} where M where T}, var"#102#103"{Float64}})
         precompile(Tuple{typeof(apply_all), Type{Tensor{1, 3, T, M} where M where T}, var"#102#103"{Float64}})
     end
+    =#
 end

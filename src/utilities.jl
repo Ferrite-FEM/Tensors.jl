@@ -29,6 +29,7 @@ function tensor_create(::Type{SymmetricTensor{order, dim}}, f) where {order, dim
     return ex
 end
 
+
 # reduced two expressions by summing the products
 # madd = true uses muladd instructions which is faster
 # in some cases, like in double contraction
@@ -73,26 +74,6 @@ function remove_duplicates(::Type{SymmetricTensor{order, dim}}, ex) where {order
     return ex
 end
 
-# return types
-# double contraction
-function dcontract end
-@pure getreturntype(::typeof(dcontract), ::Type{<:FourthOrderTensor{dim}}, ::Type{<:FourthOrderTensor{dim}}) where {dim} = Tensor{4, dim}
-@pure getreturntype(::typeof(dcontract), ::Type{<:SymmetricTensor{4, dim}}, ::Type{<:SymmetricTensor{4, dim}}) where {dim} = SymmetricTensor{4, dim}
-@pure getreturntype(::typeof(dcontract), ::Type{<:Tensor{4, dim}}, ::Type{<:SecondOrderTensor{dim}}) where {dim} = Tensor{2, dim}
-@pure getreturntype(::typeof(dcontract), ::Type{<:SymmetricTensor{4, dim}}, ::Type{<:SecondOrderTensor{dim}}) where {dim} = SymmetricTensor{2, dim}
-@pure getreturntype(::typeof(dcontract), ::Type{<:SecondOrderTensor{dim}}, ::Type{<:Tensor{4, dim}}) where {dim} = Tensor{2, dim}
-@pure getreturntype(::typeof(dcontract), ::Type{<:SecondOrderTensor{dim}}, ::Type{<:SymmetricTensor{4, dim}}) where {dim} = SymmetricTensor{2, dim}
-@pure getreturntype(::typeof(dcontract), ::Type{<:Tensor{3,dim}}, ::Type{<:SecondOrderTensor{dim}}) where {dim} = Vec{dim}
-@pure getreturntype(::typeof(dcontract), ::Type{<:SecondOrderTensor{dim}}, ::Type{<:Tensor{3,dim}}) where {dim} = Vec{dim}
-@pure getreturntype(::typeof(dcontract), ::Type{<:Tensor{3,dim}}, ::Type{<:FourthOrderTensor{dim}}) where {dim} = Tensor{3,dim}
-@pure getreturntype(::typeof(dcontract), ::Type{<:FourthOrderTensor{dim}}, ::Type{<:Tensor{3,dim}}) where {dim} = Tensor{3,dim}
-
-# otimes
-function otimes end
-@pure getreturntype(::typeof(otimes), ::Type{<:Tensor{1, dim}}, ::Type{<:Tensor{1, dim}}) where {dim} = Tensor{2, dim}
-@pure getreturntype(::typeof(otimes), ::Type{<:SecondOrderTensor{dim}}, ::Type{<:SecondOrderTensor{dim}}) where {dim} = Tensor{4, dim}
-@pure getreturntype(::typeof(otimes), ::Type{<:SymmetricTensor{2, dim}}, ::Type{<:SymmetricTensor{2, dim}}) where {dim} = SymmetricTensor{4, dim}
-
 # unit stripping if necessary
 function ustrip(S::SymmetricTensor{order,dim,T}) where {order, dim, T}
     ou = oneunit(T)
@@ -101,4 +82,195 @@ function ustrip(S::SymmetricTensor{order,dim,T}) where {order, dim, T}
     else # units, so strip them by dividing with oneunit(T)
         return SymmetricTensor{order,dim}(map(x -> x / ou, S.data))
     end
+end
+
+struct IndexedTensor{TB, order, NT}
+    inds::NTuple{order, Symbol}   # index nr => index name (e.g. `(:i, :j)`)
+    typename::Symbol            # `:Tensor`, `:SymmetricTensor`, or `:MixedTensor`
+    dims::NT                    # Dimension for each index name
+    name::Symbol                # Variable name, e.g. `:A`
+    function IndexedTensor{TT}(inds::NTuple{order, Symbol}, name::Symbol
+        ) where {order, dim, TT <: Union{Tensor{order, dim}, SymmetricTensor{order, dim}}}
+        dimnrs = (isa(dim, Int) ? ntuple(_ -> dim, order) : dim)::NTuple{order, Int}
+        dims = NamedTuple{inds}(dimnrs)
+        TB = get_base(TT)
+        return new{TB, order, typeof(dims)}(inds, nameof(TB), dims, name)
+    end
+end
+get_base(::IndexedTensor{TB}) where {TB} = TB
+
+const IndexedTensorTerm{N} = Tuple{Vararg{IndexedTensor, N}}
+
+# Given an index `name` and the `names` corresponding to the `indices`,
+# return the index for `name`.
+function find_index(name::Symbol, names::NTuple{<:Any, Symbol}, indices::NTuple{<:Any, Int})
+    i = findfirst(Base.Fix1(===, name), names)
+    i !== nothing && return indices[i]
+    error("Could not find $name in si=$names")
+end
+
+# Same as above, but if not found in the first `names1`, then try to find in `names2`.
+# `isdisjoint(names1, names2)` should be true when calling this function. 
+function find_index(name::Symbol, names1::NTuple{<:Any, Symbol}, indices1::NTuple{<:Any, Int}, names2::NTuple{<:Any, Symbol}, indices2::NTuple{<:Any, Int})
+    i = findfirst(Base.Fix1(===, name), names1)
+    i !== nothing && return indices1[i]
+    i = findfirst(Base.Fix1(===, name), names2)
+    i !== nothing && return indices2[i]
+    error("Could not find $name in names1=$names1 or names2=$names2")
+end
+
+"""
+    get_term_expression(out_inds::NTuple{<:Any, Symbol}, term::IndexedTensorTerm; use_muladd::Bool = false)
+
+`out_inds` gives the output indices, and term gives the indexed tensor expression consisting of `IndexedTensor`
+
+**Examples** to get the expression for the following standard `Tensor` inputs
+
+* `C = A[i]*B[i]`: `get_term_expression((), (IndexedTensor{Tensor{1,2}}((:i,), :A), IndexedTensor{Tensor{1,2}}((:i,), :B)))`
+* `C[i] = A[i,j]*B[j]`: `get_term_expression((:i,), (IndexedTensor{Tensor{2,2}}((:i, :j), :A), IndexedTensor{Tensor{1,2}}((:j,), :B)))`
+* `C[i,j] = A[i,l,m]*B[l,m,j]`: `get_term_expression((:i, :j), (IndexedTensor{Tensor{3,2}}((:i, :l, :m), :A), IndexedTensor{Tensor{3,2}}((:l, :m, :j), :B)))`
+
+"""
+function get_term_expression end
+
+function get_term_expression(out_inds::NTuple{<:Any, Symbol}, term::IndexedTensorTerm{2}; use_muladd = false)
+    # Return the expression for the tuple to fill the output tensor with, not considering that 
+    # the output tensor might be symmetric (this should be done on the complete sum of terms if applicable)
+
+    A, B = term
+    TA, TB = get_base.((A, B))
+    ai = A.inds
+    bi = B.inds
+    dims = get_term_dims(term)
+    
+    idxA(args...) = compute_index(TA, args...)
+    idxB(args...) = compute_index(TB, args...)
+
+    sum_inds = tuple(sort(intersect(ai, bi))...) # The index names to sum over 
+
+    # Validate input
+    issubset(out_inds, union(ai, bi)) || error("All indices in `out_inds` must be in term")
+    isdisjoint(sum_inds, out_inds) || error("Indices in `out_inds` can only exist once in the term")
+    if length(out_inds) != (length(ai) + length(bi) - 2*length(sum_inds)) 
+        error("Some indices occurs more than once in an `IndexedTensor` in the term, this is currently not supported")
+    end
+    
+    expr = Expr(:tuple)
+    for o in Iterators.ProductIterator(tuple((1:dims[k] for k in out_inds)...))
+        exa = Expr[]
+        exb = Expr[]
+        for sinds in Iterators.ProductIterator(tuple((1:dims[k] for k in sum_inds)...))
+            ainds = tuple((find_index(a, out_inds, o, sum_inds, sinds) for a in ai)...)
+            binds = tuple((find_index(b, out_inds, o, sum_inds, sinds) for b in bi)...)
+            push!(exa, :(get_data($(A.name))[$(idxA(ainds...))]))
+            push!(exb, :(get_data($(B.name))[$(idxB(binds...))]))
+        end
+        push!(expr.args, reducer(exa, exb, use_muladd))
+    end
+    return expr
+end
+
+function get_term_expression(::Tuple{}, term::IndexedTensorTerm{2}; use_muladd = false)
+    A, B = term
+    TA, TB = get_base.((A, B))
+    ai = A.inds
+    bi = B.inds
+    dims = get_term_dims(term)
+    
+    idxA(args...) = compute_index(TA, args...)
+    idxB(args...) = compute_index(TB, args...)
+
+    sum_inds = tuple(sort(intersect(ai, bi))...) # The index names to sum over 
+    if !(length(sum_inds) == length(ai) == length(bi))
+        error("For scalar output, all indices in ai must be in bi, and vice versa")
+    end
+
+    exa = Expr[]
+    exb = Expr[]
+    for sinds in Iterators.ProductIterator(tuple((1:dims[k] for k in sum_inds)...))
+        ainds = tuple((find_index(a, sum_inds, sinds) for a in ai)...)
+        binds = tuple((find_index(b, sum_inds, sinds) for b in bi)...)
+        push!(exa, :(get_data(A)[$(idxA(ainds...))]))
+        push!(exb, :(get_data(B)[$(idxB(binds...))]))
+    end
+    return reducer(exa, exb, use_muladd)
+end
+
+function get_term_dims(term::IndexedTensorTerm)
+    dims = Dict{Symbol, Int}()
+    for it in term
+        for (iname, dim) in zip(keys(it.dims), it.dims)
+            # TODO: This should be checked at the top level and result in a MethodError
+            if haskey(dims, iname) && dims[iname] != dim
+                error("index $iname as different dims ($dim and $(dims[iname]))\nThis means that you've called the function with incompatible tensor dimensions")
+            end
+            dims[iname] = dim
+        end
+    end
+    return dims
+end
+
+"""
+    get_expression(out_inds::NTuple{<:Any, Symbol}, rhs::Expr, tensor_types::NamedTuple; kwargs...)
+
+TODO: Write docstring and add limitations. Note that this is the implementer-facing function. 
+"""
+function get_expression(out_inds::NTuple{<:Any, Symbol}, rhs::Expr, tensor_types::NamedTuple; kwargs...)
+    rhs.head === :call || error("The right-hand-side must be a function call")
+    (rhs.args[1] == :+ || rhs.args[1] == :-) && error("Multiple terms currently not supported")
+    rhs.args[1] == :* || error("Only multiplication between tensors supported")
+    term = get_term(rhs, tensor_types)
+    expr = get_term_expression(out_inds, term; kwargs...)
+    if length(out_inds) == 0 # Scalar
+        return expr
+    else
+        TO = get_output_type(out_inds, term)
+        expr_red = remove_duplicates(TO, expr)
+        return :($(TO)($expr_red))
+    end
+end
+
+function get_term(rhs::Expr, tensor_types::NamedTuple)
+    # Already validated that rhs.head == :call and rhs.args[1] == :*
+    return ntuple(length(rhs.args) - 1) do i
+        it_expr = rhs.args[i + 1]
+        it_expr.head == :ref || error("expected an indexed tensor expression, e.g. `A[i,j]`, but got: `$(it_expr)`")
+        name = it_expr.args[1]
+        inds = tuple(it_expr.args[2:end]...)
+        isa(inds, NTuple{<:Any, Symbol}) || error("malformatted indexed tensor expression = `$(it_expr)`")
+        TT = tensor_types[name]
+        IndexedTensor{TT}(inds, name)
+    end
+end
+
+function get_output_type(out_inds::NTuple{<:Any, Symbol}, term::IndexedTensorTerm{2})
+    dims = get_term_dims(term)
+    order = length(out_inds)
+    order == 0 && return :scalar
+    out_dims = map(k -> dims[k], out_inds)
+    if allequal(out_dims)
+        # Not MixedTensor, need to see if SymmetricTensor
+        dim = dims[first(out_inds)]
+        isodd(length(out_inds)) && return Tensor{order, dim}
+        symmetric_output = all(2:2:order) do pair_idx
+            is_symmetric_indices(term, out_inds[pair_idx - 1], out_inds[pair_idx])
+        end
+        return symmetric_output ? SymmetricTensor{order, dim} : Tensor{order, dim}    
+    else
+        error("MixedTensor not supported (yet)")
+    end
+end
+
+function is_symmetric_indices(term::IndexedTensorTerm, idx1::Symbol, idx2::Symbol)
+    # Note: Currently doesn't add symmetry if we have e.g. A[i,j] * A[j,k] for symmetric A
+    for it in term
+        nr1 = findfirst(k -> k == idx1, it.inds)
+        nr2 = findfirst(k -> k == idx2, it.inds)
+        if nr1 !== nothing && nr2 !== nothing
+            if abs(nr1 - nr2) == 1 && isodd(min(nr1, nr2))
+                return it.typename === :SymmetricTensor
+            end
+        end
+    end
+    return false
 end

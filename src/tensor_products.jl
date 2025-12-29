@@ -1,88 +1,76 @@
-# dcontract, dot, tdot, otimes, crossa:\:TT{
-
-promote_tensorname(a::Symbol, b::Symbol) = (a == b == :SymmetricTensor) ? a : :Tensor
+# dcontract, otimes, dot, tdot, cross
 
 # ================================================== #
 # dcontract                                          #
 # ================================================== #
+
 # 2-2
-@generated function dcontract(A::SecondOrderTensor{dim}, B::SecondOrderTensor{dim}) where {dim}
-    # C = A[i, j] * B[i, j]
-    expr = Tensors.get_expression((), (:i, :j), (:i, :j), dim; TA = nameof(A), TB = nameof(B), use_muladd = true)
+@generated function dcontract(A::SecondOrderTensor, B::SecondOrderTensor)
+    expr = Tensors.get_expression((), :(A[i, j] * B[i, j]), (;A, B); use_muladd = true)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 2-3
-@generated function dcontract(A::SecondOrderTensor{dim}, B::AbstractTensor{3, dim}) where {dim}
-    # C[k] = A[i, j] * B[i, j, k]
-    expr = Tensors.get_expression((:k,), (:i, :j), (:i, :j, :k), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor, use_muladd = true)
+@generated function dcontract(A::SecondOrderTensor, B::AbstractTensor{3}) 
+    expr = Tensors.get_expression((:k,), :(A[i, j] * B[i, j, k]), (;A, B); use_muladd = true)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 2-4
-@generated function dcontract(A::SecondOrderTensor{dim}, B::FourthOrderTensor{dim}) where {dim}
-    # C[k, l] = A[i, j] * B[i, j, k, l]
-    expr = Tensors.get_expression((:k, :l), (:i, :j), (:i, :j, :k, :l), dim; TA = nameof(A), TB = nameof(B), TC = nameof(B), use_muladd = true)
+@generated function dcontract(A::SecondOrderTensor, B::FourthOrderTensor) 
+    expr = Tensors.get_expression((:k, :l), :(A[i, j] * B[i, j, k, l]), (;A, B); use_muladd = true)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 3-2
-@generated function dcontract(A::AbstractTensor{3, dim}, B::SecondOrderTensor{dim}) where {dim}
-    # C[i] = A[i, j, k] * B[j, k]
-    expr = Tensors.get_expression((:i,), (:i, :j, :k), (:j, :k), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor, use_muladd = true)
+@generated function dcontract(A::AbstractTensor{3}, B::SecondOrderTensor) 
+    expr = Tensors.get_expression((:i,), :(A[i, j, k] * B[j, k]), (;A, B); use_muladd = true)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 3-3
-@generated function dcontract(A::AbstractTensor{3, dim}, B::AbstractTensor{3, dim}) where {dim}
-    # C[i, j] = A[i, k, l] * B[k, l, j]
-    expr = Tensors.get_expression((:i, :j), (:i, :k, :l), (:k, :l, :j), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor, use_muladd = true)
+@generated function dcontract(A::AbstractTensor{3}, B::AbstractTensor{3}) 
+    expr = Tensors.get_expression((:i, :j), :(A[i, k, l] * B[k, l, j]), (;A, B); use_muladd = true)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 3-4
-@generated function dcontract(A::AbstractTensor{3, dim}, B::FourthOrderTensor{dim}) where {dim}
-    # C[i, j, k] = A[i, l, m] * B[l, m, j, k]
-    expr = Tensors.get_expression((:i, :j, :k), (:i, :l, :m), (:l, :m, :j, :k), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor, use_muladd = true)
+@generated function dcontract(A::AbstractTensor{3}, B::FourthOrderTensor) 
+    expr = Tensors.get_expression((:i, :j, :k), :(A[i, l, m] * B[l, m, j, k]), (;A, B); use_muladd = true)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 4-2
-@generated function dcontract(A::FourthOrderTensor{dim}, B::SecondOrderTensor{dim}) where {dim}
-    # C[i, j] = A[i, j, k, l] * B[k, l]
-    expr = Tensors.get_expression((:i, :j), (:i, :j, :k, :l), (:k, :l), dim; TA = nameof(A), TB = nameof(B), TC = nameof(A), use_muladd = true)
+@generated function dcontract(A::FourthOrderTensor, B::SecondOrderTensor) 
+    expr = Tensors.get_expression((:i, :j), :(A[i, j, k, l] * B[k, l]), (;A, B); use_muladd = true)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 4-3
-@generated function dcontract(A::FourthOrderTensor{dim}, B::AbstractTensor{3, dim}) where {dim}
-    # C[i, j, k] = A[i, j, l, m] * B[l, m, k]
-    expr = Tensors.get_expression((:i, :j, :k), (:i, :j, :l, :m), (:l, :m, :k), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor, use_muladd = true)
+@generated function dcontract(A::FourthOrderTensor, B::AbstractTensor{3}) 
+    expr = Tensors.get_expression((:i, :j, :k), :(A[i, j, l, m] * B[l, m, k]), (;A, B); use_muladd = true)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 4-4
-@generated function dcontract(A::FourthOrderTensor{dim}, B::FourthOrderTensor{dim}) where {dim}
-    # C[i, j, k, l] = A[i, j, m, n] * B[m, n, k, l]
-    expr = Tensors.get_expression(
-        (:i, :j, :k, :l), (:i, :j, :m, :n), (:m, :n, :k, :l), dim; 
-        TA = nameof(A), TB = nameof(B), TC = promote_tensorname(nameof(A), nameof(B)), use_muladd = true)
+@generated function dcontract(A::FourthOrderTensor, B::FourthOrderTensor) 
+    expr = Tensors.get_expression((:i, :j, :k, :l), :(A[i, j, m, n] * B[m, n, k, l]), (;A, B); use_muladd = true)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
@@ -93,36 +81,32 @@ end
 # otimes                                             #
 # ================================================== #
 # 1-1
-@generated function otimes(A::Vec{dim}, B::Vec{dim}) where {dim}
-    # C[i, j] = A[i] * B[j]
-    expr = get_expression((:i, :j), (:i,), (:j,), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function otimes(A::Vec, B::Vec)
+    expr = get_expression((:i, :j), :(A[i] * B[j]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 1-2
-@generated function otimes(A::Vec{dim}, B::SecondOrderTensor{dim}) where {dim}
-    # C[i, j, k] = A[i] * B[j, k]
-    expr = get_expression((:i, :j, :k), (:i,), (:j, :k), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function otimes(A::Vec, B::SecondOrderTensor)
+    expr = get_expression((:i, :j, :k), :(A[i] * B[j, k]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 2-1
-@generated function otimes(A::SecondOrderTensor{dim}, B::Vec{dim}) where {dim}
-    # C[i, j, k] = A[i, j] * B[k]
-    expr = get_expression((:i, :j, :k), (:i, :j), (:k,), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function otimes(A::SecondOrderTensor, B::Vec)
+    expr = get_expression((:i, :j, :k), :(A[i, j] * B[k]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 2-2
-@generated function otimes(A::SecondOrderTensor{dim}, B::SecondOrderTensor{dim}) where {dim}
-    # C[i, j, k] = A[i, j] * B[k]
-    expr = get_expression((:i, :j, :k, :l), (:i, :j), (:k, :l), dim; TA = nameof(A), TB = nameof(B), TC = promote_tensorname(nameof(A), nameof(B)))
+@generated function otimes(A::SecondOrderTensor, B::SecondOrderTensor)
+    expr = get_expression((:i, :j, :k, :l), :(A[i, j] * B[k, l]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
@@ -134,90 +118,80 @@ end
 # LinearAlgebra.dot                                  #
 # ================================================== #
 # 1-1
-@generated function LinearAlgebra.dot(A::Vec{dim}, B::Vec{dim}) where {dim}
-    # C = A[i] * B[i]
-    expr = get_expression((), (:i,), (:i,), dim; TA = nameof(A), TB = nameof(B))
+@generated function LinearAlgebra.dot(A::Vec, B::Vec) 
+    expr = get_expression((), :(A[i] * B[i]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 1-2
-@generated function LinearAlgebra.dot(A::Vec{dim}, B::SecondOrderTensor{dim}) where {dim}
-    # C[i] = A[j] * B[j, i]
-    expr = get_expression((:i,), (:j,), (:j, :i), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function LinearAlgebra.dot(A::Vec, B::SecondOrderTensor) 
+    expr = get_expression((:i,), :(A[j] * B[j, i]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 1-3
-@generated function LinearAlgebra.dot(A::Vec{dim}, B::AbstractTensor{3, dim}) where {dim}
-    # C[i, j] = A[k] * B[k, i, j]
-    expr = get_expression((:i, :j), (:k,), (:k, :i, :j), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function LinearAlgebra.dot(A::Vec, B::AbstractTensor{3}) 
+    expr = get_expression((:i, :j), :(A[k] * B[k, i, j]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 2-1
-@generated function LinearAlgebra.dot(A::SecondOrderTensor{dim}, B::Vec{dim}) where {dim}
-    # C[i] = A[i, j] * B[j]
-    expr = get_expression((:i,), (:i, :j), (:j,), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::Vec) 
+    expr = get_expression((:i,), :(A[i, j] * B[j]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 2-2
-@generated function LinearAlgebra.dot(A::SecondOrderTensor{dim}, B::SecondOrderTensor{dim}) where {dim}
-    # C[i, j] = A[i, k] * B[k, j]
-    expr = get_expression((:i, :j), (:i, :k), (:k, :j), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::SecondOrderTensor)
+    expr = get_expression((:i, :j), :(A[i, k] * B[k, j]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 2-3
-@generated function LinearAlgebra.dot(A::SecondOrderTensor{dim}, B::AbstractTensor{3, dim}) where {dim}
-    # C[i, j, k] = A[i, l] * B[l, j, k]
-    expr = get_expression((:i, :j, :k), (:i, :l), (:l, :j, :k), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::AbstractTensor{3}) 
+    expr = get_expression((:i, :j, :k), :(A[i, l] * B[l, j, k]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 2-4
-@generated function LinearAlgebra.dot(A::SecondOrderTensor{dim}, B::FourthOrderTensor{dim}) where {dim}
-    # C[i, j, k, l] = A[i, m] * B[m, j, k, l]
-    expr = get_expression((:i, :j, :k, :l), (:i, :m), (:m, :j, :k, :l), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::FourthOrderTensor) 
+    expr = get_expression((:i, :j, :k, :l), :(A[i, m] * B[m, j, k, l]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 3-1
-@generated function LinearAlgebra.dot(A::AbstractTensor{3, dim}, B::Vec{dim}) where {dim}
-    # C[i, j] = A[i, j, k] * B[k]
-    expr = get_expression((:i, :j), (:i, :j, :k), (:k,), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function LinearAlgebra.dot(A::AbstractTensor{3}, B::Vec) 
+    expr = get_expression((:i, :j), :(A[i, j, k] * B[k]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 3-2
-@generated function LinearAlgebra.dot(A::AbstractTensor{3, dim}, B::SecondOrderTensor{dim}) where {dim}
-    # C[i, j, k] = A[i, j, l] * B[l, k]
-    expr = get_expression((:i, :j, :k), (:i, :j, :l), (:l, :k), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function LinearAlgebra.dot(A::AbstractTensor{3}, B::SecondOrderTensor) 
+    expr = get_expression((:i, :j, :k), :(A[i, j, l] * B[l, k]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
     end
 end
 # 4-2
-@generated function LinearAlgebra.dot(A::FourthOrderTensor{dim}, B::SecondOrderTensor{dim}) where {dim}
-    # C[i, j, k, l] = A[i, j, k, m] * B[m, l]
-    expr = get_expression((:i, :j, :k, :l), (:i, :j, :k, :m), (:m, :l), dim; TA = nameof(A), TB = nameof(B), TC = :Tensor)
+@generated function LinearAlgebra.dot(A::FourthOrderTensor, B::SecondOrderTensor) 
+    expr = get_expression((:i, :j, :k, :l), :(A[i, j, k, m] * B[m, l]), (;A, B))
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr
@@ -347,10 +321,12 @@ julia> otimesu(A, B)
  0.0771855  0.086179
 ```
 """
-@inline function otimesu(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    S1_ = convert(Tensor, S1) # Convert to full tensor if symmetric to make 10x faster... (see Tensors.jl#164)
-    S2_ = convert(Tensor, S2)
-    return Tensor{4, dim}((i,j,k,l) -> S1_[i,k] * S2_[j,l])
+@generated function otimesu(S1::SecondOrderTensor, S2::SecondOrderTensor)
+    expr = get_expression((:i, :j, :k, :l), :(S1[i, k] * S2[j, l]), (;S1, S2))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
 end
 
 """
@@ -383,10 +359,12 @@ julia> otimesl(A, B)
  0.0771855  0.086179
 ```
 """
-@inline function otimesl(S1::SecondOrderTensor{dim}, S2::SecondOrderTensor{dim}) where {dim}
-    S1_ = convert(Tensor, S1) # Convert to full tensor if symmetric to make 10x faster... (see Tensors.jl#164)
-    S2_ = convert(Tensor, S2)
-    return Tensor{4, dim}((i,j,k,l) -> S1_[i,l] * S2_[j,k])
+@generated function otimesl(S1::SecondOrderTensor, S2::SecondOrderTensor)
+    expr = get_expression((:i, :j, :k, :l), :(S1[i, l] * S2[j, k]), (;S1, S2))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
 end
 
 # Ensure that we don't fall back to the default implementation for AbstractArray, 
