@@ -139,7 +139,7 @@ function get_term_expression(out_inds::NTuple{<:Any, Symbol}, term::IndexedTenso
     # Return the expression for the tuple to fill the output tensor with, not considering that 
     # the output tensor might be symmetric (this should be done on the complete sum of terms if applicable)
 
-    A, B = term
+    A, B = term.tensors
     TA, TB = get_base.((A, B))
     ai = A.inds
     bi = B.inds
@@ -173,7 +173,7 @@ function get_term_expression(out_inds::NTuple{<:Any, Symbol}, term::IndexedTenso
 end
 
 function get_term_expression(::Tuple{}, term::IndexedTensorTerm{2}; use_muladd = false)
-    A, B = term
+    A, B = term.tensors
     TA, TB = get_base.((A, B))
     ai = A.inds
     bi = B.inds
@@ -264,7 +264,7 @@ end
 
 function is_symmetric_indices(term::IndexedTensorTerm, idx1::Symbol, idx2::Symbol)
     # Note: Currently doesn't add symmetry if we have e.g. A[i,j] * A[j,k] for symmetric A
-    for it in term
+    for it in term.tensors
         nr1 = findfirst(k -> k == idx1, it.inds)
         nr2 = findfirst(k -> k == idx2, it.inds)
         if nr1 !== nothing && nr2 !== nothing
