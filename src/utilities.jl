@@ -29,7 +29,6 @@ function tensor_create(::Type{SymmetricTensor{order, dim}}, f) where {order, dim
     return ex
 end
 
-
 # reduced two expressions by summing the products
 # madd = true uses muladd instructions which is faster
 # in some cases, like in double contraction
