@@ -1,8 +1,27 @@
 # dcontract, otimes, dot, tdot, cross
+"""
+    dcontract(::AbstractTensor{order_a}, ::AbstractTensor{order_b}) where {order_a, order_b}
 
-# ================================================== #
-# dcontract                                          #
-# ================================================== #
+Compute the double contraction between two tensors for `order_a ≥ 2` and `order_b ≥ 2`.
+The symbol `⊡`, written `\\boxdot`, is overloaded for double contraction.
+The reason `:` is not used is because it does not have the same precedence as multiplication.
+
+# Examples
+```jldoctest
+julia> A = rand(SymmetricTensor{2, 2});
+
+julia> B = rand(SymmetricTensor{2, 2});
+
+julia> dcontract(A,B)
+0.7654348606012742
+
+julia> A ⊡ B
+0.7654348606012742
+```
+"""
+function dcontract end 
+
+const ⊡ = dcontract
 
 # 2-2
 @generated function dcontract(A::SecondOrderTensor, B::SecondOrderTensor)
@@ -77,156 +96,6 @@ end
     end
 end
 
-# ================================================== #
-# otimes                                             #
-# ================================================== #
-# 1-1
-@generated function otimes(A::Vec, B::Vec)
-    expr = get_expression((:i, :j), :(A[i] * B[j]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 1-2
-@generated function otimes(A::Vec, B::SecondOrderTensor)
-    expr = get_expression((:i, :j, :k), :(A[i] * B[j, k]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 2-1
-@generated function otimes(A::SecondOrderTensor, B::Vec)
-    expr = get_expression((:i, :j, :k), :(A[i, j] * B[k]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 2-2
-@generated function otimes(A::SecondOrderTensor, B::SecondOrderTensor)
-    expr = get_expression((:i, :j, :k, :l), :(A[i, j] * B[k, l]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# Not yet implemented: 1-3 and 3-1
-
-# ================================================== #
-# LinearAlgebra.dot                                  #
-# ================================================== #
-# 1-1
-@generated function LinearAlgebra.dot(A::Vec, B::Vec) 
-    expr = get_expression((), :(A[i] * B[i]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 1-2
-@generated function LinearAlgebra.dot(A::Vec, B::SecondOrderTensor) 
-    expr = get_expression((:i,), :(A[j] * B[j, i]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 1-3
-@generated function LinearAlgebra.dot(A::Vec, B::AbstractTensor{3}) 
-    expr = get_expression((:i, :j), :(A[k] * B[k, i, j]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 2-1
-@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::Vec) 
-    expr = get_expression((:i,), :(A[i, j] * B[j]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 2-2
-@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::SecondOrderTensor)
-    expr = get_expression((:i, :j), :(A[i, k] * B[k, j]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 2-3
-@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::AbstractTensor{3}) 
-    expr = get_expression((:i, :j, :k), :(A[i, l] * B[l, j, k]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 2-4
-@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::FourthOrderTensor) 
-    expr = get_expression((:i, :j, :k, :l), :(A[i, m] * B[m, j, k, l]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 3-1
-@generated function LinearAlgebra.dot(A::AbstractTensor{3}, B::Vec) 
-    expr = get_expression((:i, :j), :(A[i, j, k] * B[k]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 3-2
-@generated function LinearAlgebra.dot(A::AbstractTensor{3}, B::SecondOrderTensor) 
-    expr = get_expression((:i, :j, :k), :(A[i, j, l] * B[l, k]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-# 4-2
-@generated function LinearAlgebra.dot(A::FourthOrderTensor, B::SecondOrderTensor) 
-    expr = get_expression((:i, :j, :k, :l), :(A[i, j, k, m] * B[m, l]), (;A, B))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $expr
-    end
-end
-
-# Not included yet: 1-4, 4-1, 3-3
-
-"""
-    dcontract(::SecondOrderTensor, ::SecondOrderTensor)
-    dcontract(::SecondOrderTensor, ::FourthOrderTensor)
-    dcontract(::FourthOrderTensor, ::SecondOrderTensor)
-    dcontract(::FourthOrderTensor, ::FourthOrderTensor)
-
-Compute the double contraction between two tensors.
-The symbol `⊡`, written `\\boxdot`, is overloaded for double contraction.
-The reason `:` is not used is because it does not have the same precedence as multiplication.
-
-# Examples
-```jldoctest
-julia> A = rand(SymmetricTensor{2, 2});
-
-julia> B = rand(SymmetricTensor{2, 2});
-
-julia> dcontract(A,B)
-0.7654348606012742
-
-julia> A ⊡ B
-0.7654348606012742
-```
-"""
-function dcontract end 
-
-const ⊡ = dcontract
-
 """
     otimes(::Vec, ::Vec)
     otimes(::SecondOrderTensor, ::SecondOrderTensor)
@@ -261,12 +130,45 @@ julia> A ⊗ B
 """
 function otimes end 
 
-
 @inline otimes(S1::Number, S2::Number) = S1*S2
 @inline otimes(S1::AbstractTensor, S2::Number) = S1*S2
 @inline otimes(S1::Number, S2::AbstractTensor) = S1*S2
 
 const ⊗ = otimes
+
+# 1-1
+@generated function otimes(A::Vec, B::Vec)
+    expr = get_expression((:i, :j), :(A[i] * B[j]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 1-2
+@generated function otimes(A::Vec, B::SecondOrderTensor)
+    expr = get_expression((:i, :j, :k), :(A[i] * B[j, k]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 2-1
+@generated function otimes(A::SecondOrderTensor, B::Vec)
+    expr = get_expression((:i, :j, :k), :(A[i, j] * B[k]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 2-2
+@generated function otimes(A::SecondOrderTensor, B::SecondOrderTensor)
+    expr = get_expression((:i, :j, :k, :l), :(A[i, j] * B[k, l]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# Not yet implemented: 1-3 and 3-1
 
 """
     otimes(::Vec)
@@ -367,13 +269,6 @@ julia> otimesl(A, B)
     end
 end
 
-# Ensure that we don't fall back to the default implementation for AbstractArray, 
-# which has a different meaning except in the case for `Vec`. 
-function LinearAlgebra.dot(ta::AbstractTensor, tb::AbstractTensor)
-    TA = get_base(typeof(ta))
-    TB = get_base(typeof(tb))
-    throw(ArgumentError("single contraction not implemented between $TA and $TB"))
-end
 
 """
     dot(::Vec, ::Vec)
@@ -408,6 +303,97 @@ julia> A ⋅ B
 ```
 """
 LinearAlgebra.dot(::AbstractTensor, ::AbstractTensor)
+
+# 1-1
+@generated function LinearAlgebra.dot(A::Vec, B::Vec) 
+    expr = get_expression((), :(A[i] * B[i]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 1-2
+@generated function LinearAlgebra.dot(A::Vec, B::SecondOrderTensor) 
+    expr = get_expression((:i,), :(A[j] * B[j, i]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 1-3
+@generated function LinearAlgebra.dot(A::Vec, B::AbstractTensor{3}) 
+    expr = get_expression((:i, :j), :(A[k] * B[k, i, j]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 2-1
+@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::Vec) 
+    expr = get_expression((:i,), :(A[i, j] * B[j]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 2-2
+@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::SecondOrderTensor)
+    expr = get_expression((:i, :j), :(A[i, k] * B[k, j]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 2-3
+@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::AbstractTensor{3}) 
+    expr = get_expression((:i, :j, :k), :(A[i, l] * B[l, j, k]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 2-4
+@generated function LinearAlgebra.dot(A::SecondOrderTensor, B::FourthOrderTensor) 
+    expr = get_expression((:i, :j, :k, :l), :(A[i, m] * B[m, j, k, l]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 3-1
+@generated function LinearAlgebra.dot(A::AbstractTensor{3}, B::Vec) 
+    expr = get_expression((:i, :j), :(A[i, j, k] * B[k]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 3-2
+@generated function LinearAlgebra.dot(A::AbstractTensor{3}, B::SecondOrderTensor) 
+    expr = get_expression((:i, :j, :k), :(A[i, j, l] * B[l, k]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+# 4-2
+@generated function LinearAlgebra.dot(A::FourthOrderTensor, B::SecondOrderTensor) 
+    expr = get_expression((:i, :j, :k, :l), :(A[i, j, k, m] * B[m, l]), (;A, B))
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $expr
+    end
+end
+
+# Not included yet: 1-4, 4-1, 3-3
+
+# Ensure that we don't fall back to the default implementation for AbstractArray, 
+# which has a different meaning except in the case for `Vec`. 
+function LinearAlgebra.dot(ta::AbstractTensor, tb::AbstractTensor)
+    TA = get_base(typeof(ta))
+    TB = get_base(typeof(tb))
+    throw(ArgumentError("single contraction not implemented between $TA and $TB"))
+end
 
 """
     dot(::SymmetricTensor{2})
