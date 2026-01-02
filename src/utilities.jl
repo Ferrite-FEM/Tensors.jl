@@ -103,7 +103,10 @@ struct IndexedTensor{TB, order, NT}
 end
 get_base(::IndexedTensor{TB}) where {TB} = TB
 
-const IndexedTensorTerm{N} = Tuple{Vararg{IndexedTensor, N}}
+struct IndexedTensorTerm{N}
+    tensors::Tuple{Vararg{IndexedTensor, N}}
+    expr::Expr
+end
 
 # Given an index `name` and the `names` corresponding to the `indices`,
 # return the index for `name`.
@@ -141,7 +144,7 @@ function get_term_expression(out_inds::NTuple{<:Any, Symbol}, term::IndexedTenso
     # Return the expression for the tuple to fill the output tensor with, not considering that 
     # the output tensor might be symmetric (this should be done on the complete sum of terms if applicable)
 
-    A, B = term
+    A, B = term.tensors
     TA, TB = get_base.((A, B))
     ai = A.inds
     bi = B.inds
@@ -175,7 +178,7 @@ function get_term_expression(out_inds::NTuple{<:Any, Symbol}, term::IndexedTenso
 end
 
 function get_term_expression(::Tuple{}, term::IndexedTensorTerm{2}; use_muladd = false)
-    A, B = term
+    A, B = term.tensors
     TA, TB = get_base.((A, B))
     ai = A.inds
     bi = B.inds
@@ -235,7 +238,7 @@ end
 
 function get_term(rhs::Expr, tensor_types::NamedTuple)
     # Already validated that rhs.head == :call and rhs.args[1] == :*
-    return ntuple(length(rhs.args) - 1) do i
+    return IndexedTensorTerm(ntuple(length(rhs.args) - 1) do i
         it_expr = rhs.args[i + 1]
         it_expr.head == :ref || error("expected an indexed tensor expression, e.g. `A[i,j]`, but got: `$(it_expr)`")
         name = it_expr.args[1]
@@ -243,7 +246,7 @@ function get_term(rhs::Expr, tensor_types::NamedTuple)
         isa(inds, NTuple{<:Any, Symbol}) || error("malformatted indexed tensor expression = `$(it_expr)`")
         TT = tensor_types[name]
         IndexedTensor{TT}(inds, name)
-    end
+    end, rhs)
 end
 
 function get_output_type(out_inds::NTuple{<:Any, Symbol}, term::IndexedTensorTerm{2})
@@ -266,7 +269,7 @@ end
 
 function is_symmetric_indices(term::IndexedTensorTerm, idx1::Symbol, idx2::Symbol)
     # Note: Currently doesn't add symmetry if we have e.g. A[i,j] * A[j,k] for symmetric A
-    for it in term
+    for it in term.tensors
         nr1 = findfirst(k -> k == idx1, it.inds)
         nr2 = findfirst(k -> k == idx2, it.inds)
         if nr1 !== nothing && nr2 !== nothing
