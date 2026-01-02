@@ -98,7 +98,10 @@ struct IndexedTensor{TB, order, NT}
 end
 get_base(::IndexedTensor{TB}) where {TB} = TB
 
-const IndexedTensorTerm{N} = Tuple{Vararg{IndexedTensor, N}}
+struct IndexedTensorTerm{N}
+    tensors::Tuple{Vararg{IndexedTensor, N}}
+    expr::Expr
+end
 
 # Given an index `name` and the `names` corresponding to the `indices`,
 # return the index for `name`.
@@ -230,7 +233,7 @@ end
 
 function get_term(rhs::Expr, tensor_types::NamedTuple)
     # Already validated that rhs.head == :call and rhs.args[1] == :*
-    return ntuple(length(rhs.args) - 1) do i
+    return IndexedTensorTerm(ntuple(length(rhs.args) - 1) do i
         it_expr = rhs.args[i + 1]
         it_expr.head == :ref || error("expected an indexed tensor expression, e.g. `A[i,j]`, but got: `$(it_expr)`")
         name = it_expr.args[1]
@@ -238,7 +241,7 @@ function get_term(rhs::Expr, tensor_types::NamedTuple)
         isa(inds, NTuple{<:Any, Symbol}) || error("malformatted indexed tensor expression = `$(it_expr)`")
         TT = tensor_types[name]
         IndexedTensor{TT}(inds, name)
-    end
+    end, rhs)
 end
 
 function get_output_type(out_inds::NTuple{<:Any, Symbol}, term::IndexedTensorTerm{2})
