@@ -197,11 +197,10 @@ end
 
 function get_term_dims(term::IndexedTensorTerm)
     dims = Dict{Symbol, Int}()
-    for it in term
+    for it in term.tensors
         for (iname, dim) in zip(keys(it.dims), it.dims)
-            # TODO: This should be checked at the top level and result in a MethodError
             if haskey(dims, iname) && dims[iname] != dim
-                error("index $iname as different dims ($dim and $(dims[iname]))\nThis means that you've called the function with incompatible tensor dimensions")
+                error("Calculating $(term.expr) cannot be evaluated when index $iname have different associated dimensions: $(dims[iname]) and $dim")
             end
             dims[iname] = dim
         end
