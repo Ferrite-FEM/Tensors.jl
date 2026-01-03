@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Throw error if trying to call fallback dot method for AbstractArray ([#228])
  - Fix that `curl(f, v::Vec{2})` calls `f(::Vec{3, <:Dual})` instead of `f(::Vec{2, <:Dual})`([#222])
 
+### Added
+ - Optimized version to compute cofactor matrix (also called the minor of a matrix) ([#218])
+
 ## [v1.16.2]
 
 ### Misc
