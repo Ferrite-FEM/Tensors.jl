@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Bugfixes
  
  - Throw error if trying to call fallback dot method for AbstractArray ([#228])
+ - Fix that `curl(f, v::Vec{2})` calls `f(::Vec{3, <:Dual})` instead of `f(::Vec{2, <:Dual})`([#222])
 
 ## [v1.16.2]
 
