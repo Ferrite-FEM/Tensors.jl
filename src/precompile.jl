@@ -25,6 +25,7 @@ using PrecompileTools
 
         # TODO: AD?
     end
+<<<<<<< HEAD
 
     # See discussion in https://github.com/Ferrite-FEM/Tensors.jl/pull/190
     # Fragile? Different definition now??
@@ -34,4 +35,6 @@ using PrecompileTools
         precompile(Tuple{typeof(apply_all), Type{Tensor{1, 3, T, M} where M where T}, var"#102#103"{Float64}})
     end
     =#
+=======
+>>>>>>> master
 end

@@ -25,7 +25,7 @@ const ⊡ = dcontract
 
 # 2-2
 @generated function dcontract(A::SecondOrderTensor, B::SecondOrderTensor)
-    expr = Tensors.get_expression((), :(A[i, j] * B[i, j]), (;A, B); use_muladd = true)
+    expr = Tensors.get_expression((), :(A[i, j] * B[i, j]), (;A, B); use_muladd = false)
     return quote
         $(Expr(:meta, :inline))
         @inbounds return $expr

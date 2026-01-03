@@ -137,6 +137,10 @@ end
 * `C[i] = A[i,j]*B[j]`: `get_term_expression((:i,), (IndexedTensor{Tensor{2,2}}((:i, :j), :A), IndexedTensor{Tensor{1,2}}((:j,), :B)))`
 * `C[i,j] = A[i,l,m]*B[l,m,j]`: `get_term_expression((:i, :j), (IndexedTensor{Tensor{3,2}}((:i, :l, :m), :A), IndexedTensor{Tensor{3,2}}((:l, :m, :j), :B)))`
 
+!!! note: "Internal function"
+    The API of this function may change and it is currently only for internal 
+    use when adding new tensor products.
+
 """
 function get_term_expression end
 
@@ -219,7 +223,28 @@ end
 """
     get_expression(out_inds::NTuple{<:Any, Symbol}, rhs::Expr, tensor_types::NamedTuple; kwargs...)
 
-TODO: Write docstring and add limitations. Note that this is the implementer-facing function. 
+Get the `expression::Expr` to compute the tensor with indices `out_inds` described by the 
+"right hand side", `rhs`, expression containing symbols representing tensors with the types 
+(obtained from `get_base`) in `tensor_types`. The keyword arguments are forwarded to 
+`get_term_expression`. General rules follow index rules for tensors with einstein summation, i.e. 
+
+* All indices in `out_inds` must be different
+* Each index in `out_inds` must appear exactly once in each term in `rhs`
+* Considering a term in `rhs`: indices not in `out_inds` must appear exactly 
+  twice in the term and are summation/dummy indices.
+
+Current limitations (some may be lifted in the future)
+* `rhs` can only contain a single term\\
+  I.e. `rhs = :(A[i,j] * B[j,k] + B[i,j] * A[j,k])` is not allowed
+* Each term in `rhs` can only contain multiplication\\
+  I.e. `rhs = :(A[i,j] / B[j,k])` is not allowed
+* An index can only appear once per tensor\\
+  I.e. `rhs = :(A[i,j,k,k] * B[j])` is not allowed
+
+!!! warning "Internal function"
+    The API of this function may change and it is currently only for internal 
+    use when adding new tensor products. See `tensor_products.jl` for further usage.
+
 """
 function get_expression(out_inds::NTuple{<:Any, Symbol}, rhs::Expr, tensor_types::NamedTuple; kwargs...)
     rhs.head === :call || error("The right-hand-side must be a function call")
