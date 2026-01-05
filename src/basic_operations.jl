@@ -10,10 +10,12 @@
 @inline Base.:+(S1::Tensor{order, dim}, S2::Tensor{order, dim}) where {order, dim} = _map(+, S1, S2)
 @inline Base.:+(S1::SymmetricTensor{order, dim}, S2::SymmetricTensor{order, dim}) where {order, dim} = _map(+, S1, S2)
 @inline Base.:+(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) where {order, dim} = ((SS1, SS2) = promote_base(S1, S2); SS1 + SS2)
+@inline Base.:+(S1::MixedTensor{order, dims}, S2::MixedTensor{order, dims}) where {order, dims} = _map(+, S1, S2)
 
 @inline Base.:-(S1::Tensor{order, dim}, S2::Tensor{order, dim}) where {order, dim} = _map(-, S1, S2)
 @inline Base.:-(S1::SymmetricTensor{order, dim}, S2::SymmetricTensor{order, dim}) where {order, dim} = _map(-, S1, S2)
 @inline Base.:-(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) where {order, dim} = ((SS1, SS2) = promote_base(S1, S2); SS1 - SS2)
+@inline Base.:-(S1::MixedTensor{order, dims}, S2::MixedTensor{order, dims}) where {order, dims} = _map(-, S1, S2)
 
 @inline Base.:*(S::AbstractTensor, n::Number) = _map(x -> x*n, S)
 @inline Base.:*(n::Number, S::AbstractTensor) = _map(x -> n*x, S)
@@ -29,8 +31,8 @@ end
 
 # the caller of 2 arg _map MUST guarantee that both arguments have
 # the same base (Tensor{order, dim} / SymmetricTensor{order, dim}) but not necessarily the same eltype
-@inline function _map(f, S1::AllTensors, S2::AllTensors)
-    return apply_all(S1, @inline function(i) @inbounds f(S1.data[i], S2.data[i]); end)
+@inline function _map(f, S1::AbstractTensor, S2::AbstractTensor)
+    return apply_all(S1, @inline function(i) @inbounds f(get_data(S1)[i], get_data(S2)[i]); end)
 end
 
 # power
@@ -44,6 +46,9 @@ end
         S2 = _powdot(S2, S3)
     end
     S2
+end
+function Base.literal_pow(::typeof(^), S::MixedTensor, k::Val)
+    throw(MethodError(Base.literal_pow, (^, S, k)))
 end
 
 @inline _powdot(S1::Tensor, S2::Tensor) = dot(S1, S2)

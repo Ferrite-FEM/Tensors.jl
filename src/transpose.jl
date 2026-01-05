@@ -47,4 +47,16 @@ Compute the major transpose of a fourth order tensor.
     Tensor{4, dim}(@inline function(i, j, k, l) @inbounds S[k,l,i,j]; end)
 end
 
-@inline Base.adjoint(S::AllTensors) = transpose(S)
+@inline Base.adjoint(S::AbstractTensor) = transpose(S)
+
+@inline function Base.transpose(S::MixedTensor{2, dims}) where {dims}
+    MixedTensor{2, (dims[2],dims[1])}(@inline function(i, j) @inbounds S[j,i]; end)
+end
+
+@inline function minortranspose(S::MixedTensor{4, dims}) where {dims}
+    MixedTensor{4, (dims[2], dims[1], dims[4], dims[3])}(@inline function(i, j, k, l) @inbounds S[j,i,l,k]; end)
+end
+
+@inline function majortranspose(S::MixedTensor{4, dims}) where {dims}
+    MixedTensor{4, (dims[3], dims[4], dims[1], dims[2])}(@inline function(i, j, k, l) @inbounds S[k,l,i,j]; end)
+end

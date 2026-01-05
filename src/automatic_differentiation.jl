@@ -68,80 +68,44 @@ end
         @inbounds return $TensorType($ex)
     end
 end
-# Scalar output, Vec input -> Vec gradient
-@inline function _extract_gradient(v::Dual, ::Vec{N}) where {N}
-    return Vec{N}(partials(v).values)
-end
-# Scalar output, SecondOrderTensor input -> SecondOrderTensor gradient
-@inline function _extract_gradient(v::Dual, ::SymmetricTensor{2, dim}) where {dim}
-    return SymmetricTensor{2, dim}(partials(v).values)
-end
-@inline function _extract_gradient(v::Dual, ::Tensor{2, dim}) where {dim}
-    return Tensor{2, dim}(partials(v).values)
+
+@inline function _extract_gradient(v::Dual, ::TT) where {TT <: AbstractTensor}
+    return get_base(TT)(partials(v).values)
 end
 
-# Vec output, Vec input -> Tensor{2} gradient
-@inline function _extract_gradient(v::Vec{1, <: Dual}, ::Vec{1})
-    @inbounds begin
-        p1 = partials(v[1])
-        ∇f = Tensor{2, 1}((p1[1],))
+@inline _extract_gradient(v::AbstractTensor{<:Any, <:Any, <:Dual}, u::AbstractTensor) = _extract_gradient_dual(v, u)
+@inline _extract_gradient(v::AbstractTensor, u::AbstractTensor) = _extract_gradient_nondual(v, u)
+
+@inline _extract_gradient_dual(v::AbstractTensor{<:Any, <:Any, <:Dual}, u::AbstractTensor) = _extract_gradient(makemixed(v), makemixed(u))
+
+@generated function _extract_gradient_dual(v::MixedTensor{order1, dims1, <:Dual}, ::MixedTensor{order2, dims2}) where {order1, dims1, order2, dims2}
+    expr = Expr(:tuple)
+    N1 = n_components(MixedTensor{order1, dims1})
+    N2 = n_components(MixedTensor{order2, dims2})
+    for j = 1:N2
+        for i = 1:N1
+            push!(expr.args, :(p[$i][$j]))
+        end
     end
-    return ∇f
-end
-# Vec output, Vec input -> Tensor{2} gradient
-@inline function _extract_gradient(v::Vec{2, <: Dual}, ::Vec{2})
-    @inbounds begin
-        p1, p2 = partials(v[1]), partials(v[2])
-        ∇f = Tensor{2, 2}((p1[1], p2[1], p1[2], p2[2]))
+    TT = MixedTensor{order1 + order2, (dims1..., dims2...)}
+    return quote
+        $(Expr(:meta, :inline))
+        p = map(partials, get_data(v))
+        @inbounds return makeregular($TT($expr))
     end
-    return ∇f
-end
-# Vec output, Vec input -> Tensor{2} gradient
-@inline function _extract_gradient(v::Vec{3, <: Dual}, ::Vec{3})
-    @inbounds begin
-        p1, p2, p3 = partials(v[1]), partials(v[2]), partials(v[3])
-        ∇f = Tensor{2, 3}((p1[1], p2[1], p3[1], p1[2], p2[2], p3[2], p1[3], p2[3], p3[3]))
-    end
-    return ∇f
 end
 
-# Tensor{2} output, Tensor{2} input -> Tensor{4} gradient
-@inline function _extract_gradient(v::Tensor{2, 1, <: Dual}, ::Tensor{2, 1})
-    @inbounds begin
-        p1 = partials(v[1,1])
-        ∇f = Tensor{4, 1}((p1[1],))
-    end
-    return ∇f
-end
 # SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
-@inline function _extract_gradient(v::SymmetricTensor{2, 1, <: Dual}, ::SymmetricTensor{2, 1})
+@inline function _extract_gradient_dual(v::SymmetricTensor{2, 1, <: Dual}, ::SymmetricTensor{2, 1})
     @inbounds begin
         p1 = partials(v[1,1])
         ∇f = SymmetricTensor{4, 1}((p1[1],))
     end
     return ∇f
 end
-# Tensor{2} output, Vec input -> Tensor{3} gradient
-@inline function _extract_gradient(v::Tensor{2, 1, <: Dual}, ::Vec{1})
-    @inbounds begin
-        p1 = partials(v[1,1])
-        ∇f = Tensor{3, 1}((p1[1],))
-    end
-    return ∇f
-end
-# Tensor{2} output, Tensor{2} input -> Tensor{4} gradient
-@inline function _extract_gradient(v::Tensor{2, 2, <: Dual}, ::Tensor{2, 2})
-    @inbounds begin
-        p1, p2, p3, p4 = partials(v[1,1]), partials(v[2,1]), partials(v[1,2]), partials(v[2,2])
-        ∇f = Tensor{4, 2}((p1[1], p2[1], p3[1], p4[1],
-                           p1[2], p2[2], p3[2], p4[2],
-                           p1[3], p2[3], p3[3], p4[3],
-                           p1[4], p2[4], p3[4], p4[4]))
-    end
-    return ∇f
-end
+
 # SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
-@inline function _extract_gradient(v::SymmetricTensor{2, 2, <: Dual}, ::SymmetricTensor{2, 2})
+@inline function _extract_gradient_dual(v::SymmetricTensor{2, 2, <: Dual}, ::SymmetricTensor{2, 2})
     @inbounds begin
         p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[2,2])
         ∇f = SymmetricTensor{4, 2}((p1[1], p2[1], p3[1],
@@ -150,35 +114,9 @@ end
     end
     return ∇f
 end
-# Tensor{2} output, Vec input -> Tensor{3} gradient
-@inline function _extract_gradient(v::Tensor{2, 2, <: Dual}, ::Vec{2})
-    @inbounds begin
-        p1, p2, p3, p4 = partials(v[1,1]), partials(v[2,1]), partials(v[1,2]), partials(v[2,2])
-        ∇f = Tensor{3, 2}((p1[1], p2[1], p3[1], p4[1],
-                           p1[2], p2[2], p3[2], p4[2]))
-    end
-    return ∇f
-end
-# Tensor{2} output, Tensor{2} input -> Tensor{4} gradient
-@inline function _extract_gradient(v::Tensor{2, 3, <: Dual}, ::Tensor{2, 3})
-    @inbounds begin
-        p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[3,1])
-        p4, p5, p6 = partials(v[1,2]), partials(v[2,2]), partials(v[3,2])
-        p7, p8, p9 = partials(v[1,3]), partials(v[2,3]), partials(v[3,3])
-        ∇f = Tensor{4, 3}((p1[1], p2[1], p3[1], p4[1], p5[1], p6[1], p7[1], p8[1], p9[1],
-                           p1[2], p2[2], p3[2], p4[2], p5[2], p6[2], p7[2], p8[2], p9[2],  #    ###  #
-                           p1[3], p2[3], p3[3], p4[3], p5[3], p6[3], p7[3], p8[3], p9[3],  #    # #  #
-                           p1[4], p2[4], p3[4], p4[4], p5[4], p6[4], p7[4], p8[4], p9[4],  ###  ###  ###
-                           p1[5], p2[5], p3[5], p4[5], p5[5], p6[5], p7[5], p8[5], p9[5],
-                           p1[6], p2[6], p3[6], p4[6], p5[6], p6[6], p7[6], p8[6], p9[6],
-                           p1[7], p2[7], p3[7], p4[7], p5[7], p6[7], p7[7], p8[7], p9[7],
-                           p1[8], p2[8], p3[8], p4[8], p5[8], p6[8], p7[8], p8[8], p9[8],
-                           p1[9], p2[9], p3[9], p4[9], p5[9], p6[9], p7[9], p8[9], p9[9]))
-    end
-    return ∇f
-end
+
 # SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
-@inline function _extract_gradient(v::SymmetricTensor{2, 3, <: Dual}, ::SymmetricTensor{2, 3})
+@inline function _extract_gradient_dual(v::SymmetricTensor{2, 3, <: Dual}, ::SymmetricTensor{2, 3})
     @inbounds begin
         p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[3,1])
         p4, p5, p6 = partials(v[2,2]), partials(v[3,2]), partials(v[3,3])
@@ -192,29 +130,16 @@ end
     return ∇f
 end
 
-# Tensor{2} output, Vec input -> Tensor{3} gradient
-@inline function _extract_gradient(v::Tensor{2, 3, <: Dual}, ::Vec{3})
-    @inbounds begin
-        p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[3,1])
-        p4, p5, p6 = partials(v[1,2]), partials(v[2,2]), partials(v[3,2])
-        p7, p8, p9 = partials(v[1,3]), partials(v[2,3]), partials(v[3,3])
-        ∇f = Tensor{3, 3}((p1[1], p2[1], p3[1], p4[1], p5[1], p6[1], p7[1], p8[1], p9[1],
-                           p1[2], p2[2], p3[2], p4[2], p5[2], p6[2], p7[2], p8[2], p9[2],  
-                           p1[3], p2[3], p3[3], p4[3], p5[3], p6[3], p7[3], p8[3], p9[3]))
-    end
-    return ∇f
-end
-
 # for non dual variable
 @inline function _extract_value(v::Any)
     return v
 end
+@inline function _extract_gradient(::T, x::TT) where {T <: Real, TT <: AbstractTensor}
+    zero(get_base(TT){T})
+end
 for TensorType in (Tensor, SymmetricTensor)
     @eval begin
-        @inline function _extract_gradient(v::T, x::$TensorType{order, dim}) where {T<:Real, order, dim}
-            zero($TensorType{order, dim, T})
-        end
-        @generated function _extract_gradient(v::$TensorType{order, dim, T}, ::$TensorType{order, dim}) where {T<:Real, order, dim}
+        @generated function _extract_gradient_nondual(v::$TensorType{order, dim, T}, ::$TensorType{order, dim}) where {T<:Real, order, dim}
             RetType = $TensorType{order+order, dim, T}
             return quote
                 $(Expr(:meta, :inline))
@@ -371,52 +296,34 @@ end
 
 # Loaders are supposed to take a tensor of real values and convert it
 # into a tensor of dual values where the seeds are correctly defined.
-
+# Scalar
 @inline function _load(v::Number, ::Tg) where Tg
     return Dual{Tg}(v, one(v))
 end
 
-@inline function _load(v::Vec{1, T}, ::Tg) where {T, Tg}
-    @inbounds v_dual = Vec{1}((Dual{Tg}(v[1], one(T)),))
-    return v_dual
+# Any order non-symmetric tensor
+@generated function _load(v::Union{MixedTensor{<:Any, <:Any, T}, Tensor{<:Any, <:Any, T}}, ::Tg) where {T, Tg}
+    TB = get_base(v)
+    N = n_components(TB)
+    function makedual(i)
+        partials = Expr(:tuple)
+        foreach(j -> push!(partials.args, j == i ? :(one(T)) : :(zero(T))), 1:N)
+        return :(Dual{Tg}(data[$i], $partials))
+    end
+    expr = Expr(:tuple)
+    for i = 1:N
+        push!(expr.args, makedual(i))
+    end
+    return quote
+        $(Expr(:meta, :inline))
+        data = get_data(v)
+        @inbounds return $TB($expr)
+    end
 end
 
-@inline function _load(v::Vec{2, T}, ::Tg) where {T, Tg}
-    o = one(T)
-    z = zero(T)
-    @inbounds v_dual = Vec{2}((Dual{Tg}(v[1], o, z),
-                               Dual{Tg}(v[2], z, o)))
-    return v_dual
-end
-
-@inline function _load(v::Vec{3, T}, ::Tg) where {T, Tg}
-    o = one(T)
-    z = zero(T)
-    @inbounds v_dual = Vec{3}((Dual{Tg}(v[1], o, z, z),
-                               Dual{Tg}(v[2], z, o, z),
-                               Dual{Tg}(v[3], z, z, o)))
-    return v_dual
-end
-
-# Second order tensors
-@inline function _load(v::Tensor{2, 1, T}, ::Tg) where {T, Tg}
-    @inbounds v_dual = Tensor{2, 1}((Dual{Tg}(get_data(v)[1], one(T)),))
-    return v_dual
-end
-
+# Second order symmetric tensors
 @inline function _load(v::SymmetricTensor{2, 1, T}, ::Tg) where {T, Tg}
     @inbounds v_dual = SymmetricTensor{2, 1}((Dual{Tg}(get_data(v)[1], one(T)),))
-    return v_dual
-end
-
-@inline function _load(v::Tensor{2, 2, T}, ::Tg) where {T, Tg}
-    data = get_data(v)
-    o = one(T)
-    z = zero(T)
-    @inbounds v_dual = Tensor{2, 2}((Dual{Tg}(data[1], o, z, z, z),
-                                     Dual{Tg}(data[2], z, o, z, z),
-                                     Dual{Tg}(data[3], z, z, o, z),
-                                     Dual{Tg}(data[4], z, z, z, o)))
     return v_dual
 end
 
@@ -428,22 +335,6 @@ end
     @inbounds v_dual = SymmetricTensor{2, 2}((Dual{Tg}(data[1], o, z, z),
                                               Dual{Tg}(data[2], z, o2, z),
                                               Dual{Tg}(data[3], z, z, o)))
-    return v_dual
-end
-
-@inline function _load(v::Tensor{2, 3, T}, ::Tg) where {T, Tg}
-    data = get_data(v)
-    o = one(T)
-    z = zero(T)
-    @inbounds v_dual = Tensor{2, 3}((Dual{Tg}(data[1], o, z, z, z, z, z, z, z, z),
-                                     Dual{Tg}(data[2], z, o, z, z, z, z, z, z, z),
-                                     Dual{Tg}(data[3], z, z, o, z, z, z, z, z, z),
-                                     Dual{Tg}(data[4], z, z, z, o, z, z, z, z, z),
-                                     Dual{Tg}(data[5], z, z, z, z, o, z, z, z, z),
-                                     Dual{Tg}(data[6], z, z, z, z, z, o, z, z, z),
-                                     Dual{Tg}(data[7], z, z, z, z, z, z, o, z, z),
-                                     Dual{Tg}(data[8], z, z, z, z, z, z, z, o, z),
-                                     Dual{Tg}(data[9], z, z, z, z, z, z, z, z, o)))
     return v_dual
 end
 
@@ -480,12 +371,12 @@ julia> ∇f = gradient(norm, A)
 julia> ∇f, f = gradient(norm, A, :all);
 ```
 """
-function gradient(f::F, v::V) where {F, V <: Union{SecondOrderTensor, Vec, Number}}
+function gradient(f::F, v::V) where {F, V <: Union{SecondOrderTensor, Vec, Number, MixedTensor}}
     v_dual = _load(v, Tag(f, V))
     res = f(v_dual)
     return _extract_gradient(res, v)
 end
-function gradient(f::F, v::V, ::Symbol) where {F, V <: Union{SecondOrderTensor, Vec, Number}}
+function gradient(f::F, v::V, ::Symbol) where {F, V <: Union{SecondOrderTensor, Vec, Number, MixedTensor}}
     v_dual = _load(v, Tag(f, V))
     res = f(v_dual)
     return _extract_gradient(res, v), _extract_value(res)
