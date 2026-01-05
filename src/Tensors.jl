@@ -70,8 +70,8 @@ end
 struct MixedTensor{order, dims, T, M} <: AbstractTensor{order, dims, T}
     data::NTuple{M, T}
     function MixedTensor{order, dims, T, M}(data::NTuple{M, T}) where {order, dims, T, M}
-        Tensors.n_components(MixedTensor{order, dims}) == M || throw(ArgumentError("prod(dims) != M"))
         isa(dims, NTuple{order, Int}) || throw(ArgumentError("dims should be a tuple of `Int`s"))
+        Tensors.n_components(MixedTensor{order, dims}) == M || throw(ArgumentError("prod(dims) != M"))
         return new{order, dims, T, M}(data)
     end
 end
