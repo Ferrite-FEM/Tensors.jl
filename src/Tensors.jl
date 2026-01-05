@@ -89,6 +89,9 @@ struct MixedTensor{order, dims, T, M} <: AbstractTensor{order, dims, T}
         return new{order, dims, T, M}(data)
     end
 end
+MixedTensor{order, dims}(data::NTuple{M, T}) where {order, dims, T, M} = MixedTensor{order, dims, T, M}(data)
+MixedTensor{order, dims, T}(data::NTuple{M, T2}) where {order, dims, T, T2, M} = MixedTensor{order, dims, T, M}(data)
+MixedTensor{order, dims}(data::Tuple{Vararg{Any, M}}) where {order, dims, M} = MixedTensor{order, dims}(promote(data...))
 
 ###############
 # Typealiases #

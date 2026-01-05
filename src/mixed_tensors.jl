@@ -16,3 +16,4 @@ makemixed(t::Tensor{1, dim}) where {dim} = MixedTensor{1, (dim,)}(get_data(t))
 makemixed(t::Tensor{2, dim}) where {dim} = MixedTensor{2, (dim, dim)}(get_data(t))
 makemixed(t::Tensor{3, dim}) where {dim} = MixedTensor{3, (dim, dim, dim)}(get_data(t))
 makemixed(t::Tensor{4, dim}) where {dim} = MixedTensor{4, (dim, dim, dim, dim)}(get_data(t))
+makemixed(t::MixedTensor) = t
