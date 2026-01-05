@@ -68,44 +68,13 @@ end
         @inbounds return $TensorType($ex)
     end
 end
-# Scalar output, Vec input -> Vec gradient
-@inline function _extract_gradient(v::Dual, ::Vec{N}) where {N}
-    return Vec{N}(partials(v).values)
-end
-# Scalar output, SecondOrderTensor input -> SecondOrderTensor gradient
-@inline function _extract_gradient(v::Dual, ::SymmetricTensor{2, dim}) where {dim}
-    return SymmetricTensor{2, dim}(partials(v).values)
-end
-@inline function _extract_gradient(v::Dual, ::Tensor{2, dim}) where {dim}
-    return Tensor{2, dim}(partials(v).values)
-end
 
-@inline function _extract_gradient(v::Dual, ::MixedTensor{order,dims}) where {order,dims}
-    return MixedTensor{order,dims}(partials(v).values)
+@inline function _extract_gradient(v::Dual, ::TT) where {TT <: AbstractTensor}
+    return get_base(TT)(partials(v).values)
 end
 
 @inline _extract_gradient(v::AbstractTensor{<:Any, <:Any, <:Dual}, u::AbstractTensor) = _extract_gradient_dual(v, u)
 @inline _extract_gradient(v::AbstractTensor, u::AbstractTensor) = _extract_gradient_nondual(v, u)
-
-# SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
-@inline function _extract_gradient_dual(v::SymmetricTensor{2, 1, <: Dual}, ::SymmetricTensor{2, 1})
-    @inbounds begin
-        p1 = partials(v[1,1])
-        ∇f = SymmetricTensor{4, 1}((p1[1],))
-    end
-    return ∇f
-end
-
-# SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
-@inline function _extract_gradient_dual(v::SymmetricTensor{2, 2, <: Dual}, ::SymmetricTensor{2, 2})
-    @inbounds begin
-        p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[2,2])
-        ∇f = SymmetricTensor{4, 2}((p1[1], p2[1], p3[1],
-                                    p1[2], p2[2], p3[2],
-                                    p1[3], p2[3], p3[3]))
-    end
-    return ∇f
-end
 
 @inline _extract_gradient_dual(v::AbstractTensor{<:Any, <:Any, <:Dual}, u::AbstractTensor) = _extract_gradient(makemixed(v), makemixed(u))
 
@@ -127,6 +96,26 @@ end
 end
 
 # SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
+@inline function _extract_gradient_dual(v::SymmetricTensor{2, 1, <: Dual}, ::SymmetricTensor{2, 1})
+    @inbounds begin
+        p1 = partials(v[1,1])
+        ∇f = SymmetricTensor{4, 1}((p1[1],))
+    end
+    return ∇f
+end
+
+# SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
+@inline function _extract_gradient_dual(v::SymmetricTensor{2, 2, <: Dual}, ::SymmetricTensor{2, 2})
+    @inbounds begin
+        p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[2,2])
+        ∇f = SymmetricTensor{4, 2}((p1[1], p2[1], p3[1],
+                                    p1[2], p2[2], p3[2],
+                                    p1[3], p2[3], p3[3]))
+    end
+    return ∇f
+end
+
+# SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
 @inline function _extract_gradient_dual(v::SymmetricTensor{2, 3, <: Dual}, ::SymmetricTensor{2, 3})
     @inbounds begin
         p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[3,1])
@@ -145,11 +134,11 @@ end
 @inline function _extract_value(v::Any)
     return v
 end
+@inline function _extract_gradient(::T, x::TT) where {T <: Real, TT <: AbstractTensor}
+    zero(get_base(TT){T})
+end
 for TensorType in (Tensor, SymmetricTensor)
     @eval begin
-        @inline function _extract_gradient(v::T, x::$TensorType{order, dim}) where {T<:Real, order, dim}
-            zero($TensorType{order, dim, T})
-        end
         @generated function _extract_gradient_nondual(v::$TensorType{order, dim, T}, ::$TensorType{order, dim}) where {T<:Real, order, dim}
             RetType = $TensorType{order+order, dim, T}
             return quote
@@ -307,52 +296,34 @@ end
 
 # Loaders are supposed to take a tensor of real values and convert it
 # into a tensor of dual values where the seeds are correctly defined.
-
+# Scalar
 @inline function _load(v::Number, ::Tg) where Tg
     return Dual{Tg}(v, one(v))
 end
 
-@inline function _load(v::Vec{1, T}, ::Tg) where {T, Tg}
-    @inbounds v_dual = Vec{1}((Dual{Tg}(v[1], one(T)),))
-    return v_dual
+# Any order non-symmetric tensor
+@generated function _load(v::Union{MixedTensor{<:Any, <:Any, T}, Tensor{<:Any, <:Any, T}}, ::Tg) where {T, Tg}
+    TB = get_base(v)
+    N = n_components(TB)
+    function makedual(i)
+        partials = Expr(:tuple)
+        foreach(j -> push!(partials.args, j == i ? :(one(T)) : :(zero(T))), 1:N)
+        return :(Dual{Tg}(data[$i], $partials))
+    end
+    expr = Expr(:tuple)
+    for i = 1:N
+        push!(expr.args, makedual(i))
+    end
+    return quote
+        $(Expr(:meta, :inline))
+        data = get_data(v)
+        @inbounds return $TB($expr)
+    end
 end
 
-@inline function _load(v::Vec{2, T}, ::Tg) where {T, Tg}
-    o = one(T)
-    z = zero(T)
-    @inbounds v_dual = Vec{2}((Dual{Tg}(v[1], o, z),
-                               Dual{Tg}(v[2], z, o)))
-    return v_dual
-end
-
-@inline function _load(v::Vec{3, T}, ::Tg) where {T, Tg}
-    o = one(T)
-    z = zero(T)
-    @inbounds v_dual = Vec{3}((Dual{Tg}(v[1], o, z, z),
-                               Dual{Tg}(v[2], z, o, z),
-                               Dual{Tg}(v[3], z, z, o)))
-    return v_dual
-end
-
-# Second order tensors
-@inline function _load(v::Tensor{2, 1, T}, ::Tg) where {T, Tg}
-    @inbounds v_dual = Tensor{2, 1}((Dual{Tg}(get_data(v)[1], one(T)),))
-    return v_dual
-end
-
+# Second order symmetric tensors
 @inline function _load(v::SymmetricTensor{2, 1, T}, ::Tg) where {T, Tg}
     @inbounds v_dual = SymmetricTensor{2, 1}((Dual{Tg}(get_data(v)[1], one(T)),))
-    return v_dual
-end
-
-@inline function _load(v::Tensor{2, 2, T}, ::Tg) where {T, Tg}
-    data = get_data(v)
-    o = one(T)
-    z = zero(T)
-    @inbounds v_dual = Tensor{2, 2}((Dual{Tg}(data[1], o, z, z, z),
-                                     Dual{Tg}(data[2], z, o, z, z),
-                                     Dual{Tg}(data[3], z, z, o, z),
-                                     Dual{Tg}(data[4], z, z, z, o)))
     return v_dual
 end
 
@@ -367,22 +338,6 @@ end
     return v_dual
 end
 
-@inline function _load(v::Tensor{2, 3, T}, ::Tg) where {T, Tg}
-    data = get_data(v)
-    o = one(T)
-    z = zero(T)
-    @inbounds v_dual = Tensor{2, 3}((Dual{Tg}(data[1], o, z, z, z, z, z, z, z, z),
-                                     Dual{Tg}(data[2], z, o, z, z, z, z, z, z, z),
-                                     Dual{Tg}(data[3], z, z, o, z, z, z, z, z, z),
-                                     Dual{Tg}(data[4], z, z, z, o, z, z, z, z, z),
-                                     Dual{Tg}(data[5], z, z, z, z, o, z, z, z, z),
-                                     Dual{Tg}(data[6], z, z, z, z, z, o, z, z, z),
-                                     Dual{Tg}(data[7], z, z, z, z, z, z, o, z, z),
-                                     Dual{Tg}(data[8], z, z, z, z, z, z, z, o, z),
-                                     Dual{Tg}(data[9], z, z, z, z, z, z, z, z, o)))
-    return v_dual
-end
-
 @inline function _load(v::SymmetricTensor{2, 3, T}, ::Tg) where {T, Tg}
     data = get_data(v)
     o = one(T)
@@ -394,16 +349,6 @@ end
                                               Dual{Tg}(data[4], z, z, z, o, z, z),
                                               Dual{Tg}(data[5], z, z, z, z, o2, z),
                                               Dual{Tg}(data[6], z, z, z, z, z, o)))
-    return v_dual
-end
-
-@inline function _load(v::MixedTensor{order, dims, T}, ::Tg) where {order, dims, T, Tg}
-    data = get_data(v)
-    N = n_components(MixedTensor{order, dims})
-    makedual(data::NTuple{N,T}, i) where {N,T} = Dual{Tg}(data[i], ntuple(j->j==i ? one(T) : zero(T), N)) 
-    @inbounds begin
-        v_dual = MixedTensor{order, dims}(ntuple(i-> makedual(data, i), N))
-    end
     return v_dual
 end
 
