@@ -67,6 +67,20 @@ struct Tensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
     Tensor{order, dim, T, M}(data::NTuple) where {order, dim, T, M} = new{order, dim, T, M}(data)
 end
 
+"""
+    MixedTensor{order, dims, T<:Number}
+
+`MixedTensor` have different dimensions for each basis and supports `order ∈ (1,2,3,4)` 
+and `dim ∈ (1,2,3) for dim in dims`, where `dims::NTuple{order, Int}`.
+
+# Examples
+```jldoctest
+julia> MixedTensor{2, (2, 3), Float64}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
+2×3 MixedTensor{2, (2, 3), Float64, 6}:
+ 1.0  3.0  5.0
+ 2.0  4.0  6.0
+```
+"""
 struct MixedTensor{order, dims, T, M} <: AbstractTensor{order, dims, T}
     data::NTuple{M, T}
     function MixedTensor{order, dims, T, M}(data::NTuple{M, T}) where {order, dims, T, M}
