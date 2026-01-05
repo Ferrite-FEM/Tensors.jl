@@ -194,16 +194,21 @@ end
 @inline _extract_gradient(v::MixedTensor, u::AbstractTensor) = _extract_gradient(v, makemixed(u))
 @inline _extract_gradient(v::AbstractTensor, u::MixedTensor) = _extract_gradient(makemixed(v), u)
 
-@inline function _extract_gradient(v::MixedTensor{2, dims1, <:Dual}, ::MixedTensor{2, dims2}) where {dims1, dims2}
-    @inbounds begin
-        p = map(partials, get_data(v)) # tuple((partials(vi) for vi in get_data(v))...)
-        N1 = n_components(MixedTensor{2,dims1})
-        N2 = n_components(MixedTensor{2,dims2})
-        ∇f = MixedTensor{4, (dims1[1],dims1[2],dims2[1],dims2[2])}(
-            ntuple(i->p[rem(i-1,N1)+1][div(i-1,N1)+1], N1*N2)
-        )
+@generated function _extract_gradient(v::MixedTensor{order1, dims1, <:Dual}, ::MixedTensor{order2, dims2}) where {order1, dims1, order2, dims2}
+    expr = Expr(:tuple)
+    N1 = n_components(MixedTensor{order1, dims1})
+    N2 = n_components(MixedTensor{order2, dims2})
+    for j = 1:N2
+        for i = 1:N1
+            push!(expr.args, :(p[$i][$j]))
+        end
     end
-    return makeregular(∇f)
+    TT = MixedTensor{order1 + order2, (dims1..., dims2...)}
+    return quote
+        $(Expr(:meta, :inline))
+        p = map(partials, get_data(v))
+        @inbounds return makeregular($TT($expr))
+    end
 end
 
 # SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
@@ -490,12 +495,12 @@ end
     return v_dual
 end
 
-@inline function _load(v::MixedTensor{2,dims, T}, ::Tg) where {dims, T, Tg}
+@inline function _load(v::MixedTensor{order, dims, T}, ::Tg) where {order, dims, T, Tg}
     data = get_data(v)
-    N = n_components(MixedTensor{2,dims})
+    N = n_components(MixedTensor{order, dims})
     makedual(data::NTuple{N,T}, i) where {N,T} = Dual{Tg}(data[i], ntuple(j->j==i ? one(T) : zero(T), N)) 
     @inbounds begin
-        v_dual = MixedTensor{2,dims}(ntuple(i-> makedual(data, i), N))
+        v_dual = MixedTensor{order, dims}(ntuple(i-> makedual(data, i), N))
     end
     return v_dual
 end
