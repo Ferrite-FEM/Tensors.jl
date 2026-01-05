@@ -84,8 +84,8 @@ julia> MixedTensor{2, (2, 3), Float64}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
 struct MixedTensor{order, dims, T, M} <: AbstractTensor{order, dims, T}
     data::NTuple{M, T}
     function MixedTensor{order, dims, T, M}(data::NTuple{M, T}) where {order, dims, T, M}
-        isa(dims, NTuple{order, Int}) || throw(ArgumentError("dims should be a tuple of `Int`s"))
-        Tensors.n_components(MixedTensor{order, dims}) == M || throw(ArgumentError("prod(dims) != M"))
+        isa(dims, NTuple{order, Int}) || throw(ArgumentError("dims=$dims should be an `NTuple{order, Int}`"))
+        Tensors.n_components(MixedTensor{order, dims}) == M || throw(ArgumentError("Length of data, M = $M, doesn't match number of components, prod(dims = $dims) = $(prod(dims))"))
         return new{order, dims, T, M}(data)
     end
 end
