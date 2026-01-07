@@ -15,9 +15,9 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.10'
+          - '1.6'
           - '1'
-          - 'pre'
+          - 'nightly'
         os:
           - ubuntu-latest
         include:
