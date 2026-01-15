@@ -1,16 +1,20 @@
-function tensor_create_linear(T::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}, f) where {order, dim}
+function tensor_create_linear(T::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}, Type{MixedTensor{order, dim}}}, f) where {order, dim}
     return Expr(:tuple, [f(i) for i=1:n_components(T)]...)
 end
 
 function tensor_create(::Type{Tensor{order, dim}}, f) where {order, dim}
+    return tensor_create(MixedTensor{order, ntuple(_ -> dim, order)}, f)
+end
+
+function tensor_create(::Type{MixedTensor{order, dims}}, f) where {order, dims}
     if order == 1
-        ex = Expr(:tuple, [f(i) for i=1:dim]...)
+        ex = Expr(:tuple, [f(i) for i=1:dims[1]]...)
     elseif order == 2
-        ex = Expr(:tuple, [f(i,j) for i=1:dim, j=1:dim]...)
+        ex = Expr(:tuple, [f(i,j) for i=1:dims[1], j=1:dims[2]]...)
     elseif order == 3
-        ex = Expr(:tuple, [f(i,j,k) for i=1:dim, j=1:dim, k=1:dim]...)
+        ex = Expr(:tuple, [f(i,j,k) for i=1:dims[1], j=1:dims[2], k=1:dims[3]]...)
     elseif order == 4
-        ex = Expr(:tuple, [f(i,j,k,l) for i=1:dim, j=1:dim, k = 1:dim, l = 1:dim]...)
+        ex = Expr(:tuple, [f(i,j,k,l) for i=1:dims[1], j=1:dims[2], k = 1:dims[3], l = 1:dims[4]]...)
     end
     return ex
 end
@@ -68,6 +72,7 @@ end
 
 # check symmetry and return
 remove_duplicates(::Type{<:Tensor}, ex) = ex # do nothing if return type is a Tensor
+remove_duplicates(::Type{<:MixedTensor}, ex) = ex
 function remove_duplicates(::Type{SymmetricTensor{order, dim}}, ex) where {order, dim}
     ex.args = ex.args[SYMMETRIC_INDICES[order][dim]]
     return ex
@@ -89,7 +94,7 @@ struct IndexedTensor{TB, order, NT}
     dims::NT                    # Dimension for each index name
     name::Symbol                # Variable name, e.g. `:A`
     function IndexedTensor{TT}(inds::NTuple{order, Symbol}, name::Symbol
-        ) where {order, dim, TT <: Union{Tensor{order, dim}, SymmetricTensor{order, dim}}}
+        ) where {order, dim, TT <: Union{Tensor{order, dim}, SymmetricTensor{order, dim}, MixedTensor{order, dim}}}
         dimnrs = (isa(dim, Int) ? ntuple(_ -> dim, order) : dim)::NTuple{order, Int}
         dims = NamedTuple{inds}(dimnrs)
         TB = get_base(TT)
@@ -283,7 +288,7 @@ function get_output_type(out_inds::NTuple{<:Any, Symbol}, term::IndexedTensorTer
         end
         return symmetric_output ? SymmetricTensor{order, dim} : Tensor{order, dim}    
     else
-        error("MixedTensor not supported (yet)")
+        return MixedTensor{order, out_dims}
     end
 end
 

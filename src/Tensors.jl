@@ -11,7 +11,8 @@ export ⋅, ×, dot, diagm, tr, det, norm, eigvals, eigvecs, eigen
 # re-exports from Statistics
 export mean
 
-export AbstractTensor, SymmetricTensor, Tensor, Vec, FourthOrderTensor, SecondOrderTensor
+export AbstractTensor, SymmetricTensor, Tensor, MixedTensor
+export Vec, FourthOrderTensor, SecondOrderTensor
 
 export otimes, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
 export otimesu, otimesl
@@ -66,6 +67,32 @@ struct Tensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
     Tensor{order, dim, T, M}(data::NTuple) where {order, dim, T, M} = new{order, dim, T, M}(data)
 end
 
+"""
+    MixedTensor{order, dims, T<:Number}
+
+`MixedTensor` have different dimensions for each basis and supports `order ∈ (1,2,3,4)` 
+and `dim ∈ (1,2,3) for dim in dims`, where `dims::NTuple{order, Int}`.
+
+# Examples
+```jldoctest
+julia> MixedTensor{2, (2, 3), Float64}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
+2×3 MixedTensor{2, (2, 3), Float64, 6}:
+ 1.0  3.0  5.0
+ 2.0  4.0  6.0
+```
+"""
+struct MixedTensor{order, dims, T, M} <: AbstractTensor{order, dims, T}
+    data::NTuple{M, T}
+    function MixedTensor{order, dims, T, M}(data::NTuple{M, T}) where {order, dims, T, M}
+        isa(dims, NTuple{order, Int}) || throw(ArgumentError("dims=$dims should be an `NTuple{order, Int}`"))
+        Tensors.n_components(MixedTensor{order, dims}) == M || throw(ArgumentError("Length of data, M = $M, doesn't match number of components, prod(dims = $dims) = $(prod(dims))"))
+        return new{order, dims, T, M}(data)
+    end
+end
+MixedTensor{order, dims}(data::NTuple{M, T}) where {order, dims, T, M} = MixedTensor{order, dims, T, M}(data)
+MixedTensor{order, dims, T}(data::NTuple{M, T2}) where {order, dims, T, T2, M} = MixedTensor{order, dims, T, M}(data)
+MixedTensor{order, dims}(data::Tuple{Vararg{Any, M}}) where {order, dims, M} = MixedTensor{order, dims}(promote(data...))
+
 ###############
 # Typealiases #
 ###############
@@ -76,8 +103,8 @@ const AllTensors{dim, T} = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T},
                                  Vec{dim, T}, Tensor{3, dim, T}}
 
 
-const SecondOrderTensor{dim, T}   = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T}}
-const FourthOrderTensor{dim, T}   = Union{SymmetricTensor{4, dim, T}, Tensor{4, dim, T}}
+const SecondOrderTensor{dim, T}   = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T}, MixedTensor{2, dim, T}}
+const FourthOrderTensor{dim, T}   = Union{SymmetricTensor{4, dim, T}, Tensor{4, dim, T}, MixedTensor{4, dim, T}}
 const SymmetricTensors{dim, T}    = Union{SymmetricTensor{2, dim, T}, SymmetricTensor{4, dim, T}}
 const NonSymmetricTensors{dim, T} = Union{Tensor{2, dim, T}, Tensor{4, dim, T}, Vec{dim, T}}
 
@@ -94,10 +121,14 @@ get_data(t::AbstractTensor) = t.data
 end
 @pure n_components(::Type{Tensor{order, dim}}) where {order, dim} = dim^order
 
+# Steal base implementation of "prod" to safely mark with @pure 
+@pure n_components(::Type{MixedTensor{order, dims}}) where {order, dims} = *(dims...)
+
 @pure get_type(::Type{Type{X}}) where {X} = X
 
 @pure get_base(::Type{<:Tensor{order, dim}})          where {order, dim} = Tensor{order, dim}
 @pure get_base(::Type{<:SymmetricTensor{order, dim}}) where {order, dim} = SymmetricTensor{order, dim}
+@pure get_base(::Type{<:MixedTensor{order, dims}})    where {order, dims} = MixedTensor{order, dims}
 
 @pure Base.eltype(::Type{Tensor{order, dim, T, M}})          where {order, dim, T, M} = T
 @pure Base.eltype(::Type{Tensor{order, dim, T}})             where {order, dim, T}    = T
@@ -105,6 +136,9 @@ end
 @pure Base.eltype(::Type{SymmetricTensor{order, dim, T, M}}) where {order, dim, T, M} = T
 @pure Base.eltype(::Type{SymmetricTensor{order, dim, T}})    where {order, dim, T}    = T
 @pure Base.eltype(::Type{SymmetricTensor{order, dim}})       where {order, dim}       = Any
+@pure Base.eltype(::Type{MixedTensor{order, dims, T, M}})    where {order, dims, T, M} = T
+@pure Base.eltype(::Type{MixedTensor{order, dims, T}})       where {order, dims, T}    = T
+@pure Base.eltype(::Type{MixedTensor{order, dims}})          where {order, dims}       = Any
 
 
 ############################
@@ -112,6 +146,7 @@ end
 ############################
 Base.IndexStyle(::Type{<:SymmetricTensor}) = IndexCartesian()
 Base.IndexStyle(::Type{<:Tensor}) = IndexLinear()
+Base.IndexStyle(::Type{<:MixedTensor}) = IndexLinear()
 
 ########
 # Size #
@@ -120,9 +155,14 @@ Base.size(::Vec{dim})               where {dim} = (dim,)
 Base.size(::SecondOrderTensor{dim}) where {dim} = (dim, dim)
 Base.size(::Tensor{3,dim})          where {dim} = (dim, dim, dim)
 Base.size(::FourthOrderTensor{dim}) where {dim} = (dim, dim, dim, dim)
+Base.size(::MixedTensor{1, dims}) where dims = dims
+Base.size(::MixedTensor{2, dims}) where dims = dims
+Base.size(::MixedTensor{3, dims}) where dims = dims
+Base.size(::MixedTensor{4, dims}) where dims = dims
 
 # Also define length for the type itself
 Base.length(::Type{Tensor{order, dim, T, M}}) where {order, dim, T, M} = M
+Base.length(::Type{MixedTensor{<:Any, <:Any, <:Any, M}}) where M = M
 
 #########################
 # Internal constructors #
@@ -160,6 +200,7 @@ end
 @inline          Tensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = Tensor{order, dim, T}(data)
 @inline SymmetricTensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = SymmetricTensor{order, dim, T}(data)
 
+include("mixed_tensors.jl")
 include("indexing.jl")
 include("utilities.jl")
 include("tensor_ops_errors.jl")
