@@ -299,7 +299,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
 end
 end # of testset
 
-@testsection "norm, trace, det, inv, eig" begin
+@testsection "norm, trace, det, inv, cof, eig" begin
 for T in (Float32, Float64, F64), dim in (1,2,3)
     # norm
     for order in (1,2,4)
@@ -334,6 +334,9 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
 
     @test (@inferred inv(t))::Tensor{2, dim, T} ≈ inv(Array(t))
     @test (@inferred inv(t_sym))::SymmetricTensor{2, dim, T} ≈ inv(Array(t_sym))
+
+    @test (@inferred cof(t))::Tensor{2, dim, T} ≈ det(Array(t))*transpose(inv(Array(t)))
+    @test (@inferred cof(t_sym))::SymmetricTensor{2, dim, T} ≈ det(Array(t_sym))*transpose(inv(Array(t_sym)))
 
     # inv for fourth order tensors
     Random.seed!(1234)

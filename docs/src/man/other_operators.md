@@ -83,6 +83,14 @@ where ``\mathbf{I}`` is the second order identity tensor.
 Tensors.inv
 ```
 
+## Cofactor
+
+Cofactor tensor of a second order tensor.
+
+```@docs
+Tensors.cof
+```
+
 ## Transpose
 
 Transpose of tensors is defined by changing the order of the tensor's "legs". The transpose of a vector/symmetric tensor is the vector/tensor itself. The transpose of a second order tensor can be written as:
