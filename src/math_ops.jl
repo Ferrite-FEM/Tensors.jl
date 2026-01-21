@@ -427,3 +427,32 @@ function rotate(x::SymmetricTensor{4}, args...)
     R = rotation_tensor(args...)
     return unsafe_symmetric(otimesu(R, R) ⊡ x ⊡ otimesu(R', R'))
 end
+
+isparallel(v1::Vec{3}, v2::Vec{3}) = isapprox(Tensors.cross(v1,v2), zero(v1), atol = 1e-14)
+isparallel(v1::Vec{2}, v2::Vec{2}) = isapprox(v1[2]*v2[1], v1[1]*v2[2], atol = 1e-14)
+
+"""
+    orthogonal(u::Vec)
+
+Return a orthogonal vector `v` to u (v ⋅ u = 0.0)
+"""
+function orthogonal(u::Vec{3}) 
+    iszero(u) && error("Cannot construct a orthogonal vector to a vector with zero length")
+    r = rand(u)
+    while isparallel(r,u) || iszero(r) #Is this needed?
+        r = rand(u)
+    end
+    q = r - u*(r⋅u)/(u⋅u)
+    return q
+end
+
+
+function orthogonal(u::Vec{2}) 
+    iszero(u) && error("Cannot construct a orthogonal vector to a vector with zero length")
+    return Vec((u[2], -u[1]))
+end
+
+function orthogonal(u::Vec{1}) 
+    error("Cannot construct a orthogonal vector for a one dimensional vector")
+    #return Vec((0.0,))
+end

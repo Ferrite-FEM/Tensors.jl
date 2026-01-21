@@ -353,5 +353,24 @@ end
         end
     end
 end
+
+@testsection "isparallel" begin
+    if dim == 3 || dim == 2
+        u = rand(Vec{dim})
+        v = 2u
+        @test Tensors.isparallel(u,v) == true
+        v = orthogonal(u)
+        @test Tensors.isparallel(u,v) == false
+    end
+end
+
+@testsection "orthogonal" begin
+    if dim == 3 || dim == 2
+        u = rand(Vec{dim})
+        v = orthogonal(u)
+        @test u⋅v ≈ 0.0 atol = 1e-14
+    end
+end
+
 end # of testsection
 end # of testsection
