@@ -19,6 +19,16 @@ end
 # Value extraction #
 ####################
 
+"""
+    extract_value(v::AbstractTensor)
+
+If `v` is used in a differentiation, such that 
+`eltype(v)::ForwardDiff.Dual`, extract the value-part of the derivative.
+Otherwise, just return `v`.
+"""
+extract_value(v::AbstractTensor{<:Any,<:Any,<:Dual}) = _extract_value(v)
+extract_value(v::AbstractTensor) = v
+
 # Scalar output -> Scalar value
 """
     function _extract_value(v::ForwardDiff.Dual)
