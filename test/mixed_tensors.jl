@@ -1,4 +1,30 @@
 @testsection "MixedTensors" begin
+    @testsection "regular_conversions" begin
+        for order in 2:4
+            dims = rand(1:2, order)
+            dims[1] = 3 # Make sure not regular
+            TM = MixedTensor{order, Tuple{(dims...)}}
+            tm = rand(TM)
+            @test !Tensors.isregular(TM)
+            @test (@inferred Tensors.regular_if_possible(TM)) === TM
+            @test (@inferred Tensors.regular_if_possible(TM{Float32})) === TM{Float32}
+            @test (@inferred Tensors.regular_if_possible(typeof(tm))) === typeof(tm)
+            @test (@inferred Tensors.regular_if_possible(tm)) === tm
+
+            TR = MixedTensor{order, Tuple{(ntuple(_->2, order)...)}}
+            tr = rand(TR)
+            TT = Tensor{order, 2}
+            tt = TT((args...) -> getindex(tr, args...))
+            @test Tensors.isregular(TR)
+            @test (@inferred Tensors.regular_if_possible(TR)) === TT
+            @test (@inferred Tensors.regular_if_possible(TR{Float32})) === TT{Float32}
+            @test (@inferred Tensors.regular_if_possible(typeof(tr))) === typeof(tt)
+            @test (@inferred Tensors.regular_if_possible(tr)) === tt
+
+            @test (@inferred Tensors.makemixed(tr))::TR === tr
+            @test (@inferred Tensors.makemixed(tt))::TR === tr
+        end
+    end
     @testsection "construction" begin
         @testsection "from function" begin
             T2 = MixedTensor{2, Tuple{(rand(1:3, 2)...)}}
