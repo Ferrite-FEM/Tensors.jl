@@ -115,10 +115,7 @@ julia> a ⋅ a'
 """
 struct MixedTensor{order, dims, T, M} <: AbstractTensor{order, dims, T}
     data::NTuple{M, T}
-    function MixedTensor{order, dims, T, M}(data::NTuple{M, T}) where {order, dims <: Tuple, T, M}
-        Tensors.n_components(MixedTensor{order, dims}) == M || throw(ArgumentError("Length of data, M = $M, doesn't match number of components, prod(dims = $dims) = $(prod(dims))"))
-        return new{order, dims, T, M}(data)
-    end
+    MixedTensor{order, dims, T, M}(data::NTuple) where {order, dims <: Tuple, T, M} = new{order, dims, T, M}(data)
 end
 const MixedTensor2{d1, d2, T, M} = MixedTensor{2, Tuple{d1, d2}, T, M}
 const MixedTensor3{d1, d2, d3, T, M} = MixedTensor{3, Tuple{d1, d2, d3}, T, M}

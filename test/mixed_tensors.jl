@@ -26,6 +26,18 @@
         end
     end
     @testsection "construction" begin
+        @testsection "from tuples" begin
+            data = ntuple(_ -> rand(), 6)
+            TD = ForwardDiff.Dual{Nothing, Float64, 3}
+            TB = MixedTensor2{2, 3}
+            # Standard case
+            @test isa(TB(data), MixedTensor2{2, 3, Float64, 6})
+            # Always respecting the tensor's data type specification
+            @test isa(TB{Float32}(data), MixedTensor2{2, 3, Float32, 6})
+            @test isa(TB{TD}(data), MixedTensor2{2, 3, TD, 6})
+            # Heterogeneous tuple
+            @test isa(TB((1.f0, 1.0, 1, zero(TD), 2, 3)), MixedTensor2{2, 3, TD, 6})
+        end
         @testsection "from function" begin
             T2 = MixedTensor{2, Tuple{(rand(1:3, 2)...)}}
             T3 = MixedTensor{3, Tuple{(rand(1:3, 3)...)}}
