@@ -91,7 +91,7 @@ end
     return quote
         $(Expr(:meta, :inline))
         p = map(partials, get_data(v))
-        @inbounds return makeregular($TT($expr))
+        @inbounds return regular_if_possible($TT($expr))
     end
 end
 

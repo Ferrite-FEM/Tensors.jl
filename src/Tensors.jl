@@ -151,14 +151,15 @@ Base.IndexStyle(::Type{<:MixedTensor}) = IndexLinear()
 ########
 # Size #
 ########
-Base.size(::Vec{dim})               where {dim} = (dim,)
-Base.size(::SecondOrderTensor{dim}) where {dim} = (dim, dim)
-Base.size(::Tensor{3,dim})          where {dim} = (dim, dim, dim)
-Base.size(::FourthOrderTensor{dim}) where {dim} = (dim, dim, dim, dim)
-Base.size(::MixedTensor{1, dims}) where dims = dims
-Base.size(::MixedTensor{2, dims}) where dims = dims
-Base.size(::MixedTensor{3, dims}) where dims = dims
-Base.size(::MixedTensor{4, dims}) where dims = dims
+Base.size(::TT) where {TT <: AbstractTensor} = size(TT)
+Base.size(::Type{<:Vec{dim}})               where {dim} = (dim,)
+Base.size(::Type{<:SecondOrderTensor{dim}}) where {dim} = (dim, dim)
+Base.size(::Type{<:Tensor{3,dim}})          where {dim} = (dim, dim, dim)
+Base.size(::Type{<:FourthOrderTensor{dim}}) where {dim} = (dim, dim, dim, dim)
+Base.size(::Type{<:MixedTensor{1, dims}}) where dims = dims
+Base.size(::Type{<:MixedTensor{2, dims}}) where dims = dims
+Base.size(::Type{<:MixedTensor{3, dims}}) where dims = dims
+Base.size(::Type{<:MixedTensor{4, dims}}) where dims = dims
 
 # Also define length for the type itself
 Base.length(::Type{Tensor{order, dim, T, M}}) where {order, dim, T, M} = M

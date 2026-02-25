@@ -95,29 +95,31 @@ function Base.getindex(S::Union{SecondOrderTensor, Tensor{3}, FourthOrderTensor}
     throw(ArgumentError("S[:] not defined for S of order 2, 3, or 4, use Array(S) to convert to an Array"))
 end
 
-@inline @generated function Base.getindex(S::SecondOrderTensor{dim}, ::Colon, j::Int) where {dim}
+@inline @generated function Base.getindex(S::SecondOrderTensor, ::Colon, j::Int)
     idx2(i,j) = compute_index(get_base(S), i, j)
+    dim, _ = size(S)
     ex1 = Expr(:tuple, [:(get_data(S)[$(idx2(i,1))]) for i in 1:dim]...)
     ex2 = Expr(:tuple, [:(get_data(S)[$(idx2(i,2))]) for i in 1:dim]...)
     ex3 = Expr(:tuple, [:(get_data(S)[$(idx2(i,3))]) for i in 1:dim]...)
     return quote
         @boundscheck checkbounds(S,Colon(),j)
-        if     j == 1 return Vec{dim}($ex1)
-        elseif j == 2 return Vec{dim}($ex2)
-        else          return Vec{dim}($ex3)
+        if     j == 1 return Vec{$dim}($ex1)
+        elseif j == 2 return Vec{$dim}($ex2)
+        else          return Vec{$dim}($ex3)
         end
     end
 end
-@inline @generated function Base.getindex(S::SecondOrderTensor{dim}, i::Int, ::Colon) where {dim}
+@inline @generated function Base.getindex(S::SecondOrderTensor, i::Int, ::Colon)
     idx2(i,j) = compute_index(get_base(S), i, j)
+    _, dim = size(S)
     ex1 = Expr(:tuple, [:(get_data(S)[$(idx2(1,j))]) for j in 1:dim]...)
     ex2 = Expr(:tuple, [:(get_data(S)[$(idx2(2,j))]) for j in 1:dim]...)
     ex3 = Expr(:tuple, [:(get_data(S)[$(idx2(3,j))]) for j in 1:dim]...)
     return quote
         @boundscheck checkbounds(S,i,Colon())
-        if     i == 1 return Vec{dim}($ex1)
-        elseif i == 2 return Vec{dim}($ex2)
-        else          return Vec{dim}($ex3)
+        if     i == 1 return Vec{$dim}($ex1)
+        elseif i == 2 return Vec{$dim}($ex2)
+        else          return Vec{$dim}($ex3)
         end
     end
 end
