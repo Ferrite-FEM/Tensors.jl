@@ -90,6 +90,9 @@
         function dcontract_index(a::MixedTensor2{di, dj}, b::MixedTensor2{di, dj}) where {di, dj}
             return sum(a.data[i] * b.data[i] for i in 1:(di*dj))
         end
+        function dcontract_index(a::MixedTensor3{di, dj, dk}, b::MixedTensor3{dj, dk, dl}) where {di, dj, dk, dl}
+            return MixedTensor2{di, dl}((i, l) -> sum(sum(a[i, j, k] * b[j, k, l] for j in 1:dj) for k in 1:dk))
+        end
         function dcontract_index(a::MixedTensor4{di, dj, dk, dl}, b::MixedTensor2{dk, dl}) where {di, dj, dk, dl}
             return MixedTensor2{di, dj}((i, j) -> sum(sum(a[i, j, k, l] * b[k, l] for k in 1:dk) for l in 1:dl))
         end
@@ -99,11 +102,14 @@
         m31_1 = rand(MixedTensor2{3, 1})
         m31_2 = rand(MixedTensor2{3, 1})
         m32 = rand(MixedTensor2{3, 2})
+        m213 = rand(MixedTensor3{2, 1, 3})
+        m133 = rand(MixedTensor3{1, 3, 3})
         m3231 = rand(MixedTensor4{3, 2, 3, 1})
 
         m31_dd_m31 = @inferred m31_1 ⊡ m31_2
         @test isa(m31_dd_m31, Float64)
         @test m31_dd_m31 ≈ dcontract_index(m31_1, m31_2)
+        @test m213 ⊡ m133 ≈ dcontract_index(m213, m133)
         @test m3231 ⊡ m31_1 ≈ dcontract_index(m3231, m31_1)
         @test majortranspose(m3231) ⊡ m32 ≈ dcontract_index(majortranspose(m3231), m32)
 
