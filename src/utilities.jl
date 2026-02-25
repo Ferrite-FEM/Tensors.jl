@@ -94,9 +94,8 @@ struct IndexedTensor{TB, order, NT}
     dims::NT                    # Dimension for each index name
     name::Symbol                # Variable name, e.g. `:A`
     function IndexedTensor{TT}(inds::NTuple{order, Symbol}, name::Symbol
-        ) where {order, dim, TT <: Union{Tensor{order, dim}, SymmetricTensor{order, dim}, MixedTensor{order, dim}}}
-        dimnrs = (isa(dim, Int) ? ntuple(_ -> dim, order) : dim)::NTuple{order, Int}
-        dims = NamedTuple{inds}(dimnrs)
+        ) where {order, TT <: AbstractTensor{order}}
+        dims = NamedTuple{inds}(size(TT))
         TB = get_base(TT)
         return new{TB, order, typeof(dims)}(inds, nameof(TB), dims, name)
     end
@@ -288,7 +287,7 @@ function get_output_type(out_inds::NTuple{<:Any, Symbol}, term::IndexedTensorTer
         end
         return symmetric_output ? SymmetricTensor{order, dim} : Tensor{order, dim}    
     else
-        return MixedTensor{order, out_dims}
+        return MixedTensor{order, Tuple{out_dims...}}
     end
 end
 

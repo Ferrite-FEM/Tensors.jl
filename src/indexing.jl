@@ -42,15 +42,15 @@ end
 end
 
 # MixedTensor
-@inline compute_index(::Type{MixedTensor{1, dim}}, i::Int) where {dim} = i
-@inline function compute_index(::Type{MixedTensor{2, dims}}, i::Int, j::Int) where {dims}
-    return (j - 1) * dims[1] + i
+@inline compute_index(::Type{<:MixedTensor{1, dim}}, i::Int) where {dim} = i
+@inline function compute_index(::Type{<:MixedTensor2{dim1}}, i::Int, j::Int) where {dim1}
+    return (j - 1) * dim1 + i
 end
-@inline function compute_index(::Type{MixedTensor{3, dims}}, i::Int, j::Int, k::Int) where {dims}
-    return (k - 1) * (dims[2] * dims[1]) + (j - 1) * dims[1] + i
+@inline function compute_index(::Type{<:MixedTensor3{dim1, dim2}}, i::Int, j::Int, k::Int) where {dim1, dim2}
+    return (k - 1) * (dim2 * dim1) + (j - 1) * dim1 + i
 end
-@inline function compute_index(::Type{MixedTensor{4, dims}}, i::Int, j::Int, k::Int, l::Int) where {dims}
-    n3, n2, n1 = (dims[3] * dims[2], dims[2], 1) .* dims[1]
+@inline function compute_index(::Type{<:MixedTensor4{dim1, dim2, dim3}}, i::Int, j::Int, k::Int, l::Int) where {dim1, dim2, dim3}
+    n3, n2, n1 = (dim3 * dim2, dim2, 1) .* dim1
     return (l - 1) * n3 + (k - 1) * n2 + (j - 1) * n1 + i
 end
 

@@ -78,7 +78,7 @@ end
 
 @inline _extract_gradient_dual(v::AbstractTensor{<:Any, <:Any, <:Dual}, u::AbstractTensor) = _extract_gradient(makemixed(v), makemixed(u))
 
-@generated function _extract_gradient_dual(v::MixedTensor{order1, dims1, <:Dual}, ::MixedTensor{order2, dims2}) where {order1, dims1, order2, dims2}
+@generated function _extract_gradient_dual(v::MixedTensor{order1, dims1, <:Dual}, u::MixedTensor{order2, dims2}) where {order1, dims1, order2, dims2}
     expr = Expr(:tuple)
     N1 = n_components(MixedTensor{order1, dims1})
     N2 = n_components(MixedTensor{order2, dims2})
@@ -87,11 +87,11 @@ end
             push!(expr.args, :(p[$i][$j]))
         end
     end
-    TT = MixedTensor{order1 + order2, (dims1..., dims2...)}
+    TT = regular_if_possible(MixedTensor{order1 + order2, Tuple{size(v)..., size(u)...}})
     return quote
         $(Expr(:meta, :inline))
         p = map(partials, get_data(v))
-        @inbounds return regular_if_possible($TT($expr))
+        @inbounds return $TT($expr)
     end
 end
 

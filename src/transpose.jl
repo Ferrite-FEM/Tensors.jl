@@ -49,14 +49,14 @@ end
 
 @inline Base.adjoint(S::AbstractTensor) = transpose(S)
 
-@inline function Base.transpose(S::MixedTensor{2, dims}) where {dims}
-    MixedTensor{2, (dims[2],dims[1])}(@inline function(i, j) @inbounds S[j,i]; end)
+@inline function Base.transpose(S::MixedTensor2{dim1, dim2}) where {dim1, dim2}
+    MixedTensor{2, (dim2, dim1)}(@inline function(i, j) @inbounds S[j,i]; end)
 end
 
-@inline function minortranspose(S::MixedTensor{4, dims}) where {dims}
-    MixedTensor{4, (dims[2], dims[1], dims[4], dims[3])}(@inline function(i, j, k, l) @inbounds S[j,i,l,k]; end)
+@inline function minortranspose(S::MixedTensor4{dim1, dim2, dim3, dim4}) where {dim1, dim2, dim3, dim4}
+    MixedTensor{4, (dim2, dim1, dim4, dim3)}(@inline function(i, j, k, l) @inbounds S[j,i,l,k]; end)
 end
 
-@inline function majortranspose(S::MixedTensor{4, dims}) where {dims}
-    MixedTensor{4, (dims[3], dims[4], dims[1], dims[2])}(@inline function(i, j, k, l) @inbounds S[k,l,i,j]; end)
+@inline function majortranspose(S::MixedTensor4{dim1, dim2, dim3, dim4}) where {dim1, dim2, dim3, dim4}
+    MixedTensor{4, (dim3, dim4, dim1, dim2)}(@inline function(i, j, k, l) @inbounds S[k,l,i,j]; end)
 end

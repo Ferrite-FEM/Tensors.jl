@@ -71,11 +71,18 @@ end
     MixedTensor{order, dims, T<:Number}
 
 `MixedTensor` have different dimensions for each basis and supports `order ∈ (1,2,3,4)` 
-and `dim ∈ (1,2,3) for dim in dims`, where `dims::NTuple{order, Int}`.
+and `dim ∈ (1,2,3) for dim in dims`, where `dims` is a tuple type like `Tuple{2, 2, 3}`.
 
 # Examples
 ```jldoctest
-julia> MixedTensor{2, (2, 3), Float64}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
+julia> MixedTensor{2, Tuple{2, 3}, Float64}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
+2×3 MixedTensor{2, (2, 3), Float64, 6}:
+ 1.0  3.0  5.0
+ 2.0  4.0  6.0
+```
+Or, shorter using the `MixedTensor2` alias
+```jldoctest
+julia> MixedTensor2{2, 3, Float64}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
 2×3 MixedTensor{2, (2, 3), Float64, 6}:
  1.0  3.0  5.0
  2.0  4.0  6.0
@@ -83,12 +90,15 @@ julia> MixedTensor{2, (2, 3), Float64}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
 """
 struct MixedTensor{order, dims, T, M} <: AbstractTensor{order, dims, T}
     data::NTuple{M, T}
-    function MixedTensor{order, dims, T, M}(data::NTuple{M, T}) where {order, dims, T, M}
-        isa(dims, NTuple{order, Int}) || throw(ArgumentError("dims=$dims should be an `NTuple{order, Int}`"))
+    function MixedTensor{order, dims, T, M}(data::NTuple{M, T}) where {order, dims <: Tuple, T, M}
         Tensors.n_components(MixedTensor{order, dims}) == M || throw(ArgumentError("Length of data, M = $M, doesn't match number of components, prod(dims = $dims) = $(prod(dims))"))
         return new{order, dims, T, M}(data)
     end
 end
+const MixedTensor2{d1, d2, T, M} = MixedTensor{2, Tuple{d1, d2}, T, M}
+const MixedTensor3{d1, d2, d3, T, M} = MixedTensor{3, Tuple{d1, d2, d3}, T, M}
+const MixedTensor4{d1, d2, d3, d4, T, M} = MixedTensor{4, Tuple{d1, d2, d3, d4}, T, M}
+
 MixedTensor{order, dims}(data::NTuple{M, T}) where {order, dims, T, M} = MixedTensor{order, dims, T, M}(data)
 MixedTensor{order, dims, T}(data::NTuple{M, T2}) where {order, dims, T, T2, M} = MixedTensor{order, dims, T, M}(data)
 MixedTensor{order, dims}(data::Tuple{Vararg{Any, M}}) where {order, dims, M} = MixedTensor{order, dims}(promote(data...))
@@ -122,7 +132,7 @@ end
 @pure n_components(::Type{Tensor{order, dim}}) where {order, dim} = dim^order
 
 # Steal base implementation of "prod" to safely mark with @pure 
-@pure n_components(::Type{MixedTensor{order, dims}}) where {order, dims} = *(dims...)
+@pure n_components(::Type{MixedTensor{order, dims}}) where {order, dims} = *(size(MixedTensor{order, dims})...)
 
 @pure get_type(::Type{Type{X}}) where {X} = X
 
@@ -156,10 +166,10 @@ Base.size(::Type{<:Vec{dim}})               where {dim} = (dim,)
 Base.size(::Type{<:SecondOrderTensor{dim}}) where {dim} = (dim, dim)
 Base.size(::Type{<:Tensor{3,dim}})          where {dim} = (dim, dim, dim)
 Base.size(::Type{<:FourthOrderTensor{dim}}) where {dim} = (dim, dim, dim, dim)
-Base.size(::Type{<:MixedTensor{1, dims}}) where dims = dims
-Base.size(::Type{<:MixedTensor{2, dims}}) where dims = dims
-Base.size(::Type{<:MixedTensor{3, dims}}) where dims = dims
-Base.size(::Type{<:MixedTensor{4, dims}}) where dims = dims
+Base.size(::Type{<:MixedTensor{1, Tuple{d1}}}) where {d1} = (d1,)
+Base.size(::Type{<:MixedTensor2{d1, d2}}) where {d1, d2} = (d1, d2)
+Base.size(::Type{<:MixedTensor3{d1, d2, d3}}) where {d1, d2, d3} = (d1, d2, d3)
+Base.size(::Type{<:MixedTensor4{d1, d2, d3, d4}}) where {d1, d2, d3, d4} = (d1, d2, d3, d4)
 
 # Also define length for the type itself
 Base.length(::Type{Tensor{order, dim, T, M}}) where {order, dim, T, M} = M
