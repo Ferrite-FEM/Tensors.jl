@@ -39,7 +39,7 @@ end
 
 @generated function LinearAlgebra.norm(S::FourthOrderTensor{dim}) where {dim}
     idx(i,j,k,l) = compute_index(get_base(S), i, j, k, l)
-    dims = isa(dim, Int) ? (dim, dim, dim, dim) : dim
+    dims = size(S)
     ex = Expr[]
     for l in 1:dims[4], k in 1:dims[3], j in 1:dims[2], i in 1:dims[1]
         push!(ex, :(get_data(S)[$(idx(i,j,k,l))]))
