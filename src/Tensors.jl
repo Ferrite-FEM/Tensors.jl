@@ -13,6 +13,7 @@ export mean
 
 export AbstractTensor, SymmetricTensor, Tensor, MixedTensor
 export Vec, FourthOrderTensor, SecondOrderTensor
+export MixedTensor2, MixedTensor3, MixedTensor4
 
 export otimes, ⊗, ⊡, dcontract, dev, vol, symmetric, skew, minorsymmetric, majorsymmetric
 export otimesu, otimesl
@@ -68,25 +69,49 @@ struct Tensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
 end
 
 """
-    MixedTensor{order, dims, T<:Number}
+    MixedTensor{order, dims <: Tuple, T<:Number}
 
-`MixedTensor` have different dimensions for each basis and supports `order ∈ (1,2,3,4)` 
-and `dim ∈ (1,2,3) for dim in dims`, where `dims` is a tuple type like `Tuple{2, 2, 3}`.
+`MixedTensor` have different dimensions for each basis, described by the `dims`
+tuple type, e.g. `dims = Tuple{2, 1, 3}` for a 3rd order tensor with size `(2, 1, 3)`. 
+It supports `order ∈ (1,2,3,4)` and `dim ∈ (1,2,3)`
+
+    MixedTensor2{dim1, dim2, T<:Number}
+
+Alias for 2nd order mixed tensor with size `(dim1, dim2)`
+
+    MixedTensor3{dim1, dim2, dim3, T<:Number}
+
+Alias for 3rd order mixed tensor with size `(dim1, dim2, dim3)`
+
+    MixedTensor4{dim1, dim2, dim3, dim4, T<:Number}
+
+Alias for 4th order mixed tensor with size `(dim1, dim2, dim3, dim4)`
 
 # Examples
 ```jldoctest
 julia> MixedTensor{2, Tuple{2, 3}, Float64}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
-2×3 MixedTensor{2, (2, 3), Float64, 6}:
+2×3 MixedTensor2{2, 3, Float64, 6}:
  1.0  3.0  5.0
  2.0  4.0  6.0
 ```
 Or, shorter using the `MixedTensor2` alias
 ```jldoctest
-julia> MixedTensor2{2, 3, Float64}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
-2×3 MixedTensor{2, (2, 3), Float64, 6}:
+julia> a = MixedTensor2{2, 3, Float64}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
+2×3 MixedTensor2{2, 3, Float64, 6}:
  1.0  3.0  5.0
  2.0  4.0  6.0
+
+julia> a ⋅ a'
+2×2 Tensor{2, 2, Float64, 4}:
+ 35.0  44.0
+ 44.0  56.0
 ```
+
+!!! note
+    After performing operations with `MixedTensor`s, they become regular `Tensor`s
+    whenever possible, i.e. when all dimensions are the same.
+    This is exemplified above with the dot-product, `a ⋅ a'`, but applies to all operations.
+
 """
 struct MixedTensor{order, dims, T, M} <: AbstractTensor{order, dims, T}
     data::NTuple{M, T}

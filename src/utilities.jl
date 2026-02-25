@@ -3,10 +3,11 @@ function tensor_create_linear(T::Union{Type{Tensor{order, dim}}, Type{SymmetricT
 end
 
 function tensor_create(::Type{Tensor{order, dim}}, f) where {order, dim}
-    return tensor_create(MixedTensor{order, ntuple(_ -> dim, order)}, f)
+    return tensor_create(MixedTensor{order, Tuple{ntuple(_ -> dim, order)...}}, f)
 end
 
-function tensor_create(::Type{MixedTensor{order, dims}}, f) where {order, dims}
+function tensor_create(::Type{TT}, f) where {order, TT <: MixedTensor{order}}
+    dims = size(TT)
     if order == 1
         ex = Expr(:tuple, [f(i) for i=1:dims[1]]...)
     elseif order == 2
