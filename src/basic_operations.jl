@@ -47,8 +47,9 @@ end
     end
     S2
 end
-function Base.literal_pow(::typeof(^), S::MixedTensor, k::Val)
-    throw(MethodError(Base.literal_pow, (^, S, k)))
+
+function Base.literal_pow(::typeof(^), S::MixedTensor2, ::Val{p}) where {p}
+    throw(ArgumentError("The exponentiation, S^$p, is not defined for S::MixedTensor2"))
 end
 
 @inline _powdot(S1::Tensor, S2::Tensor) = dot(S1, S2)

@@ -168,10 +168,6 @@ end
 @pure Base.eltype(::Type{SymmetricTensor{order, dim, T, M}}) where {order, dim, T, M} = T
 @pure Base.eltype(::Type{SymmetricTensor{order, dim, T}})    where {order, dim, T}    = T
 @pure Base.eltype(::Type{SymmetricTensor{order, dim}})       where {order, dim}       = Any
-@pure Base.eltype(::Type{MixedTensor{order, dims, T, M}})    where {order, dims, T, M} = T
-@pure Base.eltype(::Type{MixedTensor{order, dims, T}})       where {order, dims, T}    = T
-@pure Base.eltype(::Type{MixedTensor{order, dims}})          where {order, dims}       = Any
-
 
 ############################
 # Abstract Array interface #
@@ -195,7 +191,6 @@ Base.size(::Type{<:MixedTensor4{d1, d2, d3, d4}}) where {d1, d2, d3, d4} = (d1, 
 
 # Also define length for the type itself
 Base.length(::Type{Tensor{order, dim, T, M}}) where {order, dim, T, M} = M
-Base.length(::Type{MixedTensor{<:Any, <:Any, <:Any, M}}) where M = M
 
 #########################
 # Internal constructors #

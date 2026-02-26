@@ -79,6 +79,23 @@
             end
         end
     end
+    @testsection "basic arithmetric" begin
+        for T in (Float32, Float64, ForwardDiff.Dual{Nothing, Float64, 2})
+            m23_f64 = rand(MixedTensor2{3, 2})
+            m23_T = rand(MixedTensor2{3, 2, T})
+            v = rand(T)
+            for op in (+, -)
+                s = (@inferred op(m23_f64, m23_T))
+                @test isa(s, MixedTensor2{3, 2, promote_type(Float64, T)})
+                @test all(s.data .≈ op.(m23_f64.data, m23_T.data))
+            end
+            for op in (*, /)
+                s = (@inferred op(m23_f64, v))
+                @test isa(s, MixedTensor2{3, 2, promote_type(Float64, T)})
+                @test all(s.data .≈ op.(m23_f64.data, v))
+            end
+        end
+    end
     @testsection "dot" begin
         function dot_index(a::MixedTensor2{di, ds}, b::MixedTensor2{ds, dj}) where {di, ds, dj}
             return MixedTensor2{di, dj}((i, j) -> sum(a[i, s] * b[s, j] for s in 1:ds))
@@ -168,6 +185,9 @@
         v = rand(Vec{3})
         dfdx = MixedTensor2{2, 3}((1.0, v[3], 1.0, 0.0, 0.0, v[1]))
         @test gradient(foo, v) ≈ dfdx
-
+    end
+    @testsection "errors" begin
+        m32 = rand(MixedTensor2{2,3})
+        @test_throws ArgumentError m32^2
     end
 end
