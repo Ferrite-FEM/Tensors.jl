@@ -42,7 +42,7 @@ end
 end
 
 # MixedTensor
-@inline compute_index(::Type{<:MixedTensor{1, dim}}, i::Int) where {dim} = i
+@inline compute_index(::Type{<:MixedTensor{1}}, i::Int) = i
 @inline function compute_index(::Type{<:MixedTensor2{dim1}}, i::Int, j::Int) where {dim1}
     return (j - 1) * dim1 + i
 end

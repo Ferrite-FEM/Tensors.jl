@@ -1,5 +1,6 @@
 @testsection "MixedTensors" begin
     @testsection "regular_conversions" begin
+        @test Tensors.isregular(rand(MixedTensor{1, Tuple{3}})) # order 1 always regular
         for order in 2:4
             dims = rand(1:2, order)
             dims[1] = 3 # Make sure not regular
@@ -97,6 +98,9 @@
         end
     end
     @testsection "dot" begin
+        function dot_index(a::MixedTensor2{di, ds}, v::Union{Vec{ds}, MixedTensor{1, Tuple{ds}}}) where {di, ds}
+            return Vec{di}(i -> sum(a[i, j] * v[j] for j in 1:ds))
+        end
         function dot_index(a::MixedTensor2{di, ds}, b::MixedTensor2{ds, dj}) where {di, ds, dj}
             return MixedTensor2{di, dj}((i, j) -> sum(a[i, s] * b[s, j] for s in 1:ds))
         end
@@ -104,6 +108,8 @@
             return MixedTensor4{di, dj, dk, dl}((i, j, k, l) -> sum(a[i, j, k, s] * b[s, l] for s in 1:ds))
         end
         
+        m2 = rand(MixedTensor{1, Tuple{2}})::MixedTensor{1}
+        v = Vec(m2.data)
         m23 = rand(MixedTensor2{2, 3})
         m32 = rand(MixedTensor2{3, 2})
         m1232 = rand(MixedTensor4{1, 2, 3, 2})
@@ -113,6 +119,8 @@
         @test m23_dot_m32 ≈ Tensors.regular_if_possible(dot_index(m23, m32))
         @test m32 ⋅ m23 ≈ Tensors.regular_if_possible(dot_index(m32, m23))
         @test m1232 ⋅ m23 ≈ dot_index(m1232, m23)
+        @test (@inferred m32 ⋅ m2)::Vec{3} ≈ dot_index(m32, m2)
+        @test (@inferred m32 ⋅ v)::Vec{3} ≈ m32 ⋅ m2
     end
 
     @testsection "dcontract" begin
