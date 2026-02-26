@@ -31,4 +31,5 @@ makedocs(
 
 deploydocs(
     repo = "github.com/Ferrite-FEM/Tensors.jl.git",
+    push_preview = true,
 )
