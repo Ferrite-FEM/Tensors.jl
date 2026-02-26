@@ -1,6 +1,6 @@
 @testsection "MixedTensors" begin
     @testsection "regular_conversions" begin
-        @test Tensors.isregular(rand(MixedTensor{1, Tuple{3}})) # order 1 always regular
+        @test Tensors.isregular(MixedTensor{1, Tuple{3}}) # order 1 always regular
         for order in 2:4
             dims = rand(1:2, order)
             dims[1] = 3 # Make sure not regular
