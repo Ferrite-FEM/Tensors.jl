@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [v1.17.0]
+### Added
+
+- Support for `MixedTensors` and enhanced support for 3rd order tensors ([#236])
+- Internal code-generation generalization for tensor products ([#233])
 
 ### Bugfixes
  
@@ -43,4 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v1.16.2]: https://github.com/Ferrite-FEM/Tensors.jl/releases/tag/v1.16.2
 [#205]: https://github.com/Ferrite-FEM/Tensors.jl/issues/205
 [#212]: https://github.com/Ferrite-FEM/Tensors.jl/issues/212
+[#222]: https://github.com/Ferrite-FEM/Tensors.jl/issues/222
 [#225]: https://github.com/Ferrite-FEM/Tensors.jl/issues/225
+[#228]: https://github.com/Ferrite-FEM/Tensors.jl/issues/228
+[#233]: https://github.com/Ferrite-FEM/Tensors.jl/issues/233
+[#236]: https://github.com/Ferrite-FEM/Tensors.jl/issues/236
