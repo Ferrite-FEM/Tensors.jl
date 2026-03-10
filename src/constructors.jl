@@ -1,7 +1,7 @@
 # Type constructors e.g. Tensor{2, 3}(arg)
 
 # Tensor from function
-@generated function (S::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}})(f::Function) where {order, dim}
+@generated function (S::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}, Type{MixedTensor{order, dim}}})(f::Function) where {order, dim}
     TensorType = get_base(get_type(S))
     if order == 1
         exp = tensor_create(TensorType, (i) -> :(f($i)))
@@ -19,7 +19,7 @@
 end
 
 # Applies the function f to all indices f(1), f(2), ... f(n_independent_components)
-@generated function apply_all(S::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}}, f::Function) where {order, dim}
+@generated function apply_all(S::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}, Type{MixedTensor{order, dim}}}, f::Function) where {order, dim}
     TensorType = get_base(get_type(S))
     exp = tensor_create_linear(TensorType, (i) -> :(f($i)))
     quote
@@ -28,7 +28,7 @@ end
     end
 end
 
-@inline function apply_all(S::Union{Tensor{order, dim}, SymmetricTensor{order, dim}}, f::Function) where {order, dim}
+@inline function apply_all(S::Union{Tensor{order, dim}, SymmetricTensor{order, dim}, MixedTensor{order, dim}}, f::Function) where {order, dim}
     apply_all(get_base(typeof(S)), f)
 end
 
@@ -90,7 +90,7 @@ end
 
 # zero, one, rand
 for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
-for TensorType in (SymmetricTensor, Tensor)
+for TensorType in (SymmetricTensor, Tensor, MixedTensor)
     @eval begin
         @inline Base.$op(::Type{$TensorType{order, dim}}) where {order, dim} = $op($TensorType{order, dim, Float64})
         @inline Base.$op(::Type{$TensorType{order, dim, T, N}}) where {order, dim, T, N} = $op($TensorType{order, dim, T})
@@ -101,12 +101,12 @@ end
 @eval @inline Base.$op(t::AllTensors) = $op(typeof(t))
 end
 
-@inline Base.fill(el::Number, S::Type{T}) where {T <: Union{Tensor, SymmetricTensor}} = apply_all(get_base(T), i -> el)
-@inline Base.fill(f::Function, S::Type{T}) where {T <: Union{Tensor, SymmetricTensor}} = apply_all(get_base(T), i -> f())
+@inline Base.fill(el::Number, S::Type{T}) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = apply_all(get_base(T), i -> el)
+@inline Base.fill(f::Function, S::Type{T}) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = apply_all(get_base(T), i -> f())
 
 # Array with zero/ones
-@inline Base.zeros(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor}} = fill(zero(T), (dims))
-@inline Base.ones(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor}} = fill(one(T), (dims))
+@inline Base.zeros(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = fill(zero(T), (dims))
+@inline Base.ones(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = fill(one(T), (dims))
 
 # diagm
 @generated function LinearAlgebra.diagm(S::Type{T}, v::Union{AbstractVector, Tuple}) where {T <: SecondOrderTensor}
