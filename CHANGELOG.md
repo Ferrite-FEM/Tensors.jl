@@ -6,15 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [v1.17.0]
-### Added
 
+### Added
 - Support for `MixedTensors` and enhanced support for 3rd order tensors ([#236])
 - Internal code-generation generalization for tensor products ([#233])
 
 ### Bugfixes
- 
  - Throw error if trying to call fallback dot method for AbstractArray ([#228])
  - Fix that `curl(f, v::Vec{2})` calls `f(::Vec{3, <:Dual})` instead of `f(::Vec{2, <:Dual})`([#222])
+
+### Misc
+ - This and later versions of Tensors require Julia 1.10. ([#238], [#240])
 
 ## [v1.16.2]
 
@@ -45,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v1.16.0]: https://github.com/Ferrite-FEM/Tensors.jl/releases/tag/v1.16.0
 [v1.16.1]: https://github.com/Ferrite-FEM/Tensors.jl/releases/tag/v1.16.1
 [v1.16.2]: https://github.com/Ferrite-FEM/Tensors.jl/releases/tag/v1.16.2
+[v1.17.0]: https://github.com/Ferrite-FEM/Tensors.jl/releases/tag/v1.17.0
 [#205]: https://github.com/Ferrite-FEM/Tensors.jl/issues/205
 [#212]: https://github.com/Ferrite-FEM/Tensors.jl/issues/212
 [#222]: https://github.com/Ferrite-FEM/Tensors.jl/issues/222
@@ -52,3 +55,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#228]: https://github.com/Ferrite-FEM/Tensors.jl/issues/228
 [#233]: https://github.com/Ferrite-FEM/Tensors.jl/issues/233
 [#236]: https://github.com/Ferrite-FEM/Tensors.jl/issues/236
+[#238]: https://github.com/Ferrite-FEM/Tensors.jl/issues/238
+[#240]: https://github.com/Ferrite-FEM/Tensors.jl/issues/240
