@@ -333,7 +333,9 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
     @test (@inferred det(t_sym))::T ≈ det(Array(t_sym))
 
     @test (@inferred inv(t))::Tensor{2, dim, T} ≈ inv(Array(t))
+    @test (@inferred pinv(t))::Tensor{2, dim, T} ≈ pinv(Array(t))
     @test (@inferred inv(t_sym))::SymmetricTensor{2, dim, T} ≈ inv(Array(t_sym))
+    @test (@inferred pinv(t_sym))::SymmetricTensor{2, dim, T} ≈ pinv(Array(t_sym))
 
     # inv for fourth order tensors
     Random.seed!(1234)

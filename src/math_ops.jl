@@ -183,6 +183,40 @@ end
 Base.:\(S1::SecondOrderTensor, S2::AbstractTensor) = inv(S1) ⋅ S2
 
 """
+    pinv(A::SecondOrderTensor)
+
+Computes the Moore-Penrose pseudoinverse of any second order tensor A.
+
+# Examples
+```jldoctest
+julia> A = rand(MixedTensor2{3,2})
+3×2 MixedTensor2{3, 2, Float64, 6}:
+ 0.0121976  0.621737
+ 0.800041   0.7728
+ 0.171777   0.919672
+
+julia> pinv(A)
+2×3 MixedTensor2{2, 3, Float64, 6}:
+ -0.761196   1.40444   -0.665551
+  0.665941  -0.179303   0.787808
+```
+"""
+function LinearAlgebra.pinv(A::Tensor{2})
+    return inv(tdot(A)) ⋅ A'
+end
+function LinearAlgebra.pinv(A::SymmetricTensor{2})
+    return unsafe_symmetric(inv(tdot(A)) ⋅ A')
+end
+@generated function LinearAlgebra.pinv(A::MixedTensor2{d1, d2}) where {d1, d2}
+    ex = if d1 > d2
+        quote inv(tdot(A)) ⋅ (A)' end
+    else
+        quote (A)' ⋅ inv(dott(A)) end
+    end
+    return ex
+end
+
+"""
     sqrt(S::SymmetricTensor{2})
 
 Calculate the square root of the positive definite symmetric

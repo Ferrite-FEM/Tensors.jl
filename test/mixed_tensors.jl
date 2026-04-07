@@ -176,6 +176,21 @@
         @test m31 ⊗ m23 ≈ otimes_index(m31, m23)
     end
 
+    @testsection "pinv" begin
+        m22 = rand(Tensor{2,2})
+        m33 = rand(Tensor{2,3})
+        m23 = rand(MixedTensor2{2, 3})
+        m32 = rand(MixedTensor2{3, 2})
+        m13 = rand(MixedTensor2{1, 3})
+        m31 = rand(MixedTensor2{3, 1})
+        @test (@inferred pinv(m22)) ≈ pinv(Array(m22))
+        @test (@inferred pinv(m33)) ≈ pinv(Array(m33))
+        @test (@inferred pinv(m32)) ≈ pinv(Array(m32))
+        @test (@inferred pinv(m31)) ≈ pinv(Array(m31))
+        @test (@inferred pinv(m23)) ≈ pinv(Array(m23))
+        @test (@inferred pinv(m13)) ≈ pinv(Array(m13))
+    end
+
     @testsection "Automatic Differentation" begin
         # As code is mostly shared with regular `Tensor`s, the main part 
         # here is to test the extraction and insertion parts in the right locations. 
