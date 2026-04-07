@@ -299,7 +299,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
 end
 end # of testset
 
-@testsection "norm, trace, det, inv, eig" begin
+@testsection "norm, trace, det, inv, pinv, eig" begin
 for T in (Float32, Float64, F64), dim in (1,2,3)
     # norm
     for order in (1,2,4)
