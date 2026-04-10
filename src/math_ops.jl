@@ -201,19 +201,37 @@ julia> pinv(A)
   0.665941  -0.179303   0.787808
 ```
 """
-function LinearAlgebra.pinv(A::Tensor{2})
-    return inv(tdot(A)) ⋅ A'
-end
-function LinearAlgebra.pinv(A::SymmetricTensor{2})
-    return unsafe_symmetric(inv(tdot(A)) ⋅ A')
-end
-@generated function LinearAlgebra.pinv(A::MixedTensor2{d1, d2}) where {d1, d2}
-    ex = if d1 > d2
-        quote inv(tdot(A)) ⋅ (A)' end
-    else
-        quote (A)' ⋅ inv(dott(A)) end
+@inline function LinearAlgebra.pinv(A::AbstractTensor{2})
+    tdot_A_or_dott_A = _tdot_or_dott(A) # Symmetric
+    det_tol = eps(norm(tdot_A_or_dott_A)^size(tdot_A_or_dott_A, 1))
+    if abs(det(tdot_A_or_dott_A)) > det_tol # tdot_A_or_dott_A invertible
+        return _fast_pinv(A, tdot_A_or_dott_A)
+    else # If not invertible, use generic (slow) fallback via StaticArrays)
+        return _generic_pinv(A)
     end
-    return ex
+end
+@inline _tdot_or_dott(A::Union{Tensor{2}, SymmetricTensor{2}}) = tdot(A)
+@inline function _tdot_or_dott(A::MixedTensor2{d1, d2}) where {d1, d2}
+    return d1 > d2 ? tdot(A) : dott(A)
+end
+@inline function _generic_pinv(A::Tensor{2, dim}) where {dim}
+    return Tensor{2, dim}(pinv(SMatrix{dim, dim}(get_data(A))).data)
+end
+@inline function _generic_pinv(A::SymmetricTensor{2, dim}) where {dim}
+    return SymmetricTensor{2, dim}(pinv(Symmetric(SMatrix{dim, dim}(A))))
+end
+@inline function _generic_pinv(A::MixedTensor2{d1, d2, <:Any, M}) where {d1, d2, M}
+    AM_pinv = pinv(SMatrix{d1, d2}(get_data(A)))
+    return MixedTensor2{d2, d1, eltype(AM_pinv), M}(AM_pinv.data)
+end
+@inline _fast_pinv(A::Tensor{2}, tdot_A) = inv(tdot_A) ⋅ A'
+@inline _fast_pinv(A::SymmetricTensor{2}, tdot_A) = unsafe_symmetric(inv(tdot_A) ⋅ A')
+@inline function _fast_pinv(A::MixedTensor2{d1, d2}, tdot_A_or_dott_A) where {d1, d2}
+    if d1 > d2
+        return inv(tdot_A_or_dott_A) ⋅ (A)'
+    else
+        return (A)' ⋅ inv(tdot_A_or_dott_A)
+    end
 end
 
 """
