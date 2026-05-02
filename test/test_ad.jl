@@ -342,7 +342,15 @@ S(C) = S(C, μ, Kb)
             @test gradient(ts_ts_ts, xs) ≈ gradient(ts_ts_ts_ana, xs)
     
         end
-    
+
+        # Test that AssertionError is thrown for erroneous user functions
+        test_self(x) = x
+        test_self_wronggradient(x) = test_self(x), one(x) # Only true for scalars, not for tensors
+        @implement_gradient test_self test_self_wronggradient
+        @test gradient(test_self, rand()) ≈ 1.0 # Should work fine
+        @test_throws AssertionError gradient(test_self, rand(Tensor{2,3}))
+        @test_throws AssertionError gradient(test_self, rand(SymmetricTensor{2,3}))
     end
 
 end # testsection
+
