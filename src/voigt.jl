@@ -1,4 +1,6 @@
-const DEFAULT_VOIGT_ORDER = ([1], [1 3; 4 2], [1 6 5; 9 2 4; 8 7 3])
+const DEFAULT_VOIGT_ORDER = (SMatrix{1,1,Int}(1),
+                             SMatrix{2,2,Int}(1, 4, 3, 2),
+                             SMatrix{3,3,Int}(1, 9, 8, 6, 2, 7, 5, 4, 3))
 """
     tovoigt([type::Type{<:AbstractArray}, ]A::Union{SecondOrderTensor, FourthOrderTensor}; kwargs...)
 
