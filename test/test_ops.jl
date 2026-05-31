@@ -16,6 +16,7 @@ A = rand(Tensor{2, dim, T})
 B = rand(Tensor{2, dim, T})
 a = rand(Tensor{1, dim, T})
 b = rand(Tensor{1, dim, T})
+@show A # Temporary for debugging
 
 AA_sym = rand(SymmetricTensor{4, dim, T})
 BB_sym = rand(SymmetricTensor{4, dim, T})
