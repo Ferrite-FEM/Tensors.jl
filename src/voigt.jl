@@ -3,7 +3,7 @@ const DEFAULT_VOIGT_ORDER = (
     @SMatrix([1 3; 4 2]),
     @SMatrix([1 6 5; 9 2 4; 8 7 3])
     )
-    
+
 """
     tovoigt([type::Type{<:AbstractArray}, ]A::Union{SecondOrderTensor, FourthOrderTensor}; kwargs...)
 
