@@ -19,7 +19,7 @@ b = rand(Tensor{1, dim, T})
 if !(dott(A) ≈ dot(A, transpose(A)))
     @show A
     @show dott(A)
-    @show dot(A, transpose(A)))
+    @show dot(A, transpose(A))
 end
 
 AA_sym = rand(SymmetricTensor{4, dim, T})
