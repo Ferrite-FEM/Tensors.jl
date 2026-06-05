@@ -103,11 +103,21 @@ derivative of a function which is part of a larger function to be
 automatically differentiated.
 
 Another use case is when the analytical derivative can be computed much more 
-efficiently than the automatically differentiatiated derivative.
+efficiently than the automatically differentiatiated derivative, for example
+when the function value is obtained through an iterative procedure. 
 
 ```@docs
 @implement_gradient
+propagate_gradient
 ```
+
+### Caveats
+The method relies on multiple dispatch to run your gradient function instead of
+the calling the regular function with dual numbers. Julia will always prefer the 
+most specific type definition, but it can sometimes be hard to know which is most 
+specific. Therefore, it is always recommended to test that your gradient function 
+is called when testing, by e.g. inserting a print statement at the beginning as 
+in the example below. 
 
 ### Example
 Lets consider the function ``h(\mathbf{f}(\mathbf{g}(\mathbf{x})))`` 
@@ -117,23 +127,33 @@ then have the analytical derivative
 \frac{\partial f_{ij}}{\partial x_{kl}} = \delta_{ik} x_{lj} + x_{ik} \delta_{jl}
 ```
 which we can insert into our known analytical derivative using the
- `@implement_gradient` macro. Below, we compare with the result when 
- the full derivative is calculated using automatic differentiation.
+`@implement_gradient` macro. Below, we compare with the result when 
+the full derivative is calculated using automatic differentiation. 
+The example with `f3` shows the important case when the type of input 
+to our regular function is specified, then the macro will not work,
+and we have to use the function `propagate_gradient` instead, manually
+specifying for which type we want to override. This type must be more
+specific than the type specified for the regular function, e.g.
+if the type specification is `::Tensor{2}` then the special dual type 
+definition should be at least as specific as
+`::Tensor{2,<:Any, <:Tensors.Dual}`. 
 
 ```jldoctest
 # Define functions
 h(x) = norm(x)
 f1(x) = x ⋅ x
 f2(x) = f1(x)
+f3(x::Tensor{2}) = f1(x)
 g(x) = dev(x)
 
 # Define composed functions
 cfun1(x) = h(f1(g(x)))
 cfun2(x) = h(f2(g(x)))
+cfun3(x) = h(f3(g(x)))
 
 # Define known derivative
-function df2dx(x::Tensor{2,dim}) where{dim}
-    println("Hello from df2dx") # Show that df2dx is called
+function dfdx(x::Tensor{2,dim}) where{dim}
+    println("Hello from dfdx") # Show that dfdx is called
     fval = f2(x)
     I2 = one(Tensor{2,dim})
     dfdx_val = otimesu(I2, transpose(x)) + otimesu(x, I2)
@@ -141,14 +161,28 @@ function df2dx(x::Tensor{2,dim}) where{dim}
 end
 
 # Implement known derivative
-@implement_gradient f2 df2dx
+@implement_gradient f2 dfdx
+@implement_gradient f3 dfdx # Doesn't work because `Tensor{2}` specified for f3
 
 # Calculate gradients
 x = rand(Tensor{2,2})
 
-gradient(cfun1, x) ≈ gradient(cfun2, x)
+println("gradient of cfun2, with hello")
+println(gradient(cfun1, x) ≈ gradient(cfun2, x))
+println("gradient of cfun3, no hello:")
+println(gradient(cfun1, x) ≈ gradient(cfun3, x))    # No "Hello from dfdx" printed
+
+f3(x::Tensor{2,<:Any,<:Tensors.Dual}) = propagate_gradient(dfdx, x)
+println("gradient of cfun3, with hello")
+println(gradient(cfun1, x) ≈ gradient(cfun3, x))
 
 # output
-Hello from df2dx
+gradient of cfun2, with hello
+Hello from dfdx
+true
+gradient of cfun3, no hello:
+true
+gradient of cfun3, with hello
+Hello from dfdx
 true
 ```
