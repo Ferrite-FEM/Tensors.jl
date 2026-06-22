@@ -93,6 +93,31 @@ julia> norm(majorsymmetric(E) - E_sym)
 0.0
 ```
 
+## Differentiating mutating functions
+Some applications require the derivative of the output of a function `f(x,s)`, 
+wrt. `x`, where `f` also mutates `s`. 
+In these cases, we don't want the derivative of `s` wrt. `x`, and 
+the value to be set in `s` should only be the value and not be the dual part.
+For scalars, `ForwardDiff.jl` provides `ForwardDiff.value`,
+and for tensors, `Tensors.jl` provides `Tensors.extract_value`. 
+
+```@docs
+Tensors.extract_value
+```
+
+A simple example of the use-case is 
+```@example
+function mutating_fun(x::Vec, state::Vector)
+    state[1] = Tensors.extract_value(x)
+    return x
+end
+
+x = rand(Vec{2}); state = zeros(Vec{2}, 1)
+gradient(a -> mutating_fun(a, state, true), x)
+# Check that it got correctly modified by the extracted value
+state[1] == x 
+```
+
 ## Inserting a known derivative
 When conditionals are used in a function evaluation, automatic differentiation 
 may yield the wrong result. Consider, the simplified example of the function 
