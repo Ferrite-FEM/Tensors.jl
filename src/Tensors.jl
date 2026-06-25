@@ -152,7 +152,11 @@ end
 # Steal base implementation of "prod" to safely mark with @pure 
 @pure n_components(::Type{MixedTensor{order, dims}}) where {order, dims} = *(size(MixedTensor{order, dims})...)
 
-@pure get_type(::Type{Type{X}}) where {X} = X
+if isdefined(Core, :TypeEgal)
+    get_type(T::Union{Core.TypeEq, Core.TypeEgal}) = Base.type_parameter(T)
+else
+    @pure get_type(::Type{Type{X}}) where {X} = X
+end
 
 @pure get_base(::Type{<:Tensor{order, dim}})          where {order, dim} = Tensor{order, dim}
 @pure get_base(::Type{<:SymmetricTensor{order, dim}}) where {order, dim} = SymmetricTensor{order, dim}
