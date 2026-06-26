@@ -46,6 +46,9 @@ Base.sincos(a::F64) = (F64(sin(a.x)), F64(cos(a.x)))
 Base.precision(::Type{F64}) = precision(Float64)
 Base.floatmin(::Type{F64}) = floatmin(Float64)
 
+# for pinv
+Base.exponent(a::F64) = exponent(a.x)
+
 # Number type which is not <: Real (Tensors#154)
 struct NotReal <: Number
     x::Float64
