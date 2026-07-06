@@ -183,6 +183,58 @@ end
 Base.:\(S1::SecondOrderTensor, S2::AbstractTensor) = inv(S1) ⋅ S2
 
 """
+    pinv(A::SecondOrderTensor)
+
+Computes the Moore-Penrose pseudoinverse of any second order tensor A.
+
+# Examples
+```jldoctest
+julia> A = rand(MixedTensor2{3,2})
+3×2 MixedTensor2{3, 2, Float64, 6}:
+ 0.0121976  0.621737
+ 0.800041   0.7728
+ 0.171777   0.919672
+
+julia> pinv(A)
+2×3 MixedTensor2{2, 3, Float64, 6}:
+ -0.761196   1.40444   -0.665551
+  0.665941  -0.179303   0.787808
+```
+"""
+@inline function LinearAlgebra.pinv(A::AbstractTensor{2})
+    tdot_A_or_dott_A = _tdot_or_dott(A) # Symmetric
+    det_tol = eps(norm(tdot_A_or_dott_A)^size(tdot_A_or_dott_A, 1))
+    if abs(det(tdot_A_or_dott_A)) > det_tol # tdot_A_or_dott_A invertible
+        return _fast_pinv(A, tdot_A_or_dott_A)
+    else # If not invertible, use generic (slow) fallback via StaticArrays)
+        return _generic_pinv(A)
+    end
+end
+@inline _tdot_or_dott(A::Union{Tensor{2}, SymmetricTensor{2}}) = tdot(A)
+@inline function _tdot_or_dott(A::MixedTensor2{d1, d2}) where {d1, d2}
+    return d1 > d2 ? tdot(A) : dott(A)
+end
+@inline function _generic_pinv(A::Tensor{2, dim}) where {dim}
+    return Tensor{2, dim}(pinv(SMatrix{dim, dim}(get_data(A))).data)
+end
+@inline function _generic_pinv(A::SymmetricTensor{2, dim}) where {dim}
+    return SymmetricTensor{2, dim}(pinv(Symmetric(SMatrix{dim, dim}(A))))
+end
+@inline function _generic_pinv(A::MixedTensor2{d1, d2, <:Any, M}) where {d1, d2, M}
+    AM_pinv = pinv(SMatrix{d1, d2}(get_data(A)))
+    return MixedTensor2{d2, d1, eltype(AM_pinv), M}(AM_pinv.data)
+end
+@inline _fast_pinv(A::Tensor{2}, tdot_A) = inv(tdot_A) ⋅ A'
+@inline _fast_pinv(A::SymmetricTensor{2}, tdot_A) = unsafe_symmetric(inv(tdot_A) ⋅ A')
+@inline function _fast_pinv(A::MixedTensor2{d1, d2}, tdot_A_or_dott_A) where {d1, d2}
+    if d1 > d2
+        return inv(tdot_A_or_dott_A) ⋅ (A)'
+    else
+        return (A)' ⋅ inv(tdot_A_or_dott_A)
+    end
+end
+
+"""
     sqrt(S::SymmetricTensor{2})
 
 Calculate the square root of the positive definite symmetric
