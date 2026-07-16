@@ -45,10 +45,18 @@ const AllSIMDTensors{T <: SIMDTypes} = Union{
 end
 
 # build a tensor from one SVec
-@generated function (::Type{TT})(r::SVec{N, T}) where {TT <: Union{Tensor, SymmetricTensor}, N, T}
+# (two separate methods, like the old simd.jl, to dispatch correctly and to
+# avoid ambiguities with the default and Vararg constructors)
+@generated function (::Type{Tensor{order, dim}})(r::SVec{N, T}) where {order, dim, N, T}
     return quote
         $(Expr(:meta, :inline))
-        get_base(TT)($(Expr(:tuple, [:(r[$i]) for i in 1:N]...)))
+        Tensor{order, dim}($(Expr(:tuple, [:(r[$i]) for i in 1:N]...)))
+    end
+end
+@generated function (::Type{SymmetricTensor{order, dim}})(r::SVec{N, T}) where {order, dim, N, T}
+    return quote
+        $(Expr(:meta, :inline))
+        SymmetricTensor{order, dim}($(Expr(:tuple, [:(r[$i]) for i in 1:N]...)))
     end
 end
 
