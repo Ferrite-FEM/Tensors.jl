@@ -24,3 +24,14 @@ makemixed(t::Tensor{2, dim}) where {dim} = MixedTensor2{dim, dim}(get_data(t))
 makemixed(t::Tensor{3, dim}) where {dim} = MixedTensor3{dim, dim, dim}(get_data(t))
 makemixed(t::Tensor{4, dim}) where {dim} = MixedTensor4{dim, dim, dim, dim}(get_data(t))
 makemixed(t::MixedTensor) = t
+
+# Operations that are only meaningful for tensors with equal dimensions throw a
+# runtime error for MixedTensor (instead of failing inside code generation).
+for f in (:(LinearAlgebra.tr), :(Statistics.mean), :vol, :dev)
+    @eval function $f(::MixedTensor{2})
+        throw(ArgumentError("`$($(string(f)))` is not defined for MixedTensor; convert to a regular Tensor first"))
+    end
+end
+function ismajorsymmetric(::MixedTensor{4})
+    throw(ArgumentError("`ismajorsymmetric` is not defined for MixedTensor; convert to a regular Tensor first"))
+end

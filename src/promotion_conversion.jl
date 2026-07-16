@@ -25,6 +25,11 @@ end
     Tensor{order, dim, promote_type(A, B), M1}
 end
 
+@inline function Base.promote_rule(::Type{MixedTensor{order, dims, A, M}},
+                                   ::Type{MixedTensor{order, dims, B, M}}) where {order, dims, A, B, M}
+    MixedTensor{order, dims, promote_type(A, B), M}
+end
+
 # inlined promote (promote in Base is not inlined)
 @inline function Base.promote(S1::T, S2::S) where {T <: AbstractTensor, S <: AbstractTensor}
     return convert(promote_type(T, S), S1), convert(promote_type(T, S), S2)
@@ -68,6 +73,14 @@ end
 @inline Base.convert(::Type{SymmetricTensor{order, dim}}, t::Tensor{order, dim, T}) where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, t)
 @inline Base.convert(::Type{Tensor}, t::SymmetricTensor{order, dim, T})             where {order, dim, T} = convert(Tensor{order, dim, T}, t)
 @inline Base.convert(::Type{SymmetricTensor}, t::Tensor{order, dim, T})             where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, t)
+
+# MixedTensor
+@inline Base.convert(::Type{MixedTensor{order, dims, T}}, t::MixedTensor{order, dims, T}) where {order, dims, T} = t
+@inline Base.convert(::Type{MixedTensor{order, dims, T, M}}, t::MixedTensor{order, dims, T, M}) where {order, dims, T, M} = t
+@inline function Base.convert(::Type{MixedTensor{order, dims, T1}}, t::MixedTensor{order, dims, T2}) where {order, dims, T1, T2}
+    apply_all(MixedTensor{order, dims}, @inline function(i) @inbounds T1(t.data[i]); end)
+end
+@inline Base.convert(::Type{MixedTensor{order, dims, T1, M}}, t::MixedTensor{order, dims}) where {order, dims, T1, M} = convert(MixedTensor{order, dims, T1}, t)
 
 # SymmetricTensor -> Tensor
 @inline function Base.convert(::Type{Tensor{2, dim, T1}}, t::SymmetricTensor{2, dim, T2}) where {dim, T1, T2}

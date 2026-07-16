@@ -28,10 +28,10 @@ for (TensorType, orders) in ((SymmetricTensor, (2, 4)), (Tensor, (2, 3, 4)))
     end
 end
 
-# MixedTensor
-@inline MixedTensor{order, dims}(data::NTuple{M, T}) where {order, dims, T, M} = MixedTensor{order, dims, T, M}(data)
-@inline MixedTensor{order, dims, T}(data::NTuple{M, T2}) where {order, dims, T, T2, M} = MixedTensor{order, dims, T, M}(data)
-@inline MixedTensor{order, dims}(data::Tuple{Vararg{Any, M}}) where {order, dims, M} = MixedTensor{order, dims}(promote(data...))
+# MixedTensor (`dims <: Tuple` enforced here, see the struct definition)
+@inline MixedTensor{order, dims}(data::NTuple{M, T}) where {order, dims <: Tuple, T, M} = MixedTensor{order, dims, T, M}(data)
+@inline MixedTensor{order, dims, T}(data::NTuple{M, T2}) where {order, dims <: Tuple, T, T2, M} = MixedTensor{order, dims, T, M}(data)
+@inline MixedTensor{order, dims}(data::Tuple{Vararg{Any, M}}) where {order, dims <: Tuple, M} = MixedTensor{order, dims}(promote(data...))
 
 # Special for Vec
 @inline Vec{dim}(data) where {dim} = Tensor{1, dim}(data)

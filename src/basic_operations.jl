@@ -41,15 +41,25 @@ function Base.literal_pow(::typeof(^), S::MixedTensor2, ::Val{p}) where {p}
     throw(ArgumentError("The exponentiation, S^$p, is not defined for S::MixedTensor2"))
 end
 
+# non-literal integer powers (issue #239); same repeated-contraction evaluation
+# as `literal_pow` so `S^p` and `S^(p::Int)` give identical results
+function Base.:^(S1::SecondOrderTensor, p::Integer)
+    p == 0 && return one(S1)
+    p < 0 && return inv(S1)^(-p)
+    S2 = S1
+    for i in 2:p
+        S2 = _powdot(S2, S1)
+    end
+    return S2
+end
+Base.:^(S::MixedTensor2, p::Integer) = throw(ArgumentError("The exponentiation, S^$p, is not defined for S::MixedTensor2"))
+
 @inline _powdot(S1::Tensor, S2::Tensor) = dot(S1, S2)
 # Powers of a symmetric tensor commute, so the single contraction stays symmetric.
 @generated function _powdot(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim}) where {dim}
-    expr = einsum_expr((:i, :j), IndexedArg(:S1, get_base(S1), (:i, :k)), IndexedArg(:S2, get_base(S2), (:k, :j));
+    return einsum_expr((:i, :j), IndexedArg(:S1, get_base(S1), (:i, :k), eltype(S1)),
+                       IndexedArg(:S2, get_base(S2), (:k, :j), eltype(S2));
                        force_out = SymmetricTensor{2, dim})
-    return quote
-        $(Expr(:meta, :inline))
-        $expr
-    end
 end
 
 Base.iszero(a::AbstractTensor) = all(iszero, get_data(a))

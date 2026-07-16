@@ -205,9 +205,45 @@ be of symmetric type
 
 """
 macro implement_gradient(f, f_dfdx)
-    return :($(esc(f))(x :: Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = _propagate_gradient($(esc(f_dfdx)), x))
+    return :($(esc(f))(x :: Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = propagate_gradient($(esc(f_dfdx)), x))
 end
-# which calls the general function _propagate_gradient that calls the specialized _insert_gradient method below
+
+"""
+    propagate_gradient(f_dfdx::Function, x, args...)
+
+The building block of [`@implement_gradient`](@ref): propagate an analytical
+derivative through automatic differentiation. `f_dfdx(xval, args...)` must
+return the tuple `(f(xval, args...), ∂f∂x(xval, args...))`; `x` is the
+(dual-carrying) differentiation argument and `args` are passive parameters
+that are passed through unchanged.
+
+Use this instead of `@implement_gradient` when the function takes additional
+non-differentiated arguments, or when the analytical-derivative method should
+be more specific than the broad signature the macro defines:
+
+```julia
+f(x::SymmetricTensor{2, dim, <:Dual}, p) where {dim} = propagate_gradient(f_dfdx, x, p)
+```
+"""
+function propagate_gradient(f_dfdx::F, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}, args...) where {F <: Function}
+    fval, dfdx_val = f_dfdx(extract_value(x), args...)
+    return _insert_gradient(fval, dfdx_val, x)
+end
+
+"""
+    extract_value(x)
+
+Return the primal value of `x`: strips one level of `ForwardDiff.Dual` numbers
+from a `Dual` or from a tensor with `Dual` entries. Other values are returned
+unchanged. Useful e.g. for storing state variables inside a function that is
+being differentiated.
+"""
+extract_value(x) = _extract_value(x)
+
+# backwards-compatible internal name (the macro used to call this directly)
+_propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = propagate_gradient(f_dfdx, x)
+
+# propagate_gradient calls the specialized _insert_gradient method below
 function _propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual})
     fval, dfdx_val = f_dfdx(_extract_value(x))
     return _insert_gradient(fval, dfdx_val, x)

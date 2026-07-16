@@ -110,7 +110,7 @@ end
 # Slice
 @inline Base.getindex(v::Vec, ::Colon) = v
 
-function Base.getindex(S::Union{SecondOrderTensor, Tensor{3}, FourthOrderTensor}, ::Colon)
+function Base.getindex(S::Union{SecondOrderTensor, Tensor{3}, MixedTensor{3}, FourthOrderTensor}, ::Colon)
     throw(ArgumentError("S[:] not defined for S of order 2, 3, or 4, use Array(S) to convert to an Array"))
 end
 

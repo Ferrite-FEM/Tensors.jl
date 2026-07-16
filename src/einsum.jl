@@ -165,11 +165,13 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, A::IndexedArg, B::IndexedA
         error("an index appears more than once in a single argument; this is not supported")
     end
 
-    da, db = gensym(A.name), gensym(B.name)
+    @assert A.name ∉ (:_da, :_db) && B.name ∉ (:_da, :_db)
+    da, db = :_da, :_db
     OutType = isempty(out_inds) ? nothing :
               (force_out === nothing ? output_type(out_inds, (A, B), names, dims) : force_out)
     comps = OutType === nothing ? [()] : base_components(OutType)
     plans = [component_products(out_inds, oind, sum_inds, names, dims, A, B) for oind in comps]
+    inlinemeta = Expr(:meta, :inline)
 
     # SIMD lowering for same-eltype hardware float arguments (the cases the old
     # hand-written simd.jl kernels covered); falls back to scalar lowering when
@@ -178,19 +180,24 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, A::IndexedArg, B::IndexedA
         # (scalar output with a single summed index — plain dot — beats the
         # tree-reduction SVec form at dim ≤ 3, so it stays on the scalar path,
         # as in the old package)
-        ex = try_simd_expr(OutType, plans, da, db, :(get_data($(A.name))), :(get_data($(B.name))), A.elt)
-        ex !== nothing && return ex
+        r = try_simd_expr(OutType, plans, da, db, :(Tensors.get_data($(A.name))), :(Tensors.get_data($(B.name))), A.elt)
+        if r !== nothing
+            ex, inline = r
+            return inline ? Expr(:block, inlinemeta, ex) : ex
+        end
     end
 
     exprs = [sum_expr(uniq, factors, da, db, muladd) for (uniq, factors) in plans]
     if OutType === nothing
         return quote
-            $da = get_data($(A.name)); $db = get_data($(B.name))
+            $inlinemeta
+            $da = Tensors.get_data($(A.name)); $db = Tensors.get_data($(B.name))
             @inbounds return $(exprs[1])
         end
     end
     return quote
-        $da = get_data($(A.name)); $db = get_data($(B.name))
+        $inlinemeta
+        $da = Tensors.get_data($(A.name)); $db = Tensors.get_data($(B.name))
         @inbounds return $(OutType)($(Expr(:tuple, exprs...)))
     end
 end
@@ -262,14 +269,10 @@ macro tensorop(fdef::Expr)
     ai_name, ai_inds = argspecs[1]
     bi_name, bi_inds = argspecs[2]
     genbody = quote
-        expr = einsum_expr($(QuoteNode(out_inds)),
-                           IndexedArg($(QuoteNode(ai_name)), get_base($ai_name), $(QuoteNode(ai_inds)), eltype($ai_name)),
-                           IndexedArg($(QuoteNode(bi_name)), get_base($bi_name), $(QuoteNode(bi_inds)), eltype($bi_name));
-                           muladd = $use_muladd)
-        return quote
-            $(Expr(:meta, :inline))
-            $expr
-        end
+        return Tensors.einsum_expr($(QuoteNode(out_inds)),
+                                   Tensors.IndexedArg($(QuoteNode(ai_name)), Tensors.get_base($ai_name), $(QuoteNode(ai_inds)), eltype($ai_name)),
+                                   Tensors.IndexedArg($(QuoteNode(bi_name)), Tensors.get_base($bi_name), $(QuoteNode(bi_inds)), eltype($bi_name));
+                                   muladd = $use_muladd)
     end
     gen = Expr(:function, sig, genbody)
     return esc(Expr(:macrocall, Symbol("@generated"), __source__, gen))

@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- The internals have been rewritten around a single index-notation code
+  generator (`@tensorop`/`einsum_expr` in `src/einsum.jl`): all contractions and
+  products are declared in index notation (e.g. `C[i,j] = A[i,k] * B[k,j]`) and
+  one `@generated` method per declaration covers `Tensor`, `SymmetricTensor`
+  and `MixedTensor` arguments of all dimensions and element types. The
+  hand-written per-operation methods (`src/utilities.jl`) and the hand-unrolled
+  SIMD kernels (`src/simd.jl`) are replaced; SIMD code is now generated from
+  the same operation descriptions (`src/simd_lowering.jl`). Public API, storage
+  layout, values, and performance are unchanged.
+
+### Added
+- Previously missing contraction combinations now exist: `dot` for
+  (3rd, 3rd)-order — giving a 4th-order result ([#227]) — as well as
+  (1st, 4th)/(4th, 1st)-order, and `otimes` for (1st, 3rd)/(3rd, 1st)-order.
+- Broadcasting where the only container arguments are tensors of one shape now
+  returns a tensor instead of silently materializing an `Array` ([#223]), e.g.
+  `S .+ 1.0` gives a `Tensor{2}` (a `SymmetricTensor` densifies, since a general
+  broadcast function need not preserve symmetry). Broadcasts mixing tensors with
+  ordinary arrays, or with non-`Number` results, still return `Array`s.
+- Non-literal integer powers of second-order tensors, `S^(n::Integer)` ([#239]).
+- `propagate_gradient(f_dfdx, x, args...)` (the building block of
+  `@implement_gradient`) is now public and supports passing through additional
+  non-differentiated arguments ([#197]), and can be used to define
+  analytical-derivative methods with precise signatures ([#179]).
+- `extract_value(x)` is now public: strips one level of `ForwardDiff.Dual` from
+  a number or tensor, e.g. for storing state variables under AD ([#208]).
+- `promote`/`convert` between `MixedTensor`s that differ only in element type.
+
+### Bugfixes
+- `zero`, `one`, `ones`, `rand`, `randn` of a `MixedTensor` now return a
+  `MixedTensor` instead of falling back to `Array` ([#245]).
+- Contractions between `MixedTensor`s with mismatching index dimensions now
+  throw a `DimensionMismatch` error instead of an internal generator error.
+
 ## [v1.17.0]
 
 ### Added

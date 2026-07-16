@@ -118,6 +118,22 @@ end
     end
 end
 
+###################################
+# (1c) mixed 4th-order fast paths #
+###################################
+# For hardware floats, contracting a mixed full/symmetric 4th-order pair is
+# faster by densifying the symmetric argument and running the full-full kernel
+# (the old package did the same); the engine's direct packed path stays in use
+# for every other combination, where it is faster.
+@inline function dcontract(S1::Tensor{4, dim, T}, S2::SymmetricTensor{4, dim, T}) where {dim, T <: SIMDTypes}
+    SS1, SS2 = promote_base(S1, S2)
+    return dcontract(SS1, SS2)
+end
+@inline function dcontract(S1::SymmetricTensor{4, dim, T}, S2::Tensor{4, dim, T}) where {dim, T <: SIMDTypes}
+    SS1, SS2 = promote_base(S1, S2)
+    return dcontract(SS1, SS2)
+end
+
 ##############################
 # (2) engine SIMD lowering   #
 ##############################
@@ -127,18 +143,20 @@ end
 
 simd_eligible(TA, TB) = TA === TB && TA <: SIMDTypes
 
-# coefficient expression for one term group: Σ factor * db[ib], with the
-# eltype-exact factor folding of the old kernels (`db[k] * T(2)`)
-function simd_coef(db, group, T)
-    parts = map(group) do (ib, factor)
-        factor == 1 ? :($db[$ib]) : :($db[$ib] * $T($factor))
-    end
-    return length(parts) == 1 ? parts[1] : Expr(:call, :+, parts...)
+# coefficient expression for one term: factor * db[ib], with the eltype-exact
+# factor folding of the old kernels (`db[k] * T(2)`; the factor is a small
+# power of two, so this is exact)
+function simd_coef(db, ib, factor, T)
+    return factor == 1 ? :($db[$ib]) : :($db[$ib] * $T($factor))
 end
 
 # Try to lower with contiguous loads from `da` (columns of A) scaled by scalars
 # from `db`. `plans[n]` must decompose so that within an output column of
 # height m, term t reads da[base_t + r] with shared (ib, factor).
+#
+# NOTE: terms are emitted one muladd per (ia, ib) product in the plan's order —
+# never merged into `avec * (b1 + b2)` — so each output lane evaluates the
+# exact same muladd chain as the scalar lowering (IEEE-identical).
 function try_simd_columns(OutType, plans, da, db, T)
     N = length(plans)
     for m in reverse(2:N)
@@ -157,28 +175,19 @@ function try_simd_columns(OutType, plans, da, db, T)
         ok || continue
         # distinct A-columns (by base load index), in first-appearance order
         loads = Int[]
-        for J in 1:ncols, (t, (ia, _)) in enumerate(plans[(J - 1) * m + 1][1])
+        for J in 1:ncols, (ia, _) in plans[(J - 1) * m + 1][1]
             ia in loads || push!(loads, ia)
         end
-        sv = Dict(b => Symbol(:SV, i) for (i, b) in enumerate(loads))
-        stmts = Any[:($(sv[b]) = tosimd($da, Val($b), Val($(b + m - 1)))) for b in loads]
+        svname(ia) = Symbol(:SV, findfirst(==(ia), loads))
+        stmts = Any[:($(svname(b)) = Tensors.tosimd($da, Val($b), Val($(b + m - 1)))) for b in loads]
+        nproducts = 0
         cols = Symbol[]
         for J in 1:ncols
             uniq, factors = plans[(J - 1) * m + 1]
-            # group terms by their A-column, merging their db reads (old kernels
-            # pre-gathered these, e.g. `D2[2] + D2[4]` for symmetric-full)
-            groups = Vector{Pair{Int, Vector{Tuple{Int, Int}}}}()
-            for (t, (ia, ib)) in enumerate(uniq)
-                g = findfirst(p -> p.first == ia, groups)
-                if g === nothing
-                    push!(groups, ia => [(ib, factors[t])])
-                else
-                    push!(groups[g].second, (ib, factors[t]))
-                end
-            end
-            acc = :($(sv[groups[1].first]) * $(simd_coef(db, groups[1].second, T)))
-            for g in 2:length(groups)
-                acc = :(muladd($(sv[groups[g].first]), $(simd_coef(db, groups[g].second, T)), $acc))
+            nproducts += m * length(uniq)
+            acc = :($(svname(uniq[1][1])) * $(simd_coef(db, uniq[1][2], factors[1], T)))
+            for t in 2:length(uniq)
+                acc = :(muladd($(svname(uniq[t][1])), $(simd_coef(db, uniq[t][2], factors[t], T)), $acc))
             end
             c = Symbol(:c, J)
             push!(stmts, :($c = $acc))
@@ -188,10 +197,13 @@ function try_simd_columns(OutType, plans, da, db, T)
         for c in cols, i in 1:m
             push!(out.args, :($c[$i]))
         end
+        # the two largest kernels (4-4 and 4s-4s at dim 3) were deliberately not
+        # force-inlined in the old package; keep that policy by a size threshold
+        inline = nproducts < 216
         return quote
             $(stmts...)
             return $(OutType)($out)
-        end
+        end, inline
     end
     return nothing
 end
@@ -205,36 +217,39 @@ function try_simd_scalar(plans, da, db, T)
     all(t -> uniq[t] == (t, t), 1:M) || return nothing
     if all(==(1), factors)
         return quote
-            SV1 = tosimd($da); SV2 = tosimd($db)
+            SV1 = Tensors.tosimd($da); SV2 = Tensors.tosimd($db)
             return sum(SV1 * SV2)
         end
     else
         F = Expr(:tuple, [:($T($f)) for f in factors]...)
         return quote
-            F = SVec{$M, $T}($F)
-            SV1 = tosimd($da); SV2 = tosimd($db)
+            F = Tensors.SVec{$M, $T}($F)
+            SV1 = Tensors.tosimd($da); SV2 = Tensors.tosimd($db)
             return sum(F * (SV1 * SV2))
         end
     end
 end
 
+# Returns `nothing`, or `(expr, inline::Bool)`.
 function try_simd_expr(OutType, plans, da, db, dataA, dataB, T)
+    inline = true
     if OutType === nothing
         core = try_simd_scalar(plans, da, db, T)
         core === nothing && return nothing
     else
-        core = try_simd_columns(OutType, plans, da, db, T)
-        if core === nothing
+        r = try_simd_columns(OutType, plans, da, db, T)
+        if r === nothing
             # try the swapped orientation: contiguous loads from B
             splans = [(map(reverse, uniq), factors) for (uniq, factors) in plans]
-            core = try_simd_columns(OutType, splans, db, da, T)
+            r = try_simd_columns(OutType, splans, db, da, T)
         end
-        core === nothing && return nothing
+        r === nothing && return nothing
+        core, inline = r
     end
     return quote
         $da = $dataA; $db = $dataB
         @inbounds begin
             $core
         end
-    end
+    end, inline
 end
