@@ -156,6 +156,10 @@ end
             @test S^-2 == S^Int(-2)
             @test S^Int(0) == one(S)
             @test (@inferred S^Int(2)) isa typeof(S)
+            # exponentiation-by-squaring path
+            Sn = S / norm(S)
+            @test Sn^Int(9) ≈ foldl((a, _) -> Tensors._powdot(a, Sn), 1:8; init = Sn)
+            @test typeof(Sn^Int(9)) == typeof(Sn)
         end
         @test_throws ArgumentError rand(MixedTensor{2, Tuple{2, 3}})^Int(2)
     end

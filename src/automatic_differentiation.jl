@@ -243,12 +243,6 @@ extract_value(x) = _extract_value(x)
 # backwards-compatible internal name (the macro used to call this directly)
 _propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = propagate_gradient(f_dfdx, x)
 
-# propagate_gradient calls the specialized _insert_gradient method below
-function _propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual})
-    fval, dfdx_val = f_dfdx(_extract_value(x))
-    return _insert_gradient(fval, dfdx_val, x)
-end
-
 # Define the _insert_gradient method
 """
     _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::ForwardDiff.Dual)

@@ -41,16 +41,37 @@ function Base.literal_pow(::typeof(^), S::MixedTensor2, ::Val{p}) where {p}
     throw(ArgumentError("The exponentiation, S^$p, is not defined for S::MixedTensor2"))
 end
 
-# non-literal integer powers (issue #239); same repeated-contraction evaluation
-# as `literal_pow` so `S^p` and `S^(p::Int)` give identical results
+# non-literal integer powers (issue #239). For small exponents this is the
+# same repeated-contraction evaluation as `literal_pow`, so `S^3` and
+# `S^(p::Int)` with `p = 3` give identical results; larger exponents use
+# exponentiation by squaring.
 function Base.:^(S1::SecondOrderTensor, p::Integer)
     p == 0 && return one(S1)
     p < 0 && return inv(S1)^(-p)
-    S2 = S1
-    for i in 2:p
-        S2 = _powdot(S2, S1)
+    if p <= 4
+        S2 = S1
+        for i in 2:p
+            S2 = _powdot(S2, S1)
+        end
+        return S2
     end
-    return S2
+    # exponentiation by squaring
+    t = trailing_zeros(p) + 1
+    p >>= t
+    S2 = S1
+    while (t -= 1) > 0
+        S2 = _powdot(S2, S2)
+    end
+    y = S2
+    while p > 0
+        t = trailing_zeros(p) + 1
+        p >>= t
+        while (t -= 1) >= 0
+            S2 = _powdot(S2, S2)
+        end
+        y = _powdot(y, S2)
+    end
+    return y
 end
 Base.:^(S::MixedTensor2, p::Integer) = throw(ArgumentError("The exponentiation, S^$p, is not defined for S::MixedTensor2"))
 
