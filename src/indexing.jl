@@ -1,7 +1,8 @@
 ############
 # Indexing #
 ############
-@inline function compute_index(::Type{Tensor{1, dim}}, i::Int) where dim
+# Map a Cartesian index to the linear index into the stored data tuple.
+@inline function compute_index(::Type{Tensor{1, dim}}, i::Int) where {dim}
     return i
 end
 
@@ -10,19 +11,19 @@ end
         i, j = j, i
     end
     # We are skipping triangle over the diagonal = (j-1) * j / 2 indices
-    skipped_indices = div((j-1) * j, 2)
-    return dim*(j-1) + i - skipped_indices
+    skipped_indices = div((j - 1) * j, 2)
+    return dim * (j - 1) + i - skipped_indices
 end
 
 @inline function compute_index(::Type{Tensor{2, dim}}, i::Int, j::Int) where {dim}
-    return dim*(j-1) + i
+    return dim * (j - 1) + i
 end
 
 @inline function compute_index(::Type{Tensor{3, dim}}, i::Int, j::Int, k::Int) where {dim}
     lower_order = Tensor{2, dim}
     I = compute_index(lower_order, i, j)
     n = n_components(lower_order)
-    return (k-1) * n + I
+    return (k - 1) * n + I
 end
 
 @inline function compute_index(::Type{Tensor{4, dim}}, i::Int, j::Int, k::Int, l::Int) where {dim}
@@ -30,7 +31,7 @@ end
     I = compute_index(lower_order, i, j)
     J = compute_index(lower_order, k, l)
     n = n_components(lower_order)
-    return (J-1) * n + I
+    return (J - 1) * n + I
 end
 
 @inline function compute_index(::Type{SymmetricTensor{4, dim}}, i::Int, j::Int, k::Int, l::Int) where {dim}
@@ -38,7 +39,7 @@ end
     I = compute_index(lower_order, i, j)
     J = compute_index(lower_order, k, l)
     n = n_components(lower_order)
-    return (J-1) * n + I
+    return (J - 1) * n + I
 end
 
 # MixedTensor
@@ -54,12 +55,30 @@ end
     return (l - 1) * n3 + (k - 1) * n2 + (j - 1) * n1 + i
 end
 
-# indexed with [order][dim]
-const SYMMETRIC_INDICES = ((), ([1,], [1, 2, 4], [1, 2, 3, 5, 6, 9]), (),
-                          ([1,], [1, 2, 4, 5, 6, 8, 13, 14, 16], [ 1,  2,
-                            3,  5,  6,  9, 10, 11, 12, 14, 15, 18, 19, 20,
-                            21, 23, 24, 27, 37, 38, 39, 41, 42, 45, 46, 47,
-                            48, 50, 51, 54, 73, 74, 75, 77, 78, 81]))
+###################################################
+# Component enumeration (single source of truth)  #
+###################################################
+# The independent components of a tensor type, in storage order, as Cartesian tuples.
+function base_components(::Type{Tensor{order, dim}}) where {order, dim}
+    return vec(collect(Iterators.product(ntuple(_ -> 1:dim, order)...)))
+end
+function base_components(::Type{SymmetricTensor{2, dim}}) where {dim}
+    return [(i, j) for j in 1:dim for i in j:dim]
+end
+function base_components(::Type{SymmetricTensor{4, dim}}) where {dim}
+    c2 = base_components(SymmetricTensor{2, dim})
+    return [(i, j, k, l) for (k, l) in c2 for (i, j) in c2]
+end
+function base_components(::Type{TT}) where {order, TT <: MixedTensor{order}}
+    return vec(collect(Iterators.product(map(d -> 1:d, size(TT))...)))
+end
+
+# Linear indices (into the data tuple of the corresponding full `Tensor`) of the
+# independent components of a symmetric tensor. Replaces the old hardcoded
+# SYMMETRIC_INDICES table.
+function symmetric_indices(order::Int, dim::Int)
+    return Int[compute_index(Tensor{order, dim}, c...) for c in base_components(SymmetricTensor{order, dim})]
+end
 
 ###########################
 # getindex general tensor #
@@ -96,30 +115,31 @@ function Base.getindex(S::Union{SecondOrderTensor, Tensor{3}, FourthOrderTensor}
 end
 
 @inline @generated function Base.getindex(S::SecondOrderTensor, ::Colon, j::Int)
-    idx2(i,j) = compute_index(get_base(S), i, j)
-    dim, _ = size(S)
-    ex1 = Expr(:tuple, [:(get_data(S)[$(idx2(i,1))]) for i in 1:dim]...)
-    ex2 = Expr(:tuple, [:(get_data(S)[$(idx2(i,2))]) for i in 1:dim]...)
-    ex3 = Expr(:tuple, [:(get_data(S)[$(idx2(i,3))]) for i in 1:dim]...)
+    dim1, dim2 = size(S)
+    idx2(i, j) = compute_index(get_base(S), i, j)
+    exprs = [Expr(:tuple, [:(get_data(S)[$(idx2(i, j))]) for i in 1:dim1]...) for j in 1:dim2]
+    branches = :(throw(BoundsError(S, (Colon(), j))))
+    for j in dim2:-1:1
+        branches = Expr(:elseif, :(j == $j), :(return Vec{$dim1}($(exprs[j]))), branches)
+    end
+    branches = Expr(:if, branches.args...)
     return quote
-        @boundscheck checkbounds(S,Colon(),j)
-        if     j == 1 return Vec{$dim}($ex1)
-        elseif j == 2 return Vec{$dim}($ex2)
-        else          return Vec{$dim}($ex3)
-        end
+        @boundscheck checkbounds(S, Colon(), j)
+        @inbounds $branches
     end
 end
+
 @inline @generated function Base.getindex(S::SecondOrderTensor, i::Int, ::Colon)
-    idx2(i,j) = compute_index(get_base(S), i, j)
-    _, dim = size(S)
-    ex1 = Expr(:tuple, [:(get_data(S)[$(idx2(1,j))]) for j in 1:dim]...)
-    ex2 = Expr(:tuple, [:(get_data(S)[$(idx2(2,j))]) for j in 1:dim]...)
-    ex3 = Expr(:tuple, [:(get_data(S)[$(idx2(3,j))]) for j in 1:dim]...)
+    dim1, dim2 = size(S)
+    idx2(i, j) = compute_index(get_base(S), i, j)
+    exprs = [Expr(:tuple, [:(get_data(S)[$(idx2(i, j))]) for j in 1:dim2]...) for i in 1:dim1]
+    branches = :(throw(BoundsError(S, (i, Colon()))))
+    for i in dim1:-1:1
+        branches = Expr(:elseif, :(i == $i), :(return Vec{$dim2}($(exprs[i]))), branches)
+    end
+    branches = Expr(:if, branches.args...)
     return quote
-        @boundscheck checkbounds(S,i,Colon())
-        if     i == 1 return Vec{$dim}($ex1)
-        elseif i == 2 return Vec{$dim}($ex2)
-        else          return Vec{$dim}($ex3)
-        end
+        @boundscheck checkbounds(S, i, Colon())
+        @inbounds $branches
     end
 end

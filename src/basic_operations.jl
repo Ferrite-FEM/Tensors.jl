@@ -17,23 +17,12 @@
 @inline Base.:-(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) where {order, dim} = ((SS1, SS2) = promote_base(S1, S2); SS1 - SS2)
 @inline Base.:-(S1::MixedTensor{order, dims}, S2::MixedTensor{order, dims}) where {order, dims} = _map(-, S1, S2)
 
-@inline Base.:*(S::AbstractTensor, n::Number) = _map(x -> x*n, S)
-@inline Base.:*(n::Number, S::AbstractTensor) = _map(x -> n*x, S)
-@inline Base.:/(S::AbstractTensor, n::Number) = _map(x -> x/n, S)
+@inline Base.:*(S::AbstractTensor, n::Number) = _map(x -> x * n, S)
+@inline Base.:*(n::Number, S::AbstractTensor) = _map(x -> n * x, S)
+@inline Base.:/(S::AbstractTensor, n::Number) = _map(x -> x / n, S)
 
 Base.:+(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimension and order must match"))
 Base.:-(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimension and order must match"))
-
-# map implementations
-@inline function _map(f, S::AbstractTensor)
-    return apply_all(S, @inline function(i) @inbounds f(S.data[i]); end)
-end
-
-# the caller of 2 arg _map MUST guarantee that both arguments have
-# the same base (Tensor{order, dim} / SymmetricTensor{order, dim}) but not necessarily the same eltype
-@inline function _map(f, S1::AbstractTensor, S2::AbstractTensor)
-    return apply_all(S1, @inline function(i) @inbounds f(get_data(S1)[i], get_data(S2)[i]); end)
-end
 
 # power
 @inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Val{-1}) = inv(S)
@@ -53,18 +42,13 @@ function Base.literal_pow(::typeof(^), S::MixedTensor2, ::Val{p}) where {p}
 end
 
 @inline _powdot(S1::Tensor, S2::Tensor) = dot(S1, S2)
+# Powers of a symmetric tensor commute, so the single contraction stays symmetric.
 @generated function _powdot(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim}) where {dim}
-    idxS1(i, j) = compute_index(get_base(S1), i, j)
-    idxS2(i, j) = compute_index(get_base(S2), i, j)
-    exps = Expr(:tuple)
-    for j in 1:dim, i in j:dim
-        ex1 = Expr[:(get_data(S1)[$(idxS1(i, k))]) for k in 1:dim]
-        ex2 = Expr[:(get_data(S2)[$(idxS2(k, j))]) for k in 1:dim]
-        push!(exps.args, reducer(ex1, ex2))
-    end
-    quote
+    expr = einsum_expr((:i, :j), IndexedArg(:S1, get_base(S1), (:i, :k)), IndexedArg(:S2, get_base(S2), (:k, :j));
+                       force_out = SymmetricTensor{2, dim})
+    return quote
         $(Expr(:meta, :inline))
-        @inbounds return SymmetricTensor{2, dim}($exps)
+        $expr
     end
 end
 

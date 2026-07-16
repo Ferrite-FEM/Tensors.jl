@@ -2,7 +2,7 @@
 # Promotion #
 #############
 
-# Promotion between two tensors promote the eltype and promotes
+# Promotion between two tensors promotes the eltype and promotes
 # symmetric tensors to tensors
 
 @inline function Base.promote_rule(::Type{SymmetricTensor{order, dim, A, M}},
@@ -71,11 +71,11 @@ end
 
 # SymmetricTensor -> Tensor
 @inline function Base.convert(::Type{Tensor{2, dim, T1}}, t::SymmetricTensor{2, dim, T2}) where {dim, T1, T2}
-    Tensor{2, dim}(@inline function(i,j) @inbounds T1(t[i,j]); end)
+    Tensor{2, dim}(@inline function(i, j) @inbounds T1(t[i, j]); end)
 end
 
 @inline function Base.convert(::Type{Tensor{4, dim, T1}}, t::SymmetricTensor{4, dim, T2}) where {dim, T1, T2}
-    Tensor{4, dim}(@inline function(i,j,k,l) @inbounds T1(t[i,j,k,l]); end)
+    Tensor{4, dim}(@inline function(i, j, k, l) @inbounds T1(t[i, j, k, l]); end)
 end
 
 # Tensor -> SymmetricTensor
