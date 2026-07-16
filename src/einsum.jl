@@ -25,7 +25,9 @@ struct IndexedArg
     name::Symbol
     T::Type              # base type from get_base, e.g. Tensor{2,3}
     inds::Tuple{Vararg{Symbol}}
+    elt::Type            # eltype of the concrete argument (drives SIMD lowering)
 end
+IndexedArg(name::Symbol, T::Type, inds::Tuple{Vararg{Symbol}}) = IndexedArg(name, T, inds, Any)
 
 # size of a *base* type (as returned by get_base, i.e. with free eltype/M),
 # for use at generation time
@@ -164,20 +166,28 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, A::IndexedArg, B::IndexedA
     end
 
     da, db = gensym(A.name), gensym(B.name)
-    if isempty(out_inds) # scalar output
-        uniq, factors = component_products((), (), sum_inds, names, dims, A, B)
-        core = sum_expr(uniq, factors, da, db, muladd)
+    OutType = isempty(out_inds) ? nothing :
+              (force_out === nothing ? output_type(out_inds, (A, B), names, dims) : force_out)
+    comps = OutType === nothing ? [()] : base_components(OutType)
+    plans = [component_products(out_inds, oind, sum_inds, names, dims, A, B) for oind in comps]
+
+    # SIMD lowering for same-eltype hardware float arguments (the cases the old
+    # hand-written simd.jl kernels covered); falls back to scalar lowering when
+    # the plan lacks column structure.
+    if simd_eligible(A.elt, B.elt) && !(OutType === nothing && length(sum_inds) < 2)
+        # (scalar output with a single summed index — plain dot — beats the
+        # tree-reduction SVec form at dim ≤ 3, so it stays on the scalar path,
+        # as in the old package)
+        ex = try_simd_expr(OutType, plans, da, db, :(get_data($(A.name))), :(get_data($(B.name))), A.elt)
+        ex !== nothing && return ex
+    end
+
+    exprs = [sum_expr(uniq, factors, da, db, muladd) for (uniq, factors) in plans]
+    if OutType === nothing
         return quote
             $da = get_data($(A.name)); $db = get_data($(B.name))
-            @inbounds return $core
+            @inbounds return $(exprs[1])
         end
-    end
-    OutType = force_out === nothing ? output_type(out_inds, (A, B), names, dims) : force_out
-    comps = base_components(OutType)
-    exprs = Vector{Any}(undef, length(comps))
-    for (n, oind) in enumerate(comps)
-        uniq, factors = component_products(out_inds, oind, sum_inds, names, dims, A, B)
-        exprs[n] = sum_expr(uniq, factors, da, db, muladd)
     end
     return quote
         $da = get_data($(A.name)); $db = get_data($(B.name))
@@ -253,8 +263,8 @@ macro tensorop(fdef::Expr)
     bi_name, bi_inds = argspecs[2]
     genbody = quote
         expr = einsum_expr($(QuoteNode(out_inds)),
-                           IndexedArg($(QuoteNode(ai_name)), get_base($ai_name), $(QuoteNode(ai_inds))),
-                           IndexedArg($(QuoteNode(bi_name)), get_base($bi_name), $(QuoteNode(bi_inds)));
+                           IndexedArg($(QuoteNode(ai_name)), get_base($ai_name), $(QuoteNode(ai_inds)), eltype($ai_name)),
+                           IndexedArg($(QuoteNode(bi_name)), get_base($bi_name), $(QuoteNode(bi_inds)), eltype($bi_name));
                            muladd = $use_muladd)
         return quote
             $(Expr(:meta, :inline))

@@ -190,6 +190,7 @@ Base.length(::Type{Tensor{order, dim, T, M}}) where {order, dim, T, M} = M
 
 include("indexing.jl")
 include("einsum.jl")
+include("simd_lowering.jl")
 include("maps.jl")
 include("mixed_tensors.jl")
 include("tensor_ops_errors.jl")
