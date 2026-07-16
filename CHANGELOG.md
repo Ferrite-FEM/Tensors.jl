@@ -36,6 +36,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a number or tensor, e.g. for storing state variables under AD ([#208]).
 - `promote`/`convert` between `MixedTensor`s that differ only in element type.
 
+### Changed (AD internals)
+- Analytical-gradient insertion (`propagate_gradient`/`@implement_gradient`) no
+  longer reconstructs the differentiation input from the `ForwardDiff.Tag` type
+  parameters; the Jacobian is applied directly to the incoming partial lanes.
+  Analytical gradients therefore now compose with any outer differentiation
+  context: plain `ForwardDiff` calls, nested duals (e.g. `hessian` through an
+  analytical gradient), and tags not created by Tensors ([#179]).
+
 ### Bugfixes
 - `zero`, `one`, `ones`, `rand`, `randn` of a `MixedTensor` now return a
   `MixedTensor` instead of falling back to `Array` ([#245]).

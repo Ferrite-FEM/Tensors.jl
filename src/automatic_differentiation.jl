@@ -210,12 +210,20 @@ end
 
 """
     propagate_gradient(f_dfdx::Function, x, args...)
+    propagate_gradient(f_dfdx::Function, ::Val{i}, args...)
 
 The building block of [`@implement_gradient`](@ref): propagate an analytical
-derivative through automatic differentiation. `f_dfdx(xval, args...)` must
-return the tuple `(f(xval, args...), ∂f∂x(xval, args...))`; `x` is the
-(dual-carrying) differentiation argument and `args` are passive parameters
-that are passed through unchanged.
+derivative through automatic differentiation. `f_dfdx` must return the tuple
+`(f(args...), ∂f∂x(args...))`, where `x` is the differentiation argument —
+the first argument, or `args[i]` in the `Val{i}` form. It is called with `x`
+replaced by its primal value (one level of `ForwardDiff.Dual` stripped); all
+other arguments are passed through unchanged.
+
+The analytical Jacobian is applied directly to the partial derivatives
+carried by `x`, so this works under any outer differentiation context
+(`Tensors.gradient`/`hessian`, plain `ForwardDiff`, or nested duals), and the
+symmetric-tensor gradient convention is inherited from the incoming seeds.
+If `x` carries no dual numbers, the primal value is returned unchanged.
 
 Use this instead of `@implement_gradient` when the function takes additional
 non-differentiated arguments, or when the analytical-derivative method should
@@ -223,11 +231,17 @@ be more specific than the broad signature the macro defines:
 
 ```julia
 f(x::SymmetricTensor{2, dim, <:Dual}, p) where {dim} = propagate_gradient(f_dfdx, x, p)
+g(p, x::SymmetricTensor{2, dim, <:Dual}) where {dim} = propagate_gradient(g_dgdx, Val(2), p, x)
 ```
 """
-function propagate_gradient(f_dfdx::F, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}, args...) where {F <: Function}
-    fval, dfdx_val = f_dfdx(extract_value(x), args...)
-    return _insert_gradient(fval, dfdx_val, x)
+@inline function propagate_gradient(f_dfdx::F, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}, args...) where {F <: Function}
+    return propagate_gradient(f_dfdx, Val(1), x, args...)
+end
+
+@inline function propagate_gradient(f_dfdx::F, ::Val{i}, args...) where {F <: Function, i}
+    x = args[i]
+    fval, dfdx_val = f_dfdx(Base.setindex(args, extract_value(x), i)...)
+    return _insert_dual(fval, dfdx_val, x)
 end
 
 """
@@ -245,78 +259,53 @@ _propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Du
 
 # Define the _insert_gradient method
 """
-    _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::ForwardDiff.Dual)
-    _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Vec{<:Any,<:ForwardDiff.Dual})
-    _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::SecondOrderTensor{<:Any,<:ForwardDiff.Dual})
+    _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Union{ForwardDiff.Dual, AbstractTensor{<:Any,<:Any,<:ForwardDiff.Dual}})
 
-Allows inserting an analytical gradient for use with automatic differentiation.
-Consider a composed function ``h(f(g(x)))``, where you have an efficient way to
-calculate ``\\partial f/\\partial g``, but want to use automatic 
-differentiation for the other functions. Then, you can make another definition 
-of ``f(g)`` to dispatch on if ``g`` is a tensor with `ForwardDiff.Dual` 
-entires, i.e.
+Insert an analytical gradient for use with automatic differentiation: given
+the primal value `f`, the analytical derivative `dfdg`, and the dual-carrying
+input `g`, return `f` as a dual number/tensor with the correctly propagated
+partial derivatives. Prefer the public [`propagate_gradient`](@ref), which
+wraps this:
 ```julia
-function f(g::Tensor{2,dim,T}) where{dim, T<:ForwardDiff.Dual}
-    gval = _extract_value(g)               # Get the non-dual tensor value
-    fval = f(gval)                        # Calculate function value
-    dfdg = dfdg_analytical(fval, gval)    # Calculate analytical derivative
-    return _insert_gradient(fval, dfdg, g) # Return the updated dual tensor
-end
+f(g::Tensor{2,dim,<:ForwardDiff.Dual}) where {dim} = propagate_gradient(f_dfdg, g)
 ```
-
 """
-function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Dual{Tg}) where{Tg}
-    dgdx = _extract_gradient(g, _get_original_gradient_input(g))
-    dfdx = dfdg ⊗ dgdx
-    return _insert_full_gradient(f, dfdx, Tg())
+# Dual-arithmetic insertion: contracting the Jacobian with the dual-valued
+# input applies the chain rule to every incoming partial lane at once (the
+# result's partials are exactly ∂f∂x applied to each lane); the value part is
+# then replaced with the exact primal. The original differentiation input is
+# never reconstructed from the `Tag` type parameters, so any outer context
+# (Tensors' own operators, plain ForwardDiff, nested duals) works, and the
+# symmetric ½-seed convention is inherited from the incoming lanes.
+# Note: arguments other than the differentiation argument must be passive with
+# respect to the peeled tag.
+_insert_gradient(f::Union{Number, AbstractTensor}, dfdg::Union{Number, AbstractTensor},
+                 g::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = _insert_dual(f, dfdg, g)
+
+@inline function _insert_dual(fval::Union{Number, AbstractTensor}, dfdx::Union{Number, AbstractTensor},
+                              x::Union{Dual{Tg}, AbstractTensor{<:Any, <:Any, <:Dual{Tg}}}) where {Tg}
+    # one contraction in Dual arithmetic: the partial lanes of the result are
+    # exactly ∂f∂x applied to each incoming lane; its value part is then
+    # replaced with the (exact) primal value
+    fdual = _chain(dfdx, x)
+    return _replace_value(fval, fdual)
 end
+# the differentiation argument carries no duals: nothing to insert
+@inline _insert_dual(fval::Union{Number, AbstractTensor}, dfdx, x) = fval
 
-function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::Vec{<:Any, <:Dual{Tg}}) where{Tg}
-    dgdx = _extract_gradient(g, _get_original_gradient_input(g))
-    dfdx = dfdg ⋅ dgdx
-    return _insert_full_gradient(f, dfdx, Tg())
-end
+# chain rule: contract the Jacobian over all indices of the input
+@inline _chain(dfdx::Union{Number, AbstractTensor}, x::Number) = dfdx * x
+@inline _chain(dfdx::AbstractTensor, x::Vec) = dfdx ⋅ x
+@inline _chain(dfdx::AbstractTensor, x::SecondOrderTensor) = dfdx ⊡ x
 
-function _insert_gradient(f::Union{Number,AbstractTensor}, dfdg::Union{Number,AbstractTensor}, g::SecondOrderTensor{<:Any,<:Dual{Tg}}) where{Tg}
-    dgdx = _extract_gradient(g, _get_original_gradient_input(g))
-    dfdx = dfdg ⊡ dgdx
-    return _insert_full_gradient(f, dfdx, Tg())
-end
-
-# Define helper function to figure out original input to gradient function
-_get_original_gradient_input(::Dual{Tag{Tf,Tv}}) where{Tf,Tv} = zero(Tv)
-_get_original_gradient_input(::AbstractTensor{<:Any,<:Any,<:Dual{Tag{Tf,Tv}}}) where{Tf,Tv} = zero(Tv)
-
-# Define helper function to insert_the_full_gradient calculated in _insert_gradient
-_insert_full_gradient(f::Number, dfdx::Number, ::Tg) where{Tg} = Dual{Tg}(f, dfdx)
-_insert_full_gradient(f::Number, dfdx::AbstractTensor, ::Tg) where{Tg} = Dual{Tg}(f, get_data(dfdx))
-
-function _insert_full_gradient(f::TT, dfdx::TT, ::Tg) where{TT<:AbstractTensor,Tg}
-    fdata = get_data(f)
-    diffdata = get_data(dfdx)
-    TTb = get_base(TT)
-    @inbounds y = TTb(ntuple(i -> Dual{Tg}(fdata[i], diffdata[i]), length(fdata)))
-    return y
-end
-
-function _insert_full_gradient(f::Vec{dim}, dfdx::Tensor{2,dim}, ::Tg) where{dim, Tg}
-    fdata = get_data(f)
-    diffdata = get_data(dfdx)
-    @inbounds y = Vec{dim}(i -> Dual{Tg}(fdata[i], ntuple(j->diffdata[i+dim*(j-1)], dim)))
-    return y
-end
-
-function _insert_full_gradient(f::Tensor{2,dim,<:Any,N}, dfdx::Tensor{4,dim}, ::Tg) where{dim, N, Tg}
-    fdata = get_data(f)
-    diffdata = get_data(dfdx)
-    @inbounds y = Tensor{2,dim}(ntuple(i->Dual{Tg}(fdata[i], ntuple(j->diffdata[i+N*(j-1)],N)), N))
-    return y
-end
-function _insert_full_gradient(f::SymmetricTensor{2,dim,<:Any,N}, dfdx::SymmetricTensor{4,dim}, ::Tg) where{dim, N, Tg}
-    fdata = get_data(f)
-    diffdata = get_data(dfdx)
-    @inbounds y = SymmetricTensor{2,dim}(ntuple(i->Dual{Tg}(fdata[i], ntuple(j->diffdata[i+N*(j-1)],N)), N))
-    return y
+@inline _replace_value(fval::Number, fdual::Dual{Tg}) where {Tg} = Dual{Tg}(fval, ForwardDiff.partials(fdual))
+@inline function _replace_value(fval::AbstractTensor, fdual::AbstractTensor{<:Any, <:Any, <:Dual{Tg}}) where {Tg}
+    if get_base(typeof(fval)) !== get_base(typeof(fdual))
+        throw(ArgumentError(string("the type of the analytical derivative is inconsistent with the function value: ",
+                                   "the chain rule produced a ", get_base(typeof(fdual)), " for a ", get_base(typeof(fval)),
+                                   " function value (all tensors must be symmetric, or none)")))
+    end
+    return _map(@inline((v, d) -> Dual{Tg}(v, ForwardDiff.partials(d))), fval, fdual)
 end
 
 

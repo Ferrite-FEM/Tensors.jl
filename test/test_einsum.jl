@@ -171,6 +171,22 @@ end
         myf(x::SymmetricTensor{2, 3, <:ForwardDiff.Dual}, p) = propagate_gradient(myf_dfdx, x, p)
         x = rand(SymmetricTensor{2, 3})
         @test gradient(y -> myf(y, 2.5), x) ≈ 2.5 * (x ⊗ one(x) + tr(x) * one(SymmetricTensor{4, 3}))
+        # Val{i} form: differentiation argument in a non-leading position
+        myg(p, x) = myf(x, p)
+        myg_dgdx(p, x) = (myg(p, x), p * (x ⊗ one(x) + tr(x) * one(SymmetricTensor{4, 3})))
+        myg(p, x::SymmetricTensor{2, 3, <:ForwardDiff.Dual}) = propagate_gradient(myg_dgdx, Val(2), p, x)
+        @test gradient(y -> myg(2.5, y), x) ≈ gradient(y -> myf(y, 2.5), x)
+        # external (non-Tensors) ForwardDiff tag: the analytical rule must not
+        # depend on the Tag payload matching the input type
+        myh(y) = det(y) * y
+        myh_dfdx(y) = (myh(y), y ⊗ (det(y) * inv(y)') + det(y) * one(Tensor{4, 3}))
+        myh(y::Tensor{2, 3, <:ForwardDiff.Dual}) = propagate_gradient(myh_dfdx, y)
+        A = rand(Tensor{2, 3})
+        d = ForwardDiff.derivative(t -> norm(myh(t * A)), 1.0)
+        d_ref = ForwardDiff.derivative(t -> norm(det(t * A) * (t * A)), 1.0)
+        @test d ≈ d_ref
+        # nested duals: hessian through an analytical gradient
+        @test hessian(y -> norm(myh(y)), A) ≈ hessian(y -> norm(det(y) * y), A)
         # extract_value (issue #208)
         seen = Ref(zero(x))
         g(y) = (seen[] = extract_value(y); norm(y))
