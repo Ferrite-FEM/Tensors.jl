@@ -15,10 +15,23 @@ end
 ```
 
 The left-hand side names the output indices (`C = ...` declares a scalar
-output); indices that appear in both arguments are summed over; wrapping the
+output); an index that appears in two arguments is summed over; wrapping the
 assignment in `@muladd` makes the summation accumulate with `muladd`. The
 declaration expands to a single `@generated` method with the written
 signature.
+
+Products of more than two tensors are supported as well — each index must
+appear either once (an output index) or in exactly two of the arguments (a
+summation index). For example, `dotdot` is declared as
+
+```julia
+@tensorop function dotdot(v1::AbstractTensor{1}, S::FourthOrderTensor, v2::AbstractTensor{1})
+    @muladd C[i, j] = v1[k] * S[i, k, j, l] * v2[l]
+end
+```
+
+(SIMD lowering applies to two-argument operations; operations with more
+arguments use the scalar lowering.)
 
 ## What the generator does
 

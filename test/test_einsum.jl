@@ -120,6 +120,39 @@ end
         @test_throws ArgumentError ismajorsymmetric(rand(MixedTensor{4, Tuple{2, 2, 2, 3}}))
     end
 
+    @testset "three-argument operations" begin
+        for dim in (1, 2, 3)
+            v1, v2 = exact_rand(Vec{dim}), exact_rand(Vec{dim})
+            for C in (exact_rand(SymmetricTensor{4, dim}), exact_rand(Tensor{4, dim}))
+                ref = [sum(v1[k] * C[i, k, j, l] * v2[l] for k in 1:dim, l in 1:dim) for i in 1:dim, j in 1:dim]
+                @test Array(dotdot(v1, C, v2)) == ref
+                @test (@inferred dotdot(v1, C, v2)) isa Tensor{2, dim}
+            end
+        end
+        # a ternary declaration through the macro: fused chained contraction
+        Tensors.@tensorop function my_chain3(A::SecondOrderTensor, B::SecondOrderTensor, C::SecondOrderTensor)
+            @muladd D[i, l] = A[i, j] * B[j, k] * C[k, l]
+        end
+        A, B, C = exact_rand(Tensor{2, 3}), exact_rand(SymmetricTensor{2, 3}), exact_rand(Tensor{2, 3})
+        @test my_chain3(A, B, C) == A ⋅ B ⋅ C
+        @test (@inferred my_chain3(A, B, C)) isa Tensor{2, 3}
+        m = exact_rand(MixedTensor{2, Tuple{2, 3}})
+        @test my_chain3(m, B, m') ≈ m ⋅ B ⋅ m'
+        @test my_chain3(m, B, m') isa Tensor{2, 2}
+        # scalar output
+        Tensors.@tensorop function my_vSv(a::AbstractTensor{1}, S::SecondOrderTensor, b::AbstractTensor{1})
+            @muladd r = a[i] * S[i, j] * b[j]
+        end
+        a, b = exact_rand(Vec{3}), exact_rand(Vec{3})
+        @test my_vSv(a, B, b) ≈ a ⋅ (B ⋅ b)
+        @test (@inferred my_vSv(a, B, b)) isa Int  # exact_rand tensors hold Ints
+        # an index in three arguments is a definition-time error
+        @test_throws ErrorException Tensors.einsum_expr((:i,),
+            Tensors.IndexedArg(:A, Tensor{2, 3}, (:i, :j), Any),
+            Tensors.IndexedArg(:B, Tensor{2, 3}, (:j, :k), Any),
+            Tensors.IndexedArg(:C, Tensor{2, 3}, (:j, :k), Any))
+    end
+
     @testset "@tensorop macro" begin
         Tensors.@tensorop function my_otimes(A::Vec{dim}, B::Vec{dim}) where {dim}
             C[i, j] = A[i] * B[j]

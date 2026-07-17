@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `extract_value(x)` is now public: strips one level of `ForwardDiff.Dual` from
   a number or tensor, e.g. for storing state variables under AD ([#208]).
 - `promote`/`convert` between `MixedTensor`s that differ only in element type.
+- The internal `@tensorop` code generator supports products of more than two
+  tensors; `dotdot` is now declared that way and accepts any fourth-order
+  tensor (previously `SymmetricTensor{4}` only).
 
 ### Changed (AD internals)
 - Analytical-gradient insertion (`propagate_gradient`/`@implement_gradient`) no

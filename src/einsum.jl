@@ -95,20 +95,19 @@ function is_symmetric_pair(args::Tuple{Vararg{IndexedArg}}, idx1::Symbol, idx2::
     return false
 end
 
-# The (ia, ib) data-index products for one output component, with duplicates
+# The (i1, ..., iN) data-index products for one output component, with duplicates
 # collapsed into integer factors (same algorithm and ordering as the old package).
-function component_products(out_inds, oind, sum_inds, names, dims, A::IndexedArg, B::IndexedArg)
+function component_products(out_inds, oind, sum_inds, names, dims, args::IndexedArg...)
+    N = length(args)
     lookup_names = (out_inds..., sum_inds...)
-    prods = NTuple{2, Int}[]
+    prods = NTuple{N, Int}[]
     sum_ranges = ntuple(k -> 1:dim_of(names, dims, sum_inds[k]), length(sum_inds))
     for sind in Iterators.product(sum_ranges...)
         vals = (oind..., sind...)
         pos(name) = vals[findfirst(==(name), lookup_names)::Int]
-        ia = compute_index(A.T, map(pos, A.inds)...)
-        ib = compute_index(B.T, map(pos, B.inds)...)
-        push!(prods, (ia, ib))
+        push!(prods, ntuple(n -> compute_index(args[n].T, map(pos, args[n].inds)...), N))
     end
-    uniq = NTuple{2, Int}[]
+    uniq = NTuple{N, Int}[]
     factors = Int[]
     for p in prods
         i = findfirst(==(p), uniq)
@@ -123,13 +122,23 @@ end
 
 # Sum-of-products expression: initialized from the first product (never zero(T)),
 # left-fold accumulation, muladd where requested, integer factors multiplied onto
-# the first operand — exactly the old package's `reducer` emission.
-function sum_expr(uniq, factors, da::Symbol, db::Symbol, madd::Bool)
+# the first operand — exactly the old package's `reducer` emission. For more
+# than two arguments, the first N-1 data references form the left muladd
+# operand and the last is the multiplier (matching the old hand-written
+# ternary kernels, e.g. `muladd(v1[k] * S[ikjl], v2[l], acc)` for `dotdot`).
+function sum_expr(uniq, factors, ds::NTuple{N, Symbol}, madd::Bool) where {N}
+    ref(k, n) = :($(ds[n])[$(uniq[k][n])])
     lhs(k) = begin
-        f = factors[k]; ia = uniq[k][1]
-        f == 1 ? :($da[$ia]) : :($f * $da[$ia])
+        f = factors[k]
+        # NB: must not be named `ex` — inner functions share locals with the
+        # enclosing scope, and this would clobber the accumulator below
+        e = f == 1 ? ref(k, 1) : :($f * $(ref(k, 1)))
+        for n in 2:(N - 1)
+            e = :($e * $(ref(k, n)))
+        end
+        e
     end
-    rhs(k) = :($db[$(uniq[k][2])])
+    rhs(k) = ref(k, N)
     ex = :($(lhs(1)) * $(rhs(1)))
     for k in 2:length(uniq)
         ex = madd ? :(muladd($(lhs(k)), $(rhs(k)), $ex)) :
@@ -139,10 +148,10 @@ function sum_expr(uniq, factors, da::Symbol, db::Symbol, madd::Bool)
 end
 
 """
-    einsum_expr(out_inds, A::IndexedArg, B::IndexedArg; muladd = false, force_out = nothing)
+    einsum_expr(out_inds, args::IndexedArg...; muladd = false, force_out = nothing)
 
-Return the expression computing `Out[out_inds...] = A[...] * B[...]` with
-summation over the indices shared between `A` and `B`. Used inside
+Return the expression computing `Out[out_inds...] = args[1][...] * args[2][...] * ...`
+with summation over each index shared between two of the arguments. Used inside
 `@generated` bodies (via `@tensorop`); the expression refers to the argument
 variables by name and reads their data with `get_data`.
 
@@ -150,54 +159,66 @@ variables by name and reads their data with `get_data`.
 result has more structure than the index pattern proves (e.g. symmetric
 output when contracting commuting symmetric tensors).
 """
-function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, A::IndexedArg, B::IndexedArg; muladd::Bool = false, force_out = nothing)
-    nd = index_dims((A, B))
+function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; muladd::Bool = false, force_out = nothing)
+    N = length(args)
+    N >= 2 || error("einsum_expr needs at least two arguments")
+    nd = index_dims(args)
     if nd === nothing
-        return :(throw(DimensionMismatch(string("dimensions of the tensor indices do not agree when computing ",
-                                                $(string(A.name, "[", join(A.inds, ","), "] * ", B.name, "[", join(B.inds, ","), "]"))))))
+        term = join((string(a.name, "[", join(a.inds, ","), "]") for a in args), " * ")
+        return :(throw(DimensionMismatch(string("dimensions of the tensor indices do not agree when computing ", $term))))
     end
     names, dims = nd
-    sum_inds = tuple(sort(collect(intersect(A.inds, B.inds)))...)
-    # validate index structure (definition-time errors, these are programmer errors)
-    issubset(out_inds, union(A.inds, B.inds)) || error("output indices must appear in the term")
+    # classify indices by occurrence count across all arguments: an index
+    # appearing twice (in different arguments) is summed over; appearing once
+    # it must be an output index (definition-time errors, these are programmer
+    # errors in an operation declaration)
+    for a in args
+        allunique(a.inds) || error("an index appears more than once in a single argument; this is not supported")
+    end
+    counts = Dict(name => count(a -> name in a.inds, args) for name in names)
+    any(>(2), values(counts)) && error("an index cannot appear in more than two arguments")
+    sum_inds = tuple(sort(filter(name -> counts[name] == 2, names))...)
+    issubset(out_inds, names) || error("output indices must appear in the term")
     isdisjoint(sum_inds, out_inds) || error("output indices cannot be summation indices")
-    if length(out_inds) != (length(A.inds) + length(B.inds) - 2 * length(sum_inds))
-        error("an index appears more than once in a single argument; this is not supported")
+    for name in names
+        counts[name] == 1 && name ∉ out_inds && error("index $name appears only once and is not an output index")
     end
 
-    @assert A.name ∉ (:_da, :_db) && B.name ∉ (:_da, :_db)
-    da, db = :_da, :_db
+    ds = ntuple(n -> Symbol(:_d, n), N)
+    @assert all(a -> a.name ∉ ds, args)
     OutType = isempty(out_inds) ? nothing :
-              (force_out === nothing ? output_type(out_inds, (A, B), names, dims) : force_out)
+              (force_out === nothing ? output_type(out_inds, args, names, dims) : force_out)
     comps = OutType === nothing ? [()] : base_components(OutType)
-    plans = [component_products(out_inds, oind, sum_inds, names, dims, A, B) for oind in comps]
+    plans = [component_products(out_inds, oind, sum_inds, names, dims, args...) for oind in comps]
     inlinemeta = Expr(:meta, :inline)
 
     # SIMD lowering for same-eltype hardware float arguments (the cases the old
     # hand-written simd.jl kernels covered); falls back to scalar lowering when
-    # the plan lacks column structure.
-    if simd_eligible(A.elt, B.elt) && !(OutType === nothing && length(sum_inds) < 2)
+    # the plan lacks column structure. Only binary operations are lowered.
+    if N == 2 && simd_eligible(args[1].elt, args[2].elt) && !(OutType === nothing && length(sum_inds) < 2)
         # (scalar output with a single summed index — plain dot — beats the
         # tree-reduction SVec form at dim ≤ 3, so it stays on the scalar path,
         # as in the old package)
-        r = try_simd_expr(OutType, plans, da, db, :(Tensors.get_data($(A.name))), :(Tensors.get_data($(B.name))), A.elt)
+        r = try_simd_expr(OutType, plans, ds[1], ds[2],
+                          :(Tensors.get_data($(args[1].name))), :(Tensors.get_data($(args[2].name))), args[1].elt)
         if r !== nothing
             ex, inline = r
             return inline ? Expr(:block, inlinemeta, ex) : ex
         end
     end
 
-    exprs = [sum_expr(uniq, factors, da, db, muladd) for (uniq, factors) in plans]
+    databind = [:($(ds[n]) = Tensors.get_data($(args[n].name))) for n in 1:N]
+    exprs = [sum_expr(uniq, factors, ds, muladd) for (uniq, factors) in plans]
     if OutType === nothing
         return quote
             $inlinemeta
-            $da = Tensors.get_data($(A.name)); $db = Tensors.get_data($(B.name))
+            $(databind...)
             @inbounds return $(exprs[1])
         end
     end
     return quote
         $inlinemeta
-        $da = Tensors.get_data($(A.name)); $db = Tensors.get_data($(B.name))
+        $(databind...)
         @inbounds return $(OutType)($(Expr(:tuple, exprs...)))
     end
 end
@@ -259,20 +280,17 @@ macro tensorop(fdef::Expr)
     rhs isa Expr && rhs.head === :call && rhs.args[1] === :* ||
         error("@tensorop right-hand side must be a product of indexed tensors")
     refs = rhs.args[2:end]
-    length(refs) == 2 || error("@tensorop currently supports exactly two arguments")
+    length(refs) >= 2 || error("@tensorop needs at least two arguments in the product")
     argspecs = map(refs) do r
         r isa Expr && r.head === :ref || error("expected an indexed tensor like A[i,j], got $r")
         name = r.args[1]
         name in argnames || error("$(name) is not an argument of the function")
         (name, tuple(r.args[2:end]...))
     end
-    ai_name, ai_inds = argspecs[1]
-    bi_name, bi_inds = argspecs[2]
+    iargs = [:(Tensors.IndexedArg($(QuoteNode(name)), Tensors.get_base($name), $(QuoteNode(inds)), eltype($name)))
+             for (name, inds) in argspecs]
     genbody = quote
-        return Tensors.einsum_expr($(QuoteNode(out_inds)),
-                                   Tensors.IndexedArg($(QuoteNode(ai_name)), Tensors.get_base($ai_name), $(QuoteNode(ai_inds)), eltype($ai_name)),
-                                   Tensors.IndexedArg($(QuoteNode(bi_name)), Tensors.get_base($bi_name), $(QuoteNode(bi_inds)), eltype($bi_name));
-                                   muladd = $use_muladd)
+        return Tensors.einsum_expr($(QuoteNode(out_inds)), $(iargs...); muladd = $use_muladd)
     end
     gen = Expr(:function, sig, genbody)
     return esc(Expr(:macrocall, Symbol("@generated"), __source__, gen))
