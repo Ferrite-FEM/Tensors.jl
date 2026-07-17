@@ -90,8 +90,15 @@ Computes the skew-symmetric (anti-symmetric) part of a second order tensor, retu
     return @inbounds t[1,2] == t[2,1] && t[1,3] == t[3,1] && t[2,3] == t[3,2]
 end
 
+"""
+    isminorsymmetric(::FourthOrderTensor)
+
+Check if a fourth order tensor is minor symmetric, i.e. `A[i,j,k,l] == A[j,i,k,l] == A[i,j,l,k]` for all components.
+"""
 function isminorsymmetric(t::Tensor{4, dim}) where {dim}
-    @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
+    # check the full orbit of every component: both single swaps imply the
+    # double swap only if all components are visited, so loop the full grid
+    @inbounds for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
         if t[i,j,k,l] != t[j,i,k,l] || t[i,j,k,l] != t[i,j,l,k]
             return false
         end
@@ -101,8 +108,15 @@ end
 
 isminorsymmetric(::SymmetricTensor{4}) = true
 
+"""
+    ismajorsymmetric(::FourthOrderTensor)
+
+Check if a fourth order tensor is major symmetric, i.e. `A[i,j,k,l] == A[k,l,i,j]` for all components.
+"""
 function ismajorsymmetric(t::FourthOrderTensor{dim}) where {dim}
-    @inbounds for l in 1:dim, k in l:dim, j in 1:dim, i in j:dim
+    # the tensor need not be minor symmetric, so all (i,j) pairs must be
+    # compared with their (k,l) counterparts — loop the full grid
+    @inbounds for l in 1:dim, k in 1:dim, j in 1:dim, i in 1:dim
         if t[i,j,k,l] != t[k,l,i,j]
             return false
         end

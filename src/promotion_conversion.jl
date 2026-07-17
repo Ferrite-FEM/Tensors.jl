@@ -29,7 +29,16 @@ end
 @inline function Base.promote(S1::T, S2::S) where {T <: AbstractTensor, S <: AbstractTensor}
     return convert(promote_type(T, S), S1), convert(promote_type(T, S), S2)
 end
-@inline Base.promote(S1::AbstractTensor{order, dim, T}) where {order, dim, T} = convert(Tensor{order, dim, T}, S1)
+# NOTE: Base's contract for one-argument `promote(x)` is to return `(x,)`;
+# it is not extended here (use `densify` to convert a symmetric tensor to a
+# full one)
+"""
+    densify(S::AbstractTensor)
+
+Convert a `SymmetricTensor` to the equivalent full `Tensor`; regular tensors
+are returned unchanged.
+"""
+@inline densify(S1::AbstractTensor{order, dim, T}) where {order, dim, T} = convert(Tensor{order, dim, T}, S1)
 
 # base promotion that only promotes SymmetricTensor to Tensor but leaves eltype
 @inline function promote_base(S1::Tensor{order, dim}, S2::SymmetricTensor{order, dim}) where {order, dim}

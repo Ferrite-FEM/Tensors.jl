@@ -134,7 +134,7 @@ end
 # (3): dot #
 ############
 # 2s-1
-@inline LinearAlgebra.dot(S1::SymmetricTensor{2, dim, T}, S2::Vec{dim, T}) where {dim, T <: SIMDTypes} = dot(promote(S1), S2)
+@inline LinearAlgebra.dot(S1::SymmetricTensor{2, dim, T}, S2::Vec{dim, T}) where {dim, T <: SIMDTypes} = dot(densify(S1), S2)
 # 2-1
 @inline function LinearAlgebra.dot(S1::Tensor{2, 2, T}, S2::Vec{2, T}) where {T <: SIMDTypes}
     @inbounds begin
@@ -212,7 +212,7 @@ end
 end
 
 # 4-2s
-@inline dcontract(S1::Tensor{4, 3, T}, S2::SymmetricTensor{2, 3, T}) where {T <: SIMDTypes} = dcontract(S1, promote(S2))
+@inline dcontract(S1::Tensor{4, 3, T}, S2::SymmetricTensor{2, 3, T}) where {T <: SIMDTypes} = dcontract(S1, densify(S2))
 # 4-2
 @inline function dcontract(S1::Tensor{4, 2, T}, S2::Tensor{2, 2, T}) where {T <: SIMDTypes}
     @inbounds begin

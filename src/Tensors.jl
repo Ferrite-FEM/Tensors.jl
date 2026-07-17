@@ -117,8 +117,23 @@ const MixedTensor2{d1, d2, T, M} = MixedTensor{2, Tuple{d1, d2}, T, M}
 const MixedTensor3{d1, d2, d3, T, M} = MixedTensor{3, Tuple{d1, d2, d3}, T, M}
 const MixedTensor4{d1, d2, d3, d4, T, M} = MixedTensor{4, Tuple{d1, d2, d3, d4}, T, M}
 
-MixedTensor{order, dims}(data::NTuple{M, T}) where {order, dims, T, M} = MixedTensor{order, dims, T, M}(data)
-MixedTensor{order, dims, T}(data::NTuple{M, T2}) where {order, dims, T, T2, M} = MixedTensor{order, dims, T, M}(data)
+# The structural invariants -- one dimension per index, component count
+# matching -- are enforced here since they cannot live on the struct itself.
+@inline function _check_mixed_parameters(::Type{MixedTensor{order, dims}}, M::Int) where {order, dims <: Tuple}
+    n = length(dims.parameters)
+    n == order || throw(ArgumentError("MixedTensor{$order, $dims}: $n dimensions given for order $order"))
+    N = n_components(MixedTensor{order, dims})
+    M == N || throw(ArgumentError("MixedTensor{$order, $dims}: size requires $N components, got $M"))
+    return nothing
+end
+@inline function MixedTensor{order, dims}(data::NTuple{M, T}) where {order, dims <: Tuple, T, M}
+    _check_mixed_parameters(MixedTensor{order, dims}, M)
+    return MixedTensor{order, dims, T, M}(data)
+end
+@inline function MixedTensor{order, dims, T}(data::NTuple{M, T2}) where {order, dims <: Tuple, T, T2, M}
+    _check_mixed_parameters(MixedTensor{order, dims}, M)
+    return MixedTensor{order, dims, T, M}(data)
+end
 MixedTensor{order, dims}(data::Tuple{Vararg{Any, M}}) where {order, dims, M} = MixedTensor{order, dims}(promote(data...))
 
 ###############
