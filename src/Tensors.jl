@@ -138,37 +138,35 @@ const NonSymmetricTensors{dim, T} = Union{Tensor{2, dim, T}, Tensor{4, dim, T}, 
 ##############################
 # Utility/Accessor Functions #
 ##############################
-import Base.@pure
-
 @inline get_data(t::AbstractTensor) = t.data
 
-@pure n_components(::Type{SymmetricTensor{2, dim}}) where {dim} = dim * dim - div((dim - 1) * dim, 2)
-@pure function n_components(::Type{SymmetricTensor{4, dim}}) where {dim}
+n_components(::Type{SymmetricTensor{2, dim}}) where {dim} = dim * dim - div((dim - 1) * dim, 2)
+function n_components(::Type{SymmetricTensor{4, dim}}) where {dim}
     n = n_components(SymmetricTensor{2, dim})
     return n * n
 end
-@pure n_components(::Type{Tensor{order, dim}}) where {order, dim} = dim^order
-@pure n_components(::Type{MixedTensor{order, dims}}) where {order, dims} = *(size(MixedTensor{order, dims})...)
+n_components(::Type{Tensor{order, dim}}) where {order, dim} = dim^order
+n_components(::Type{MixedTensor{order, dims}}) where {order, dims} = *(size(MixedTensor{order, dims})...)
 
 if isdefined(Core, :TypeEgal)
     get_type(T::Union{Core.TypeEq, Core.TypeEgal}) = Base.type_parameter(T)
 else
-    @pure get_type(::Type{Type{X}}) where {X} = X
+    get_type(::Type{Type{X}}) where {X} = X
 end
 
-@pure get_base(::Type{<:Tensor{order, dim}})          where {order, dim}  = Tensor{order, dim}
-@pure get_base(::Type{<:SymmetricTensor{order, dim}}) where {order, dim}  = SymmetricTensor{order, dim}
-@pure get_base(::Type{<:MixedTensor{order, dims}})    where {order, dims} = MixedTensor{order, dims}
+get_base(::Type{<:Tensor{order, dim}})          where {order, dim}  = Tensor{order, dim}
+get_base(::Type{<:SymmetricTensor{order, dim}}) where {order, dim}  = SymmetricTensor{order, dim}
+get_base(::Type{<:MixedTensor{order, dims}})    where {order, dims} = MixedTensor{order, dims}
 
-@pure Base.eltype(::Type{Tensor{order, dim, T, M}})          where {order, dim, T, M} = T
-@pure Base.eltype(::Type{Tensor{order, dim, T}})             where {order, dim, T}    = T
-@pure Base.eltype(::Type{Tensor{order, dim}})                where {order, dim}       = Any
-@pure Base.eltype(::Type{SymmetricTensor{order, dim, T, M}}) where {order, dim, T, M} = T
-@pure Base.eltype(::Type{SymmetricTensor{order, dim, T}})    where {order, dim, T}    = T
-@pure Base.eltype(::Type{SymmetricTensor{order, dim}})       where {order, dim}       = Any
-@pure Base.eltype(::Type{MixedTensor{order, dims, T, M}})    where {order, dims, T, M} = T
-@pure Base.eltype(::Type{MixedTensor{order, dims, T}})       where {order, dims, T}    = T
-@pure Base.eltype(::Type{MixedTensor{order, dims}})          where {order, dims}       = Any
+Base.eltype(::Type{Tensor{order, dim, T, M}})          where {order, dim, T, M} = T
+Base.eltype(::Type{Tensor{order, dim, T}})             where {order, dim, T}    = T
+Base.eltype(::Type{Tensor{order, dim}})                where {order, dim}       = Any
+Base.eltype(::Type{SymmetricTensor{order, dim, T, M}}) where {order, dim, T, M} = T
+Base.eltype(::Type{SymmetricTensor{order, dim, T}})    where {order, dim, T}    = T
+Base.eltype(::Type{SymmetricTensor{order, dim}})       where {order, dim}       = Any
+Base.eltype(::Type{MixedTensor{order, dims, T, M}})    where {order, dims, T, M} = T
+Base.eltype(::Type{MixedTensor{order, dims, T}})       where {order, dims, T}    = T
+Base.eltype(::Type{MixedTensor{order, dims}})          where {order, dims}       = Any
 
 ############################
 # Abstract Array interface #
