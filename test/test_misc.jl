@@ -1,4 +1,4 @@
-@testsection "constructors" begin
+@testset "constructors" begin
 for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,3,4)
     for op in (rand, zero, ones, randn)
         # Tensor, SymmetricTensor
@@ -64,7 +64,7 @@ end
 @test Vec{3, NotReal}((1, 2, 3)) isa Vec{3, NotReal}
 end # of testset
 
-@testsection "diagm, one" begin
+@testset "diagm, one" begin
 for T in (Float32, Float64), dim in (1,2,3)
     # diagm
     v = rand(T, dim)
@@ -120,7 +120,7 @@ for T in (Float32, Float64), dim in (1,2,3)
 end
 end # of testset
 
-@testsection "base vectors" begin
+@testset "base vectors" begin
 for T in (Float32, Float64, F64), dim in (1,2,3)
     eᵢ_func(i) = Tensor{1, dim, T}(j->j==i ? one(T) : zero(T))
 
@@ -138,7 +138,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
 end
 end # of testset
 
-@testsection "simple math" begin
+@testset "simple math" begin
 for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Tensor, SymmetricTensor)
     TensorType == SymmetricTensor && isodd(order) && continue
     t = rand(TensorType{order, dim, T})
@@ -175,7 +175,7 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Te
 end
 end # of testset
 
-@testsection "construct from function" begin
+@testset "construct from function" begin
 for T in (Float32, Float64, F64)
     for dim in (1,2,3)
         fi = (i) -> cos(i)
@@ -221,7 +221,7 @@ for T in (Float32, Float64, F64)
 end
 end # of testset
 
-@testsection "construct from Array" begin
+@testset "construct from Array" begin
 for (T1, T2) in ((Float32, Float64), (Float64, Float32)), order in (1,2,4), dim in (1,2,3)
     At = rand(Tensor{order, dim})
     gen_data = rand(T1, size(At))
@@ -245,7 +245,7 @@ for (T1, T2) in ((Float32, Float64), (Float64, Float32)), order in (1,2,4), dim 
 end
 end # of testset
 
-@testsection "indexing" begin
+@testset "indexing" begin
 for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
     if order == 1
         data = rand(T, dim)
@@ -299,7 +299,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,4)
 end
 end # of testset
 
-@testsection "norm, trace, det, inv, eig" begin
+@testset "norm, trace, det, inv, eig" begin
 for T in (Float32, Float64, F64), dim in (1,2,3)
     # norm
     for order in (1,2,4)
@@ -369,7 +369,7 @@ for T in (Float32, Float64, F64), dim in (1,2,3)
 end
 end # of testset
 
-@testsection "eigen(::FourthOrderTensor)" begin
+@testset "eigen(::FourthOrderTensor)" begin
 for T in (Float32, Float64), dim in (1, 2, 3)
     Random.seed!(123)
     # construct positive definite Voigt-tensor
@@ -407,7 +407,7 @@ end
 end
 
 # https://en.wikiversity.org/wiki/Continuum_mechanics/Tensor_algebra_identities
-@testsection "tensor identities" begin
+@testset "tensor identities" begin
 for T in (Float32, Float64, F64)
     for dim in (1,2,3)
         # Identities with second order and first order
@@ -510,7 +510,7 @@ for T in (Float64,)
 end
 end # of testset
 
-@testsection "promotion/conversion" begin
+@testset "promotion/conversion" begin
 T = Float32
 WIDE_T = widen(T)
 for dim in (1,2,3), order in (1,2,4)
@@ -652,7 +652,7 @@ end
     @test eigvecs(SE) ≈ eigvecs(ME)
 end
 
-@testsection "exceptions" begin
+@testset "exceptions" begin
     # normal multiplication
     A = rand(Tensor{2, 3})
     B = rand(Tensor{2, 3})

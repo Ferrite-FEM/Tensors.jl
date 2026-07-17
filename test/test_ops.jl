@@ -5,9 +5,8 @@ function _permutedims(S::FourthOrderTensor{dim}, idx::NTuple{4,Int}) where dim
     return Tensor{4,dim}(f)
 end
 
-@testsection "tensor ops" begin
+@testset "tensor ops" begin
 for T in (Float32, Float64, F64), dim in (1,2,3)
-println("T = $T, dim = $dim")
 AA = rand(Tensor{4, dim, T})
 BB = rand(Tensor{4, dim, T})
 A3 = rand(Tensor{3, dim, T})
@@ -26,7 +25,7 @@ symB = symmetric(B)
 
 i,j,k,l = rand(1:dim,4)
 
-@testsection "double contraction" begin
+@testset "double contraction" begin
     # 4 - 4
     @test vec((@inferred dcontract(AA, BB))::Tensor{4, dim, T})                  ≈ vec(collect(reshape(vec(AA), (dim^2, dim^2))) * collect(reshape(vec(BB), (dim^2, dim^2))))
     @test vec((@inferred dcontract(AA_sym, BB))::Tensor{4, dim, T})              ≈ vec(collect(reshape(vec(AA_sym), (dim^2, dim^2))) * collect(reshape(vec(BB), (dim^2, dim^2))))
@@ -58,9 +57,9 @@ i,j,k,l = rand(1:dim,4)
     @test (@inferred dcontract(A_sym, B))::T     ≈ sum(vec(A_sym) .* vec(B))
     @test (@inferred dcontract(A, B_sym))::T     ≈ sum(vec(A) .* vec(B_sym))
     @test (@inferred dcontract(A_sym, B_sym))::T ≈ sum(vec(A_sym) .* vec(B_sym))
-end # of testsection
+end # of testset
 
-@testsection "outer products (otimes, otimesu, otimesl)" begin
+@testset "outer products (otimes, otimesu, otimesl)" begin
     # binary otimes
     @test             (@inferred otimes(a, b))::Tensor{2, dim, T}                                  ≈ Array(a) * Array(b)'
     @test reshape(vec((@inferred otimes(A, B))::Tensor{4, dim, T}), dim^2, dim^2)                  ≈ vec(A) * vec(B)'
@@ -81,9 +80,9 @@ end # of testsection
     @test (@inferred otimesl(A_sym, B))::Tensor{4, dim, T}     ≈ _permutedims(otimes(A_sym, B), (1,3,4,2))
     @test (@inferred otimesl(A, B_sym))::Tensor{4, dim, T}     ≈ _permutedims(otimes(A, B_sym), (1,3,4,2))
     @test (@inferred otimesl(A_sym, B_sym))::Tensor{4, dim, T} ≈ _permutedims(otimes(A_sym, B_sym), (1,3,4,2))
-end # of testsection
+end # of testset
 
-@testsection "dot products" begin
+@testset "dot products" begin
     # 1 - 1
     @test (@inferred dot(a, b))::T               ≈ sum(Array(a) .* Array(b))
     # 1 - 2
@@ -112,9 +111,9 @@ end # of testsection
     @test (@inferred dot(B_sym, AA))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(B_sym), (dim, dim))) * collect(reshape(vec(AA), (dim, dim^3))), (dim, dim, dim, dim))
     @test (@inferred dot(AA_sym, B_sym))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(AA_sym), (dim^3, dim))) * collect(reshape(vec(B_sym), (dim, dim))), (dim, dim, dim, dim))
     @test (@inferred dot(B_sym, AA_sym))::Tensor{4, dim, T} ≈ reshape(collect(reshape(vec(B_sym), (dim, dim))) * collect(reshape(vec(AA_sym), (dim, dim^3))), (dim, dim, dim, dim))
-end # of testsection
+end # of testset
 
-@testsection "symmetric/skew-symmetric" begin
+@testset "symmetric/skew-symmetric" begin
     if dim == 1 # non-symmetric tensors are symmetric
         @test (@inferred issymmetric(A))
         @test (@inferred issymmetric(AA))
@@ -164,9 +163,9 @@ end # of testsection
     @test skew(A) ≈ -skew(A)'
     @test tr(skew(A)) ≈ 0.0
     @test tr(symmetric(A)) ≈ tr(A)
-end # of testsection
+end # of testset
 
-@testsection "transpose" begin
+@testset "transpose" begin
     @test (@inferred transpose(A))::Tensor{2, dim, T} ≈ Array(A)'
     @test transpose(transpose(A)) ≈ A
     @test (@inferred transpose(A_sym))::SymmetricTensor{2, dim, T} ≈ A_sym ≈ Array(A_sym)'
@@ -188,9 +187,9 @@ end # of testsection
     @test minortranspose(AA_sym) ≈ _permutedims(AA_sym,(2,1,4,3))
     @test majortranspose(AA) ≈ _permutedims(AA,(3,4,1,2))
     @test majortranspose(AA_sym) ≈ _permutedims(AA_sym,(3,4,1,2))
-end # of testsection
+end # of testset
 
-@testsection "cross product" begin
+@testset "cross product" begin
     @test (@inferred a × a)::Vec{3, T} ≈ Vec{3, T}((0.0,0.0,0.0))
     @test a × b ≈ -b × a
     if dim == 2
@@ -206,14 +205,14 @@ end # of testsection
     if T == Float64 # mixed eltype
         @test rand(Vec{dim,Float64}) × rand(Vec{dim,Float32}) isa Vec{3,Float64}
     end
-end # of testsection
+end # of testset
 
-@testsection "special" begin
+@testset "special" begin
     AAT = Tensor{4, dim, T}((i,j,k,l) -> AA_sym[i,l,k,j])
     @test AAT ⊡ (b ⊗ a) ≈ (@inferred dotdot(a, AA_sym, b))::Tensor{2, dim, T}
-end # of testsection
+end # of testset
 
-@testsection "rotation" begin
+@testset "rotation" begin
     if dim == 3
         x = eᵢ(Vec{3, T}, 1)
         y = eᵢ(Vec{3, T}, 2)
@@ -284,7 +283,7 @@ end # of testsection
     end
 end
 
-@testsection "tovoigt/fromvoigt" begin
+@testset "tovoigt/fromvoigt" begin
     # https://classes.engineering.wustl.edu/2009/spring/mase5513/abaqus/docs/v6.6/books/usb/default.htm?startat=pt01ch01s02aus02.html
     abaqus = dim == 1 ? fill(1, 1, 1) : dim == 2 ? [1 3; 0 2] : [1 4 6; 0 2 5; 0 0 3]
     T2 = T(2)
@@ -353,5 +352,5 @@ end
         end
     end
 end
-end # of testsection
-end # of testsection
+end # of testset
+end # of testset
