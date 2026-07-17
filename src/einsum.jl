@@ -46,8 +46,8 @@
 # and the emitted method body is (with `@muladd` in the declaration):
 #
 #     $(Expr(:meta, :inline))
-#     _d1 = Tensors.get_data(A)
-#     _d2 = Tensors.get_data(B)
+#     _d1 = A.data
+#     _d2 = B.data
 #     @inbounds return Tensor{2, 2}((
 #         muladd(_d1[2], _d2[2], _d1[1] * _d2[1]),
 #         muladd(_d1[3], _d2[2], _d1[2] * _d2[1]),
@@ -79,7 +79,6 @@
 # contract note in simd_lowering.jl.
 #
 # Vocabulary used throughout (defined elsewhere in the package):
-#   get_data(A)            the NTuple backing a tensor
 #   get_base(T)            the type with eltype/length stripped, e.g. Tensor{2,3}
 #   base_size(T)           dimensions per index, e.g. (3, 3)
 #   compute_index(T, i...) Cartesian index -> position in the data tuple;
@@ -339,7 +338,7 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; mulad
     plain_dot = OutType === nothing && length(sum_inds) < 2
     if N == 2 && simd_eligible(args[1].elt, args[2].elt) && !plain_dot
         r = try_simd_expr(OutType, plans, ds[1], ds[2],
-                          :(Tensors.get_data($(args[1].name))), :(Tensors.get_data($(args[2].name))), args[1].elt)
+                          :($(args[1].name).data), :($(args[2].name).data), args[1].elt)
         if r !== nothing
             ex, inline = r
             return inline ? Expr(:block, inlinemeta, ex) : ex
@@ -347,7 +346,7 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; mulad
     end
 
     # scalar lowering
-    databind = [:($(ds[n]) = Tensors.get_data($(args[n].name))) for n in 1:N]
+    databind = [:($(ds[n]) = $(args[n].name).data) for n in 1:N]
     exprs = [sum_expr(products, mults, ds, muladd) for (products, mults) in plans]
     if OutType === nothing
         return quote

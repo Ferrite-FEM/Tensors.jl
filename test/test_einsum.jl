@@ -77,7 +77,7 @@ end
             A2 = exact_rand(Tensor{2, dim, T}); S2 = exact_rand(SymmetricTensor{2, dim, T})
             A4 = exact_rand(Tensor{4, dim, T}); S4 = exact_rand(SymmetricTensor{4, dim, T})
             A3 = exact_rand(Tensor{3, dim, T})
-            f64(x) = Tensors.get_base(typeof(x))(map(Float64, Tensors.get_data(x)))
+            f64(x) = Tensors.get_base(typeof(x))(map(Float64, x.data))
             asarr(x::Number) = fill(Float64(x))
             asarr(x) = Float64.(Array(x))
             for (a, b) in ((A2, A2), (S2, S2), (S2, A2), (A4, A2), (S4, S2), (S4, A2),

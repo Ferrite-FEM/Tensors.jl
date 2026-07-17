@@ -86,13 +86,13 @@ julia> inv(A)
         ex = :($Tt((dinv, )))
     elseif dim == 2
         ex = quote
-            v = get_data(t)
+            v = t.data
             $Tt((v[$(idx(2,2))] * dinv, -v[$(idx(2,1))] * dinv,
                 -v[$(idx(1,2))] * dinv,  v[$(idx(1,1))] * dinv))
         end
     else # dim == 3
         ex = quote
-            v = get_data(t)
+            v = t.data
             $Tt(((v[$(idx(2,2))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,2))]) * dinv,
                 -(v[$(idx(2,1))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,1))]) * dinv,
                  (v[$(idx(2,1))]*v[$(idx(3,2))] - v[$(idx(2,2))]*v[$(idx(3,1))]) * dinv,
@@ -120,13 +120,13 @@ end
         ex = :($Tt((dinv, )))
     elseif dim == 2
         ex = quote
-            v = get_data(t)
+            v = t.data
             $Tt((v[$(idx(2,2))] * dinv, -v[$(idx(2,1))] * dinv,
                  v[$(idx(1,1))] * dinv))
         end
     else # dim == 3
         ex = quote
-            v = get_data(t)
+            v = t.data
             $Tt(((v[$(idx(2,2))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,2))]) * dinv,
                 -(v[$(idx(2,1))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,1))]) * dinv,
                  (v[$(idx(2,1))]*v[$(idx(3,2))] - v[$(idx(2,2))]*v[$(idx(3,1))]) * dinv,
@@ -224,7 +224,7 @@ julia> tr(A)
 """
 @generated function LinearAlgebra.tr(S::SecondOrderTensor{dim}) where {dim}
     idx(i,j) = compute_index(get_base(S), i, j)
-    ex = Expr[:(get_data(S)[$(idx(i,i))]) for i in 1:dim]
+    ex = Expr[:(S.data[$(idx(i,i))]) for i in 1:dim]
     exp = reduce((ex1, ex2) -> :(+($ex1, $ex2)), ex)
     @inbounds return exp
 end

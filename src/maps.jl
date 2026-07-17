@@ -31,7 +31,7 @@ end
 # the caller of 2 arg _map MUST guarantee that both arguments have
 # the same base (Tensor{order, dim} / SymmetricTensor{order, dim}) but not necessarily the same eltype
 @inline function _map(f, S1::AbstractTensor, S2::AbstractTensor)
-    return apply_all(S1, @inline function(i) @inbounds f(get_data(S1)[i], get_data(S2)[i]); end)
+    return apply_all(S1, @inline function(i) @inbounds f(S1.data[i], S2.data[i]); end)
 end
 
 # strip Unitful-like units if necessary (used by eigen)

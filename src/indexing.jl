@@ -53,25 +53,25 @@ end
 ###########################
 @inline function Base.getindex(S::Tensor, i::Int)
     @boundscheck checkbounds(S, i)
-    @inbounds v = get_data(S)[i]
+    @inbounds v = S.data[i]
     return v
 end
 
 @inline function Base.getindex(S::SymmetricTensor{2, dim}, i::Int, j::Int) where {dim}
     @boundscheck checkbounds(S, i, j)
-    @inbounds v = get_data(S)[compute_index(SymmetricTensor{2, dim}, i, j)]
+    @inbounds v = S.data[compute_index(SymmetricTensor{2, dim}, i, j)]
     return v
 end
 
 @inline function Base.getindex(S::SymmetricTensor{4, dim}, i::Int, j::Int, k::Int, l::Int) where {dim}
     @boundscheck checkbounds(S, i, j, k, l)
-    @inbounds v = get_data(S)[compute_index(SymmetricTensor{4, dim}, i, j, k, l)]
+    @inbounds v = S.data[compute_index(SymmetricTensor{4, dim}, i, j, k, l)]
     return v
 end
 
 @inline function Base.getindex(S::MixedTensor, i::Int)
     @boundscheck checkbounds(S, i)
-    @inbounds v = get_data(S)[i]
+    @inbounds v = S.data[i]
     return v
 end
 
@@ -85,7 +85,7 @@ end
 @inline @generated function Base.getindex(S::SecondOrderTensor, ::Colon, j::Int)
     dim1, dim2 = size(S)
     idx2(i, j) = compute_index(get_base(S), i, j)
-    column(j) = Expr(:tuple, [:(get_data(S)[$(idx2(i, j))]) for i in 1:dim1]...)
+    column(j) = Expr(:tuple, [:(S.data[$(idx2(i, j))]) for i in 1:dim1]...)
     body = foldr(1:dim2; init = :(throw(BoundsError(S, (Colon(), j))))) do jc, rest
         :(j == $jc ? Vec{$dim1}($(column(jc))) : $rest)
     end
@@ -98,7 +98,7 @@ end
 @inline @generated function Base.getindex(S::SecondOrderTensor, i::Int, ::Colon)
     dim1, dim2 = size(S)
     idx2(i, j) = compute_index(get_base(S), i, j)
-    row(i) = Expr(:tuple, [:(get_data(S)[$(idx2(i, j))]) for j in 1:dim2]...)
+    row(i) = Expr(:tuple, [:(S.data[$(idx2(i, j))]) for j in 1:dim2]...)
     body = foldr(1:dim1; init = :(throw(BoundsError(S, (i, Colon()))))) do ir, rest
         :(i == $ir ? Vec{$dim2}($(row(ir))) : $rest)
     end

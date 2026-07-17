@@ -138,8 +138,6 @@ const NonSymmetricTensors{dim, T} = Union{Tensor{2, dim, T}, Tensor{4, dim, T}, 
 ##############################
 # Utility/Accessor Functions #
 ##############################
-@inline get_data(t::AbstractTensor) = t.data
-
 n_components(::Type{SymmetricTensor{2, dim}}) where {dim} = dim * dim - div((dim - 1) * dim, 2)
 function n_components(::Type{SymmetricTensor{4, dim}}) where {dim}
     n = n_components(SymmetricTensor{2, dim})

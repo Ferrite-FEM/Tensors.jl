@@ -80,31 +80,31 @@ end
 # -------------------------------------------------------------------------- #
 @inline function Base.:+(S1::TT, S2::TT) where {TT <: AllSIMDTensors}
     @inbounds begin
-        r = tosimd(get_data(S1)) + tosimd(get_data(S2))
+        r = tosimd(S1.data) + tosimd(S2.data)
         return get_base(TT)(r)
     end
 end
 @inline function Base.:-(S1::TT, S2::TT) where {TT <: AllSIMDTensors}
     @inbounds begin
-        r = tosimd(get_data(S1)) - tosimd(get_data(S2))
+        r = tosimd(S1.data) - tosimd(S2.data)
         return get_base(TT)(r)
     end
 end
 @inline function Base.:*(n::T, S::AllSIMDTensors{T}) where {T <: SIMDTypes}
-    @inbounds return get_base(typeof(S))(n * tosimd(get_data(S)))
+    @inbounds return get_base(typeof(S))(n * tosimd(S.data))
 end
 @inline function Base.:*(S::AllSIMDTensors{T}, n::T) where {T <: SIMDTypes}
-    @inbounds return get_base(typeof(S))(tosimd(get_data(S)) * n)
+    @inbounds return get_base(typeof(S))(tosimd(S.data) * n)
 end
 @inline function Base.:/(S::AllSIMDTensors{T}, n::T) where {T <: SIMDTypes}
-    @inbounds return get_base(typeof(S))(tosimd(get_data(S)) / n)
+    @inbounds return get_base(typeof(S))(tosimd(S.data) / n)
 end
 
 # norm: orders 1 and 2 go through dot/dcontract (whose SIMD lowering comes
 # from the engine); 4th order is a plain (weighted) sum of squares
 @inline function LinearAlgebra.norm(S::Tensor{4, dim, T}) where {dim, T <: SIMDTypes}
     @inbounds begin
-        SV = tosimd(get_data(S))
+        SV = tosimd(S.data)
         return sqrt(sum(SV * SV))
     end
 end
@@ -117,7 +117,7 @@ end
         $(Expr(:meta, :inline))
         F = SVec{$M, T}($F)
         @inbounds begin
-            SV = tosimd(get_data(S))
+            SV = tosimd(S.data)
             return sqrt(sum(F * (SV * SV)))
         end
     end

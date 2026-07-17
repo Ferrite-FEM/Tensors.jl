@@ -69,4 +69,4 @@ Base.:^(S::MixedTensor2, p::Integer) = throw(ArgumentError("The exponentiation, 
     C[i, j]::SymmetricTensor{2, dim} = S1[i, k] * S2[k, j]
 end
 
-Base.iszero(a::AbstractTensor) = all(iszero, get_data(a))
+Base.iszero(a::AbstractTensor) = all(iszero, a.data)

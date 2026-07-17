@@ -64,7 +64,7 @@ end
     TT = regular_if_possible(MixedTensor{order1 + order2, Tuple{size(v)..., size(u)...}})
     return quote
         $(Expr(:meta, :inline))
-        p = map(partials, get_data(v))
+        p = map(partials, v.data)
         @inbounds return $TT($expr)
     end
 end
@@ -78,7 +78,7 @@ end
     end
     return quote
         $(Expr(:meta, :inline))
-        p = map(partials, get_data(v))
+        p = map(partials, v.data)
         @inbounds return $(SymmetricTensor{4, dim})($expr)
     end
 end
@@ -366,7 +366,7 @@ end
     end
     return quote
         $(Expr(:meta, :inline))
-        data = get_data(v)
+        data = v.data
         @inbounds return $TB($expr)
     end
 end
@@ -387,7 +387,7 @@ end
     end
     return quote
         $(Expr(:meta, :inline))
-        data = get_data(v)
+        data = v.data
         o = one(T)
         o2 = convert(T, 1/2)
         z = zero(T)
