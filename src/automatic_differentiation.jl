@@ -1,9 +1,5 @@
 import ForwardDiff: Dual, partials, value, Tag
 
-@static if isdefined(LinearAlgebra, :gradient)
-    import LinearAlgebra.gradient
-end
-
 ######################
 # Extraction methods #
 ######################
@@ -31,20 +27,8 @@ the [`_insert_gradient`](@ref) function
 @inline function _extract_value(v::Dual)
     return value(v)
 end
-# AbstractTensor output -> AbstractTensor gradient
-@generated function _extract_value(v::AbstractTensor{<:Any,<:Any,<:Dual})
-    TensorType = get_base(v)
-    ex = Expr(:tuple)
-    for i in 1:n_components(TensorType)
-        # Can use linear indexing even for SymmetricTensor
-        # when indexing the underlying tuple
-        push!(ex.args, :(value(get_data(v)[$i])))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($ex)
-    end
-end
+# AbstractTensor output -> AbstractTensor value
+@inline _extract_value(v::AbstractTensor{<:Any,<:Any,<:Dual}) = _map(value, v)
 
 #######################
 # Gradient extraction #
@@ -55,18 +39,8 @@ end
     return @inbounds partials(v)[1]
 end
 # Vec, Tensor{2/4}, SymmetricTensor{2/4} output, Scalar input -> Vec, Tensor{2/4}, SymmetricTensor{2/4} gradient
-@generated function _extract_gradient(v::AbstractTensor{<:Any,<:Any,<:Dual}, ::Number)
-    TensorType = get_base(v)
-    ex = Expr(:tuple)
-    for i in 1:n_components(TensorType)
-        # Can use linear indexing even for SymmetricTensor
-        # when indexing the underlying tuple
-        push!(ex.args, :(partials(get_data(v)[$i])[1]))
-    end
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($ex)
-    end
+@inline function _extract_gradient(v::AbstractTensor{<:Any,<:Any,<:Dual}, ::Number)
+    return _map(@inline(d -> @inbounds(partials(d)[1])), v)
 end
 
 @inline function _extract_gradient(v::Dual, ::TT) where {TT <: AbstractTensor}
@@ -96,38 +70,17 @@ end
 end
 
 # SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
-@inline function _extract_gradient_dual(v::SymmetricTensor{2, 1, <: Dual}, ::SymmetricTensor{2, 1})
-    @inbounds begin
-        p1 = partials(v[1,1])
-        ∇f = SymmetricTensor{4, 1}((p1[1],))
+@generated function _extract_gradient_dual(v::SymmetricTensor{2, dim, <:Dual}, ::SymmetricTensor{2, dim}) where {dim}
+    N = n_components(SymmetricTensor{2, dim})
+    expr = Expr(:tuple)
+    for j in 1:N, i in 1:N
+        push!(expr.args, :(p[$i][$j]))
     end
-    return ∇f
-end
-
-# SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
-@inline function _extract_gradient_dual(v::SymmetricTensor{2, 2, <: Dual}, ::SymmetricTensor{2, 2})
-    @inbounds begin
-        p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[2,2])
-        ∇f = SymmetricTensor{4, 2}((p1[1], p2[1], p3[1],
-                                    p1[2], p2[2], p3[2],
-                                    p1[3], p2[3], p3[3]))
+    return quote
+        $(Expr(:meta, :inline))
+        p = map(partials, get_data(v))
+        @inbounds return $(SymmetricTensor{4, dim})($expr)
     end
-    return ∇f
-end
-
-# SymmetricTensor{2} output, SymmetricTensor{2} input -> SymmetricTensor{4} gradient
-@inline function _extract_gradient_dual(v::SymmetricTensor{2, 3, <: Dual}, ::SymmetricTensor{2, 3})
-    @inbounds begin
-        p1, p2, p3 = partials(v[1,1]), partials(v[2,1]), partials(v[3,1])
-        p4, p5, p6 = partials(v[2,2]), partials(v[3,2]), partials(v[3,3])
-        ∇f = SymmetricTensor{4, 3}((p1[1], p2[1], p3[1], p4[1], p5[1], p6[1],
-                                    p1[2], p2[2], p3[2], p4[2], p5[2], p6[2],
-                                    p1[3], p2[3], p3[3], p4[3], p5[3], p6[3],
-                                    p1[4], p2[4], p3[4], p4[4], p5[4], p6[4],
-                                    p1[5], p2[5], p3[5], p4[5], p5[5], p6[5],
-                                    p1[6], p2[6], p3[6], p4[6], p5[6], p6[6]))
-    end
-    return ∇f
 end
 
 # for non dual variable
@@ -137,21 +90,18 @@ end
 @inline function _extract_gradient(::T, x::TT) where {T <: Real, TT <: AbstractTensor}
     zero(get_base(TT){T})
 end
-for TensorType in (Tensor, SymmetricTensor)
-    @eval begin
-        @generated function _extract_gradient_nondual(v::$TensorType{order, dim, T}, ::$TensorType{order, dim}) where {T<:Real, order, dim}
-            RetType = $TensorType{order+order, dim, T}
-            return quote
-                $(Expr(:meta, :inline))
-                zero($RetType)
-            end
-        end
+# symmetric input and output: keep the zero gradient symmetric
+@generated function _extract_gradient_nondual(v::SymmetricTensor{order, dim, T}, ::SymmetricTensor{order, dim}) where {T<:Real, order, dim}
+    RetType = SymmetricTensor{order+order, dim, T}
+    return quote
+        $(Expr(:meta, :inline))
+        zero($RetType)
     end
 end
-# fallback for differing input/output shapes (e.g. a constant Vec{2}-valued
-# function of a Vec{3}): the zero of the same gradient type the dual-valued
-# path produces — a MixedTensor over the concatenated dimensions, collapsed
-# to a regular Tensor when they all agree
+# all other shapes (e.g. a constant Vec{2}-valued function of a Vec{3}): the
+# zero of the same gradient type the dual-valued path produces — a MixedTensor
+# over the concatenated dimensions, collapsed to a regular Tensor when they
+# all agree
 @generated function _extract_gradient_nondual(v::AbstractTensor{<:Any, <:Any, T}, x::AbstractTensor) where {T <: Real}
     dims = (base_size(get_base(v))..., base_size(get_base(x))...)
     RetType = regular_if_possible(MixedTensor{length(dims), Tuple{dims...}, T, prod(dims)})
@@ -421,35 +371,28 @@ end
     end
 end
 
-# Second order symmetric tensors
-@inline function _load(v::SymmetricTensor{2, 1, T}, ::Tg) where {T, Tg}
-    @inbounds v_dual = SymmetricTensor{2, 1}((Dual{Tg}(get_data(v)[1], one(T)),))
-    return v_dual
-end
-
-@inline function _load(v::SymmetricTensor{2, 2, T}, ::Tg) where {T, Tg}
-    data = get_data(v)
-    o = one(T)
-    o2 = convert(T, 1/2)
-    z = zero(T)
-    @inbounds v_dual = SymmetricTensor{2, 2}((Dual{Tg}(data[1], o, z, z),
-                                              Dual{Tg}(data[2], z, o2, z),
-                                              Dual{Tg}(data[3], z, z, o)))
-    return v_dual
-end
-
-@inline function _load(v::SymmetricTensor{2, 3, T}, ::Tg) where {T, Tg}
-    data = get_data(v)
-    o = one(T)
-    o2 = convert(T, 1/2)
-    z = zero(T)
-    @inbounds v_dual = SymmetricTensor{2, 3}((Dual{Tg}(data[1], o, z, z, z, z, z),
-                                              Dual{Tg}(data[2], z, o2, z, z, z, z),
-                                              Dual{Tg}(data[3], z, z, o2, z, z, z),
-                                              Dual{Tg}(data[4], z, z, z, o, z, z),
-                                              Dual{Tg}(data[5], z, z, z, z, o2, z),
-                                              Dual{Tg}(data[6], z, z, z, z, z, o)))
-    return v_dual
+# Second order symmetric tensors: diagonal components are seeded with 1,
+# off-diagonal (paired) components with 1/2
+@generated function _load(v::SymmetricTensor{2, dim, T}, ::Tg) where {dim, T, Tg}
+    N = n_components(SymmetricTensor{2, dim})
+    # compact storage is the lower triangle, column-major
+    isdiag = [i == j for j in 1:dim for i in j:dim]
+    expr = Expr(:tuple)
+    for a in 1:N
+        seeds = Expr(:tuple)
+        for b in 1:N
+            push!(seeds.args, a == b ? (isdiag[a] ? :o : :o2) : :z)
+        end
+        push!(expr.args, :(Dual{Tg}(data[$a], $seeds)))
+    end
+    return quote
+        $(Expr(:meta, :inline))
+        data = get_data(v)
+        o = one(T)
+        o2 = convert(T, 1/2)
+        z = zero(T)
+        @inbounds return $(SymmetricTensor{2, dim})($expr)
+    end
 end
 
 """
