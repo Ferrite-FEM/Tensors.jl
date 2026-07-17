@@ -70,13 +70,11 @@
 # `minortranspose: C[i,j,k,l] = A[j,i,l,k]`) is the degenerate case: nothing
 # is summed, and each stored output component lowers to one data read.
 #
-# The scalar lowering in this file is the semantic reference: it reproduces
-# the pre-rewrite package expression-for-expression. The SIMD lowering
-# evaluates the same products in the same order per output component, but as
-# muladd chains regardless of the `@muladd` flag and (for scalar output) a
-# horizontal vector sum — exactly what the old hand-written kernels did, so
-# a given operation and eltype computes what it always computed. See the
-# contract note in simd_lowering.jl.
+# The scalar lowering in this file is the semantic reference. The SIMD
+# lowering evaluates the same products in the same order per output
+# component, but as muladd chains regardless of the `@muladd` flag and (for
+# scalar output) a horizontal vector sum. See the contract note in
+# simd_lowering.jl.
 #
 # Vocabulary used throughout (defined elsewhere in the package):
 #   get_base(T)            the type with eltype/length stripped, e.g. Tensor{2,3}
@@ -134,8 +132,7 @@ end
 dim_of(names::Vector{Symbol}, dims::Vector{Int}, name::Symbol) = dims[findfirst(==(name), names)::Int]
 
 # ------------------------------ step 2 ------------------------------------ #
-# Output type from the index structure. The rules (identical to the
-# pre-rewrite package):
+# Output type from the index structure. The rules:
 #
 #   * no output indices                      -> scalar
 #   * output dimensions differ               -> MixedTensor{order, Tuple{dims...}}
@@ -170,7 +167,7 @@ end
 # pairs? Symmetric storage pairs indices as (1,2) and (3,4), so the two names
 # must sit adjacent at an odd/even position of a SymmetricTensor argument.
 # (This does not detect "accidental" symmetry, e.g. A[i,k]*A[k,j] for
-# symmetric A — same as the pre-rewrite package.)
+# symmetric A.)
 function is_symmetric_pair(args::Tuple{Vararg{IndexedArg}}, idx1::Symbol, idx2::Symbol)
     for a in args
         nr1 = findfirst(==(idx1), a.inds)
@@ -236,7 +233,6 @@ end
 # multiplicity scales the first factor: `(2 * _d1[2]) * _d2[2]`. For more
 # than two arguments the first N-1 data reads form the muladd operand and
 # the last one the multiplier: `muladd(_d1[k] * _d2[ikjl], _d3[l], acc)`.
-# All of this matches the pre-rewrite emission exactly.
 function sum_expr(products, mults, ds::NTuple{N, Symbol}, madd::Bool) where {N}
     ref(k, n) = :($(ds[n])[$(products[k][n])])           # k-th product, n-th argument
     if N == 1
@@ -304,7 +300,7 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; mulad
     counts = Dict(name => count(a -> name in a.inds, args) for name in names)
     any(>(2), values(counts)) && error("an index cannot appear in more than two arguments")
     # sorted alphabetically: this fixes the summation (and hence rounding)
-    # order deterministically, and matches the pre-rewrite package
+    # order deterministically
     sum_inds = tuple(sort(filter(name -> counts[name] == 2, names))...)
     issubset(out_inds, names) || error("output indices must appear in the term")
     isdisjoint(sum_inds, out_inds) || error("output indices cannot be summation indices")
@@ -329,12 +325,11 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; mulad
     @assert all(a -> a.name ∉ ds, args)
     inlinemeta = Expr(:meta, :inline)
 
-    # SIMD lowering, for binary operations on same-eltype hardware floats
-    # (the cases the old hand-written simd.jl kernels covered); falls back to
-    # the scalar lowering when the plan has no column structure. Exception:
-    # a plain vector dot (scalar output, one summed index) always stays
-    # scalar — the SVec-and-horizontal-sum form loses at the dimensions this
-    # package supports (1, 2, 3), and the old package kept it scalar too.
+    # SIMD lowering, for binary operations on same-eltype hardware floats;
+    # falls back to the scalar lowering when the plan has no column
+    # structure. Exception: a plain vector dot (scalar output, one summed
+    # index) always stays scalar — the SVec-and-horizontal-sum form loses at
+    # the dimensions this package supports (1, 2, 3).
     plain_dot = OutType === nothing && length(sum_inds) < 2
     if N == 2 && simd_eligible(args[1].elt, args[2].elt) && !plain_dot
         r = try_simd_expr(OutType, plans, ds[1], ds[2],

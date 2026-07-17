@@ -1,16 +1,16 @@
-# Package-hygiene guards (method ambiguities, allocations) and regression
-# tests for review findings.
+# Package-hygiene guards (method ambiguities, allocations) and assorted
+# regression tests.
 
 using Tensors, Test, LinearAlgebra
 using Statistics: mean
 
 @testset "hygiene" begin
     @testset "method ambiguities" begin
-        # only the three pre-existing literal_pow/MixedTensor2 ambiguities are
+        # only the three known literal_pow/MixedTensor2 ambiguities are
         # tolerated; anything new is a regression
         ambiguities = Test.detect_ambiguities(Tensors; recursive = true)
         @test length(ambiguities) <= 3
-        # known previously-ambiguous intersections dispatch fine
+        # ambiguity-prone intersections must dispatch fine
         @test norm(rand(Tensor{4, 3})) > 0
         @test norm(rand(Tensor{4, 3, Float32})) > 0
     end

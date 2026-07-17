@@ -8,19 +8,17 @@
 #
 #  (1) Whole-data fast paths for `+`, `-`, scalar `*` and `/`, and `norm`:
 #      load the full data tuple into one `SIMD.Vec`, operate, rebuild.
-#      These replace the hand-written element-wise kernels of the old simd.jl.
 #
 #  (2) `try_simd_expr`, the vector lowering used by the einsum engine
 #      (see einsum.jl for the pipeline): it inspects the *plan* of a binary
 #      operation and, when the plan has "column structure" (explained at part
-#      2 below), emits column-load/muladd kernels — the pattern the old
-#      hand-written dot/dcontract/otimes kernels used. When the plan has no
+#      2 below), emits column-load/muladd kernels. When the plan has no
 #      such structure it returns `nothing` and the engine falls back to the
 #      scalar lowering.
 #
 # Only same-eltype Float16/32/64 arguments take these paths; everything else
 # (Dual numbers, integers, mixed eltypes, user types) uses the scalar
-# expressions — matching the dispatch behavior of the old package.
+# expressions.
 
 import SIMD
 const SVec{N, T} = SIMD.Vec{N, T}
@@ -28,8 +26,8 @@ const SVec{N, T} = SIMD.Vec{N, T}
 const SIMDTypes = Union{Float16, Float32, Float64}
 
 # Tensors which the whole-data element-wise fast paths apply to.
-# Note: Tensor{4,3} (81 components) is deliberately excluded, as in the old
-# simd.jl — LLVM does better on the scalar code for that width.
+# Note: Tensor{4,3} (81 components) is deliberately excluded — LLVM does
+# better on the scalar code for that width.
 const AllSIMDTensors{T <: SIMDTypes} = Union{
     Tensor{1, 1, T, 1}, Tensor{1, 2, T, 2}, Tensor{1, 3, T, 3},
     Tensor{2, 1, T, 1}, Tensor{2, 2, T, 4}, Tensor{2, 3, T, 9},
@@ -50,8 +48,8 @@ const AllSIMDTensors{T <: SIMDTypes} = Union{
 end
 
 # build a tensor from one SVec
-# (two separate methods, like the old simd.jl, to dispatch correctly and to
-# avoid ambiguities with the default and Vararg constructors)
+# (two separate methods, to dispatch correctly and to avoid ambiguities
+# with the default and Vararg constructors)
 @generated function (::Type{Tensor{order, dim}})(r::SVec{N, T}) where {order, dim, N, T}
     return quote
         $(Expr(:meta, :inline))
@@ -125,8 +123,8 @@ end
 
 # For hardware floats, contracting a mixed full/symmetric 4th-order pair is
 # faster by densifying the symmetric argument and running the full-full
-# kernel (the old package did the same); the engine's direct packed path
-# stays in use for every other combination, where it is faster.
+# kernel; the engine's direct packed path stays in use for every other
+# combination, where it is faster.
 @inline function dcontract(S1::Tensor{4, dim, T}, S2::SymmetricTensor{4, dim, T}) where {dim, T <: SIMDTypes}
     SS1, SS2 = promote_base(S1, S2)
     return dcontract(SS1, SS2)
@@ -165,26 +163,23 @@ end
 #     c2 = muladd(SV2, _d2[4], SV1 * _d2[3])
 #     return Tensor{2, 2}((c1[1], c1[2], c2[1], c2[2]))
 #
-# This is exactly the shape of the old hand-written kernels, generated from
-# the plan instead of maintained per operation. Symmetric arguments fit the
-# same pattern because their packed storage is itself column-major (e.g. the
-# 6×6 packed grid of a SymmetricTensor{4,3}), with multiplicities folded into
-# the B-side scalar (`_d2[k] * T(2)` — exact, the factor is a power of two).
+# Symmetric arguments fit the same pattern because their packed storage is
+# itself column-major (e.g. the 6×6 packed grid of a SymmetricTensor{4,3}),
+# with multiplicities folded into the B-side scalar (`_d2[k] * T(2)` —
+# exact, the factor is a power of two).
 #
 # The numerics contract, precisely:
 #
 #   * Each output lane evaluates the plan's products in the same order as the
 #     scalar lowering, one muladd per product — never regrouped into
 #     `avec * (b1 + b2)`-style sums.
-#   * The chains here always use muladd (as the old hand-written kernels
-#     did), so for operations declared *without* `@muladd` (`dot`, `otimes`)
-#     the hardware-float result may differ from the scalar path's `a*b + c*d`
-#     in the last ulp where fma contracts. The scalar-output form below uses
-#     a horizontal vector sum, again like the old kernels.
-#   * In other words: the guarantee is not "SIMD ≡ scalar path" in all cases;
-#     it is "each (operation, eltype) computes exactly what the pre-rewrite
-#     package computed", with SIMD ≡ scalar in addition wherever the
-#     declaration uses `@muladd` (the dcontract family).
+#   * The chains here always use muladd, so for operations declared
+#     *without* `@muladd` (`dot`, `otimes`) the hardware-float result may
+#     differ from the scalar path's `a*b + c*d` in the last ulp where fma
+#     contracts. The scalar-output form below uses a horizontal vector sum.
+#   * In other words: the guarantee is not "SIMD ≡ scalar path" in all
+#     cases; SIMD ≡ scalar holds wherever the declaration uses `@muladd`
+#     (the dcontract family).
 
 # both arguments must be the same hardware float type
 simd_eligible(TA, TB) = TA === TB && TA <: SIMDTypes
@@ -252,11 +247,11 @@ function try_simd_columns(OutType, plans, da, db, T)
         for c in cols, i in 1:m
             push!(out.args, :($c[$i]))
         end
-        # The two largest kernels were deliberately not force-inlined in the
-        # old package; keep that policy by size. 216 = 36 components × 6
-        # terms, the 4s ⊡ 4s kernel at dim 3; the only other kernel that
-        # reaches it is 4 ⊡ 4 at dim 3 (81 × 9 = 729). Everything smaller
-        # (e.g. 4 ⊡ 2 at dim 3: 9 × 9 = 81) stays `@inline`.
+        # The two largest kernels are deliberately not force-inlined.
+        # 216 = 36 components × 6 terms, the 4s ⊡ 4s kernel at dim 3; the
+        # only other kernel that reaches it is 4 ⊡ 4 at dim 3 (81 × 9 = 729).
+        # Everything smaller (e.g. 4 ⊡ 2 at dim 3: 9 × 9 = 81) stays
+        # `@inline`.
         inline = nproducts < 216
         return quote
             $(stmts...)
@@ -300,8 +295,7 @@ end
 # Loads always come from the *first* argument: the declarations place the
 # argument that carries the leading output indices first, which is what makes
 # its loads contiguous. Plans without that property (e.g. `dot(v, A)`, where
-# the reads of `A` are strided) simply fall back to the scalar lowering —
-# also what the old hand-written kernels did.
+# the reads of `A` are strided) simply fall back to the scalar lowering.
 function try_simd_expr(OutType, plans, da, db, dataA, dataB, T)
     inline = true
     if OutType === nothing

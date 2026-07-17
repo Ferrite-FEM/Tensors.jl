@@ -285,7 +285,7 @@ being differentiated.
 """
 extract_value(x) = _extract_value(x)
 
-# backwards-compatible internal name (the macro used to call this directly)
+# internal alias kept for backwards compatibility
 _propagate_gradient(f_dfdx::Function, x::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = propagate_gradient(f_dfdx, x)
 
 # Define the _insert_gradient method

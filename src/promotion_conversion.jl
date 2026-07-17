@@ -24,8 +24,8 @@ end
     return convert(TS, S1), convert(TS, S2)
 end
 # NOTE: Base's contract for one-argument `promote(x)` is to return `(x,)`;
-# it is not extended here (the historical single-argument method that
-# densified a symmetric tensor is available as `densify`)
+# it is not extended here (use `densify` to convert a symmetric tensor to a
+# full one)
 """
     densify(S::AbstractTensor)
 

@@ -63,7 +63,7 @@ end
         @test Array(S4 ⊡ S4) == ref_contract(S4, S4, 2)
         @test Array(S4 ⊡ A3) == ref_contract(S4, A3, 2)
         @test Array(A3 ⊡ S4) == ref_contract(A3, S4, 2)
-        # operations added with the engine (previously missing combinations)
+        # mixed-order combinations
         @test Array(A3 ⋅ A3) == ref_contract(A3, A3, 1)         # issue #227
         @test Array(A1 ⋅ A4) == ref_contract(A1, A4, 1)
         @test Array(A4 ⋅ A1) == ref_contract(A4, A1, 1)
