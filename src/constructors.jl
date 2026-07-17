@@ -28,9 +28,24 @@ for (TensorType, orders) in ((SymmetricTensor, (2, 4)), (Tensor, (2, 3, 4)))
     end
 end
 
-# MixedTensor (`dims <: Tuple` enforced here, see the struct definition)
-@inline MixedTensor{order, dims}(data::NTuple{M, T}) where {order, dims <: Tuple, T, M} = MixedTensor{order, dims, T, M}(data)
-@inline MixedTensor{order, dims, T}(data::NTuple{M, T2}) where {order, dims <: Tuple, T, T2, M} = MixedTensor{order, dims, T, M}(data)
+# MixedTensor (`dims <: Tuple` and the structural invariants — one dimension
+# per index, component count matching — are enforced here, see the struct
+# definition for why they cannot live on the struct itself)
+@inline function _check_mixed_parameters(::Type{MixedTensor{order, dims}}, M::Int) where {order, dims <: Tuple}
+    n = length(dims.parameters)
+    n == order || throw(ArgumentError("MixedTensor{$order, $dims}: $n dimensions given for order $order"))
+    N = n_components(MixedTensor{order, dims})
+    M == N || throw(ArgumentError("MixedTensor{$order, $dims}: size requires $N components, got $M"))
+    return nothing
+end
+@inline function MixedTensor{order, dims}(data::NTuple{M, T}) where {order, dims <: Tuple, T, M}
+    _check_mixed_parameters(MixedTensor{order, dims}, M)
+    return MixedTensor{order, dims, T, M}(data)
+end
+@inline function MixedTensor{order, dims, T}(data::NTuple{M, T2}) where {order, dims <: Tuple, T, T2, M}
+    _check_mixed_parameters(MixedTensor{order, dims}, M)
+    return MixedTensor{order, dims, T, M}(data)
+end
 @inline MixedTensor{order, dims}(data::Tuple{Vararg{Any, M}}) where {order, dims <: Tuple, M} = MixedTensor{order, dims}(promote(data...))
 
 # Special for Vec

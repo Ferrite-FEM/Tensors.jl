@@ -148,6 +148,18 @@ for TensorType in (Tensor, SymmetricTensor)
         end
     end
 end
+# fallback for differing input/output shapes (e.g. a constant Vec{2}-valued
+# function of a Vec{3}): the zero of the same gradient type the dual-valued
+# path produces — a MixedTensor over the concatenated dimensions, collapsed
+# to a regular Tensor when they all agree
+@generated function _extract_gradient_nondual(v::AbstractTensor{<:Any, <:Any, T}, x::AbstractTensor) where {T <: Real}
+    dims = (base_size(get_base(v))..., base_size(get_base(x))...)
+    RetType = regular_if_possible(MixedTensor{length(dims), Tuple{dims...}, T, prod(dims)})
+    return quote
+        $(Expr(:meta, :inline))
+        zero($RetType)
+    end
+end
 
 ######################
 # Gradient insertion #
@@ -572,7 +584,8 @@ end
     laplace(f, x)
 
 Calculate the laplacian of the field `f`, in the point `x`.
-If `f` is a vector field, use broadcasting.
+For a three-dimensional vector field, use broadcasting (`laplace.(f, x)`
+with `x::Vec{3}`); vector fields of other dimensions are not supported.
 
 # Examples
 ```jldoctest

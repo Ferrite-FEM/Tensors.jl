@@ -62,11 +62,16 @@ column structure: within an output column of height `m`, every term must read
 `m` contiguous elements of one argument scaled by a single element of the
 other. When the plan has that shape, the generator emits `SIMD.Vec`
 column-load/`muladd` kernels instead of scalar code — the same kernels the
-old hand-written `simd.jl` contained, now derived mechanically. Every output
-lane evaluates the identical IEEE operation chain as the scalar lowering, so
-the two paths agree bit-for-bit; plans without column structure (and all
-other element types) fall back to the scalar lowering. Element-wise fast
-paths (`+`, `-`, scalar `*` and `/`, `norm`) live in the same file.
+old hand-written `simd.jl` contained, now derived mechanically. The numerics
+contract: each (operation, eltype) computes exactly what the pre-rewrite
+package computed. For operations declared with `@muladd` (the `dcontract`
+family) the SIMD and scalar lowerings additionally agree bit-for-bit; for
+operations declared without it (plain `dot`, `otimes`) the SIMD kernels
+always chain `muladd`s, so the result may differ from the scalar path's
+`a*b + c*d` in the last ulp where fma contracts, and scalar-output kernels
+use a horizontal vector sum. Plans without column structure (and all other
+element types) fall back to the scalar lowering. Element-wise fast paths
+(`+`, `-`, scalar `*` and `/`, `norm`) live in the same file.
 
 ## Adding an operation
 

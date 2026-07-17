@@ -248,6 +248,29 @@ julia> tr(A)
     @inbounds return exp
 end
 
+"""
+    mean(::SecondOrderTensor)
+
+Computes the mean value of a second order tensor, defined as `tr(S) / 3`
+*regardless of the dimension of the tensor*. This is the convention from
+continuum mechanics (where a 2D tensor typically represents a plane strain or
+plane stress state of a 3D tensor), and is consistent with [`vol`](@ref) and
+[`dev`](@ref).
+
+# Examples
+```jldoctest
+julia> A = rand(SymmetricTensor{2,2})
+2×2 SymmetricTensor{2, 2, Float64, 3}:
+ 0.325977  0.549051
+ 0.549051  0.218587
+
+julia> mean(A)
+0.18152112789414185
+
+julia> tr(A) / 3
+0.18152112789414185
+```
+"""
 Statistics.mean(S::SecondOrderTensor) = tr(S) / 3
 
 """
@@ -308,7 +331,7 @@ end
 
 # https://web.archive.org/web/20150311224314/http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
 """
-    rotate(x::AbstractTensor{3}, u::Vec{3}, θ::Number)
+    rotate(x::AbstractTensor{<:Any, 3}, u::Vec{3}, θ::Number)
 
 Rotate a three dimensional tensor `x` around the vector `u` a total of `θ` radians.
 
@@ -335,7 +358,7 @@ function rotate(x::Vec{3}, u::Vec{3}, θ::Number)
 end
 
 """
-    rotate(x::AbstractTensor{2}, θ::Number)
+    rotate(x::AbstractTensor{<:Any, 2}, θ::Number)
 
 Rotate a two dimensional tensor `x` `θ` radians around the out-of-plane axis.
 

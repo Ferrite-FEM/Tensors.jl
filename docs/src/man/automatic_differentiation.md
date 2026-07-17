@@ -18,7 +18,7 @@ While `ForwardDiff.jl` can itself be used to differentiate tensor functions it i
 
 Instead, it is simpler to use `Tensors` own AD API to do the differentiation. This does not require any conversions and everything will be stack allocated so there is no need to preallocate.
 
-The API for AD in `Tensors` is `gradient(f, A)` and `hessian(f, A)` where `f` is a function and `A` is a first or second order tensor. For `gradient` the function can return a scalar, vector (in case the input is a vector) or a second order tensor. For `hessian` the function should return a scalar.
+The API for AD in `Tensors` is `gradient(f, A)` and `hessian(f, A)` where `f` is a function and `A` is a first or second order tensor (`gradient` also accepts a plain `Number` or a `MixedTensor`). For `gradient` the function can return a scalar, vector (in case the input is a vector) or a second order tensor. For `hessian` the function should return a scalar.
 
 When evaluating the function with dual numbers, the value (value and gradient in the case of hessian) is obtained automatically, along with the gradient. To obtain the lower order results `gradient` and `hessian` accepts a third arguement, a `Symbol`. Note that the symbol is only used to dispatch to the correct function, and thus it can be any symbol. In the examples the symbol `:all` is used to obtain all the lower order derivatives and values.
 

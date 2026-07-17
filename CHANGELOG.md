@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v1.18.0] (unreleased)
 
 ### Changed
 - The internals have been rewritten around a single index-notation code
@@ -60,6 +60,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MixedTensor` instead of falling back to `Array` ([#245]).
 - Contractions between `MixedTensor`s with mismatching index dimensions now
   throw a `DimensionMismatch` error instead of an internal generator error.
+- `isminorsymmetric` and `ismajorsymmetric` previously missed certain
+  asymmetric components (e.g. a tensor with `A[1,2,1,2] != A[2,1,2,1]` was
+  reported minor symmetric), which could silently corrupt data through
+  `convert(SymmetricTensor{4,dim}, A)`. Both predicates now check every
+  component.
+- `MixedTensor{order, dims}` constructors validate that the number of
+  dimensions matches the order and that the data has the right number of
+  components (previously a too-short tuple was accepted and later read out
+  of bounds).
+- Constant tensor-valued functions with an output shape differing from the
+  input no longer error under `gradient` (a zero gradient of the appropriate
+  shape is returned).
+- `tomandel`/`tovoigt` with `offdiagscale` promote the element type of the
+  returned array, so integer tensors no longer throw `InexactError`.
+- The cross product of two `Vec{1}` returns the element type of the product
+  (relevant for `Unitful`-style quantities).
+- `S^(p::Integer)` with `p == typemin(Int)` throws `OverflowError` instead of
+  recursing.
+- The one-argument `Base.promote(::AbstractTensor)` method is removed: it
+  returned a bare (densified) tensor, violating `promote`'s contract of
+  returning a tuple. Use `Tensors.densify` for the old behavior.
 
 ## [v1.17.0]
 
@@ -113,3 +134,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#236]: https://github.com/Ferrite-FEM/Tensors.jl/issues/236
 [#238]: https://github.com/Ferrite-FEM/Tensors.jl/issues/238
 [#240]: https://github.com/Ferrite-FEM/Tensors.jl/issues/240
+[#179]: https://github.com/Ferrite-FEM/Tensors.jl/issues/179
+[#197]: https://github.com/Ferrite-FEM/Tensors.jl/issues/197
+[#208]: https://github.com/Ferrite-FEM/Tensors.jl/issues/208
+[#223]: https://github.com/Ferrite-FEM/Tensors.jl/issues/223
+[#227]: https://github.com/Ferrite-FEM/Tensors.jl/issues/227
+[#239]: https://github.com/Ferrite-FEM/Tensors.jl/issues/239
+[#245]: https://github.com/Ferrite-FEM/Tensors.jl/issues/245

@@ -12,7 +12,7 @@ DocMeta.setdocmeta!(Tensors, :DocTestSetup,
 makedocs(
     format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
     modules = [Tensors],
-    warnonly = true,
+    warnonly = Documenter.except(:autodocs_block, :cross_references, :docs_block, :doctest, :eval_block, :example_block, :meta_block, :setup_block),
     sitename = "Tensors.jl",
     pages = Any[
         "Home" => "index.md",

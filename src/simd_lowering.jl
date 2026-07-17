@@ -108,6 +108,11 @@ end
         return sqrt(sum(SV * SV))
     end
 end
+# explicit method at the intersection with `norm(::Tensor{4,3})` in
+# math_ops.jl, resolving the dispatch ambiguity in the latter's favor
+# (mapreduce vectorizes better than the 81-wide SVec at this size — and
+# it is the method Julia in fact selected here)
+@inline LinearAlgebra.norm(S::Tensor{4, 3, T}) where {T <: SIMDTypes} = sqrt(mapreduce(abs2, +, S))
 @generated function LinearAlgebra.norm(S::SymmetricTensor{4, dim, T}) where {dim, T <: SIMDTypes}
     F = Expr(:tuple, [:(T($f)) for f in symmetric_multiplicities(4, dim)]...)
     M = n_components(SymmetricTensor{4, dim})

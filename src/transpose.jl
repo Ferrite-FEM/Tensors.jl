@@ -1,6 +1,5 @@
 # transpose, majortranspose, minortranspose
 """
-    transpose(::Vec)
     transpose(::SecondOrderTensor)
     transpose(::FourthOrderTensor)
 

@@ -47,7 +47,8 @@ end
 # exponentiation by squaring.
 function Base.:^(S1::SecondOrderTensor, p::Integer)
     p == 0 && return one(S1)
-    p < 0 && return inv(S1)^(-p)
+    # checked: -typemin overflows silently and would recurse forever
+    p < 0 && return inv(S1)^(Base.checked_neg(p))
     if p <= 4
         S2 = S1
         for i in 2:p

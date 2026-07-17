@@ -24,6 +24,7 @@ include("test_ops.jl")
 include("test_ad.jl")
 include("mixed_tensors.jl")
 include("test_einsum.jl")
+include("test_hygiene.jl")
 
 print_timer()
 println()
