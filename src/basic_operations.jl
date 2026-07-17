@@ -7,45 +7,32 @@
 @inline Base.:-(S::AbstractTensor) = _map(-, S)
 
 # Binary
-@inline Base.:+(S1::Tensor{order, dim}, S2::Tensor{order, dim}) where {order, dim} = _map(+, S1, S2)
-@inline Base.:+(S1::SymmetricTensor{order, dim}, S2::SymmetricTensor{order, dim}) where {order, dim} = _map(+, S1, S2)
-@inline Base.:+(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) where {order, dim} = ((SS1, SS2) = promote_base(S1, S2); SS1 + SS2)
-@inline Base.:+(S1::MixedTensor{order, dims}, S2::MixedTensor{order, dims}) where {order, dims} = _map(+, S1, S2)
-
-@inline Base.:-(S1::Tensor{order, dim}, S2::Tensor{order, dim}) where {order, dim} = _map(-, S1, S2)
-@inline Base.:-(S1::SymmetricTensor{order, dim}, S2::SymmetricTensor{order, dim}) where {order, dim} = _map(-, S1, S2)
-@inline Base.:-(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) where {order, dim} = ((SS1, SS2) = promote_base(S1, S2); SS1 - SS2)
-@inline Base.:-(S1::MixedTensor{order, dims}, S2::MixedTensor{order, dims}) where {order, dims} = _map(-, S1, S2)
+for op in (:+, :-)
+    @eval begin
+        @inline Base.$op(S1::Tensor{order, dim}, S2::Tensor{order, dim}) where {order, dim} = _map($op, S1, S2)
+        @inline Base.$op(S1::SymmetricTensor{order, dim}, S2::SymmetricTensor{order, dim}) where {order, dim} = _map($op, S1, S2)
+        @inline Base.$op(S1::MixedTensor{order, dims}, S2::MixedTensor{order, dims}) where {order, dims} = _map($op, S1, S2)
+        # Tensor with SymmetricTensor: promote the symmetric one and retry
+        @inline Base.$op(S1::AbstractTensor{order, dim}, S2::AbstractTensor{order, dim}) where {order, dim} = ((SS1, SS2) = promote_base(S1, S2); $op(SS1, SS2))
+        Base.$op(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimension and order must match"))
+    end
+end
 
 @inline Base.:*(S::AbstractTensor, n::Number) = _map(x -> x * n, S)
 @inline Base.:*(n::Number, S::AbstractTensor) = _map(x -> n * x, S)
 @inline Base.:/(S::AbstractTensor, n::Number) = _map(x -> x / n, S)
 
-Base.:+(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimension and order must match"))
-Base.:-(S1::AbstractTensor, S2::AbstractTensor) = throw(DimensionMismatch("dimension and order must match"))
-
-# power
-@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Val{-1}) = inv(S)
-@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Val{0})  = one(S)
-@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Val{1})  = S
-@inline function Base.literal_pow(::typeof(^), S1::SecondOrderTensor, ::Val{p}) where {p}
-    p > 0 ? (S2 = S1; q = p) : (S2 = inv(S1); q = -p)
-    S3 = S2
-    for i in 2:q
-        S2 = _powdot(S2, S3)
-    end
-    S2
-end
-
-function Base.literal_pow(::typeof(^), S::MixedTensor2, ::Val{p}) where {p}
-    throw(ArgumentError("The exponentiation, S^$p, is not defined for S::MixedTensor2"))
+@inline Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Val{p}) where {p} = S^p
+@inline function Base.literal_pow(::typeof(^), S::SecondOrderTensor, ::Val{-1})
+    p = -1
+    return S^p
 end
 
 # non-literal integer powers (issue #239). For small exponents this is the
 # same repeated-contraction evaluation as `literal_pow`, so `S^3` and
 # `S^(p::Int)` with `p = 3` give identical results; larger exponents use
 # exponentiation by squaring.
-function Base.:^(S1::SecondOrderTensor, p::Integer)
+@inline function Base.:^(S1::SecondOrderTensor, p::Integer)
     p == 0 && return one(S1)
     # checked: -typemin overflows silently and would recurse forever
     p < 0 && return inv(S1)^(Base.checked_neg(p))
