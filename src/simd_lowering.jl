@@ -169,9 +169,20 @@ end
 # 6×6 packed grid of a SymmetricTensor{4,3}), with multiplicities folded into
 # the B-side scalar (`_d2[k] * T(2)` — exact, the factor is a power of two).
 #
-# Each output lane evaluates the same muladd chain as the scalar lowering, in
-# the same order — the two lowerings are IEEE-identical (multiplicities are
-# never merged into `avec * (b1 + b2)`-style regroupings).
+# The numerics contract, precisely:
+#
+#   * Each output lane evaluates the plan's products in the same order as the
+#     scalar lowering, one muladd per product — never regrouped into
+#     `avec * (b1 + b2)`-style sums.
+#   * The chains here always use muladd (as the old hand-written kernels
+#     did), so for operations declared *without* `@muladd` (`dot`, `otimes`)
+#     the hardware-float result may differ from the scalar path's `a*b + c*d`
+#     in the last ulp where fma contracts. The scalar-output form below uses
+#     a horizontal vector sum, again like the old kernels.
+#   * In other words: the guarantee is not "SIMD ≡ scalar path" in all cases;
+#     it is "each (operation, eltype) computes exactly what the pre-rewrite
+#     package computed", with SIMD ≡ scalar in addition wherever the
+#     declaration uses `@muladd` (the dcontract family).
 
 # both arguments must be the same hardware float type
 simd_eligible(TA, TB) = TA === TB && TA <: SIMDTypes
@@ -205,11 +216,11 @@ end
 # Tries the tallest columns first (full-height loads vectorize best); the
 # search is cheap and runs once per generated method.
 function try_simd_columns(OutType, plans, da, db, T)
-    N = length(plans)
-    for m in reverse(2:N)
-        N % m == 0 || continue
+    ncomps = length(plans)
+    for m in reverse(2:ncomps)
+        ncomps % m == 0 || continue
         has_column_structure(plans, m) || continue
-        ncols = N ÷ m
+        ncols = ncomps ÷ m
 
         # each distinct A-run (identified by its start index) is loaded once
         loads = Int[]
@@ -239,8 +250,11 @@ function try_simd_columns(OutType, plans, da, db, T)
         for c in cols, i in 1:m
             push!(out.args, :($c[$i]))
         end
-        # the two largest kernels (4-4 and 4s-4s at dim 3) were deliberately
-        # not force-inlined in the old package; keep that policy by size
+        # The two largest kernels were deliberately not force-inlined in the
+        # old package; keep that policy by size. 216 = 36 components × 6
+        # terms, the 4s ⊡ 4s kernel at dim 3; the only other kernel that
+        # reaches it is 4 ⊡ 4 at dim 3 (81 × 9 = 729). Everything smaller
+        # (e.g. 4 ⊡ 2 at dim 3: 9 × 9 = 81) stays `@inline`.
         inline = nproducts < 216
         return quote
             $(stmts...)
@@ -277,6 +291,9 @@ end
 
 # Entry point called by the engine. Returns `nothing` (no vectorizable
 # structure — use the scalar lowering) or `(expr, inline::Bool)`.
+#
+# `da`/`db` are the variable *names* the kernel reads from (`:_d1`, `:_d2`);
+# `dataA`/`dataB` are the expressions that initialize them.
 #
 # Loads always come from the *first* argument: the declarations place the
 # argument that carries the leading output indices first, which is what makes

@@ -34,7 +34,8 @@
 #
 # The output C[i,j] = A[i,k]*B[k,j] is a full Tensor{2,2} with 4 components.
 # The plan maps each component to (data index into A, data index into B)
-# pairs — note how A[k=2, i] reads packed entries via the symmetric layout:
+# pairs — note how A[i, k] reads packed entries via the symmetric layout
+# (A[1,2] and A[2,1] are both data entry 2):
 #
 #     C[1,1] = A[1,1]*B[1,1] + A[1,2]*B[2,1]   plan: [(1,1), (2,2)]
 #     C[2,1] = A[2,1]*B[1,1] + A[2,2]*B[2,1]   plan: [(2,1), (3,2)]
@@ -60,11 +61,27 @@
 #     plan: [(1,1), (2,2), (3,3)] with multiplicities [1, 2, 1]
 #     emitted:  _d1[1] * _d2[1] + (2 * _d1[2]) * _d2[2] + _d1[3] * _d2[3]
 #
-# (Multiplicities are powers of two, so the scaling is exact for floats.)
+# (A multiplicity is a product of factors of 2, one per symmetric index pair
+# whose two orderings hit the same packed entry — so it is a power of two,
+# 1, 2 or 4, and the scaling is exact for floats.)
 #
 # The scalar lowering in this file is the semantic reference: it reproduces
-# the pre-rewrite package expression-for-expression, and the SIMD lowering
-# must compute the identical operation chain per output component.
+# the pre-rewrite package expression-for-expression. The SIMD lowering
+# evaluates the same products in the same order per output component, but as
+# muladd chains regardless of the `@muladd` flag and (for scalar output) a
+# horizontal vector sum — exactly what the old hand-written kernels did, so
+# a given operation and eltype computes what it always computed. See the
+# contract note in simd_lowering.jl.
+#
+# Vocabulary used throughout (defined elsewhere in the package):
+#   get_data(A)            the NTuple backing a tensor
+#   get_base(T)            the type with eltype/length stripped, e.g. Tensor{2,3}
+#   base_size(T)           dimensions per index, e.g. (3, 3)
+#   compute_index(T, i...) Cartesian index -> position in the data tuple;
+#                          encodes column-major and symmetric-packed layouts
+#                          (indexing.jl)
+#   base_components(T)     the Cartesian indices of the stored components, in
+#                          data-tuple (column-major) order (indexing.jl)
 
 # -------------------------------------------------------------------------- #
 # An argument as it appears in a declaration: `A[i,k]` becomes
@@ -272,6 +289,8 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; mulad
     end
     counts = Dict(name => count(a -> name in a.inds, args) for name in names)
     any(>(2), values(counts)) && error("an index cannot appear in more than two arguments")
+    # sorted alphabetically: this fixes the summation (and hence rounding)
+    # order deterministically, and matches the pre-rewrite package
     sum_inds = tuple(sort(filter(name -> counts[name] == 2, names))...)
     issubset(out_inds, names) || error("output indices must appear in the term")
     isdisjoint(sum_inds, out_inds) || error("output indices cannot be summation indices")
@@ -284,6 +303,9 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; mulad
               (force_out === nothing ? output_type(out_inds, args, names, dims) : force_out)
 
     # -- step 3: one plan per stored output component -----------------------
+    # `plans :: Vector{Tuple{Vector{NTuple{N,Int}}, Vector{Int}}}` — one
+    # (products, mults) entry per stored output component, in base_components
+    # (i.e. data-tuple) order. The SIMD lowering relies on that ordering.
     comps = OutType === nothing ? [()] : base_components(OutType)
     plans = [component_products(out_inds, oind, sum_inds, names, dims, args...) for oind in comps]
 
@@ -295,10 +317,12 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; mulad
 
     # SIMD lowering, for binary operations on same-eltype hardware floats
     # (the cases the old hand-written simd.jl kernels covered); falls back to
-    # the scalar lowering when the plan has no column structure. Scalar output
-    # with a single summed index — plain dot — always stays scalar: the
-    # SVec-and-horizontal-sum form loses at dim <= 3.
-    if N == 2 && simd_eligible(args[1].elt, args[2].elt) && !(OutType === nothing && length(sum_inds) < 2)
+    # the scalar lowering when the plan has no column structure. Exception:
+    # a plain vector dot (scalar output, one summed index) always stays
+    # scalar — the SVec-and-horizontal-sum form loses at the dimensions this
+    # package supports (1, 2, 3), and the old package kept it scalar too.
+    plain_dot = OutType === nothing && length(sum_inds) < 2
+    if N == 2 && simd_eligible(args[1].elt, args[2].elt) && !plain_dot
         r = try_simd_expr(OutType, plans, ds[1], ds[2],
                           :(Tensors.get_data($(args[1].name))), :(Tensors.get_data($(args[2].name))), args[1].elt)
         if r !== nothing
