@@ -1,6 +1,5 @@
 # transpose, majortranspose, minortranspose
 """
-    transpose(::Vec)
     transpose(::SecondOrderTensor)
     transpose(::FourthOrderTensor)
 
@@ -20,8 +19,8 @@ julia> A'
  0.218587  0.894245
 ```
 """
-@inline function Base.transpose(S::Tensor{2, dim}) where {dim}
-    Tensor{2, dim}(@inline function(i, j) @inbounds S[j,i]; end)
+@tensorop function Base.transpose(S::Union{Tensor{2}, MixedTensor{2}})
+    C[i, j] = S[j, i]
 end
 
 @inline Base.transpose(S::SymmetricTensor{2}) = S
@@ -31,8 +30,8 @@ end
 
 Compute the minor transpose of a fourth order tensor.
 """
-@inline function minortranspose(S::Tensor{4, dim}) where {dim}
-    Tensor{4, dim}(@inline function(i, j, k, l) @inbounds S[j,i,l,k]; end)
+@tensorop function minortranspose(S::Union{Tensor{4}, MixedTensor{4}})
+    C[i, j, k, l] = S[j, i, l, k]
 end
 
 @inline minortranspose(S::SymmetricTensor{4}) = S
@@ -42,21 +41,11 @@ end
     majortranspose(::FourthOrderTensor)
 
 Compute the major transpose of a fourth order tensor.
+The major transpose of a minor-symmetric tensor is again minor symmetric, so
+a `SymmetricTensor` input gives a `SymmetricTensor` back.
 """
-@inline function majortranspose(S::FourthOrderTensor{dim}) where {dim}
-    Tensor{4, dim}(@inline function(i, j, k, l) @inbounds S[k,l,i,j]; end)
+@tensorop function majortranspose(S::FourthOrderTensor)
+    C[i, j, k, l] = S[k, l, i, j]
 end
 
 @inline Base.adjoint(S::AbstractTensor) = transpose(S)
-
-@inline function Base.transpose(S::MixedTensor2{dim1, dim2}) where {dim1, dim2}
-    MixedTensor2{dim2, dim1}(@inline function(i, j) @inbounds S[j,i]; end)
-end
-
-@inline function minortranspose(S::MixedTensor4{dim1, dim2, dim3, dim4}) where {dim1, dim2, dim3, dim4}
-    MixedTensor4{dim2, dim1, dim4, dim3}(@inline function(i, j, k, l) @inbounds S[j,i,l,k]; end)
-end
-
-@inline function majortranspose(S::MixedTensor4{dim1, dim2, dim3, dim4}) where {dim1, dim2, dim3, dim4}
-    MixedTensor4{dim3, dim4, dim1, dim2}(@inline function(i, j, k, l) @inbounds S[k,l,i,j]; end)
-end

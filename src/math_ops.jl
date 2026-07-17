@@ -21,35 +21,16 @@ julia> norm(A)
 @inline LinearAlgebra.norm(v::Vec) = sqrt(dot(v, v))
 @inline LinearAlgebra.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
 
-@generated function LinearAlgebra.norm(S::Tensor{3,dim}) where {dim}
-    idx(i,j,k) = compute_index(get_base(S), i, j, k)
-    ex = Expr[]
-    for k in 1:dim, j in 1:dim, i in 1:dim
-        push!(ex, :(get_data(S)[$(idx(i,j,k))]))
-    end
-    exp = reducer(ex, ex)
-    return quote
-      $(Expr(:meta, :inline))
-      @inbounds return sqrt($exp)
-    end
+# full contraction with itself; the einsum machinery weights packed
+# symmetric components with their multiplicities
+@tensorop function _normsq(A::AbstractTensor{3}, B::AbstractTensor{3})
+    s = A[i, j, k] * B[i, j, k]
 end
-
-# special case for Tensor{4, 3} since it is faster than unrolling
-@inline LinearAlgebra.norm(S::Tensor{4, 3}) = sqrt(mapreduce(abs2, +, S))
-
-@generated function LinearAlgebra.norm(S::FourthOrderTensor{dim}) where {dim}
-    idx(i,j,k,l) = compute_index(get_base(S), i, j, k, l)
-    dims = size(S)
-    ex = Expr[]
-    for l in 1:dims[4], k in 1:dims[3], j in 1:dims[2], i in 1:dims[1]
-        push!(ex, :(get_data(S)[$(idx(i,j,k,l))]))
-    end
-    exp = reducer(ex, ex)
-    return quote
-      $(Expr(:meta, :inline))
-      @inbounds return sqrt($exp)
-    end
+@tensorop function _normsq(A::FourthOrderTensor, B::FourthOrderTensor)
+    s = A[i, j, k, l] * B[i, j, k, l]
 end
+@inline LinearAlgebra.norm(S::AbstractTensor{3}) = sqrt(_normsq(S, S))
+@inline LinearAlgebra.norm(S::FourthOrderTensor) = sqrt(_normsq(S, S))
 
 LinearAlgebra.normalize(t::AbstractTensor) = t/norm(t)
 
@@ -98,86 +79,53 @@ julia> inv(A)
   588.35    282.819  -1587.79
 ```
 """
-@generated function Base.inv(t::Tensor{2, dim}) where {dim}
-    Tt = get_base(t)
-    idx(i,j) = compute_index(Tt, i, j)
-    if dim == 1
-        ex = :($Tt((dinv, )))
-    elseif dim == 2
-        ex = quote
-            v = get_data(t)
-            $Tt((v[$(idx(2,2))] * dinv, -v[$(idx(2,1))] * dinv,
-                -v[$(idx(1,2))] * dinv,  v[$(idx(1,1))] * dinv))
-        end
-    else # dim == 3
-        ex = quote
-            v = get_data(t)
-            $Tt(((v[$(idx(2,2))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,2))]) * dinv,
-                -(v[$(idx(2,1))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,1))]) * dinv,
-                 (v[$(idx(2,1))]*v[$(idx(3,2))] - v[$(idx(2,2))]*v[$(idx(3,1))]) * dinv,
+@inline Base.inv(t::Tensor{2, 1}) = Tensor{2, 1}((1 / det(t),))
+@inline function Base.inv(t::Tensor{2, 2})
+    dinv = 1 / det(t)
+    @inbounds Tensor{2, 2}((t[2,2] * dinv, -t[2,1] * dinv,
+                           -t[1,2] * dinv,  t[1,1] * dinv))
+end
+@inline function Base.inv(t::Tensor{2, 3})
+    dinv = 1 / det(t)
+    @inbounds Tensor{2, 3}((
+         (t[2,2]*t[3,3] - t[2,3]*t[3,2]) * dinv,
+        -(t[2,1]*t[3,3] - t[2,3]*t[3,1]) * dinv,
+         (t[2,1]*t[3,2] - t[2,2]*t[3,1]) * dinv,
 
-                -(v[$(idx(1,2))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,2))]) * dinv,
-                 (v[$(idx(1,1))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,1))]) * dinv,
-                -(v[$(idx(1,1))]*v[$(idx(3,2))] - v[$(idx(1,2))]*v[$(idx(3,1))]) * dinv,
+        -(t[1,2]*t[3,3] - t[1,3]*t[3,2]) * dinv,
+         (t[1,1]*t[3,3] - t[1,3]*t[3,1]) * dinv,
+        -(t[1,1]*t[3,2] - t[1,2]*t[3,1]) * dinv,
 
-                 (v[$(idx(1,2))]*v[$(idx(2,3))] - v[$(idx(1,3))]*v[$(idx(2,2))]) * dinv,
-                -(v[$(idx(1,1))]*v[$(idx(2,3))] - v[$(idx(1,3))]*v[$(idx(2,1))]) * dinv,
-                 (v[$(idx(1,1))]*v[$(idx(2,2))] - v[$(idx(1,2))]*v[$(idx(2,1))]) * dinv))
-        end
-    end
-    return quote
-        $(Expr(:meta, :inline))
-        dinv = 1 / det(t)
-        @inbounds return $ex
-    end
+         (t[1,2]*t[2,3] - t[1,3]*t[2,2]) * dinv,
+        -(t[1,1]*t[2,3] - t[1,3]*t[2,1]) * dinv,
+         (t[1,1]*t[2,2] - t[1,2]*t[2,1]) * dinv))
 end
 
-@generated function Base.inv(t::SymmetricTensor{2, dim}) where {dim}
-    Tt = get_base(t)
-    idx(i,j) = compute_index(Tt, i, j)
-    if dim == 1
-        ex = :($Tt((dinv, )))
-    elseif dim == 2
-        ex = quote
-            v = get_data(t)
-            $Tt((v[$(idx(2,2))] * dinv, -v[$(idx(2,1))] * dinv,
-                 v[$(idx(1,1))] * dinv))
-        end
-    else # dim == 3
-        ex = quote
-            v = get_data(t)
-            $Tt(((v[$(idx(2,2))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,2))]) * dinv,
-                -(v[$(idx(2,1))]*v[$(idx(3,3))] - v[$(idx(2,3))]*v[$(idx(3,1))]) * dinv,
-                 (v[$(idx(2,1))]*v[$(idx(3,2))] - v[$(idx(2,2))]*v[$(idx(3,1))]) * dinv,
+@inline Base.inv(t::SymmetricTensor{2, 1}) = SymmetricTensor{2, 1}((1 / det(t),))
+@inline function Base.inv(t::SymmetricTensor{2, 2})
+    dinv = 1 / det(t)
+    @inbounds SymmetricTensor{2, 2}((t[2,2] * dinv, -t[2,1] * dinv,
+                                     t[1,1] * dinv))
+end
+@inline function Base.inv(t::SymmetricTensor{2, 3})
+    dinv = 1 / det(t)
+    @inbounds SymmetricTensor{2, 3}((
+         (t[2,2]*t[3,3] - t[2,3]*t[3,2]) * dinv,
+        -(t[2,1]*t[3,3] - t[2,3]*t[3,1]) * dinv,
+         (t[2,1]*t[3,2] - t[2,2]*t[3,1]) * dinv,
 
-                 (v[$(idx(1,1))]*v[$(idx(3,3))] - v[$(idx(1,3))]*v[$(idx(3,1))]) * dinv,
-                -(v[$(idx(1,1))]*v[$(idx(3,2))] - v[$(idx(1,2))]*v[$(idx(3,1))]) * dinv,
+         (t[1,1]*t[3,3] - t[1,3]*t[3,1]) * dinv,
+        -(t[1,1]*t[3,2] - t[1,2]*t[3,1]) * dinv,
 
-                 (v[$(idx(1,1))]*v[$(idx(2,2))] - v[$(idx(1,2))]*v[$(idx(2,1))]) * dinv))
-        end
-    end
-    return quote
-        $(Expr(:meta, :inline))
-        dinv = 1 / det(t)
-        @inbounds return $ex
-    end
+         (t[1,1]*t[2,2] - t[1,2]*t[2,1]) * dinv))
 end
 
-function Base.inv(t::Tensor{4, dim}) where {dim}
-    fromvoigt(Tensor{4, dim}, inv(tovoigt(t)))
-end
-
-function Base.inv(t::SymmetricTensor{4, dim, T}) where {dim, T}
-    frommandel(SymmetricTensor{4, dim}, inv(tomandel(t)))
-end
-
-function Base.inv(t::Tensor{4, dim, <:Real}) where {dim}
-    fromvoigt(Tensor{4, dim}, inv(tovoigt(SMatrix, t)))
-end
-
-function Base.inv(t::SymmetricTensor{4, dim, T}) where {dim, T<:Real}
-    frommandel(SymmetricTensor{4, dim}, inv(tomandel(SMatrix, t)))
-end
+# Generic fallback via Matrix; the fast SMatrix path does not support
+# non-`Real` eltypes such as unitful quantities.
+Base.inv(t::Tensor{4, dim}) where {dim} = fromvoigt(Tensor{4, dim}, inv(tovoigt(t)))
+Base.inv(t::SymmetricTensor{4, dim}) where {dim} = frommandel(SymmetricTensor{4, dim}, inv(tomandel(t)))
+Base.inv(t::Tensor{4, dim, <:Real}) where {dim} = fromvoigt(Tensor{4, dim}, inv(tovoigt(SMatrix, t)))
+Base.inv(t::SymmetricTensor{4, dim, <:Real}) where {dim} = frommandel(SymmetricTensor{4, dim}, inv(tomandel(SMatrix, t)))
 
 
 Base.:\(S1::SecondOrderTensor, S2::AbstractTensor) = inv(S1) ⋅ S2
@@ -243,11 +191,34 @@ julia> tr(A)
 """
 @generated function LinearAlgebra.tr(S::SecondOrderTensor{dim}) where {dim}
     idx(i,j) = compute_index(get_base(S), i, j)
-    ex = Expr[:(get_data(S)[$(idx(i,i))]) for i in 1:dim]
+    ex = Expr[:(S.data[$(idx(i,i))]) for i in 1:dim]
     exp = reduce((ex1, ex2) -> :(+($ex1, $ex2)), ex)
     @inbounds return exp
 end
 
+"""
+    mean(::SecondOrderTensor)
+
+Computes the mean value of a second order tensor, defined as `tr(S) / 3`
+*regardless of the dimension of the tensor*. This is the convention from
+continuum mechanics (where a 2D tensor typically represents a plane strain or
+plane stress state of a 3D tensor), and is consistent with [`vol`](@ref) and
+[`dev`](@ref).
+
+# Examples
+```jldoctest
+julia> A = rand(SymmetricTensor{2,2})
+2×2 SymmetricTensor{2, 2, Float64, 3}:
+ 0.325977  0.549051
+ 0.549051  0.218587
+
+julia> mean(A)
+0.18152112789414185
+
+julia> tr(A) / 3
+0.18152112789414185
+```
+"""
 Statistics.mean(S::SecondOrderTensor) = tr(S) / 3
 
 """
@@ -308,7 +279,7 @@ end
 
 # https://web.archive.org/web/20150311224314/http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
 """
-    rotate(x::AbstractTensor{3}, u::Vec{3}, θ::Number)
+    rotate(x::AbstractTensor{<:Any, 3}, u::Vec{3}, θ::Number)
 
 Rotate a three dimensional tensor `x` around the vector `u` a total of `θ` radians.
 
@@ -335,7 +306,7 @@ function rotate(x::Vec{3}, u::Vec{3}, θ::Number)
 end
 
 """
-    rotate(x::AbstractTensor{2}, θ::Number)
+    rotate(x::AbstractTensor{<:Any, 2}, θ::Number)
 
 Rotate a two dimensional tensor `x` `θ` radians around the out-of-plane axis.
 

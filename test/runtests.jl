@@ -1,28 +1,18 @@
 using Tensors
-using Test
-using TimerOutputs
-using LinearAlgebra
-using Random
-using Statistics: mean
-using StaticArrays
+using ParallelTestRunner
 
-macro testsection(str, block)
-    return quote
-        @timeit "$($(esc(str)))" begin
-            @testset "$($(esc(str)))" begin
-                $(esc(block))
-            end
-        end
-    end
+testsuite = find_tests(@__DIR__)
+delete!(testsuite, "F64") # helper definitions, loaded in every test via init_code
+
+init_code = quote
+    using Tensors
+    using Test
+    using LinearAlgebra
+    using Random
+    using Statistics: mean
+    using StaticArrays
+    import ForwardDiff
+    include($(joinpath(@__DIR__, "F64.jl")))
 end
 
-reset_timer!()
-
-include("F64.jl")
-include("test_misc.jl")
-include("test_ops.jl")
-include("test_ad.jl")
-include("mixed_tensors.jl")
-
-print_timer()
-println()
+runtests(Tensors, ARGS; testsuite, init_code)

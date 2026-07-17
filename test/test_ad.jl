@@ -20,9 +20,9 @@ const Kb = 1.66e11;
 Ψ(C) = Ψ(C, μ, Kb)
 S(C) = S(C, μ, Kb)
 
-@testsection "AD" begin
+@testset "AD" begin
     for dim in 1:3
-        @testsection "dim $dim" begin
+        @testset "dim $dim" begin
         F = one(Tensor{2,dim}) + rand(Tensor{2,dim});
         C = tdot(F);
         C2 = F' ⋅ F;
@@ -49,7 +49,7 @@ S(C) = S(C, μ, Kb)
             II_sym = one(SymmetricTensor{4, dim, T})
 
             # Gradient of scalars
-            @testsection "scalar grad" begin
+            @testset "scalar grad" begin
                 @test (@inferred ∇(norm, v))::typeof(v) ≈ ((@inferred ∇(norm, v, :all))[1])::typeof(v) ≈ v / norm(v)
                 @test (∇(norm, v, :all)[2])::T ≈ norm(v)
                 @test (@inferred ∇(norm, A))::typeof(A) ≈ ((@inferred ∇(norm, A, :all))[1])::typeof(A) ≈ A / norm(A)
@@ -66,7 +66,7 @@ S(C) = S(C, μ, Kb)
                 @test ∇(A -> T(1), A_sym, :all)[2] == 1
             end
 
-            @testsection "2nd tensor grad" begin
+            @testset "2nd tensor grad" begin
             # Gradient of second order tensors
             # https://en.wikipedia.org/wiki/Tensor_derivative_(continuum_mechanics)#Derivatives_of_the_invariants_of_a_second-order_tensor
                 I1, DI1 = A -> tr(A), A -> one(A)
@@ -105,7 +105,7 @@ S(C) = S(C, μ, Kb)
             end
 
             # Hessians of scalars
-            @testsection "hessian" begin
+            @testset "hessian" begin
                 @test (@inferred ∇∇(norm, A))::Tensor{4, dim, T} ≈ ((@inferred ∇∇(norm, A, :all))[1])::Tensor{4, dim, T} ≈ reshape(ForwardDiff.hessian(x -> sqrt(sum(abs2, x)), A), (dim, dim, dim, dim))
                 @test (∇∇(norm, A, :all)[2])::typeof(A) ≈ reshape(ForwardDiff.gradient(x -> sqrt(sum(abs2, x)), A), (dim, dim))
                 @test (∇∇(norm, A, :all)[3])::T ≈ norm(A)
@@ -117,7 +117,7 @@ S(C) = S(C, μ, Kb)
                 @test ∇∇(A -> T(1), A, :all)[2] ≈ 0*A
                 @test ∇∇(A -> T(1), A, :all)[3] == T(1)
             end
-            @testsection "3rd order" begin
+            @testset "3rd order" begin
                 δ(i,j) = (i==j ? 1 : 0)
                 #
                 f1(x::Vec) = x⊗x 
@@ -127,7 +127,7 @@ S(C) = S(C, μ, Kb)
                     @test gradient(f1, z) ≈ df1(z)
                 end 
             end
-            @testsection "curl" begin
+            @testset "curl" begin
                 θ = rand(T)
                 v = rand(Vec{2, T})
                 @test (@inferred curl(x -> rotate(x, θ), v)[3]) ≈ 2 * sin(θ)
@@ -135,10 +135,10 @@ S(C) = S(C, μ, Kb)
                 @test isa(curl(x -> 1.0 * rotate(x, θ), v), Vec{3, promote_type(T, Float64)})
             end
             end # loop T
-        end # testsection
+        end # testset
     end # loop dim
 
-    @testsection "vector calculus identities" begin
+    @testset "vector calculus identities" begin
         Random.seed!(1234)
         φ(x) = norm(x)^4
         ϕ(x) = sum(x)
@@ -173,9 +173,9 @@ S(C) = S(C, μ, Kb)
             @test laplace(x -> divergence(A, x), x) ≈ divergence(x -> gradient(x->divergence(A, x), x), x) ≈ divergence(x -> laplace.(A, x), x)
             @test laplace.(x -> curl(A, x), x) ≈ -curl(x -> curl(x -> curl(A, x), x), x) ≈ curl(x -> laplace.(A, x), x)
         end # loop T
-    end # testsection
+    end # testset
 
-    @testsection "f: scalar -> scalar" begin
+    @testset "f: scalar -> scalar" begin
         f(x) = 2 * x^3
         x = 3.0
         @test gradient(f, x) ≈ gradient(f, x, :all)[1] ≈ 6 * x^2
@@ -184,7 +184,7 @@ S(C) = S(C, μ, Kb)
         @test hessian(f, x, :all)[2] ≈ gradient(f, x) ≈ 6 * x^2
         @test hessian(f, x, :all)[3] ≈ gradient(f, x, :all)[2] ≈ 2 * x^3
     end
-    @testsection "f: scalar -> AbstractTensor" begin
+    @testset "f: scalar -> AbstractTensor" begin
         for dim in 1:3, S in (rand(Vec{dim}), rand(Tensor{2,dim}), rand(SymmetricTensor{2,dim}))
             f(x) = x^3 * S
             x = 3.0
@@ -195,7 +195,7 @@ S(C) = S(C, μ, Kb)
             @test hessian(f, x, :all)[3] ≈ f(x) ≈ x^3 * S
         end
     end
-    @testsection "mixed scalar/vec" begin
+    @testset "mixed scalar/vec" begin
         f(v::Vec, s::Number) = s * v[1] * v[2]
         v = Vec((2.0, 3.0))
         s = 4.0
@@ -206,7 +206,7 @@ S(C) = S(C, μ, Kb)
     end
     
 
-    @testsection "analytical gradient implementation" begin
+    @testset "analytical gradient implementation" begin
         # Consider the function f(g(x)), we need to test the following variations to cover all cases
         # * x::Number
         #   - g::Number,             f:: Number, Vec, Tensor{2}, SymmetricTensor{2}
@@ -303,7 +303,7 @@ S(C) = S(C, μ, Kb)
             t0_t0_t1(x) = t0_t0(t0_t1(x)); t0_t0_t1_ana(x) = t0_t0_ana(t0_t1(x))
             t1_t0_t1(x) = t1_t0(t0_t1(x)); t1_t0_t1_ana(x) = t1_t0_ana(t0_t1(x))
     
-            @test gradient(t1_t0_t1, x1) ≈ gradient(t1_t0_t1_ana, x1)
+            @test gradient(t0_t0_t1, x1) ≈ gradient(t0_t0_t1_ana, x1)
             @test gradient(t1_t0_t1, x1) ≈ gradient(t1_t0_t1_ana, x1)
             
             # x Vec, g Vec, f: scalar, Vec
@@ -345,4 +345,4 @@ S(C) = S(C, μ, Kb)
     
     end
 
-end # testsection
+end # testset

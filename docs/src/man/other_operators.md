@@ -17,11 +17,11 @@ Pages = ["other_operators.md"]
 The dot product between the transpose of a tensor with itself. Results in a symmetric tensor.
 
 ```math
-\mathbf{A} = \mathbf{B}^\text{T} \cdot \mathbf{B} \Leftrightarrow A_{ij} = B_{ki}^\text{T} B_{kj} = B_{ik} B_{kj}
+\mathbf{A} = \mathbf{B}^\text{T} \cdot \mathbf{B} \Leftrightarrow A_{ij} = B_{ik}^\text{T} B_{kj} = B_{ki} B_{kj}
 ```
 
 ```math
-\mathbf{A} = \mathbf{B} \cdot \mathbf{B}^\text{T} \Leftrightarrow A_{ij} = B_{ik} B_{jk}^\text{T} = B_{ik} B_{kj}
+\mathbf{A} = \mathbf{B} \cdot \mathbf{B}^\text{T} \Leftrightarrow A_{ij} = B_{ik} B_{kj}^\text{T} = B_{ik} B_{jk}
 ```
 
 ```@docs
@@ -83,9 +83,27 @@ where ``\mathbf{I}`` is the second order identity tensor.
 Tensors.inv
 ```
 
+## Powers
+
+Integer powers of a second order tensor are defined as repeated single
+contractions, `A^2 == A ⋅ A`, with `A^0 == one(A)` and negative powers acting
+on the inverse, `A^-2 == inv(A) ⋅ inv(A)`. Both literal exponents (`A^3`) and
+runtime integers (`A^n`) are supported, and powers of a `SymmetricTensor`
+remain symmetric:
+
+```jldoctest
+julia> A = rand(SymmetricTensor{2,2});
+
+julia> A^3 ≈ A ⋅ A ⋅ A
+true
+
+julia> A^3 ≈ A^Int(3)
+true
+```
+
 ## Transpose
 
-Transpose of tensors is defined by changing the order of the tensor's "legs". The transpose of a vector/symmetric tensor is the vector/tensor itself. The transpose of a second order tensor can be written as:
+Transpose of tensors is defined by changing the order of the tensor's "legs". The transpose of a symmetric tensor is the tensor itself. Transposing a `Vec` is deliberately not supported and throws an `ArgumentError`. The transpose of a second order tensor can be written as:
 
 ```math
 A_{ij}^\text{T} = A_{ji}
@@ -133,6 +151,13 @@ Tensors.minorsymmetric
 Tensors.majorsymmetric
 ```
 
+Whether a fourth order tensor is minor or major symmetric can be checked with
+
+```@docs
+Tensors.isminorsymmetric
+Tensors.ismajorsymmetric
+```
+
 ## Skew symmetric
 
 The skew symmetric part of a second order tensor is defined by
@@ -145,6 +170,20 @@ The skew symmetric part of a symmetric tensor is zero.
 
 ```@docs
 Tensors.skew
+```
+
+## Mean value
+
+The mean value of a second order tensor is defined as one third of the trace,
+regardless of the dimension of the tensor (the continuum mechanics convention,
+consistent with [`vol`](@ref) and [`dev`](@ref) below):
+
+```math
+\mathrm{mean}(\mathbf{A}) = \frac{1}{3} \mathrm{tr}[\mathbf{A}].
+```
+
+```@docs
+Tensors.mean
 ```
 
 ## Deviatoric tensor
@@ -196,7 +235,7 @@ For a symmetric fourth order tensor, ``\mathsf{A}`` the second order eigentensor
 can be solved from
 
 ```math
-\mathsf{A} : \mathbf{V}_i = \lambda_i \mathbf{V}_i \qquad i = 1, \dots, \text{dim}
+\mathsf{A} : \mathbf{V}_i = \lambda_i \mathbf{V}_i \qquad i = 1, \dots, \frac{\text{dim}(\text{dim}+1)}{2}
 ```
 
 where ``\lambda_i`` are the eigenvalues and ``\mathbf{V}_i`` the corresponding eigentensors.
@@ -227,12 +266,47 @@ Tensors.rotate
 Tensors.rotation_tensor
 ```
 
-## Special operations
+## Bilinear forms
 
-For computing a special dot product between two vectors ``\mathbf{a}`` and ``\mathbf{b}`` with a fourth order symmetric tensor ``\mathbf{C}`` such that ``a_k C_{ikjl} b_l`` there is `dotdot(a, C, b)`. This function is useful because it is the expression for the tangent matrix in continuum mechanics when the displacements are approximated by scalar shape functions.
+`dotdot(a, C, b)` evaluates bilinear forms in one call: ``a_i S_{ij} b_j``
+(vectors around a second order tensor), ``a_k C_{ikjl} b_l`` (vectors around
+a fourth order tensor — the tangent-matrix expression in continuum mechanics
+when the displacements are approximated by scalar shape functions), and
+``A_{ij} C_{ijkl} B_{kl}`` (second order tensors around a fourth order
+tensor — the stiffness integrand ``\mathbf{A} : \mathsf{C} : \mathbf{B}``).
 
 ```@docs
 Tensors.dotdot
+```
+
+## Broadcasting
+
+Broadcasting where the only container arguments are tensors of one shape
+returns a tensor:
+
+```jldoctest broadcast
+julia> S = rand(Tensor{2,2});
+
+julia> S .+ 1.0 isa Tensor{2,2}
+true
+
+julia> sqrt.(rand(Vec{3})) isa Vec{3}
+true
+```
+
+A few rules to be aware of:
+
+* A `SymmetricTensor` densifies to a `Tensor`, since a general broadcast
+  function need not preserve symmetry. (The element-wise operators `+`, `-`,
+  and multiplication/division by scalars preserve symmetry and should be used
+  directly, without broadcasting.)
+* Broadcasts mixing a tensor with an ordinary `Array`, broadcasts over tensors
+  of different shapes, and broadcasts whose result is not a `Number` follow
+  ordinary array broadcasting and return an `Array`:
+
+```jldoctest broadcast
+julia> S .+ ones(2, 2) isa Matrix{Float64}
+true
 ```
 
 ## Voigt format
@@ -247,6 +321,17 @@ differentiation, see [Differentiation of Voigt format](@ref) further down.
 Tensors.tovoigt
 Tensors.tovoigt!
 Tensors.fromvoigt
+```
+
+The "Mandel" convention scales off-diagonal components by `√2` such that the
+tensor scalar product is preserved by the vector representation (making it the
+representation of choice in combination with external differentiation, see
+below):
+
+```@docs
+Tensors.tomandel
+Tensors.tomandel!
+Tensors.frommandel
 ```
 
 ### Differentiation of Voigt format
