@@ -168,6 +168,12 @@ The insertion works under any outer differentiation context — `Tensors`' own
 call — since the analytical Jacobian is applied directly to the derivative
 information carried by the input.
 
+When *several* arguments depend on the differentiated variable (for example
+`g(F, C)` called with `C = tdot(F)` inside a `gradient`), list all of them
+with the tuple form `Val((1, 2))` and return one Jacobian per active
+argument; the chain-rule contributions are summed. Marking only one of them
+active would silently drop the others' contributions.
+
 ```jldoctest
 julia> import ForwardDiff
 

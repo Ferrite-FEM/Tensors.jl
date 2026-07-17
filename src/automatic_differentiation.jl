@@ -211,6 +211,7 @@ end
 """
     propagate_gradient(f_dfdx::Function, x, args...)
     propagate_gradient(f_dfdx::Function, ::Val{i}, args...)
+    propagate_gradient(f_dfdx::Function, ::Val{(i, j, ...)}, args...)
 
 The building block of [`@implement_gradient`](@ref): propagate an analytical
 derivative through automatic differentiation. `f_dfdx` must return the tuple
@@ -218,6 +219,14 @@ derivative through automatic differentiation. `f_dfdx` must return the tuple
 the first argument, or `args[i]` in the `Val{i}` form. It is called with `x`
 replaced by its primal value (one level of `ForwardDiff.Dual` stripped); all
 other arguments are passed through unchanged.
+
+When several arguments depend on the differentiated variable, list them all:
+with `Val((i, j, ...))`, `f_dfdx` is called with each of `args[i], args[j], ...`
+peeled and must return `(f(args...), (∂f∂args[i], ∂f∂args[j], ...))`; the
+contributions are summed according to the chain rule. Leaving such an
+argument out of the active set silently drops its contribution — e.g.
+`g(F, C)` evaluated at `C = tdot(F)` inside a `gradient` call needs
+`Val((1, 2))`, not `Val(1)`.
 
 The analytical Jacobian is applied directly to the partial derivatives
 carried by `x`, so this works under any outer differentiation context
@@ -238,10 +247,70 @@ g(p, x::SymmetricTensor{2, dim, <:Dual}) where {dim} = propagate_gradient(g_dgdx
     return propagate_gradient(f_dfdx, Val(1), x, args...)
 end
 
+# One active argument, `Val(i)`, or several, `Val((i, j, ...))`. In the
+# multi-argument form `f_dfdx` is called with every active argument peeled
+# and must return `(y, (∂y∂args[i], ∂y∂args[j], ...))` with the Jacobians in
+# the same order as the indices. The chain rule sums the contribution of each
+# active argument's incoming derivative lanes:
+#
+#     dy/dx = ∂f∂args[i] ⊙ dargs[i]/dx + ∂f∂args[j] ⊙ dargs[j]/dx + ...
+#
+# All dual-carrying active arguments must share the same (outermost)
+# differentiation tag — mixing lanes of unrelated differentiations would be
+# meaningless, so that is an error. Active arguments that carry no dual
+# numbers contribute nothing (their term of the sum is dropped).
 @inline function propagate_gradient(f_dfdx::F, ::Val{i}, args...) where {F <: Function, i}
-    x = args[i]
-    fval, dfdx_val = f_dfdx(Base.setindex(args, extract_value(x), i)...)
-    return _insert_dual(fval, dfdx_val, x)
+    # `i` is a compile-time constant: this branch folds away
+    if i isa Integer
+        x = args[i]
+        fval, dfdx_val = f_dfdx(Base.setindex(args, extract_value(x), i)...)
+        return _insert_dual(fval, dfdx_val, x)
+    elseif i isa Tuple{Vararg{Integer}}
+        xs = ntuple(k -> args[i[k]], Val(length(i)))
+        _check_common_tag(xs)
+        fval, dfdx_vals = f_dfdx(_peel(Val(i), args...)...)
+        length(dfdx_vals) == length(i) ||
+            throw(ArgumentError("f_dfdx must return one Jacobian per active argument, got $(length(dfdx_vals)) for $(length(i))"))
+        fdual = _chain_sum(dfdx_vals, xs)
+        return fdual === nothing ? fval : _replace_value(fval, fdual)
+    else
+        throw(ArgumentError("the Val argument of propagate_gradient must hold an integer or a tuple of integers"))
+    end
+end
+
+# `args` with every active argument replaced by its primal value
+@generated function _peel(::Val{actives}, args...) where {actives}
+    peeled = [k in actives ? :(extract_value(args[$k])) : :(args[$k]) for k in 1:length(args)]
+    return :(tuple($(peeled...)))
+end
+
+# the outermost differentiation tag of a dual-carrying value, or `nothing`
+_tag_of(::Dual{Tg}) where {Tg} = Tg
+_tag_of(::AbstractTensor{<:Any, <:Any, <:Dual{Tg}}) where {Tg} = Tg
+_tag_of(::Any) = nothing
+
+@inline function _check_common_tag(xs::Tuple)
+    tag = nothing
+    for x in xs
+        tx = _tag_of(x)
+        if tx !== nothing
+            if tag !== nothing && tag !== tx
+                throw(ArgumentError("the active arguments carry dual numbers with different differentiation tags; they must come from the same differentiation call"))
+            end
+            tag = tx
+        end
+    end
+    return nothing
+end
+
+# Σₖ ∂y∂xₖ ⊙ xₖ over the dual-carrying active arguments (in argument order),
+# in Dual arithmetic; `nothing` when no active argument carries duals
+@inline _chain_sum(dfdxs::Tuple{}, xs::Tuple{}) = nothing
+@inline function _chain_sum(dfdxs::Tuple, xs::Tuple)
+    rest = _chain_sum(Base.tail(dfdxs), Base.tail(xs))
+    _tag_of(xs[1]) === nothing && return rest
+    c = _chain(dfdxs[1], xs[1])
+    return rest === nothing ? c : c + rest
 end
 
 """

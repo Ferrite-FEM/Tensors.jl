@@ -153,6 +153,40 @@ end
             Tensors.IndexedArg(:C, Tensor{2, 3}, (:j, :k), Any))
     end
 
+    @testset "dotdot bilinear forms" begin
+        for dim in (1, 2, 3)
+            a, b = rand(Vec{dim}), rand(Vec{dim})
+            S2, T2 = rand(SymmetricTensor{2, dim}), rand(Tensor{2, dim})
+            S4, T4 = rand(SymmetricTensor{4, dim}), rand(Tensor{4, dim})
+            @test dotdot(a, S2, b) ≈ a ⋅ (S2 ⋅ b)
+            @test dotdot(a, T2, b) ≈ a ⋅ (T2 ⋅ b)
+            @test (@inferred dotdot(a, S2, b)) isa Float64
+            @test dotdot(S2, S4, S2) ≈ S2 ⊡ S4 ⊡ S2
+            @test dotdot(T2, T4, S2) ≈ T2 ⊡ T4 ⊡ S2
+            @test (@inferred dotdot(S2, S4, S2)) isa Float64
+        end
+    end
+
+    @testset "propagate_gradient with several active arguments" begin
+        # g(F, C) with both arguments depending on the differentiated variable
+        myg(F, C) = tr(F ⋅ C)
+        myg_dg(F, C) = (myg(F, C), (transpose(C), transpose(F)))
+        myg(F::Tensor{2, 3, <:ForwardDiff.Dual}, C) = propagate_gradient(myg_dg, Val((1, 2)), F, C)
+        F0 = rand(Tensor{2, 3})
+        @test gradient(F -> myg(F, F ⋅ F), F0) ≈ gradient(F -> tr(F ⋅ (F ⋅ F)), F0)
+        @test hessian(F -> myg(F, F ⋅ F), F0) ≈ hessian(F -> tr(F ⋅ F ⋅ F), F0)
+        # an active argument without duals contributes nothing
+        Cfix = rand(Tensor{2, 3})
+        @test gradient(F -> myg(F, Cfix), F0) ≈ gradient(F -> tr(F ⋅ Cfix), F0)
+        # duals from different differentiations must not be combined
+        x1 = Tensors._load(rand(Tensor{2, 3}), ForwardDiff.Tag(sin, Float64))
+        x2 = Tensors._load(rand(Tensor{2, 3}), ForwardDiff.Tag(cos, Float64))
+        @test_throws ArgumentError propagate_gradient(myg_dg, Val((1, 2)), x1, x2)
+        # one Jacobian per active argument is required
+        bad_dg(F, C) = (myg(F, C), (transpose(C),))
+        @test_throws ArgumentError propagate_gradient(bad_dg, Val((1, 2)), x1, x1)
+    end
+
     @testset "@tensorop macro" begin
         Tensors.@tensorop function my_otimes(A::Vec{dim}, B::Vec{dim}) where {dim}
             C[i, j] = A[i] * B[j]

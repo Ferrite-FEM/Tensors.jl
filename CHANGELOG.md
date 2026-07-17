@@ -38,6 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The internal `@tensorop` code generator supports products of more than two
   tensors; `dotdot` is now declared that way and accepts any fourth-order
   tensor (previously `SymmetricTensor{4}` only).
+- `dotdot` gained two bilinear-form methods: `dotdot(a, S, b)` for
+  ``a_i S_{ij} b_j`` with a second-order `S`, and `dotdot(A, C, B)` for
+  ``A_{ij} C_{ijkl} B_{kl}``.
+- `propagate_gradient` supports several active arguments,
+  `propagate_gradient(f_dfdx, Val((i, j)), args...)`, for analytical
+  derivatives of functions where more than one argument depends on the
+  differentiated variable; the chain-rule contributions are summed, and
+  mixing dual numbers from different differentiation calls is an error.
 
 ### Changed (AD internals)
 - Analytical-gradient insertion (`propagate_gradient`/`@implement_gradient`) no

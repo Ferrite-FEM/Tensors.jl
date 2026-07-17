@@ -245,9 +245,14 @@ Tensors.rotate
 Tensors.rotation_tensor
 ```
 
-## Special operations
+## Bilinear forms
 
-For computing a special dot product between two vectors ``\mathbf{a}`` and ``\mathbf{b}`` with a fourth order symmetric tensor ``\mathbf{C}`` such that ``a_k C_{ikjl} b_l`` there is `dotdot(a, C, b)`. This function is useful because it is the expression for the tangent matrix in continuum mechanics when the displacements are approximated by scalar shape functions.
+`dotdot(a, C, b)` evaluates bilinear forms in one call: ``a_i S_{ij} b_j``
+(vectors around a second order tensor), ``a_k C_{ikjl} b_l`` (vectors around
+a fourth order tensor — the tangent-matrix expression in continuum mechanics
+when the displacements are approximated by scalar shape functions), and
+``A_{ij} C_{ijkl} B_{kl}`` (second order tensors around a fourth order
+tensor — the stiffness integrand ``\mathbf{A} : \mathsf{C} : \mathbf{B}``).
 
 ```@docs
 Tensors.dotdot
