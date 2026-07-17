@@ -43,8 +43,7 @@ function base_components(::Type{TT}) where {order, TT <: MixedTensor{order}}
 end
 
 # Linear indices (into the data tuple of the corresponding full `Tensor`) of the
-# independent components of a symmetric tensor. Replaces the old hardcoded
-# SYMMETRIC_INDICES table.
+# independent components of a symmetric tensor.
 function symmetric_indices(order::Int, dim::Int)
     return Int[compute_index(Tensor{order, dim}, c...) for c in base_components(SymmetricTensor{order, dim})]
 end

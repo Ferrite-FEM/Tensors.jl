@@ -130,8 +130,8 @@ julia> otimes(A)
  0.178978  0.301457
 ```
 """
-@inline function otimes(S::Vec{dim}) where {dim}
-    return SymmetricTensor{2, dim}(@inline function(i, j) @inbounds S[i] * S[j]; end)
+@tensorop function otimes(S::Vec{dim}) where {dim}
+    C[i, j]::SymmetricTensor{2, dim} = S[i] * S[j]
 end
 
 """

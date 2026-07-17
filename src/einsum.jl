@@ -4,8 +4,9 @@
 #                                                                            #
 # ========================================================================== #
 #
-# Every product and contraction in this package is *declared* in index
-# notation and *compiled* by the code in this file. A declaration looks like
+# Every product, contraction and index permutation in this package is
+# *declared* in index notation and *compiled* by the code in this file. A
+# declaration looks like
 #
 #     @tensorop function dot(A::SecondOrderTensor, B::SecondOrderTensor)
 #         C[i, j] = A[i, k] * B[k, j]
@@ -64,6 +65,10 @@
 # (A multiplicity is a product of factors of 2, one per symmetric index pair
 # whose two orderings hit the same packed entry — so it is a power of two,
 # 1, 2 or 4, and the scaling is exact for floats.)
+#
+# A single-argument declaration (a permutation or truncation, e.g.
+# `minortranspose: C[i,j,k,l] = A[j,i,l,k]`) is the degenerate case: nothing
+# is summed, and each stored output component lowers to one data read.
 #
 # The scalar lowering in this file is the semantic reference: it reproduces
 # the pre-rewrite package expression-for-expression. The SIMD lowering
@@ -235,6 +240,12 @@ end
 # All of this matches the pre-rewrite emission exactly.
 function sum_expr(products, mults, ds::NTuple{N, Symbol}, madd::Bool) where {N}
     ref(k, n) = :($(ds[n])[$(products[k][n])])           # k-th product, n-th argument
+    if N == 1
+        # a single-argument declaration has no summation indices, so the
+        # component is exactly one unscaled read
+        @assert length(products) == 1 && mults == [1]
+        return ref(1, 1)
+    end
     function first_factors(k)                            # product of reads 1..N-1
         m = mults[k]
         # (a local named `ex` would alias the accumulator below — inner
@@ -263,13 +274,17 @@ summing over each index that appears in two of the arguments. This is the
 function `@tensorop`-generated methods call at code-generation time; see the
 header of this file for the pipeline and a worked example.
 
-`force_out` overrides the computed output type, for callers that know the
+A single argument declares a permutation or truncation: nothing is summed
+and each output component is one data read.
+
+`force_out` overrides the computed output type, for declarations whose
 result has more structure than the index pattern proves (e.g. `_powdot`,
 where powers of one symmetric tensor commute and stay symmetric).
+`@tensorop` exposes it as a type annotation on the left-hand side.
 """
 function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; muladd::Bool = false, force_out = nothing)
     N = length(args)
-    N >= 2 || error("einsum_expr needs at least two arguments")
+    N >= 1 || error("einsum_expr needs at least one argument")
 
     # -- step 1: index bookkeeping ------------------------------------------
     nd = index_dims(args)
@@ -358,7 +373,15 @@ Define a tensor operation from index notation. The left-hand side gives the
 output indices (a bare `C = ...` declares scalar output); an index appearing
 in two arguments is summed over; wrapping the assignment in `@muladd ...`
 makes the summation accumulate with `muladd`. Products of more than two
-tensors are allowed (e.g. `dotdot`).
+tensors are allowed (e.g. `dotdot`), as is a single tensor without a
+product — a permutation or truncation like `C[i, j] = A[j, i]`, lowering to
+one data read per output component.
+
+Annotating the left-hand side, `C[i, j]::SymmetricTensor{2, dim} = ...`,
+forces that output type instead of the inferred one (`einsum_expr`'s
+`force_out`), for declarations whose result has more structure than the
+index pattern proves. The annotation may refer to the signature's type
+parameters.
 
 The declaration expands to a single `@generated` method with the given
 signature, whose body is built by [`einsum_expr`](@ref) once the argument
@@ -404,8 +427,13 @@ macro tensorop(fdef::Expr)
     stmt isa Expr && stmt.head === :(=) || error("@tensorop body must be an assignment, e.g. C[i,j] = A[i,k] * B[k,j]")
     lhs, rhs = stmt.args[1], stmt.args[2]
 
-    # -- left-hand side: the output indices ----------------------------------
+    # -- left-hand side: the output indices, optionally with a forced type ---
+    force_out = nothing
+    if lhs isa Expr && lhs.head === :(::) # C[i,j]::SymmetricTensor{2, dim} = ...
+        lhs, force_out = lhs.args
+    end
     out_inds = if lhs isa Symbol
+        force_out === nothing || error("scalar output cannot force an output type")
         () # scalar output
     elseif lhs isa Expr && lhs.head === :ref
         tuple(lhs.args[2:end]...)
@@ -413,11 +441,14 @@ macro tensorop(fdef::Expr)
         error("@tensorop left-hand side must be `C` (scalar) or `C[i,j,...]`")
     end
 
-    # -- right-hand side: a product of indexed arguments ---------------------
-    rhs isa Expr && rhs.head === :call && rhs.args[1] === :* ||
-        error("@tensorop right-hand side must be a product of indexed tensors")
-    refs = rhs.args[2:end]
-    length(refs) >= 2 || error("@tensorop needs at least two arguments in the product")
+    # -- right-hand side: an indexed argument or a product of them -----------
+    refs = if rhs isa Expr && rhs.head === :ref
+        Any[rhs] # a single argument: a permutation like C[i,j] = A[j,i]
+    elseif rhs isa Expr && rhs.head === :call && rhs.args[1] === :*
+        rhs.args[2:end]
+    else
+        error("@tensorop right-hand side must be an indexed tensor or a product of indexed tensors")
+    end
     argspecs = map(refs) do r
         r isa Expr && r.head === :ref || error("expected an indexed tensor like A[i,j], got $r")
         name = r.args[1]
@@ -429,7 +460,7 @@ macro tensorop(fdef::Expr)
     iargs = [:(Tensors.IndexedArg($(QuoteNode(name)), Tensors.get_base($name), $(QuoteNode(inds)), eltype($name)))
              for (name, inds) in argspecs]
     genbody = quote
-        return Tensors.einsum_expr($(QuoteNode(out_inds)), $(iargs...); muladd = $use_muladd)
+        return Tensors.einsum_expr($(QuoteNode(out_inds)), $(iargs...); muladd = $use_muladd, force_out = $force_out)
     end
     gen = Expr(:function, sig, genbody)
     return esc(Expr(:macrocall, Symbol("@generated"), __source__, gen))

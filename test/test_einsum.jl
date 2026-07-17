@@ -105,6 +105,7 @@ end
         @test (m23 ⋅ m23') isa Tensor{2, 2}
         @test (m23' ⋅ m23) isa Tensor{2, 3}
         @test (m23 ⊗ rand(Vec{2})) isa MixedTensor{3, Tuple{2, 3, 2}}
+        @test transpose(rand(MixedTensor{2, Tuple{2, 2}})) isa Tensor{2, 2}
     end
 
     @testset "runtime dimension errors" begin
@@ -199,6 +200,20 @@ end
         S = rand(SymmetricTensor{2, 3})
         @test my_dcontract(S, S) ≈ dcontract(S, S)
         @test (@inferred my_otimes(a, b)) isa Tensor{2, 3, Float64}
+        # single-argument declarations (permutations)
+        Tensors.@tensorop function my_transpose(A::SecondOrderTensor)
+            C[i, j] = A[j, i]
+        end
+        A2 = rand(Tensor{2, 3})
+        @test (@inferred my_transpose(A2))::Tensor{2, 3} == transpose(A2)
+        @test my_transpose(S) isa SymmetricTensor{2, 3} # (j,i) carried by S
+        m23 = rand(MixedTensor{2, Tuple{2, 3}})
+        @test (@inferred my_transpose(m23))::MixedTensor{2, Tuple{3, 2}} == m23'
+        # forced output type via left-hand-side annotation
+        Tensors.@tensorop function my_truncate(A::Tensor{2, dim}) where {dim}
+            C[i, j]::SymmetricTensor{2, dim} = A[i, j]
+        end
+        @test (@inferred my_truncate(A2))::SymmetricTensor{2, 3} == Tensors.unsafe_symmetric(A2)
     end
 
     @testset "broadcast lattice" begin

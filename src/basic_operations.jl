@@ -78,10 +78,8 @@ Base.:^(S::MixedTensor2, p::Integer) = throw(ArgumentError("The exponentiation, 
 
 @inline _powdot(S1::Tensor, S2::Tensor) = dot(S1, S2)
 # Powers of a symmetric tensor commute, so the single contraction stays symmetric.
-@generated function _powdot(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim}) where {dim}
-    return einsum_expr((:i, :j), IndexedArg(:S1, get_base(S1), (:i, :k), eltype(S1)),
-                       IndexedArg(:S2, get_base(S2), (:k, :j), eltype(S2));
-                       force_out = SymmetricTensor{2, dim})
+@tensorop function _powdot(S1::SymmetricTensor{2, dim}, S2::SymmetricTensor{2, dim}) where {dim}
+    C[i, j]::SymmetricTensor{2, dim} = S1[i, k] * S2[k, j]
 end
 
 Base.iszero(a::AbstractTensor) = all(iszero, get_data(a))

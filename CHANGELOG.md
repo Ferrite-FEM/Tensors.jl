@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SIMD kernels (`src/simd.jl`) are replaced; SIMD code is now generated from
   the same operation descriptions (`src/simd_lowering.jl`). Public API, storage
   layout, values, and performance are unchanged.
+- `majortranspose` of a `SymmetricTensor{4}` now returns a `SymmetricTensor{4}`
+  (previously a full `Tensor{4}`): the major transpose of a minor-symmetric
+  tensor is again minor symmetric, so nothing is truncated.
+- `transpose`/`minortranspose`/`majortranspose` of a `MixedTensor` whose
+  dimensions are all equal now collapse to a regular `Tensor`, like every
+  other operation on `MixedTensor`s.
 
 ### Added
 - Previously missing contraction combinations now exist: `dot` for
@@ -38,6 +44,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The internal `@tensorop` code generator supports products of more than two
   tensors; `dotdot` is now declared that way and accepts any fourth-order
   tensor (previously `SymmetricTensor{4}` only).
+- `@tensorop` also supports single-argument declarations (index permutations
+  and truncations, e.g. `C[i,j,k,l] = S[j,i,l,k]`) and forcing the output type
+  with a left-hand-side annotation (`C[i,j]::SymmetricTensor{2, dim} = ...`);
+  the transposes, `unsafe_symmetric`, `otimes(::Vec)` and the integer-power
+  contraction are now declared this way, which is what derives the
+  `MixedTensor` transpose shapes and the symmetry changes above.
 - `dotdot` gained two bilinear-form methods: `dotdot(a, S, b)` for
   ``a_i S_{ij} b_j`` with a second-order `S`, and `dotdot(A, C, B)` for
   ``A_{ij} C_{ijkl} B_{kl}``.
