@@ -24,7 +24,11 @@ using Statistics: mean
                   () -> A + A, () -> 2.0 * As, () -> inv(A), () -> det(A), () -> norm(C),
                   () -> m ⋅ m', () -> gradient(norm, As), () -> dotdot(a, Cs, a))
             f() # compile
-            @test (@allocated f()) == 0
+            if VERSION < v"1.11"
+                @test_broken (@allocated f()) == 0 # allocates on 1.10
+            else
+                @test (@allocated f()) == 0
+            end
         end
     end
 
