@@ -26,3 +26,6 @@ jobs:
       - name: Run MWE (check-bounds=yes)
         if: ${{ always() }}
         run: TENSORS_PATH=$PWD julia --color=yes --check-bounds=yes mwe/mwe.jl
+      - name: Run MWE (-C x86-64-v3, AVX2-only codegen)
+        if: ${{ always() }}
+        run: TENSORS_PATH=$PWD julia --color=yes -C x86-64-v3 mwe/mwe.jl

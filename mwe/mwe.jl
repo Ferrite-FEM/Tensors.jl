@@ -85,4 +85,11 @@ if have_tensors
     println(tensors_fails == 0 ? "Tensors-level dott: PASS" : "Tensors-level dott: FAIL ($tensors_fails cases)")
 end
 
+if simd_fails > 0
+    println("\n--- code_llvm of dott_simd(NTuple{9, Float32}) ---")
+    code_llvm(stdout, dott_simd, (NTuple{9, Float32},); debuginfo = :none)
+    println("\n--- code_native of dott_simd(NTuple{9, Float32}) ---")
+    code_native(stdout, dott_simd, (NTuple{9, Float32},); debuginfo = :none)
+end
+
 (simd_fails > 0 || tensors_fails > 0) && exit(1)
