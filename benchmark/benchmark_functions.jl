@@ -61,8 +61,8 @@ for dim in (ALL_DIMENSIONS ? (1,2,3) : (3,))
         # other
         for (i, V2t) in enumerate((V2, V2sym))
             TensorType = i == 2 ? "SymmetricTensor" : "Tensor"
-            for f in (norm, tr, vol, det, inv, transpose, symmetric, skew, eig, mean, dev)
-                (i == 1 || typeof(V2t) <: Tensor || T == dT) && f == eig && continue
+            for f in (norm, tr, vol, det, inv, transpose, symmetric, skew, eigen, mean, dev)
+                (i == 1 || typeof(V2t) <: Tensor || T == dT) && f === eigen && continue
                 SUITE["other"]["$f($TensorType{2, $dim, $T})"] = @benchmarkable $f($V2t)
             end
         end
@@ -75,7 +75,7 @@ for dim in (ALL_DIMENSIONS ? (1,2,3) : (3,))
         end
 
         if T in (Float32, Float64)
-            for f in (:+, :-)
+            for f in (+, -)
                 SUITE["basic-operations"]["Vec{$dim, $T} $f Vec{$dim, $T}"]                               = @benchmarkable $f($v1, $v1)
                 SUITE["basic-operations"]["Tensor{2, $dim, $T} $f Tensor{2, $dim, $T}"]                   = @benchmarkable $f($V2, $V2)
                 SUITE["basic-operations"]["SymmetricTensor{2, $dim, $T} $f SymmetricTensor{2, $dim, $T}"] = @benchmarkable $f($V2sym, $V2sym)
@@ -86,14 +86,14 @@ for dim in (ALL_DIMENSIONS ? (1,2,3) : (3,))
                     SUITE["basic-operations"]["Tensor{4, $dim, $T} $f SymmetricTensor{4, $dim, $T}"]      = @benchmarkable $f($V4, $V4sym)
                 end
             end
-            for f in (:*, :/)
+            for f in (*, /)
                 n = rand(T)
                 SUITE["basic-operations"]["Vec{$dim, $T} $f $T"]                = @benchmarkable $f($v1, $n)
                 SUITE["basic-operations"]["Tensor{2, $dim, $T} $f $T"]          = @benchmarkable $f($V2, $n)
                 SUITE["basic-operations"]["SymmetricTensor{2, $dim, $T} $f $T"] = @benchmarkable $f($V2sym, $n)
                 SUITE["basic-operations"]["Tensor{4, $dim, $T} $f $T"]          = @benchmarkable $f($V4, $n)
                 SUITE["basic-operations"]["SymmetricTensor{4, $dim, $T} $f $T"] = @benchmarkable $f($V4sym, $n)
-                if f == :*
+                if f === *
                     SUITE["basic-operations"]["$T $f Vec{$dim, $T}"]                = @benchmarkable $f($n, $v1)
                     SUITE["basic-operations"]["$T $f Tensor{2, $dim, $T}"]          = @benchmarkable $f($n, $V2)
                     SUITE["basic-operations"]["$T $f SymmetricTensor{2, $dim, $T}"] = @benchmarkable $f($n, $V2sym)
@@ -144,7 +144,7 @@ end
 
 # constructors (only testing for dim = 3)
 # could be done cleaner, but https://github.com/JuliaCI/BenchmarkTools.jl/issues/50
-for f in (:zero, :one, :ones, :rand)
+for f in (zero, one, ones, rand)
     SUITE["constructors"]["$f(Tensor{2, 3, Float32})"]          = @benchmarkable $(f)(Tensor{2, 3, Float32})
     SUITE["constructors"]["$f(Tensor{4, 3, Float32})"]          = @benchmarkable $(f)(Tensor{4, 3, Float32})
     SUITE["constructors"]["$f(SymmetricTensor{2, 3, Float32})"] = @benchmarkable $(f)(SymmetricTensor{2, 3, Float32})
@@ -153,7 +153,7 @@ for f in (:zero, :one, :ones, :rand)
     SUITE["constructors"]["$f(Tensor{4, 3, Float64})"]          = @benchmarkable $(f)(Tensor{4, 3, Float64})
     SUITE["constructors"]["$f(SymmetricTensor{2, 3, Float64})"] = @benchmarkable $(f)(SymmetricTensor{2, 3, Float64})
     SUITE["constructors"]["$f(SymmetricTensor{4, 3, Float64})"] = @benchmarkable $(f)(SymmetricTensor{4, 3, Float64})
-    if f != :one
+    if f !== one
         SUITE["constructors"]["$f(Vec{3, Float32})"] = @benchmarkable $(f)(Vec{3, Float32})
         SUITE["constructors"]["$f(Vec{3, Float64})"] = @benchmarkable $(f)(Vec{3, Float64})
     end

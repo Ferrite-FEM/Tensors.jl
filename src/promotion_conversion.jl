@@ -2,10 +2,10 @@
 # Promotion #
 #############
 
-# Promotion between two tensors promote the eltype and promotes
+# Promotion between two tensors promotes the eltype and promotes
 # symmetric tensors to tensors
 
-for TT in (Tensor, SymmetricTensor)
+for TT in (Tensor, SymmetricTensor, MixedTensor)
     @eval @inline function Base.promote_rule(::Type{$TT{order, dim, A, M}},
                                              ::Type{$TT{order, dim, B, M}}) where {order, dim, A, B, M}
         $TT{order, dim, promote_type(A, B), M}
@@ -47,8 +47,8 @@ end
 ###############
 
 # Identity, eltype change, and peeling off M (so that convert(typeof(...), ...)
-# works) — identical for both tensor types
-for TT in (Tensor, SymmetricTensor)
+# works) — identical for all three tensor types
+for TT in (Tensor, SymmetricTensor, MixedTensor)
     @eval begin
         @inline Base.convert(::Type{$TT{order, dim, T}}, t::$TT{order, dim, T}) where {order, dim, T} = t
         @inline Base.convert(::Type{$TT{order, dim, T, M}}, t::$TT{order, dim, T, M}) where {order, dim, T, M} = t

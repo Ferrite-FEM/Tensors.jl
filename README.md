@@ -8,8 +8,10 @@
 
 ## Introduction
 
-This Julia package provides fast operations with symmetric and non-symmetric tensors of order 1, 2 and 4.
-The tensors are allocated on the stack which means that there is no need to preallocate output results for performance.
+This Julia package provides fast operations with symmetric and non-symmetric tensors of order 1, 2, 3 and 4
+(as well as tensors with different dimensions per axis, `MixedTensor`).
+The tensors are immutable and store their entries inline (as an `NTuple`), so operations do not heap-allocate
+for `isbits` element types and there is no need to preallocate output results for performance.
 Unicode infix operators are provided such that the tensor expression in the source code is similar to the one written with mathematical notation.
 When possible, symmetry of tensors is exploited for better performance.
 Supports Automatic Differentiation to easily compute first and second order derivatives of tensorial functions.
@@ -45,9 +47,7 @@ Contributions are very welcome, as are feature requests and suggestions. Please 
 
 If you are interested in contributing to Tensors.jl, here are a few topics that can get you started:
 
-* Implement support for third order tensors. These are more rarely used than first, second and fourth order tensors but are still useful in some applications. It would be good to support this.
-* Find a way to reduce code duplication without sacrificing performance or compilation time. Currently, there is quite a lot of code duplication in the implementation of different operators. It should be possible to have a higher level code generation framework that generates optimized functions from pretty much only the Einstein summation notation for the operation.
-* Tensors.jl has been developed with mostly the application to continuum mechanics in mind. For other fields, perhaps other tensor operations are useful. Implement these in a well performant manner and give good test coverage and documentation for the new functionalities.
+* Tensors.jl has been developed with mostly the application to continuum mechanics in mind. For other fields, perhaps other tensor operations are useful. Implement these in a well performant manner and give good test coverage and documentation for the new functionalities. All tensor operations are defined from index notation by a single code generator, described on the "Internals" page of the documentation, so adding a new contraction or product is usually a one-line declaration. See [CHANGELOG.md](CHANGELOG.md) for recently added capabilities.
 
 ## Citing Tensors.jl
 

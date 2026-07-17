@@ -5,9 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v1.18.0] (unreleased)
+
+### Changed
+- The internals have been rewritten around a single index-notation code
+  generator (`@tensorop`/`einsum_expr` in `src/einsum.jl`): all contractions and
+  products are declared in index notation (e.g. `C[i,j] = A[i,k] * B[k,j]`) and
+  one `@generated` method per declaration covers `Tensor`, `SymmetricTensor`
+  and `MixedTensor` arguments of all dimensions and element types. The
+  hand-written per-operation methods (`src/utilities.jl`) and the hand-unrolled
+  SIMD kernels (`src/simd.jl`) are replaced; SIMD code is now generated from
+  the same operation descriptions (`src/simd_lowering.jl`). Public API, storage
+  layout, values, and performance are unchanged.
+- `majortranspose` of a `SymmetricTensor{4}` now returns a `SymmetricTensor{4}`
+  (previously a full `Tensor{4}`): the major transpose of a minor-symmetric
+  tensor is again minor symmetric, so nothing is truncated.
+- `transpose`/`minortranspose`/`majortranspose` of a `MixedTensor` whose
+  dimensions are all equal now collapse to a regular `Tensor`, like every
+  other operation on `MixedTensor`s.
 
 ### Added
+- Previously missing contraction combinations now exist: `dot` for
+  (3rd, 3rd)-order — giving a 4th-order result ([#227]) — as well as
+  (1st, 4th)/(4th, 1st)-order, and `otimes` for (1st, 3rd)/(3rd, 1st)-order.
 - Broadcasting where the only container arguments are tensors of one shape now
   returns a tensor instead of silently materializing an `Array` ([#223]), e.g.
   `S .+ 1.0` gives a `Tensor{2}` (a `SymmetricTensor` densifies, since a general
@@ -20,6 +40,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   analytical-derivative methods with precise signatures ([#179]).
 - `extract_value(x)` is now public: strips one level of `ForwardDiff.Dual` from
   a number or tensor, e.g. for storing state variables under AD ([#208]).
+- `promote`/`convert` between `MixedTensor`s that differ only in element type.
+- The internal `@tensorop` code generator supports products of more than two
+  tensors; `dotdot` is now declared that way and accepts any fourth-order
+  tensor (previously `SymmetricTensor{4}` only).
+- `@tensorop` also supports single-argument declarations (index permutations
+  and truncations, e.g. `C[i,j,k,l] = S[j,i,l,k]`) and forcing the output type
+  with a left-hand-side annotation (`C[i,j]::SymmetricTensor{2, dim} = ...`);
+  the transposes, `unsafe_symmetric`, `otimes(::Vec)` and the integer-power
+  contraction are now declared this way, which is what derives the
+  `MixedTensor` transpose shapes and the symmetry changes above.
+- `dotdot` gained two bilinear-form methods: `dotdot(a, S, b)` for
+  ``a_i S_{ij} b_j`` with a second-order `S`, and `dotdot(A, C, B)` for
+  ``A_{ij} C_{ijkl} B_{kl}``.
 - `propagate_gradient` supports several active arguments,
   `propagate_gradient(f_dfdx, Val((i, j)), args...)`, for analytical
   derivatives of functions where more than one argument depends on the
@@ -35,6 +68,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   analytical gradient), and tags not created by Tensors ([#179]).
 
 ### Bugfixes
+- `zero`, `one`, `ones`, `rand`, `randn` of a `MixedTensor` now return a
+  `MixedTensor` instead of falling back to `Array` ([#245]).
+- Contractions between `MixedTensor`s with mismatching index dimensions now
+  throw a `DimensionMismatch` error instead of an internal generator error.
 - `isminorsymmetric` and `ismajorsymmetric` previously missed certain
   asymmetric components (e.g. a tensor with `A[1,2,1,2] != A[2,1,2,1]` was
   reported minor symmetric), which could silently corrupt data through
@@ -51,6 +88,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   returned array, so integer tensors no longer throw `InexactError`.
 - The cross product of two `Vec{1}` returns the element type of the product
   (relevant for `Unitful`-style quantities).
+- `S^(p::Integer)` with `p == typemin(Int)` throws `OverflowError` instead of
+  recursing.
 - The one-argument `Base.promote(::AbstractTensor)` method is removed: it
   returned a bare (densified) tensor, violating `promote`'s contract of
   returning a tuple. Use `Tensors.densify` for the old behavior.
@@ -98,17 +137,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v1.16.1]: https://github.com/Ferrite-FEM/Tensors.jl/releases/tag/v1.16.1
 [v1.16.2]: https://github.com/Ferrite-FEM/Tensors.jl/releases/tag/v1.16.2
 [v1.17.0]: https://github.com/Ferrite-FEM/Tensors.jl/releases/tag/v1.17.0
-[#179]: https://github.com/Ferrite-FEM/Tensors.jl/issues/179
-[#197]: https://github.com/Ferrite-FEM/Tensors.jl/issues/197
 [#205]: https://github.com/Ferrite-FEM/Tensors.jl/issues/205
-[#208]: https://github.com/Ferrite-FEM/Tensors.jl/issues/208
 [#212]: https://github.com/Ferrite-FEM/Tensors.jl/issues/212
 [#222]: https://github.com/Ferrite-FEM/Tensors.jl/issues/222
-[#223]: https://github.com/Ferrite-FEM/Tensors.jl/issues/223
 [#225]: https://github.com/Ferrite-FEM/Tensors.jl/issues/225
 [#228]: https://github.com/Ferrite-FEM/Tensors.jl/issues/228
 [#233]: https://github.com/Ferrite-FEM/Tensors.jl/issues/233
 [#236]: https://github.com/Ferrite-FEM/Tensors.jl/issues/236
 [#238]: https://github.com/Ferrite-FEM/Tensors.jl/issues/238
-[#239]: https://github.com/Ferrite-FEM/Tensors.jl/issues/239
 [#240]: https://github.com/Ferrite-FEM/Tensors.jl/issues/240
+[#179]: https://github.com/Ferrite-FEM/Tensors.jl/issues/179
+[#197]: https://github.com/Ferrite-FEM/Tensors.jl/issues/197
+[#208]: https://github.com/Ferrite-FEM/Tensors.jl/issues/208
+[#223]: https://github.com/Ferrite-FEM/Tensors.jl/issues/223
+[#227]: https://github.com/Ferrite-FEM/Tensors.jl/issues/227
+[#239]: https://github.com/Ferrite-FEM/Tensors.jl/issues/239
+[#245]: https://github.com/Ferrite-FEM/Tensors.jl/issues/245

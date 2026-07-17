@@ -4,11 +4,18 @@
 
 ## Introduction
 
-This Julia package provides fast operations with symmetric and non-symmetric tensors of order 1, 2 and 4.
-The Tensors are allocated on the stack which means that there is no need to preallocate output results for performance.
+This Julia package provides fast operations with symmetric and non-symmetric tensors of order 1, 2, 3 and 4
+(as well as tensors with different dimensions per axis, see [`MixedTensor`](@ref)).
+The tensors are immutable and store their entries inline (as an `NTuple`), so operations do not heap-allocate
+for `isbits` element types and there is no need to preallocate output results for performance.
 Unicode infix operators are provided such that the tensor expression in the source code is similar to the one written with mathematical notation.
 When possible, symmetry of tensors is exploited for better performance.
 Supports Automatic Differentiation to easily compute first and second order derivatives of tensorial functions.
+
+All operations are defined from index-notation descriptions by a single code
+generator, which emits specialized (SIMD-vectorized where beneficial) code for
+every combination of tensor kind, dimension, and element type — see the
+[Internals](devdocs.md) page for how this works.
 
 ## Installation
 

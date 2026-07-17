@@ -100,9 +100,9 @@ Keyword arguments:
    For 4th order tensors the keyword arguments are `offset_i` and `offset_j`,
    respectively. Defaults to `0`.
  - `offdiagscale`: determines the scaling factor for the offdiagonal elements.
-   This argument is only applicable for `SymmetricTensor`s. `frommandel!` can also
+   This argument is only applicable for `SymmetricTensor`s. `tomandel!` can also
    be used for the "Mandel"-format which sets `offdiagscale = √2` for `SymmetricTensor`s,
-   and is equivalent to `fromvoigt!` for `Tensor`s.
+   and is equivalent to `tovoigt!` for `Tensor`s.
  - `order`: matrix of the linear indices determining the Voigt order. The default
    index order is `[11, 22, 33, 23, 13, 12, 32, 31, 21]`.
 
@@ -288,9 +288,9 @@ function __to_voigt_tuple(A::Type{TT}, s=one(T)) where {TT<:SecondOrderTensor{di
     for j in 1:dim, i in 1:maxind(j)
         voigt_ind = DEFAULT_VOIGT_ORDER[dim][i,j]
         if i==j
-            exps.args[voigt_ind] = :(get_data(A)[$(idx_fun(i, j))])
+            exps.args[voigt_ind] = :(A.data[$(idx_fun(i, j))])
         else
-            exps.args[voigt_ind] = :(s*get_data(A)[$(idx_fun(i, j))])
+            exps.args[voigt_ind] = :(s*A.data[$(idx_fun(i, j))])
         end
     end
     return exps, N
@@ -309,11 +309,11 @@ function __to_voigt_tuple(A::Type{TT}, s=one(T)) where {TT<:FourthOrderTensor{di
     for l in 1:dim, k in 1:maxind(l), j in 1:dim, i in 1:maxind(j)
         voigt_lin_ind = voigt_lin_index(DEFAULT_VOIGT_ORDER[dim][i,j], DEFAULT_VOIGT_ORDER[dim][k,l])
         if i==j && k==l
-            exps.args[voigt_lin_ind] = :(get_data(A)[$(idx_fun(i, j, k, l))])
+            exps.args[voigt_lin_ind] = :(A.data[$(idx_fun(i, j, k, l))])
         elseif i!=j && k!=l
-            exps.args[voigt_lin_ind] = :(s*s*get_data(A)[$(idx_fun(i, j, k, l))])
+            exps.args[voigt_lin_ind] = :(s*s*A.data[$(idx_fun(i, j, k, l))])
         else
-            exps.args[voigt_lin_ind] = :(s*get_data(A)[$(idx_fun(i, j, k, l))])
+            exps.args[voigt_lin_ind] = :(s*A.data[$(idx_fun(i, j, k, l))])
         end
     end
     return exps, N

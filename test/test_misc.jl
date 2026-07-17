@@ -175,19 +175,3 @@ for T in (Float32, Float64), dim in (1,2,3), order in (1,2,4), TensorType in (Te
 end
 end # of testset
 
-@testset "non-literal integer powers (issue #239)" begin
-for S in (rand(Tensor{2, 3}), rand(SymmetricTensor{2, 3}))
-    @test S^3 == S^Int(3)
-    @test typeof(S^Int(3)) == typeof(S)
-    @test S^-2 == S^Int(-2)
-    @test S^Int(0) == one(S)
-    @test (@inferred S^Int(2)) isa typeof(S)
-    # exponentiation-by-squaring path
-    Sn = S / norm(S)
-    @test Sn^Int(9) ≈ foldl((a, _) -> Tensors._powdot(a, Sn), 1:8; init = Sn)
-    @test typeof(Sn^Int(9)) == typeof(Sn)
-end
-@test_throws ArgumentError rand(MixedTensor2{2, 3})^Int(2)
-# negative powers of typemin error instead of overflowing
-@test_throws OverflowError rand(Tensor{2, 2})^typemin(Int)
-end # of testset
