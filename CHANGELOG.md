@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Broadcasting where the only container arguments are tensors of one shape now
+  returns a tensor instead of silently materializing an `Array` ([#223]), e.g.
+  `S .+ 1.0` gives a `Tensor{2}` (a `SymmetricTensor` densifies, since a general
+  broadcast function need not preserve symmetry). Broadcasts mixing tensors with
+  ordinary arrays, or with non-`Number` results, still return `Array`s.
 - Non-literal integer powers of second-order tensors, `S^(n::Integer)` ([#239]).
 
 ### Bugfixes
@@ -74,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#205]: https://github.com/Ferrite-FEM/Tensors.jl/issues/205
 [#212]: https://github.com/Ferrite-FEM/Tensors.jl/issues/212
 [#222]: https://github.com/Ferrite-FEM/Tensors.jl/issues/222
+[#223]: https://github.com/Ferrite-FEM/Tensors.jl/issues/223
 [#225]: https://github.com/Ferrite-FEM/Tensors.jl/issues/225
 [#228]: https://github.com/Ferrite-FEM/Tensors.jl/issues/228
 [#233]: https://github.com/Ferrite-FEM/Tensors.jl/issues/233
