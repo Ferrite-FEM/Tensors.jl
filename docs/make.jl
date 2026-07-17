@@ -25,7 +25,8 @@ makedocs(
             "man/automatic_differentiation.md",
             ],
         "Benchmarks" => "benchmarks.md",
-        "Demos" => "demos.md"
+        "Demos" => "demos.md",
+        "Internals" => "devdocs.md",
     ]
 )
 

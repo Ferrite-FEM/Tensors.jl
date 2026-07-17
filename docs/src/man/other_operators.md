@@ -83,6 +83,24 @@ where ``\mathbf{I}`` is the second order identity tensor.
 Tensors.inv
 ```
 
+## Powers
+
+Integer powers of a second order tensor are defined as repeated single
+contractions, `A^2 == A ⋅ A`, with `A^0 == one(A)` and negative powers acting
+on the inverse, `A^-2 == inv(A) ⋅ inv(A)`. Both literal exponents (`A^3`) and
+runtime integers (`A^n`) are supported, and powers of a `SymmetricTensor`
+remain symmetric:
+
+```jldoctest
+julia> A = rand(SymmetricTensor{2,2});
+
+julia> A^3 ≈ A ⋅ A ⋅ A
+true
+
+julia> A^3 ≈ A^Int(3)
+true
+```
+
 ## Transpose
 
 Transpose of tensors is defined by changing the order of the tensor's "legs". The transpose of a vector/symmetric tensor is the vector/tensor itself. The transpose of a second order tensor can be written as:
@@ -235,6 +253,36 @@ For computing a special dot product between two vectors ``\mathbf{a}`` and ``\ma
 Tensors.dotdot
 ```
 
+## Broadcasting
+
+Broadcasting where the only container arguments are tensors of one shape
+returns a tensor:
+
+```jldoctest broadcast
+julia> S = rand(Tensor{2,2});
+
+julia> S .+ 1.0 isa Tensor{2,2}
+true
+
+julia> sqrt.(rand(Vec{3})) isa Vec{3}
+true
+```
+
+A few rules to be aware of:
+
+* A `SymmetricTensor` densifies to a `Tensor`, since a general broadcast
+  function need not preserve symmetry. (The element-wise operators `+`, `-`,
+  and multiplication/division by scalars preserve symmetry and should be used
+  directly, without broadcasting.)
+* Broadcasts mixing a tensor with an ordinary `Array`, broadcasts over tensors
+  of different shapes, and broadcasts whose result is not a `Number` follow
+  ordinary array broadcasting and return an `Array`:
+
+```jldoctest broadcast
+julia> S .+ ones(2, 2) isa Matrix{Float64}
+true
+```
+
 ## Voigt format
 
 For some operations it is convenient to easily switch to the so called "Voigt"-format.
@@ -247,6 +295,17 @@ differentiation, see [Differentiation of Voigt format](@ref) further down.
 Tensors.tovoigt
 Tensors.tovoigt!
 Tensors.fromvoigt
+```
+
+The "Mandel" convention scales off-diagonal components by `√2` such that the
+tensor scalar product is preserved by the vector representation (making it the
+representation of choice in combination with external differentiation, see
+below):
+
+```@docs
+Tensors.tomandel
+Tensors.tomandel!
+Tensors.frommandel
 ```
 
 ### Differentiation of Voigt format

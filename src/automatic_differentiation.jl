@@ -269,16 +269,16 @@ wraps this:
 ```julia
 f(g::Tensor{2,dim,<:ForwardDiff.Dual}) where {dim} = propagate_gradient(f_dfdg, g)
 ```
+
+Implementation: contracting the Jacobian with the dual-valued input applies
+the chain rule to every incoming partial lane at once (the result's partials
+are exactly `∂f∂g` applied to each lane); the value part is then replaced
+with the exact primal. The original differentiation input is never
+reconstructed from the `Tag` type parameters, so any outer context (Tensors'
+own operators, plain ForwardDiff, nested duals) works, and the symmetric
+½-seed convention is inherited from the incoming lanes. Arguments other than
+the differentiation argument must be passive with respect to the peeled tag.
 """
-# Dual-arithmetic insertion: contracting the Jacobian with the dual-valued
-# input applies the chain rule to every incoming partial lane at once (the
-# result's partials are exactly ∂f∂x applied to each lane); the value part is
-# then replaced with the exact primal. The original differentiation input is
-# never reconstructed from the `Tag` type parameters, so any outer context
-# (Tensors' own operators, plain ForwardDiff, nested duals) works, and the
-# symmetric ½-seed convention is inherited from the incoming lanes.
-# Note: arguments other than the differentiation argument must be passive with
-# respect to the peeled tag.
 _insert_gradient(f::Union{Number, AbstractTensor}, dfdg::Union{Number, AbstractTensor},
                  g::Union{AbstractTensor{<:Any, <:Any, <:Dual}, Dual}) = _insert_dual(f, dfdg, g)
 

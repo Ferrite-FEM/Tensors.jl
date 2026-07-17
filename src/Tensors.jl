@@ -108,11 +108,12 @@ julia> a ⋅ a'
     This is exemplified above with the dot-product, `a ⋅ a'`, but applies to all operations.
 
 """
-# NOTE: `dims` must be a `Tuple` type (e.g. `Tuple{2, 3}`), but the parameter
-# cannot be constrained on the struct: aliases like `SecondOrderTensor{dim}`
-# rely on `MixedTensor{2, dim}` being expressible for non-Tuple `dim` (as an
-# uninhabited type). The constructors enforce the constraint instead.
 struct MixedTensor{order, dims, T, M} <: AbstractTensor{order, dims, T}
+    # NOTE: `dims` must be a `Tuple` type (e.g. `Tuple{2, 3}`), but the
+    # parameter cannot be constrained on the struct: aliases like
+    # `SecondOrderTensor{dim}` rely on `MixedTensor{2, dim}` being expressible
+    # for non-Tuple `dim` (as an uninhabited type). The constructors enforce
+    # the constraint instead.
     data::NTuple{M, T}
 end
 

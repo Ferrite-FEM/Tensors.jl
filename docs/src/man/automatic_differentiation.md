@@ -152,3 +152,47 @@ gradient(cfun1, x) ≈ gradient(cfun2, x)
 Hello from df2dx
 true
 ```
+### Functions with more arguments
+
+`@implement_gradient` handles single-argument functions. For functions that
+take additional (non-differentiated) arguments, or when the
+analytical-derivative method should have a precise signature, use the
+underlying function [`propagate_gradient`](@ref) directly:
+
+```@docs
+propagate_gradient
+```
+
+The insertion works under any outer differentiation context — `Tensors`' own
+`gradient` and `hessian` (including nested use), or a plain `ForwardDiff`
+call — since the analytical Jacobian is applied directly to the derivative
+information carried by the input.
+
+```jldoctest
+julia> import ForwardDiff
+
+julia> f(x, p) = p * tr(x) * x;
+
+julia> function f_dfdx(x, p)
+           dfdx = p * (x ⊗ one(x) + tr(x) * one(SymmetricTensor{4,3}))
+           return f(x, p), dfdx
+       end;
+
+julia> f(x::SymmetricTensor{2,3,<:ForwardDiff.Dual}, p) = propagate_gradient(f_dfdx, x, p);
+
+julia> x = rand(SymmetricTensor{2,3});
+
+julia> gradient(y -> f(y, 2.5), x) ≈ f_dfdx(x, 2.5)[2]
+true
+```
+
+## Extracting primal values
+
+Inside a function that is being differentiated, the argument carries
+`ForwardDiff.Dual` numbers. To store intermediate results (for example state
+variables in a material routine) without the derivative information, strip
+one level of dual numbers with [`extract_value`](@ref):
+
+```@docs
+extract_value
+```
