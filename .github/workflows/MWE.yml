@@ -7,14 +7,15 @@ on:
 
 jobs:
   mwe:
-    name: MWE - ${{ matrix.version }} - sample ${{ matrix.sample }}
-    runs-on: ubuntu-latest
+    name: MWE - ${{ matrix.version }} - ${{ matrix.os }} - sample ${{ matrix.sample }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         version:
           - 'pre'
-        sample: [1, 2, 3, 4, 5, 6, 7, 8]
+        os: [ubuntu-latest, ubuntu-22.04, ubuntu-24.04]
+        sample: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
