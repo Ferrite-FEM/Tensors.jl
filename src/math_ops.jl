@@ -21,35 +21,16 @@ julia> norm(A)
 @inline LinearAlgebra.norm(v::Vec) = sqrt(dot(v, v))
 @inline LinearAlgebra.norm(S::SecondOrderTensor) = sqrt(dcontract(S, S))
 
-@generated function LinearAlgebra.norm(S::Tensor{3,dim}) where {dim}
-    idx(i,j,k) = compute_index(get_base(S), i, j, k)
-    ex = Expr[]
-    for k in 1:dim, j in 1:dim, i in 1:dim
-        push!(ex, :(get_data(S)[$(idx(i,j,k))]))
-    end
-    exp = reducer(ex, ex)
-    return quote
-      $(Expr(:meta, :inline))
-      @inbounds return sqrt($exp)
-    end
+# full contraction with itself; the einsum machinery weights packed
+# symmetric components with their multiplicities
+@tensorop function _normsq(A::AbstractTensor{3}, B::AbstractTensor{3})
+    s = A[i, j, k] * B[i, j, k]
 end
-
-# special case for Tensor{4, 3} since it is faster than unrolling
-@inline LinearAlgebra.norm(S::Tensor{4, 3}) = sqrt(mapreduce(abs2, +, S))
-
-@generated function LinearAlgebra.norm(S::FourthOrderTensor{dim}) where {dim}
-    idx(i,j,k,l) = compute_index(get_base(S), i, j, k, l)
-    dims = size(S)
-    ex = Expr[]
-    for l in 1:dims[4], k in 1:dims[3], j in 1:dims[2], i in 1:dims[1]
-        push!(ex, :(get_data(S)[$(idx(i,j,k,l))]))
-    end
-    exp = reducer(ex, ex)
-    return quote
-      $(Expr(:meta, :inline))
-      @inbounds return sqrt($exp)
-    end
+@tensorop function _normsq(A::FourthOrderTensor, B::FourthOrderTensor)
+    s = A[i, j, k, l] * B[i, j, k, l]
 end
+@inline LinearAlgebra.norm(S::AbstractTensor{3}) = sqrt(_normsq(S, S))
+@inline LinearAlgebra.norm(S::FourthOrderTensor) = sqrt(_normsq(S, S))
 
 LinearAlgebra.normalize(t::AbstractTensor) = t/norm(t)
 

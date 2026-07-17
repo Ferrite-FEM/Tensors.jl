@@ -44,41 +44,6 @@ end
     return apply_all(S1, @inline function(i) @inbounds f(get_data(S1)[i], get_data(S2)[i]); end)
 end
 
-# Sum-of-products reduction over two equal-length expression lists, collapsing
-# duplicate products into integer factors (generation-time helper; this is what
-# turns a full-grid read of packed symmetric data into `2 * x * y` terms).
-function reducer(ex1i, ex2i, madd = false)
-    ex1, ex2 = remove_duplicates(ex1i, ex2i)
-    N = length(ex1)
-    expr = :($(ex1[1]) * $(ex2[1]))
-    for i in 2:N
-        expr = madd ? :(muladd($(ex1[i]), $(ex2[i]), $expr)) :
-                      :($(expr) + $(ex1[i]) * $(ex2[i]))
-    end
-    return expr
-end
-
-function remove_duplicates(ex1in, ex2in)
-    ex1out, ex2out = Expr[], Expr[]
-    exout = Expr[]
-    factors = ones(Int, length(ex1in))
-    for (ex1ine, ex2ine) in zip(ex1in, ex2in)
-        prod = :($ex1ine * $ex2ine)
-        i = findfirst(isequal(prod), exout) # check if this product exists in the output
-        if i === nothing # this product does not exist yet
-            push!(ex1out, ex1ine)
-            push!(ex2out, ex2ine)
-            push!(exout, prod)
-        else # found a duplicate
-            factors[i] += 1
-        end
-    end
-    for i in 1:length(ex1out)
-        factors[i] != 1 && (ex1out[i] = :($(factors[i]) * $(ex1out[i])))
-    end
-    return ex1out, ex2out
-end
-
 # strip Unitful-like units if necessary (used by eigen)
 function ustrip(S::SymmetricTensor{order, dim, T}) where {order, dim, T}
     ou = oneunit(T)
