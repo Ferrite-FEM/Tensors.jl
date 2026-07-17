@@ -14,13 +14,16 @@ jobs:
       matrix:
         version:
           - 'pre'
-          - 'nightly'
         sample: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
+      - name: CPU features
+        run: |
+          grep -m1 "model name" /proc/cpuinfo
+          grep -o 'avx[0-9a-z_]*' /proc/cpuinfo | sort -u | tr '\n' ' '; echo
       - name: Run MWE (default flags)
         run: TENSORS_PATH=$PWD julia --color=yes mwe/mwe.jl
       - name: Run MWE (check-bounds=yes)

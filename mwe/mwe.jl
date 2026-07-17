@@ -1,5 +1,7 @@
 # MWE for wrong results from `dott` (Tensors.jl) on Julia 1.13.0-rc1 on some
-# x86-64 machines (observed on GitHub Actions ubuntu-latest, machine-dependent).
+# x86-64 machines (observed on GitHub Actions ubuntu-latest, machine-dependent:
+# fails where AVX-512 codegen is used, passes on AVX2-only machines and with
+# `-C x86-64-v3`).
 #
 # Two levels:
 #   1. "SIMD-level": self-contained reduction using only SIMD.jl, mirroring
@@ -21,6 +23,8 @@ versioninfo(; verbose=true)
 println("CPU_NAME: ", Sys.CPU_NAME)
 println("check-bounds: ", Base.JLOptions().check_bounds)
 println()
+
+module DottMWE
 
 using SIMD
 
@@ -50,20 +54,27 @@ function ref_dott(D1::NTuple{9, T}) where {T}
     return (C[1, 1], C[2, 1], C[3, 1], C[2, 2], C[3, 2], C[3, 3])
 end
 
-simd_fails = 0
-for T in (Float32, Float64), trial in 1:1000
-    D = ntuple(_ -> rand(T), 9)
-    got = dott_simd(D)
-    want = ref_dott(D)
-    if !all(isapprox.(got, want; rtol = sqrt(eps(T))))
-        global simd_fails += 1
-        if simd_fails <= 5
-            println("SIMD-level FAIL (T = $T):")
-            println("  got  = ", got)
-            println("  want = ", want)
+function run_trials(::Type{T}, n) where {T}
+    fails = 0
+    for trial in 1:n
+        D = ntuple(_ -> rand(T), 9)
+        got = dott_simd(D)
+        want = ref_dott(D)
+        if !all(isapprox.(got, want; rtol = sqrt(eps(T))))
+            fails += 1
+            if fails <= 5
+                println("SIMD-level FAIL (T = $T):")
+                println("  got  = ", got)
+                println("  want = ", want)
+            end
         end
     end
+    return fails
 end
+
+end # module DottMWE
+
+simd_fails = DottMWE.run_trials(Float32, 1000) + DottMWE.run_trials(Float64, 1000)
 println(simd_fails == 0 ? "SIMD-level MWE: PASS" : "SIMD-level MWE: FAIL ($simd_fails cases)")
 
 tensors_fails = 0
@@ -87,9 +98,9 @@ end
 
 if simd_fails > 0
     println("\n--- code_llvm of dott_simd(NTuple{9, Float32}) ---")
-    code_llvm(stdout, dott_simd, (NTuple{9, Float32},); debuginfo = :none)
+    code_llvm(stdout, DottMWE.dott_simd, (NTuple{9, Float32},); debuginfo = :none, color = false)
     println("\n--- code_native of dott_simd(NTuple{9, Float32}) ---")
-    code_native(stdout, dott_simd, (NTuple{9, Float32},); debuginfo = :none)
+    code_native(stdout, DottMWE.dott_simd, (NTuple{9, Float32},); debuginfo = :none, color = false)
 end
 
 (simd_fails > 0 || tensors_fails > 0) && exit(1)
