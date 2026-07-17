@@ -1,42 +1,97 @@
-#######################################################################
-# Einsum engine                                                       #
-#                                                                     #
-# Single source of truth for all index-notation defined operations    #
-# (contractions and products). An operation like                      #
-#                                                                     #
-#     C[i,j] = A[i,k] * B[k,j]                                        #
-#                                                                     #
-# is declared with `@tensorop` (see below), which expands to one      #
-# `@generated` method. At generation time the planner sees the        #
-# concrete argument types (order/dim/symmetry/mixed dims) and emits   #
-# a flat component-tuple expression with:                             #
-#   * symmetric-storage aware data indexing (compute_index)           #
-#   * duplicate-product collapse with integer factors                 #
-#   * muladd accumulation chains where declared                       #
-#   * symmetric/mixed output-type computation, with MixedTensor       #
-#     results collapsed to Tensor when all dimensions agree           #
-#                                                                     #
-# The emitted scalar code matches the pre-rewrite package expression- #
-# for-expression (that is the performance and numerics parity target).#
-#######################################################################
+# ========================================================================== #
+#                                                                            #
+#                             The einsum engine                              #
+#                                                                            #
+# ========================================================================== #
+#
+# Every product and contraction in this package is *declared* in index
+# notation and *compiled* by the code in this file. A declaration looks like
+#
+#     @tensorop function dot(A::SecondOrderTensor, B::SecondOrderTensor)
+#         C[i, j] = A[i, k] * B[k, j]
+#     end
+#
+# and turns into one `@generated` method. When Julia compiles that method for
+# concrete argument types, `einsum_expr` below builds the method body in four
+# steps:
+#
+#     1. bookkeeping — which index names exist, what dimension each one has,
+#        which are summed over (they appear in two arguments) and which are
+#        output indices (they appear once, on the left-hand side);
+#     2. output type — Tensor, SymmetricTensor or MixedTensor, computed from
+#        the index structure;
+#     3. the plan — for every stored component of the output, the list of
+#        scalar products that sum to it, as plain integer indices into the
+#        arguments' data tuples;
+#     4. lowering — turn the plan into an expression: either straight-line
+#        scalar arithmetic (below) or SIMD vector code (simd_lowering.jl).
+#
+# A worked example, `dot` as declared above with a symmetric and a regular
+# argument in two dimensions, `A::SymmetricTensor{2,2}` and `B::Tensor{2,2}`:
+#
+#     A is stored packed as   (a11, a21, a22)            (3 entries)
+#     B is stored column-major (b11, b21, b12, b22)      (4 entries)
+#
+# The output C[i,j] = A[i,k]*B[k,j] is a full Tensor{2,2} with 4 components.
+# The plan maps each component to (data index into A, data index into B)
+# pairs — note how A[k=2, i] reads packed entries via the symmetric layout:
+#
+#     C[1,1] = A[1,1]*B[1,1] + A[1,2]*B[2,1]   plan: [(1,1), (2,2)]
+#     C[2,1] = A[2,1]*B[1,1] + A[2,2]*B[2,1]   plan: [(2,1), (3,2)]
+#     C[1,2] = A[1,1]*B[1,2] + A[1,2]*B[2,2]   plan: [(1,3), (2,4)]
+#     C[2,2] = A[2,1]*B[1,2] + A[2,2]*B[2,2]   plan: [(2,3), (3,4)]
+#
+# and the emitted method body is (with `@muladd` in the declaration):
+#
+#     $(Expr(:meta, :inline))
+#     _d1 = Tensors.get_data(A)
+#     _d2 = Tensors.get_data(B)
+#     @inbounds return Tensor{2, 2}((
+#         muladd(_d1[2], _d2[2], _d1[1] * _d2[1]),
+#         muladd(_d1[3], _d2[2], _d1[2] * _d2[1]),
+#         muladd(_d1[2], _d2[4], _d1[1] * _d2[3]),
+#         muladd(_d1[3], _d2[4], _d1[2] * _d2[3])))
+#
+# When both sides of a product are the same packed entry the plan collapses
+# them into an integer multiplicity instead of computing them twice. The
+# scalar `dcontract(A, B) = A[i,j]*B[i,j]` of two SymmetricTensor{2,2} sums
+# over the full 2×2 index grid, but only 3 distinct products exist:
+#
+#     plan: [(1,1), (2,2), (3,3)] with multiplicities [1, 2, 1]
+#     emitted:  _d1[1] * _d2[1] + (2 * _d1[2]) * _d2[2] + _d1[3] * _d2[3]
+#
+# (Multiplicities are powers of two, so the scaling is exact for floats.)
+#
+# The scalar lowering in this file is the semantic reference: it reproduces
+# the pre-rewrite package expression-for-expression, and the SIMD lowering
+# must compute the identical operation chain per output component.
 
-# One indexed argument of a term: its base type and the index names, e.g. A[i,j]
+# -------------------------------------------------------------------------- #
+# An argument as it appears in a declaration: `A[i,k]` becomes
+# IndexedArg(:A, Tensor{2,2}, (:i,:k), Float64) once the argument type is
+# known. `T` is the base type (`get_base`, i.e. eltype- and M-free), `elt`
+# the concrete element type — the SIMD lowering only applies to hardware
+# floats and needs to see it.
 struct IndexedArg
     name::Symbol
-    T::Type              # base type from get_base, e.g. Tensor{2,3}
+    T::Type
     inds::Tuple{Vararg{Symbol}}
-    elt::Type            # eltype of the concrete argument (drives SIMD lowering)
+    elt::Type
 end
 IndexedArg(name::Symbol, T::Type, inds::Tuple{Vararg{Symbol}}) = IndexedArg(name, T, inds, Any)
 
-# size of a *base* type (as returned by get_base, i.e. with free eltype/M),
-# for use at generation time
+# ------------------------------ step 1 ------------------------------------ #
+# Index bookkeeping.
+
+# Size of a *base* type (with free eltype/M), usable at code-generation time.
 base_size(::Type{Tensor{order, dim}}) where {order, dim} = ntuple(_ -> dim, order)
 base_size(::Type{SymmetricTensor{order, dim}}) where {order, dim} = ntuple(_ -> dim, order)
 base_size(::Type{MixedTensor{order, dims}}) where {order, dims} = tuple(dims.parameters...)
 
-# Return a NamedTuple-like list of (index name => dimension) pairs, or `nothing`
-# if an index name is used with disagreeing dimensions (=> runtime DimensionMismatch).
+# Collect every index name and its dimension, in first-appearance order.
+# Returns `nothing` when an index name is used with two different dimensions
+# (possible with MixedTensor arguments) — the caller then emits code that
+# throws a runtime `DimensionMismatch`.
 function index_dims(args::Tuple{Vararg{IndexedArg}})
     names = Symbol[]
     dims = Int[]
@@ -57,13 +112,23 @@ end
 
 dim_of(names::Vector{Symbol}, dims::Vector{Int}, name::Symbol) = dims[findfirst(==(name), names)::Int]
 
-# Compute the output type for `out_inds` given the argument types.
-# Follows the pre-rewrite rules exactly:
-#  * scalar for no output indices
-#  * MixedTensor when output dimensions differ (collapse to Tensor handled by
-#    the caller getting a regular Tensor type back when all dims agree)
-#  * SymmetricTensor when every consecutive output index pair (1,2), (3,4), ...
-#    provably carries symmetry from a symmetric argument
+# ------------------------------ step 2 ------------------------------------ #
+# Output type from the index structure. The rules (identical to the
+# pre-rewrite package):
+#
+#   * no output indices                      -> scalar
+#   * output dimensions differ               -> MixedTensor{order, Tuple{dims...}}
+#     (equal dimensions never produce a MixedTensor, so mixed results
+#     "collapse" to regular tensors by construction)
+#   * every consecutive output index pair (1,2), (3,4), ... provably
+#     symmetric                              -> SymmetricTensor
+#   * otherwise                              -> Tensor
+#
+# Examples: in `otimes(A,B): C[i,j,k,l] = A[i,j]*B[k,l]` with both arguments
+# symmetric, the pair (i,j) sits adjacent in symmetric A and (k,l) in
+# symmetric B, so the result is a SymmetricTensor{4}. In
+# `dot(A,B): C[i,j] = A[i,k]*B[k,j]` no single argument carries (i,j), so the
+# result is a full Tensor{2} even for symmetric arguments.
 function output_type(out_inds::Tuple{Vararg{Symbol}}, args::Tuple{Vararg{IndexedArg}},
                      names::Vector{Symbol}, dims::Vector{Int})
     order = length(out_inds)
@@ -80,8 +145,11 @@ function output_type(out_inds::Tuple{Vararg{Symbol}}, args::Tuple{Vararg{Indexed
     return symmetric_output ? SymmetricTensor{order, dim} : Tensor{order, dim}
 end
 
-# Does some argument carry (idx1, idx2) as an adjacent (odd, even) index pair
-# of a SymmetricTensor? (Note: does not detect symmetry from e.g. A[i,j]*A[j,k].)
+# Does some argument carry (idx1, idx2) as one of its own symmetric index
+# pairs? Symmetric storage pairs indices as (1,2) and (3,4), so the two names
+# must sit adjacent at an odd/even position of a SymmetricTensor argument.
+# (This does not detect "accidental" symmetry, e.g. A[i,k]*A[k,j] for
+# symmetric A — same as the pre-rewrite package.)
 function is_symmetric_pair(args::Tuple{Vararg{IndexedArg}}, idx1::Symbol, idx2::Symbol)
     for a in args
         nr1 = findfirst(==(idx1), a.inds)
@@ -95,83 +163,110 @@ function is_symmetric_pair(args::Tuple{Vararg{IndexedArg}}, idx1::Symbol, idx2::
     return false
 end
 
-# The (i1, ..., iN) data-index products for one output component, with duplicates
-# collapsed into integer factors (same algorithm and ordering as the old package).
+# ------------------------------ step 3 ------------------------------------ #
+# The plan for one output component: which scalar products sum to it.
+#
+# Given the output component's Cartesian index `oind` (e.g. `(2, 1)` for
+# C[2,1]), loop the summation indices over their ranges and record, for each
+# point of that grid, where every argument reads its data — as a tuple of
+# plain linear indices into the arguments' data tuples (`compute_index` maps
+# Cartesian to storage index and knows about symmetric packing).
+#
+# Products that turn out identical (both reads hit the same packed entries,
+# which happens when summing over symmetric storage) are recorded once with
+# an integer multiplicity.
+#
+# Returns `(products, mults)`, e.g. for C[1,1] in the header's `dot` example
+# `([(1, 1), (2, 2)], [1, 1])`: two products, each read once.
 function component_products(out_inds, oind, sum_inds, names, dims, args::IndexedArg...)
     N = length(args)
+    # value of each index name at one point of the summation grid:
+    # output indices are fixed to `oind`, summation indices take `sind`
     lookup_names = (out_inds..., sum_inds...)
-    prods = NTuple{N, Int}[]
+    products = NTuple{N, Int}[]
     sum_ranges = ntuple(k -> 1:dim_of(names, dims, sum_inds[k]), length(sum_inds))
-    for sind in Iterators.product(sum_ranges...)
+    for sind in Iterators.product(sum_ranges...) # first summation index fastest
         vals = (oind..., sind...)
         pos(name) = vals[findfirst(==(name), lookup_names)::Int]
-        push!(prods, ntuple(n -> compute_index(args[n].T, map(pos, args[n].inds)...), N))
+        push!(products, ntuple(n -> compute_index(args[n].T, map(pos, args[n].inds)...), N))
     end
-    uniq = NTuple{N, Int}[]
-    factors = Int[]
-    for p in prods
-        i = findfirst(==(p), uniq)
+    # collapse duplicates into multiplicities, keeping first-appearance order
+    unique_products = NTuple{N, Int}[]
+    mults = Int[]
+    for p in products
+        i = findfirst(==(p), unique_products)
         if i === nothing
-            push!(uniq, p); push!(factors, 1)
+            push!(unique_products, p); push!(mults, 1)
         else
-            factors[i] += 1
+            mults[i] += 1
         end
     end
-    return uniq, factors
+    return unique_products, mults
 end
 
-# Sum-of-products expression: initialized from the first product (never zero(T)),
-# left-fold accumulation, muladd where requested, integer factors multiplied onto
-# the first operand — exactly the old package's `reducer` emission. For more
-# than two arguments, the first N-1 data references form the left muladd
-# operand and the last is the multiplier (matching the old hand-written
-# ternary kernels, e.g. `muladd(v1[k] * S[ikjl], v2[l], acc)` for `dotdot`).
-function sum_expr(uniq, factors, ds::NTuple{N, Symbol}, madd::Bool) where {N}
-    ref(k, n) = :($(ds[n])[$(uniq[k][n])])
-    lhs(k) = begin
-        f = factors[k]
-        # NB: must not be named `ex` — inner functions share locals with the
-        # enclosing scope, and this would clobber the accumulator below
-        e = f == 1 ? ref(k, 1) : :($f * $(ref(k, 1)))
+# ----------------------------- step 4a ------------------------------------ #
+# Scalar lowering of one component plan: a left-to-right accumulation over
+# the products,
+#
+#     acc = p₁;  acc = acc + p₂;  ...          or, with muladd:
+#     acc = p₁;  acc = muladd(aₖ, bₖ, acc); ...
+#
+# The chain starts from the first product (never from `zero(T)`), and a
+# multiplicity scales the first factor: `(2 * _d1[2]) * _d2[2]`. For more
+# than two arguments the first N-1 data reads form the muladd operand and
+# the last one the multiplier: `muladd(_d1[k] * _d2[ikjl], _d3[l], acc)`.
+# All of this matches the pre-rewrite emission exactly.
+function sum_expr(products, mults, ds::NTuple{N, Symbol}, madd::Bool) where {N}
+    ref(k, n) = :($(ds[n])[$(products[k][n])])           # k-th product, n-th argument
+    function first_factors(k)                            # product of reads 1..N-1
+        m = mults[k]
+        # (a local named `ex` would alias the accumulator below — inner
+        # functions share the locals of their enclosing scope)
+        e = m == 1 ? ref(k, 1) : :($m * $(ref(k, 1)))
         for n in 2:(N - 1)
             e = :($e * $(ref(k, n)))
         end
-        e
+        return e
     end
-    rhs(k) = ref(k, N)
-    ex = :($(lhs(1)) * $(rhs(1)))
-    for k in 2:length(uniq)
-        ex = madd ? :(muladd($(lhs(k)), $(rhs(k)), $ex)) :
-                    :($ex + $(lhs(k)) * $(rhs(k)))
+    last_factor(k) = ref(k, N)
+    ex = :($(first_factors(1)) * $(last_factor(1)))
+    for k in 2:length(products)
+        ex = madd ? :(muladd($(first_factors(k)), $(last_factor(k)), $ex)) :
+                    :($ex + $(first_factors(k)) * $(last_factor(k)))
     end
     return ex
 end
 
+# ---------------------------- the driver ----------------------------------- #
 """
     einsum_expr(out_inds, args::IndexedArg...; muladd = false, force_out = nothing)
 
-Return the expression computing `Out[out_inds...] = args[1][...] * args[2][...] * ...`
-with summation over each index shared between two of the arguments. Used inside
-`@generated` bodies (via `@tensorop`); the expression refers to the argument
-variables by name and reads their data with `get_data`.
+Build the method body computing `Out[out_inds...] = args[1][...] * args[2][...] * ...`,
+summing over each index that appears in two of the arguments. This is the
+function `@tensorop`-generated methods call at code-generation time; see the
+header of this file for the pipeline and a worked example.
 
 `force_out` overrides the computed output type, for callers that know the
-result has more structure than the index pattern proves (e.g. symmetric
-output when contracting commuting symmetric tensors).
+result has more structure than the index pattern proves (e.g. `_powdot`,
+where powers of one symmetric tensor commute and stay symmetric).
 """
 function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; muladd::Bool = false, force_out = nothing)
     N = length(args)
     N >= 2 || error("einsum_expr needs at least two arguments")
+
+    # -- step 1: index bookkeeping ------------------------------------------
     nd = index_dims(args)
     if nd === nothing
+        # disagreeing dimensions for an index name: a *runtime* error — this
+        # method body is being generated for, e.g., dot of two MixedTensors
+        # with incompatible axes
         term = join((string(a.name, "[", join(a.inds, ","), "]") for a in args), " * ")
         return :(throw(DimensionMismatch(string("dimensions of the tensor indices do not agree when computing ", $term))))
     end
     names, dims = nd
-    # classify indices by occurrence count across all arguments: an index
-    # appearing twice (in different arguments) is summed over; appearing once
-    # it must be an output index (definition-time errors, these are programmer
-    # errors in an operation declaration)
+    # every index must appear either once (an output index) or in exactly two
+    # arguments (a summation index) — violations are *definition-time* errors,
+    # i.e. mistakes in an operation declaration
     for a in args
         allunique(a.inds) || error("an index appears more than once in a single argument; this is not supported")
     end
@@ -184,21 +279,26 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; mulad
         counts[name] == 1 && name ∉ out_inds && error("index $name appears only once and is not an output index")
     end
 
-    ds = ntuple(n -> Symbol(:_d, n), N)
-    @assert all(a -> a.name ∉ ds, args)
+    # -- step 2: output type ------------------------------------------------
     OutType = isempty(out_inds) ? nothing :
               (force_out === nothing ? output_type(out_inds, args, names, dims) : force_out)
+
+    # -- step 3: one plan per stored output component -----------------------
     comps = OutType === nothing ? [()] : base_components(OutType)
     plans = [component_products(out_inds, oind, sum_inds, names, dims, args...) for oind in comps]
+
+    # -- step 4: lowering ---------------------------------------------------
+    # `_d1`, `_d2`, ... hold the arguments' data tuples in the emitted code
+    ds = ntuple(n -> Symbol(:_d, n), N)
+    @assert all(a -> a.name ∉ ds, args)
     inlinemeta = Expr(:meta, :inline)
 
-    # SIMD lowering for same-eltype hardware float arguments (the cases the old
-    # hand-written simd.jl kernels covered); falls back to scalar lowering when
-    # the plan lacks column structure. Only binary operations are lowered.
+    # SIMD lowering, for binary operations on same-eltype hardware floats
+    # (the cases the old hand-written simd.jl kernels covered); falls back to
+    # the scalar lowering when the plan has no column structure. Scalar output
+    # with a single summed index — plain dot — always stays scalar: the
+    # SVec-and-horizontal-sum form loses at dim <= 3.
     if N == 2 && simd_eligible(args[1].elt, args[2].elt) && !(OutType === nothing && length(sum_inds) < 2)
-        # (scalar output with a single summed index — plain dot — beats the
-        # tree-reduction SVec form at dim ≤ 3, so it stays on the scalar path,
-        # as in the old package)
         r = try_simd_expr(OutType, plans, ds[1], ds[2],
                           :(Tensors.get_data($(args[1].name))), :(Tensors.get_data($(args[2].name))), args[1].elt)
         if r !== nothing
@@ -207,8 +307,9 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; mulad
         end
     end
 
+    # scalar lowering
     databind = [:($(ds[n]) = Tensors.get_data($(args[n].name))) for n in 1:N]
-    exprs = [sum_expr(uniq, factors, ds, muladd) for (uniq, factors) in plans]
+    exprs = [sum_expr(products, mults, ds, muladd) for (products, mults) in plans]
     if OutType === nothing
         return quote
             $inlinemeta
@@ -223,32 +324,40 @@ function einsum_expr(out_inds::Tuple{Vararg{Symbol}}, args::IndexedArg...; mulad
     end
 end
 
-#############
-# @tensorop #
-#############
+# ---------------------------- the macro ------------------------------------ #
 """
     @tensorop function op(A::TensorType, B::TensorType) where {...}
         C[i,j] = A[i,k] * B[k,j]
     end
 
-Define a tensor operation from index notation. Expands to a `@generated`
-method with the given signature whose body is produced by [`einsum_expr`](@ref)
-from the concrete argument types. The left-hand side gives the output indices
-(`C[] = ...` or `C = ...` for scalar output); wrap the assignment in
-`@muladd ...` to accumulate with `muladd`.
+Define a tensor operation from index notation. The left-hand side gives the
+output indices (a bare `C = ...` declares scalar output); an index appearing
+in two arguments is summed over; wrapping the assignment in `@muladd ...`
+makes the summation accumulate with `muladd`. Products of more than two
+tensors are allowed (e.g. `dotdot`).
 
-The generated method covers `Tensor`, `SymmetricTensor` and `MixedTensor`
-arguments of any dimension in one definition; the output type is computed
-from the index structure (symmetric output for symmetric-carrying index
-pairs, `MixedTensor` collapsed to `Tensor` when possible).
+The declaration expands to a single `@generated` method with the given
+signature, whose body is built by [`einsum_expr`](@ref) once the argument
+types are known. One declaration therefore covers `Tensor`, `SymmetricTensor`
+and `MixedTensor` arguments of every dimension and element type, with the
+output type computed from the index structure. The example above expands to:
+
+```julia
+@generated function op(A::TensorType, B::TensorType) where {...}
+    return Tensors.einsum_expr((:i, :j),
+        Tensors.IndexedArg(:A, Tensors.get_base(A), (:i, :k), eltype(A)),
+        Tensors.IndexedArg(:B, Tensors.get_base(B), (:k, :j), eltype(B));
+        muladd = false)
+end
+```
 """
 macro tensorop(fdef::Expr)
+    # -- pick apart `function op(A::..., B::...) where {...}; <stmt>; end` ---
     fdef.head === :function || error("@tensorop expects a function definition")
     sig = fdef.args[1]
     body = fdef.args[2]
-    # unwrap where-clauses to find the call
     call = sig
-    while call isa Expr && call.head === :where
+    while call isa Expr && call.head === :where # unwrap where-clauses
         call = call.args[1]
     end
     call isa Expr && call.head === :call || error("@tensorop expects a function definition")
@@ -258,7 +367,8 @@ macro tensorop(fdef::Expr)
             error("@tensorop arguments must be typed, e.g. A::SecondOrderTensor")
         push!(argnames, arg.args[1])
     end
-    # extract the single index-assignment statement from the body
+
+    # -- the body must be a single (possibly @muladd-wrapped) assignment -----
     stmts = [a for a in body.args if !(a isa LineNumberNode)]
     length(stmts) == 1 || error("@tensorop body must be a single index assignment")
     stmt = stmts[1]
@@ -269,6 +379,8 @@ macro tensorop(fdef::Expr)
     end
     stmt isa Expr && stmt.head === :(=) || error("@tensorop body must be an assignment, e.g. C[i,j] = A[i,k] * B[k,j]")
     lhs, rhs = stmt.args[1], stmt.args[2]
+
+    # -- left-hand side: the output indices ----------------------------------
     out_inds = if lhs isa Symbol
         () # scalar output
     elseif lhs isa Expr && lhs.head === :ref
@@ -276,7 +388,8 @@ macro tensorop(fdef::Expr)
     else
         error("@tensorop left-hand side must be `C` (scalar) or `C[i,j,...]`")
     end
-    # parse rhs: product of indexed arguments, e.g. A[i,k] * B[k,j]
+
+    # -- right-hand side: a product of indexed arguments ---------------------
     rhs isa Expr && rhs.head === :call && rhs.args[1] === :* ||
         error("@tensorop right-hand side must be a product of indexed tensors")
     refs = rhs.args[2:end]
@@ -287,6 +400,8 @@ macro tensorop(fdef::Expr)
         name in argnames || error("$(name) is not an argument of the function")
         (name, tuple(r.args[2:end]...))
     end
+
+    # -- assemble the @generated method (see the docstring for its shape) ----
     iargs = [:(Tensors.IndexedArg($(QuoteNode(name)), Tensors.get_base($name), $(QuoteNode(inds)), eltype($name)))
              for (name, inds) in argspecs]
     genbody = quote
