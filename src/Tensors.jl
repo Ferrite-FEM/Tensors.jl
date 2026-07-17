@@ -181,7 +181,7 @@ Base.IndexStyle(::Type{<:MixedTensor}) = IndexLinear()
 # Size #
 ########
 Base.size(::TT) where {TT <: AbstractTensor} = size(TT)
-Base.size(::Type{<:Vec{dim}})               where {dim} = (dim,)
+Base.size(::Type{<:Tensor{1, dim}})         where {dim} = (dim,)
 Base.size(::Type{<:SecondOrderTensor{dim}}) where {dim} = (dim, dim)
 Base.size(::Type{<:Tensor{3, dim}})         where {dim} = (dim, dim, dim)
 Base.size(::Type{<:FourthOrderTensor{dim}}) where {dim} = (dim, dim, dim, dim)
