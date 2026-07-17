@@ -1,7 +1,3 @@
-function tensor_create_linear(T::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}, Type{MixedTensor{order, dim}}}, f) where {order, dim}
-    return Expr(:tuple, [f(i) for i=1:n_components(T)]...)
-end
-
 function tensor_create(::Type{Tensor{order, dim}}, f) where {order, dim}
     return tensor_create(MixedTensor{order, Tuple{ntuple(_ -> dim, order)...}}, f)
 end

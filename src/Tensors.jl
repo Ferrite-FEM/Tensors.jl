@@ -1,7 +1,5 @@
 module Tensors
 
-import Base.@pure
-
 import Statistics
 using Statistics: mean
 using LinearAlgebra
@@ -134,7 +132,7 @@ end
     _check_mixed_parameters(MixedTensor{order, dims}, M)
     return MixedTensor{order, dims, T, M}(data)
 end
-MixedTensor{order, dims}(data::Tuple{Vararg{Any, M}}) where {order, dims, M} = MixedTensor{order, dims}(promote(data...))
+MixedTensor{order, dims}(data::Tuple) where {order, dims} = MixedTensor{order, dims}(promote(data...))
 
 ###############
 # Typealiases #
@@ -157,32 +155,30 @@ const NonSymmetricTensors{dim, T} = Union{Tensor{2, dim, T}, Tensor{4, dim, T}, 
 ##############################
 get_data(t::AbstractTensor) = t.data
 
-@pure n_components(::Type{SymmetricTensor{2, dim}}) where {dim} = dim*dim - div((dim-1)*dim, 2)
-@pure function n_components(::Type{SymmetricTensor{4, dim}}) where {dim}
+n_components(::Type{SymmetricTensor{2, dim}}) where {dim} = dim*dim - div((dim-1)*dim, 2)
+function n_components(::Type{SymmetricTensor{4, dim}}) where {dim}
     n = n_components(SymmetricTensor{2, dim})
     return n*n
 end
-@pure n_components(::Type{Tensor{order, dim}}) where {order, dim} = dim^order
-
-# Steal base implementation of "prod" to safely mark with @pure 
-@pure n_components(::Type{MixedTensor{order, dims}}) where {order, dims} = *(size(MixedTensor{order, dims})...)
+n_components(::Type{Tensor{order, dim}}) where {order, dim} = dim^order
+n_components(::Type{MixedTensor{order, dims}}) where {order, dims} = *(size(MixedTensor{order, dims})...)
 
 if isdefined(Core, :TypeEgal)
     get_type(T::Union{Core.TypeEq, Core.TypeEgal}) = Base.type_parameter(T)
 else
-    @pure get_type(::Type{Type{X}}) where {X} = X
+    get_type(::Type{Type{X}}) where {X} = X
 end
 
-@pure get_base(::Type{<:Tensor{order, dim}})          where {order, dim} = Tensor{order, dim}
-@pure get_base(::Type{<:SymmetricTensor{order, dim}}) where {order, dim} = SymmetricTensor{order, dim}
-@pure get_base(::Type{<:MixedTensor{order, dims}})    where {order, dims} = MixedTensor{order, dims}
+get_base(::Type{<:Tensor{order, dim}})          where {order, dim} = Tensor{order, dim}
+get_base(::Type{<:SymmetricTensor{order, dim}}) where {order, dim} = SymmetricTensor{order, dim}
+get_base(::Type{<:MixedTensor{order, dims}})    where {order, dims} = MixedTensor{order, dims}
 
-@pure Base.eltype(::Type{Tensor{order, dim, T, M}})          where {order, dim, T, M} = T
-@pure Base.eltype(::Type{Tensor{order, dim, T}})             where {order, dim, T}    = T
-@pure Base.eltype(::Type{Tensor{order, dim}})                where {order, dim}       = Any
-@pure Base.eltype(::Type{SymmetricTensor{order, dim, T, M}}) where {order, dim, T, M} = T
-@pure Base.eltype(::Type{SymmetricTensor{order, dim, T}})    where {order, dim, T}    = T
-@pure Base.eltype(::Type{SymmetricTensor{order, dim}})       where {order, dim}       = Any
+Base.eltype(::Type{Tensor{order, dim, T, M}})          where {order, dim, T, M} = T
+Base.eltype(::Type{Tensor{order, dim, T}})             where {order, dim, T}    = T
+Base.eltype(::Type{Tensor{order, dim}})                where {order, dim}       = Any
+Base.eltype(::Type{SymmetricTensor{order, dim, T, M}}) where {order, dim, T, M} = T
+Base.eltype(::Type{SymmetricTensor{order, dim, T}})    where {order, dim, T}    = T
+Base.eltype(::Type{SymmetricTensor{order, dim}})       where {order, dim}       = Any
 
 ############################
 # Abstract Array interface #
@@ -210,7 +206,7 @@ Base.length(::Type{Tensor{order, dim, T, M}}) where {order, dim, T, M} = M
 #########################
 # Internal constructors #
 #########################
-for (TensorType, orders) in ((SymmetricTensor, (2,4)), (Tensor, (2,3,4)))
+for (TensorType, orders) in ((SymmetricTensor, (2,4)), (Tensor, (1,2,3,4)))
     for order in orders, dim in (1, 2, 3)
         N = n_components(TensorType{order, dim})
         @eval begin
@@ -220,15 +216,6 @@ for (TensorType, orders) in ((SymmetricTensor, (2,4)), (Tensor, (2,3,4)))
         if N > 1 # To avoid overwriting ::Tuple{Any}
             # Heterogeneous tuple
             @eval @inline $TensorType{$order, $dim}(t::Tuple{Vararg{Any,$N}}) = $TensorType{$order, $dim}(promote(t...))
-        end
-    end
-    if TensorType == Tensor
-        for dim in (1, 2, 3)
-            @eval @inline Tensor{1, $dim}(t::NTuple{$dim, T}) where {T} = Tensor{1, $dim, T, $dim}(t)
-            if dim > 1 # To avoid overwriting ::Tuple{Any}
-                # Heterogeneous tuple
-                @eval @inline Tensor{1, $dim}(t::Tuple{Vararg{Any,$dim}}) = Tensor{1, $dim}(promote(t...))
-            end
         end
     end
 end
