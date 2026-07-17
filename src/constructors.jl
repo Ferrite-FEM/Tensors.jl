@@ -5,7 +5,7 @@
 ######################
 # Definition-time generated methods for every supported shape, so that a
 # wrong-length tuple gives a natural MethodError.
-for (TensorType, orders) in ((SymmetricTensor, (2, 4)), (Tensor, (2, 3, 4)))
+for (TensorType, orders) in ((SymmetricTensor, (2, 4)), (Tensor, (1, 2, 3, 4)))
     for order in orders, dim in (1, 2, 3)
         N = n_components(TensorType{order, dim})
         @eval begin
@@ -15,15 +15,6 @@ for (TensorType, orders) in ((SymmetricTensor, (2, 4)), (Tensor, (2, 3, 4)))
         if N > 1 # To avoid overwriting ::Tuple{Any}
             # Heterogeneous tuple
             @eval @inline $TensorType{$order, $dim}(t::Tuple{Vararg{Any, $N}}) = $TensorType{$order, $dim}(promote(t...))
-        end
-    end
-    if TensorType == Tensor
-        for dim in (1, 2, 3)
-            @eval @inline Tensor{1, $dim}(t::NTuple{$dim, T}) where {T} = Tensor{1, $dim, T, $dim}(t)
-            if dim > 1 # To avoid overwriting ::Tuple{Any}
-                # Heterogeneous tuple
-                @eval @inline Tensor{1, $dim}(t::Tuple{Vararg{Any, $dim}}) = Tensor{1, $dim}(promote(t...))
-            end
         end
     end
 end
@@ -46,7 +37,7 @@ end
     _check_mixed_parameters(MixedTensor{order, dims}, M)
     return MixedTensor{order, dims, T, M}(data)
 end
-@inline MixedTensor{order, dims}(data::Tuple{Vararg{Any, M}}) where {order, dims <: Tuple, M} = MixedTensor{order, dims}(promote(data...))
+@inline MixedTensor{order, dims}(data::Tuple) where {order, dims <: Tuple} = MixedTensor{order, dims}(promote(data...))
 
 # Special for Vec
 @inline Vec{dim}(data) where {dim} = Tensor{1, dim}(data)
@@ -83,22 +74,16 @@ function Tensor{order, dim}(data::AbstractArray) where {order, dim}
     return apply_all(Tensor{order, dim}, @inline function(i) @inbounds data[i]; end)
 end
 
-@generated function SymmetricTensor{order, dim}(data::AbstractArray) where {order, dim}
+function SymmetricTensor{order, dim}(data::AbstractArray) where {order, dim}
     N = n_components(Tensor{order, dim})
-    expN = Expr(:tuple, [:(data[$i]) for i in 1:N]...)
     M = n_components(SymmetricTensor{order, dim})
-    expM = Expr(:tuple, [:(data[$i]) for i in 1:M]...)
-    return quote
-        L = length(data)
-        if L != $N && L != $M
-            throw(ArgumentError("wrong number of vector elements, expected $($N) or $($M), got $L"))
-        end
-        if L == $M
-            @inbounds return SymmetricTensor{order, dim}($expM)
-        end
-        @inbounds S = Tensor{order, dim}($expN)
-        return convert(SymmetricTensor{order, dim}, S)
+    L = length(data)
+    if L == M
+        return apply_all(SymmetricTensor{order, dim}, @inline function(i) @inbounds data[i]; end)
+    elseif L == N
+        return convert(SymmetricTensor{order, dim}, Tensor{order, dim}(data))
     end
+    throw(ArgumentError("wrong number of vector elements, expected $N or $M, got $L"))
 end
 
 #########################
@@ -151,8 +136,8 @@ end
 @inline Base.fill(f::Function, S::Type{T}) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = apply_all(get_base(T), i -> f())
 
 # Array with zero/ones
-@inline Base.zeros(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = fill(zero(T), (dims))
-@inline Base.ones(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = fill(one(T), (dims))
+@inline Base.zeros(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = fill(zero(T), dims)
+@inline Base.ones(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = fill(one(T), dims)
 
 #########
 # diagm #
@@ -192,19 +177,11 @@ julia> eᵢ(Vec{2, Float64}, 2)
  1.0
 ```
 """
-@generated function basevec(::Type{Vec{dim, T}}) where {dim, T}
-    vecs = [Expr(:tuple, [i == j ? :o : :z for i in 1:dim]...) for j in 1:dim]
-    return quote
-        $(Expr(:meta, :inline))
-        o = one(T)
-        z = zero(T)
-        return ($([:(Vec{$dim, T}($e)) for e in vecs]...),)
-    end
-end
+@inline basevec(::Type{Vec{dim, T}}) where {dim, T} = ntuple(i -> basevec(Vec{dim, T}, i), Val(dim))
 
 @inline basevec(::Type{Vec{dim}}) where {dim} = basevec(Vec{dim, Float64})
-@inline basevec(::Type{Vec{dim, T}}, i::Int) where {dim, T} = basevec(Vec{dim, T})[i]
-@inline basevec(::Type{Vec{dim}}, i::Int) where {dim} = basevec(Vec{dim, Float64})[i]
+@inline basevec(::Type{Vec{dim, T}}, i::Int) where {dim, T} = Vec{dim, T}(ntuple(j -> ifelse(j == i, one(T), zero(T)), Val(dim)))
+@inline basevec(::Type{Vec{dim}}, i::Int) where {dim} = basevec(Vec{dim, Float64}, i)
 @inline basevec(v::Vec{dim, T}) where {dim, T} = basevec(typeof(v))
 @inline basevec(v::Vec{dim, T}, i::Int) where {dim, T} = basevec(typeof(v), i)
 
