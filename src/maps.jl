@@ -14,24 +14,14 @@ function component_expr(TT::Type, f)
     return Expr(:tuple, [f(c...) for c in base_components(TT)]...)
 end
 
-# Tuple expression `(f(1), f(2), ..., f(M))` over the stored components of `TT`.
-function linear_expr(TT::Type, f)
-    return Expr(:tuple, [f(i) for i in 1:n_components(TT)]...)
+# Applies the function f to all linear indices: TT((f(1), f(2), ..., f(M))).
+# (Base's tuple `map` is not usable here: it leaves the unrolled path beyond
+# 32 components, e.g. Tensor{4, 3} with 81.)
+@inline function apply_all(::Type{TT}, f::F) where {TT <: Union{Tensor, SymmetricTensor, MixedTensor}, F <: Function}
+    B = get_base(TT)
+    return B(ntuple(f, Val(n_components(B))))
 end
-
-# Applies the function f to all indices f(1), f(2), ... f(n_independent_components)
-@generated function apply_all(S::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}, Type{MixedTensor{order, dim}}}, f::Function) where {order, dim}
-    TensorType = get_base(get_type(S))
-    exp = linear_expr(TensorType, i -> :(f($i)))
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($exp)
-    end
-end
-
-@inline function apply_all(S::Union{Tensor{order, dim}, SymmetricTensor{order, dim}, MixedTensor{order, dim}}, f::Function) where {order, dim}
-    apply_all(get_base(typeof(S)), f)
-end
+@inline apply_all(S::AbstractTensor, f::F) where {F <: Function} = apply_all(get_base(typeof(S)), f)
 
 # map implementations
 @inline function _map(f, S::AbstractTensor)
