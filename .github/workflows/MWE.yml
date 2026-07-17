@@ -1,0 +1,28 @@
+name: MWE
+on:
+  push:
+    branches:
+      - 'kc/mwe-113-dott'
+  workflow_dispatch:
+
+jobs:
+  mwe:
+    name: MWE - ${{ matrix.version }} - sample ${{ matrix.sample }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - 'pre'
+          - 'nightly'
+        sample: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: ${{ matrix.version }}
+      - name: Run MWE (default flags)
+        run: TENSORS_PATH=$PWD julia --color=yes mwe/mwe.jl
+      - name: Run MWE (check-bounds=yes)
+        if: ${{ always() }}
+        run: TENSORS_PATH=$PWD julia --color=yes --check-bounds=yes mwe/mwe.jl
