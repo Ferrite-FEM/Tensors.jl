@@ -407,24 +407,31 @@ function rotation_tensor(u::Vec{3, T}, θ::Number) where T
     return one(ω) + s * ω + (1 - c) * ω^2
 end
 
-# args is (u::Vec{3}, θ::Number) for 3D tensors, and (θ::number,) for 2D
-function rotate(x::SymmetricTensor{2}, args...)
-    R = rotation_tensor(args...)
+function rotate(x::Vec{dim}, R::Tensor{2, dim}) where {dim}
+    return R ⋅ x
+end
+
+function rotate(x::SymmetricTensor{2, dim}, R::Tensor{2, dim}) where {dim}
     return unsafe_symmetric(R ⋅ x ⋅ R')
 end
-function rotate(x::Tensor{2}, args...)
-    R = rotation_tensor(args...)
+
+function rotate(x::Tensor{2, dim}, R::Tensor{2, dim}) where {dim}
     return R ⋅ x ⋅ R'
 end
-function rotate(x::Tensor{3}, args...)
-    R = rotation_tensor(args...)
+
+function rotate(x::Tensor{3, dim}, R::Tensor{2, dim}) where {dim}
     return otimesu(R, R) ⊡ x ⋅ R'
 end
-function rotate(x::Tensor{4}, args...)
-    R = rotation_tensor(args...)
-    return otimesu(R, R) ⊡ x ⊡ otimesu(R', R')
-end
-function rotate(x::SymmetricTensor{4}, args...)
-    R = rotation_tensor(args...)
+
+function rotate(x::SymmetricTensor{4, dim}, R::Tensor{2, dim}) where {dim}
     return unsafe_symmetric(otimesu(R, R) ⊡ x ⊡ otimesu(R', R'))
 end
+
+function rotate(x::Tensor{4, dim}, R::Tensor{2, dim}) where {dim}
+    return otimesu(R, R) ⊡ x ⊡ otimesu(R', R')
+end
+
+#rotate(x::AbstractTensor, args...) = rotate(x, rotation_tensor(args...))
+rotate(x::AbstractTensor{<:Any, 2}, θ::Number) = rotate(x, rotation_tensor(θ))
+rotate(x::AbstractTensor{<:Any, 3}, u::Vec{3}, θ::Number) = rotate(x, rotation_tensor(u, θ))
+rotate(x::AbstractTensor{<:Any, 3}, ψ::Number, θ::Number, ϕ::Number) = rotate(x, rotation_tensor(ψ, θ, ϕ))
