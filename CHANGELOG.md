@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Bugfixes
+- `isminorsymmetric` and `ismajorsymmetric` previously missed certain
+  asymmetric components (e.g. a tensor with `A[1,2,1,2] != A[2,1,2,1]` was
+  reported minor symmetric), which could silently corrupt data through
+  `convert(SymmetricTensor{4,dim}, A)`. Both predicates now check every
+  component.
+- `MixedTensor{order, dims}` constructors validate that the number of
+  dimensions matches the order and that the data has the right number of
+  components (previously a too-short tuple was accepted and later read out
+  of bounds).
+- `tomandel`/`tovoigt` with `offdiagscale` promote the element type of the
+  returned array, so integer tensors no longer throw `InexactError`.
+- The cross product of two `Vec{1}` returns the element type of the product
+  (relevant for `Unitful`-style quantities).
+- The one-argument `Base.promote(::AbstractTensor)` method is removed: it
+  returned a bare (densified) tensor, violating `promote`'s contract of
+  returning a tuple. Use `Tensors.densify` for the old behavior.
+
 ## [v1.17.0]
 
 ### Added

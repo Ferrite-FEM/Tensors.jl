@@ -303,7 +303,7 @@ S(C) = S(C, μ, Kb)
             t0_t0_t1(x) = t0_t0(t0_t1(x)); t0_t0_t1_ana(x) = t0_t0_ana(t0_t1(x))
             t1_t0_t1(x) = t1_t0(t0_t1(x)); t1_t0_t1_ana(x) = t1_t0_ana(t0_t1(x))
     
-            @test gradient(t1_t0_t1, x1) ≈ gradient(t1_t0_t1_ana, x1)
+            @test gradient(t0_t0_t1, x1) ≈ gradient(t0_t0_t1_ana, x1)
             @test gradient(t1_t0_t1, x1) ≈ gradient(t1_t0_t1_ana, x1)
             
             # x Vec, g Vec, f: scalar, Vec

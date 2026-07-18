@@ -78,11 +78,15 @@ end
 @inline function tovoigt(::Type{<:Matrix}, A::Tensor{4, dim, T, M}; order=nothing) where {dim, T, M}
     @inbounds _tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A, order)
 end
+# the destination element type accounts for the scaling, so e.g. `tomandel`
+# of an integer tensor gives a float array instead of an InexactError
 @inline function tovoigt(::Type{<:Vector}, A::SymmetricTensor{2, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
-    @inbounds _tovoigt!(Vector{T}(undef, M), A, order; offdiagscale=offdiagscale)
+    Tv = typeof(zero(T) * offdiagscale)
+    @inbounds _tovoigt!(Vector{Tv}(undef, M), A, order; offdiagscale=offdiagscale)
 end
 @inline function tovoigt(::Type{<:Matrix}, A::SymmetricTensor{4, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
-    @inbounds _tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A, order; offdiagscale=offdiagscale)
+    Tv = typeof(zero(T) * offdiagscale)
+    @inbounds _tovoigt!(Matrix{Tv}(undef, Int(√M), Int(√M)), A, order; offdiagscale=offdiagscale)
 end
 
 """
