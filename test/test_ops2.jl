@@ -114,7 +114,7 @@ end # of testset
     @test minortranspose(minortranspose(AA_sym)) ≈ AA_sym
 
     @test majortranspose((@inferred majortranspose(AA))::Tensor{4, dim, T}) ≈ AA
-    @test majortranspose((@inferred majortranspose(AA_sym))::Tensor{4, dim, T}) ≈ AA_sym
+    @test majortranspose((@inferred majortranspose(AA_sym))::SymmetricTensor{4, dim, T}) ≈ AA_sym
     @test AA[i,j,k,l] ≈ majortranspose(AA)[k,l,i,j]
     @test AA_sym[i,j,k,l] ≈ majortranspose(AA_sym)[k,l,i,j]
 

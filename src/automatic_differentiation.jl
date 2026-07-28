@@ -98,11 +98,6 @@ end
         zero($RetType)
     end
 end
-# dimensions per index of a tensor type, e.g. (3, 3)
-base_size(::Type{Tensor{order, dim}}) where {order, dim} = ntuple(_ -> dim, order)
-base_size(::Type{SymmetricTensor{order, dim}}) where {order, dim} = ntuple(_ -> dim, order)
-base_size(::Type{MixedTensor{order, dims}}) where {order, dims} = tuple(dims.parameters...)
-
 # all other shapes (e.g. a constant Vec{2}-valued function of a Vec{3}): the
 # zero of the same gradient type the dual-valued path produces — a MixedTensor
 # over the concatenated dimensions, collapsed to a regular Tensor when they

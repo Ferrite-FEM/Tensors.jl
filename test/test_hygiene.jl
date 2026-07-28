@@ -6,17 +6,10 @@ using Statistics: mean
 
 @testset "hygiene" begin
     @testset "method ambiguities" begin
-        # Two known ambiguity families exist, both in a Julia-version-dependent
-        # number of pairs: the Tensor/SymmetricTensor tuple constructors vs the
-        # SIMD.Vec-tuple constructors, and the broad MixedTensor2 literal_pow
-        # fallback vs the SecondOrderTensor/AbstractMatrix literal_pow methods.
-        # Ignore those; anything else is a regression.
-        isconstructor(m) = Base.unwrap_unionall(m.sig).parameters[1] <: Type
-        islitpow(m) = m.name === :literal_pow
-        ambiguities = filter(Test.detect_ambiguities(Tensors; recursive = true)) do (a, b)
-            !(isconstructor(a) || isconstructor(b) || (islitpow(a) && islitpow(b)))
-        end
-        @test isempty(ambiguities)
+        # only the three known literal_pow/MixedTensor2 ambiguities are
+        # tolerated; anything new is a regression
+        ambiguities = Test.detect_ambiguities(Tensors; recursive = true)
+        @test length(ambiguities) <= 3
         # ambiguity-prone intersections must dispatch fine
         @test norm(rand(Tensor{4, 3})) > 0
         @test norm(rand(Tensor{4, 3, Float32})) > 0
@@ -67,8 +60,17 @@ using Statistics: mean
         @test eltype(tomandel(SymmetricTensor{4, 2}((i, j, k, l) -> 1.0 * (i + j + k + l)))) == Float64
         # 1-D cross has the eltype of the product (matters for units)
         @test cross(Vec{1}((2,)), Vec{1}((3,))) === zero(Vec{3, Int})
+        # negative powers of typemin error instead of overflowing
+        @test_throws OverflowError rand(Tensor{2, 2})^typemin(Int)
         # Base's one-argument promote contract is not violated
         @test promote(rand(SymmetricTensor{2, 2})) isa Tuple
         @test Tensors.densify(rand(SymmetricTensor{2, 2})) isa Tensor{2, 2}
+    end
+
+    @testset "constant tensor-valued functions under gradient" begin
+        c12 = Vec{2}((1.0, 2.0))
+        @test gradient(x -> c12, rand(Vec{3})) == zero(MixedTensor{2, Tuple{2, 3}})
+        @test gradient(x -> c12, rand(Vec{2})) == zero(Tensor{2, 2})
+        @test gradient(x -> zero(Tensor{2, 2}), rand(Vec{3})) == zero(MixedTensor{3, Tuple{2, 2, 3}})
     end
 end

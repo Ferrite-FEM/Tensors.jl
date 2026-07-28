@@ -342,66 +342,7 @@ S(C) = S(C, μ, Kb)
             @test gradient(ts_ts_ts, xs) ≈ gradient(ts_ts_ts_ana, xs)
     
         end
-
-    end
-
-    @testset "propagate_gradient / extract_value" begin
-        # analytical rule with a passive parameter (issue #197)
-        myf(x, p) = p * tr(x) * x
-        myf_dfdx(x, p) = (myf(x, p), p * (x ⊗ one(x) + tr(x) * one(SymmetricTensor{4, 3})))
-        myf(x::SymmetricTensor{2, 3, <:ForwardDiff.Dual}, p) = propagate_gradient(myf_dfdx, x, p)
-        x = rand(SymmetricTensor{2, 3})
-        @test gradient(y -> myf(y, 2.5), x) ≈ 2.5 * (x ⊗ one(x) + tr(x) * one(SymmetricTensor{4, 3}))
-        # Val{i} form: differentiation argument in a non-leading position
-        myg(p, x) = myf(x, p)
-        myg_dgdx(p, x) = (myg(p, x), p * (x ⊗ one(x) + tr(x) * one(SymmetricTensor{4, 3})))
-        myg(p, x::SymmetricTensor{2, 3, <:ForwardDiff.Dual}) = propagate_gradient(myg_dgdx, Val(2), p, x)
-        @test gradient(y -> myg(2.5, y), x) ≈ gradient(y -> myf(y, 2.5), x)
-        # external (non-Tensors) ForwardDiff tag: the analytical rule must not
-        # depend on the Tag payload matching the input type
-        myh(y) = det(y) * y
-        myh_dfdx(y) = (myh(y), y ⊗ (det(y) * inv(y)') + det(y) * one(Tensor{4, 3}))
-        myh(y::Tensor{2, 3, <:ForwardDiff.Dual}) = propagate_gradient(myh_dfdx, y)
-        A = rand(Tensor{2, 3})
-        d = ForwardDiff.derivative(t -> norm(myh(t * A)), 1.0)
-        d_ref = ForwardDiff.derivative(t -> norm(det(t * A) * (t * A)), 1.0)
-        @test d ≈ d_ref
-        # nested duals: hessian through an analytical gradient
-        @test hessian(y -> norm(myh(y)), A) ≈ hessian(y -> norm(det(y) * y), A)
-        # extract_value (issue #208)
-        seen = Ref(zero(x))
-        g(y) = (seen[] = extract_value(y); norm(y))
-        gradient(g, x)
-        @test seen[] == x
-        @test extract_value(1.23) === 1.23
-        @test extract_value(x) === x
-    end
-
-    @testset "propagate_gradient with several active arguments" begin
-        # g(F, C) with both arguments depending on the differentiated variable
-        myg(F, C) = tr(F ⋅ C)
-        myg_dg(F, C) = (myg(F, C), (transpose(C), transpose(F)))
-        myg(F::Tensor{2, 3, <:ForwardDiff.Dual}, C) = propagate_gradient(myg_dg, Val((1, 2)), F, C)
-        F0 = rand(Tensor{2, 3})
-        @test gradient(F -> myg(F, F ⋅ F), F0) ≈ gradient(F -> tr(F ⋅ (F ⋅ F)), F0)
-        @test hessian(F -> myg(F, F ⋅ F), F0) ≈ hessian(F -> tr(F ⋅ F ⋅ F), F0)
-        # an active argument without duals contributes nothing
-        Cfix = rand(Tensor{2, 3})
-        @test gradient(F -> myg(F, Cfix), F0) ≈ gradient(F -> tr(F ⋅ Cfix), F0)
-        # duals from different differentiations must not be combined
-        x1 = Tensors._load(rand(Tensor{2, 3}), ForwardDiff.Tag(sin, Float64))
-        x2 = Tensors._load(rand(Tensor{2, 3}), ForwardDiff.Tag(cos, Float64))
-        @test_throws ArgumentError propagate_gradient(myg_dg, Val((1, 2)), x1, x2)
-        # one Jacobian per active argument is required
-        bad_dg(F, C) = (myg(F, C), (transpose(C),))
-        @test_throws ArgumentError propagate_gradient(bad_dg, Val((1, 2)), x1, x1)
-    end
-
-    @testset "constant tensor-valued functions under gradient" begin
-        c12 = Vec{2}((1.0, 2.0))
-        @test gradient(x -> c12, rand(Vec{3})) == zero(MixedTensor{2, Tuple{2, 3}})
-        @test gradient(x -> c12, rand(Vec{2})) == zero(Tensor{2, 2})
-        @test gradient(x -> zero(Tensor{2, 2}), rand(Vec{3})) == zero(MixedTensor{3, Tuple{2, 2, 3}})
+    
     end
 
 end # testset

@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.12.5"
+julia_version = "1.12.6"
 manifest_format = "2.0"
 project_hash = "be7a7e76f6306bf8cbf3dbe1e1cb7698046f1b84"
 
@@ -421,7 +421,7 @@ version = "1.10.0"
 deps = ["ForwardDiff", "LinearAlgebra", "PrecompileTools", "SIMD", "StaticArrays", "Statistics"]
 path = ".."
 uuid = "48a634ad-e948-5137-8d70-aa71f2a747f4"
-version = "1.17.0"
+version = "1.17.1"
 
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
