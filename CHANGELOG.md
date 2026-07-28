@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Non-literal integer powers of second-order tensors, `S^(n::Integer)` ([#239]).
+
 ### Bugfixes
 - `isminorsymmetric` and `ismajorsymmetric` previously missed certain
   asymmetric components (e.g. a tensor with `A[1,2,1,2] != A[2,1,2,1]` was
@@ -76,4 +79,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#233]: https://github.com/Ferrite-FEM/Tensors.jl/issues/233
 [#236]: https://github.com/Ferrite-FEM/Tensors.jl/issues/236
 [#238]: https://github.com/Ferrite-FEM/Tensors.jl/issues/238
+[#239]: https://github.com/Ferrite-FEM/Tensors.jl/issues/239
 [#240]: https://github.com/Ferrite-FEM/Tensors.jl/issues/240
