@@ -1,4 +1,7 @@
 import ForwardDiff: Dual, partials, value, Tag
+# The HyperHessiansForwardDiffExt extension (loaded since Tensors depends on
+# both packages) resolves HyperDual/Dual ambiguities for nested AD.
+import HyperHessians: HyperDual
 
 @static if isdefined(LinearAlgebra, :gradient)
     import LinearAlgebra.gradient
@@ -352,6 +355,179 @@ end
     return v_dual
 end
 
+###################
+# Hessian loaders #
+###################
+
+# Loaders for single-pass Hessian computation with HyperHessians.HyperDual.
+# Both ϵ1 and ϵ2 are seeded with the same (unit, or half for symmetric
+# off-diagonals) seeds so that one function evaluation carries the value (v),
+# gradient (ϵ1) and full Hessian (ϵ12).
+
+@inline function _load_hessian(v::Number)
+    o = one(v)
+    return HyperDual(v, (o,), (o,))
+end
+
+@generated function _load_hessian(v::Union{MixedTensor{2, <:Any, T}, Tensor{2, <:Any, T}, Vec{<:Any, T}}) where {T}
+    TB = get_base(v)
+    N = n_components(TB)
+    function makehyper(i)
+        seed = Expr(:tuple, [j == i ? :o : :z for j in 1:N]...)
+        return :(HyperDual(data[$i], $seed, $seed))
+    end
+    expr = Expr(:tuple, [makehyper(i) for i in 1:N]...)
+    return quote
+        $(Expr(:meta, :inline))
+        data = get_data(v)
+        o = one(T); z = zero(T)
+        @inbounds return $TB($expr)
+    end
+end
+
+@generated function _load_hessian(v::SymmetricTensor{2, dim, T}) where {dim, T}
+    N = n_components(SymmetricTensor{2, dim})
+    isdiag = Bool[i == j for j in 1:dim for i in j:dim]
+    function makehyper(i)
+        seed = Expr(:tuple, [j == i ? (isdiag[i] ? :o : :h) : :z for j in 1:N]...)
+        return :(HyperDual(data[$i], $seed, $seed))
+    end
+    expr = Expr(:tuple, [makehyper(i) for i in 1:N]...)
+    return quote
+        $(Expr(:meta, :inline))
+        data = get_data(v)
+        o = one(T); h = convert(T, 1/2); z = zero(T)
+        @inbounds return $(SymmetricTensor{2, dim})($expr)
+    end
+end
+
+######################
+# Hessian extraction #
+######################
+
+# Scalar output -> the Hessian is in the ϵ12 components.
+@inline _extract_hessian(f::F, r::HyperDual, ::Number) where {F} = @inbounds r.ϵ12[1][1]
+
+# Since ϵ1 and ϵ2 carry identical seeds the ϵ12 matrix is symmetric, so the
+# extraction reads ϵ12[j][i], which walks the nested tuples in memory order.
+@generated function _extract_hessian(f::F, r::HyperDual, v::Union{Vec, Tensor{2}, MixedTensor{2}}) where {F}
+    N = n_components(get_base(v))
+    TT = regular_if_possible(MixedTensor{2 * length(size(v)), Tuple{size(v)..., size(v)...}})
+    expr = Expr(:tuple)
+    for j in 1:N, i in 1:N
+        push!(expr.args, :(ϵ12[$j][$i]))
+    end
+    return quote
+        $(Expr(:meta, :inline))
+        ϵ12 = r.ϵ12
+        @inbounds return $TT($expr)
+    end
+end
+
+@generated function _extract_hessian(f::F, r::HyperDual, v::SymmetricTensor{2, dim}) where {F, dim}
+    N = n_components(SymmetricTensor{2, dim})
+    expr = Expr(:tuple)
+    for j in 1:N, i in 1:N
+        push!(expr.args, :(ϵ12[$j][$i]))
+    end
+    return quote
+        $(Expr(:meta, :inline))
+        ϵ12 = r.ϵ12
+        @inbounds return $(SymmetricTensor{4, dim})($expr)
+    end
+end
+
+# AbstractTensor output, scalar input -> Hessian of each component.
+@generated function _extract_hessian(f::F, r::AbstractTensor{<:Any, <:Any, <:HyperDual}, ::Number) where {F}
+    TB = get_base(r)
+    expr = Expr(:tuple, [:(get_data(r)[$i].ϵ12[1][1]) for i in 1:n_components(TB)]...)
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TB($expr)
+    end
+end
+
+# Output without HyperDual sensitivity: f is constant, zero Hessian.
+# Signatures for v mirror the HyperDual methods exactly so that dispatch is
+# resolved by the specificity of r (HyperDual <: Real).
+@inline _extract_hessian(f::F, r::Real, ::Number) where {F} = zero(r)
+@generated function _extract_hessian(f::F, r::Real, v::Union{Vec, Tensor{2}, MixedTensor{2}}) where {F}
+    TT = regular_if_possible(MixedTensor{2 * length(size(v)), Tuple{size(v)..., size(v)...}})
+    return quote
+        $(Expr(:meta, :inline))
+        zero($TT{typeof(r)})
+    end
+end
+@inline _extract_hessian(f::F, r::Real, ::SymmetricTensor{2, dim}) where {F, dim} = zero(SymmetricTensor{4, dim, typeof(r)})
+
+# Constant AbstractTensor output with scalar input: zero Hessian.
+@inline _extract_hessian(f::F, r::AbstractTensor, ::Number) where {F} = zero(r)
+
+# AbstractTensor output with tensor input is not supported by the single-pass
+# HyperDual path; fall back to nested dual differentiation.
+@inline function _extract_hessian(f::F, r::AbstractTensor, v::Union{SecondOrderTensor, Vec}) where {F}
+    gradf = y -> gradient(f, y)
+    return gradient(gradf, v)
+end
+
+# Gradient (ϵ1) extraction from a HyperDual result.
+@inline _extract_hessian_gradient(r::HyperDual, ::Number) = @inbounds r.ϵ1[1]
+
+@generated function _extract_hessian_gradient(r::HyperDual, v::Union{Vec, SecondOrderTensor})
+    TB = get_base(v)
+    expr = Expr(:tuple, [:(ϵ1[$i]) for i in 1:n_components(TB)]...)
+    return quote
+        $(Expr(:meta, :inline))
+        ϵ1 = r.ϵ1
+        @inbounds return $TB($expr)
+    end
+end
+
+@generated function _extract_hessian_gradient(r::AbstractTensor{<:Any, <:Any, <:HyperDual}, ::Number)
+    TB = get_base(r)
+    expr = Expr(:tuple, [:(get_data(r)[$i].ϵ1[1]) for i in 1:n_components(TB)]...)
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TB($expr)
+    end
+end
+
+# Value extraction from a HyperDual result.
+@inline _extract_value(r::HyperDual) = r.v
+
+@generated function _extract_value(r::AbstractTensor{<:Any, <:Any, <:HyperDual})
+    TB = get_base(r)
+    expr = Expr(:tuple, [:(get_data(r)[$i].v) for i in 1:n_components(TB)]...)
+    return quote
+        $(Expr(:meta, :inline))
+        @inbounds return $TB($expr)
+    end
+end
+
+# hessian(f, v, :all) extraction: (hessian, gradient, value)
+@inline function _extract_hessian_all(f::F, r::HyperDual, v::Union{SecondOrderTensor, Vec}) where {F}
+    return _extract_hessian(f, r, v), _extract_hessian_gradient(r, v), _extract_value(r)
+end
+@inline function _extract_hessian_all(f::F, r::HyperDual, v::Number) where {F}
+    return _extract_hessian(f, r, v), _extract_hessian_gradient(r, v), _extract_value(r)
+end
+@inline function _extract_hessian_all(f::F, r::AbstractTensor{<:Any, <:Any, <:HyperDual}, v::Number) where {F}
+    return _extract_hessian(f, r, v), _extract_hessian_gradient(r, v), _extract_value(r)
+end
+@inline function _extract_hessian_all(f::F, r::Real, v::Union{SecondOrderTensor, Vec}) where {F}
+    return _extract_hessian(f, r, v), _extract_gradient(r, v), r
+end
+@inline function _extract_hessian_all(f::F, r::Real, v::Number) where {F}
+    return zero(r), zero(r), r
+end
+@inline function _extract_hessian_all(f::F, r::AbstractTensor, v::Number) where {F}
+    return zero(r), zero(r), r
+end
+@inline function _extract_hessian_all(f::F, r::AbstractTensor, v::Union{SecondOrderTensor, Vec}) where {F}
+    gradf = y -> gradient(f, y)
+    return gradient(gradf, v), gradient(f, v, :all)...
+end
+
 """
     gradient(f::Function, v::Union{SecondOrderTensor, Vec, Number})
     gradient(f::Function, v::Union{SecondOrderTensor, Vec, Number}, :all)
@@ -391,6 +567,14 @@ Computes the hessian of the input function. If the (pseudo)-keyword `all`
 is given, the lower order results (gradient and value) of the function is
 also returned as a second and third output argument.
 
+For scalar-valued functions (and tensor-valued functions of a scalar argument)
+the hessian (and gradient and value) is computed in a single function evaluation
+using hyper-dual numbers from HyperHessians.jl. Note that analytical derivatives
+supplied with [`@implement_gradient`](@ref) dispatch on `ForwardDiff.Dual` and
+are therefore not used by `hessian`; such functions are differentiated by
+hyper-dual arithmetic (and error if their primal methods do not accept
+generic `Real` arguments).
+
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2, 2});
@@ -417,13 +601,13 @@ julia> ∇∇f, ∇f, f = hessian(norm, A, :all);
 ```
 """
 function hessian(f::F, v::Union{SecondOrderTensor, Vec, Number}) where {F}
-    gradf = y -> gradient(f, y)
-    return gradient(gradf, v)
+    res = f(_load_hessian(v))
+    return _extract_hessian(f, res, v)
 end
 
 function hessian(f::F, v::Union{SecondOrderTensor, Vec, Number}, ::Symbol) where {F}
-    gradf = y -> gradient(f, y)
-    return gradient(gradf, v), gradient(f, v, :all)...
+    res = f(_load_hessian(v))
+    return _extract_hessian_all(f, res, v)
 end
 const ∇∇ = hessian
 
