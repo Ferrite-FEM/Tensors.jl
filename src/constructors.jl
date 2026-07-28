@@ -18,19 +18,14 @@
     end
 end
 
-# Applies the function f to all indices f(1), f(2), ... f(n_independent_components)
-@generated function apply_all(S::Union{Type{Tensor{order, dim}}, Type{SymmetricTensor{order, dim}}, Type{MixedTensor{order, dim}}}, f::Function) where {order, dim}
-    TensorType = get_base(get_type(S))
-    exp = tensor_create_linear(TensorType, (i) -> :(f($i)))
-    quote
-        $(Expr(:meta, :inline))
-        @inbounds return $TensorType($exp)
-    end
+# Applies the function f to all linear indices: TT((f(1), f(2), ..., f(M))).
+# (Base's tuple `map` is not usable here: it leaves the unrolled path beyond
+# 32 components, e.g. Tensor{4, 3} with 81.)
+@inline function apply_all(::Type{TT}, f::F) where {TT <: Union{Tensor, SymmetricTensor, MixedTensor}, F <: Function}
+    B = get_base(TT)
+    return B(ntuple(f, Val(n_components(B))))
 end
-
-@inline function apply_all(S::Union{Tensor{order, dim}, SymmetricTensor{order, dim}, MixedTensor{order, dim}}, f::Function) where {order, dim}
-    apply_all(get_base(typeof(S)), f)
-end
+@inline apply_all(S::AbstractTensor, f::F) where {F <: Function} = apply_all(get_base(typeof(S)), f)
 
 # Tensor from AbstractArray
 function Tensor{order, dim}(data::AbstractArray) where {order, dim}
@@ -41,22 +36,16 @@ end
 
 
 # SymmetricTensor from AbstractArray
-@generated function SymmetricTensor{order, dim}(data::AbstractArray) where {order, dim}
-    N = n_components(Tensor{order,dim})
-    expN = Expr(:tuple, [:(data[$i]) for i in 1:N]...)
-    M = n_components(SymmetricTensor{order,dim})
-    expM = Expr(:tuple, [:(data[$i]) for i in 1:M]...)
-    return quote
-        L = length(data)
-        if L != $N && L != $M
-            throw(ArgumentError("wrong number of vector elements, expected $($N) or $($M), got $L"))
-        end
-        if L == $M
-            @inbounds return SymmetricTensor{order, dim}($expM)
-        end
-        @inbounds S = Tensor{order, dim}($expN)
-        return convert(SymmetricTensor{order, dim}, S)
+function SymmetricTensor{order, dim}(data::AbstractArray) where {order, dim}
+    N = n_components(Tensor{order, dim})
+    M = n_components(SymmetricTensor{order, dim})
+    L = length(data)
+    if L == M
+        return apply_all(SymmetricTensor{order, dim}, @inline function(i) @inbounds data[i]; end)
+    elseif L == N
+        return convert(SymmetricTensor{order, dim}, Tensor{order, dim}(data))
     end
+    throw(ArgumentError("wrong number of vector elements, expected $N or $M, got $L"))
 end
 
 # one (identity tensor)
@@ -105,8 +94,8 @@ end
 @inline Base.fill(f::Function, S::Type{T}) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = apply_all(get_base(T), i -> f())
 
 # Array with zero/ones
-@inline Base.zeros(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = fill(zero(T), (dims))
-@inline Base.ones(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = fill(one(T), (dims))
+@inline Base.zeros(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = fill(zero(T), dims)
+@inline Base.ones(::Type{T}, dims::Int...) where {T <: Union{Tensor, SymmetricTensor, MixedTensor}} = fill(one(T), dims)
 
 # diagm
 @generated function LinearAlgebra.diagm(S::Type{T}, v::Union{AbstractVector, Tuple}) where {T <: SecondOrderTensor}
@@ -144,27 +133,11 @@ julia> eᵢ(Vec{2, Float64}, 2)
  1.0
 ```
 """
-@inline function basevec(::Type{Vec{1, T}}) where {T}
-    o = one(T)
-    return (Vec{1, T}((o,)), )
-end
-@inline function basevec(::Type{Vec{2, T}}) where {T}
-    o = one(T)
-    z = zero(T)
-    return (Vec{2, T}((o, z)),
-            Vec{2, T}((z, o)))
-end
-@inline function basevec(::Type{Vec{3, T}}) where {T}
-    o = one(T)
-    z = zero(T)
-    return (Vec{3, T}((o, z, z)),
-            Vec{3, T}((z, o, z)),
-            Vec{3, T}((z, z, o)))
-end
+@inline basevec(::Type{Vec{dim, T}}) where {dim, T} = ntuple(i -> basevec(Vec{dim, T}, i), Val(dim))
 
 @inline basevec(::Type{Vec{dim}}) where {dim} = basevec(Vec{dim, Float64})
-@inline basevec(::Type{Vec{dim, T}}, i::Int) where {dim, T} = basevec(Vec{dim, T})[i]
-@inline basevec(::Type{Vec{dim}}, i::Int) where {dim} = basevec(Vec{dim, Float64})[i]
+@inline basevec(::Type{Vec{dim, T}}, i::Int) where {dim, T} = Vec{dim, T}(ntuple(j -> ifelse(j == i, one(T), zero(T)), Val(dim)))
+@inline basevec(::Type{Vec{dim}}, i::Int) where {dim} = basevec(Vec{dim, Float64}, i)
 @inline basevec(v::Vec{dim, T}) where {dim, T} = basevec(typeof(v))
 @inline basevec(v::Vec{dim, T}, i::Int) where {dim, T} = basevec(typeof(v), i)
 
