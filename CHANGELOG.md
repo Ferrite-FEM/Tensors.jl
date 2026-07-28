@@ -14,6 +14,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   broadcast function need not preserve symmetry). Broadcasts mixing tensors with
   ordinary arrays, or with non-`Number` results, still return `Array`s.
 - Non-literal integer powers of second-order tensors, `S^(n::Integer)` ([#239]).
+- `propagate_gradient(f_dfdx, x, args...)` (the building block of
+  `@implement_gradient`) is now public and supports passing through additional
+  non-differentiated arguments ([#197]), and can be used to define
+  analytical-derivative methods with precise signatures ([#179]).
+- `extract_value(x)` is now public: strips one level of `ForwardDiff.Dual` from
+  a number or tensor, e.g. for storing state variables under AD ([#208]).
+- `propagate_gradient` supports several active arguments,
+  `propagate_gradient(f_dfdx, Val((i, j)), args...)`, for analytical
+  derivatives of functions where more than one argument depends on the
+  differentiated variable; the chain-rule contributions are summed, and
+  mixing dual numbers from different differentiation calls is an error.
+
+### Changed (AD internals)
+- Analytical-gradient insertion (`propagate_gradient`/`@implement_gradient`) no
+  longer reconstructs the differentiation input from the `ForwardDiff.Tag` type
+  parameters; the Jacobian is applied directly to the incoming partial lanes.
+  Analytical gradients therefore now compose with any outer differentiation
+  context: plain `ForwardDiff` calls, nested duals (e.g. `hessian` through an
+  analytical gradient), and tags not created by Tensors ([#179]).
 
 ### Bugfixes
 - `isminorsymmetric` and `ismajorsymmetric` previously missed certain
@@ -25,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dimensions matches the order and that the data has the right number of
   components (previously a too-short tuple was accepted and later read out
   of bounds).
+- Constant tensor-valued functions with an output shape differing from the
+  input no longer error under `gradient` (a zero gradient of the appropriate
+  shape is returned).
 - `tomandel`/`tovoigt` with `offdiagscale` promote the element type of the
   returned array, so integer tensors no longer throw `InexactError`.
 - The cross product of two `Vec{1}` returns the element type of the product
@@ -76,7 +98,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v1.16.1]: https://github.com/Ferrite-FEM/Tensors.jl/releases/tag/v1.16.1
 [v1.16.2]: https://github.com/Ferrite-FEM/Tensors.jl/releases/tag/v1.16.2
 [v1.17.0]: https://github.com/Ferrite-FEM/Tensors.jl/releases/tag/v1.17.0
+[#179]: https://github.com/Ferrite-FEM/Tensors.jl/issues/179
+[#197]: https://github.com/Ferrite-FEM/Tensors.jl/issues/197
 [#205]: https://github.com/Ferrite-FEM/Tensors.jl/issues/205
+[#208]: https://github.com/Ferrite-FEM/Tensors.jl/issues/208
 [#212]: https://github.com/Ferrite-FEM/Tensors.jl/issues/212
 [#222]: https://github.com/Ferrite-FEM/Tensors.jl/issues/222
 [#223]: https://github.com/Ferrite-FEM/Tensors.jl/issues/223

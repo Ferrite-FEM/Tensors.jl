@@ -4,6 +4,7 @@ import Statistics
 using Statistics: mean
 using LinearAlgebra
 using StaticArrays
+import ForwardDiff
 # re-exports from LinearAlgebra
 export ⋅, ×, dot, diagm, tr, det, norm, eigvals, eigvecs, eigen
 # re-exports from Statistics
@@ -18,7 +19,7 @@ export otimesu, otimesl
 export minortranspose, majortranspose, isminorsymmetric, ismajorsymmetric
 export tdot, dott, dotdot
 export hessian, gradient, curl, divergence, laplace
-export @implement_gradient
+export @implement_gradient, propagate_gradient, extract_value
 export basevec, eᵢ
 export rotate, rotation_tensor
 export tovoigt, tovoigt!, fromvoigt, tomandel, tomandel!, frommandel
