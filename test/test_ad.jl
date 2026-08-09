@@ -204,7 +204,53 @@ S(C) = S(C, μ, Kb)
         @test gradient(y -> gradient(x -> f(y, x), s), v)::Vec{2} ≈ Vec((v[2], v[1]))
         @test gradient(y -> gradient(x -> f(x, y), v), s)::Vec{2} ≈ Vec((v[2], v[1]))
     end
-    
+
+    @testset "f: AbstractTensor -> SymmetricTensor" begin
+        # The gradient of a symmetric tensor valued function is symmetric in the
+        # indices from the output, but since there is no tensor type with that
+        # symmetry the symmetry is dropped, i.e. a full tensor is returned.
+        δ(i, j) = i == j ? 1.0 : 0.0
+        for dim in 1:3
+            x = rand(Vec{dim})
+            A = rand(Tensor{2, dim})
+            A_sym = rand(SymmetricTensor{2, dim})
+
+            # SymmetricTensor{2} valued function of a Vec -> Tensor{3}
+            f(x::Vec) = symmetric(x ⊗ x)
+            df(x::Vec{d}) where {d} = Tensor{3, d}((i, j, k) -> δ(i, k) * x[j] + δ(j, k) * x[i])
+            @test (@inferred gradient(f, x))::Tensor{3, dim, Float64} ≈ df(x)
+            ∇f, fv = @inferred gradient(f, x, :all)
+            @test ∇f::Tensor{3, dim, Float64} ≈ df(x)
+            @test fv::SymmetricTensor{2, dim, Float64} ≈ f(x)
+
+            # SymmetricTensor{2} valued function of a Tensor{2} -> Tensor{4}
+            @test (@inferred gradient(symmetric, A))::Tensor{4, dim, Float64} ⊡ A ≈ symmetric(A)
+            @test (@inferred gradient(symmetric, A, :all))[2]::SymmetricTensor{2, dim, Float64} ≈ symmetric(A)
+
+            # Symmetric input and symmetric output is unaffected, i.e. the
+            # symmetry of the resulting SymmetricTensor{4} is kept
+            @test (@inferred gradient(symmetric, A_sym))::SymmetricTensor{4, dim, Float64} ≈ one(SymmetricTensor{4, dim})
+
+            # Functions that do not return duals
+            B_sym = rand(SymmetricTensor{2, dim})
+            @test (@inferred gradient(x -> B_sym, x))::Tensor{3, dim, Float64} ≈ zero(Tensor{3, dim})
+            @test (@inferred gradient(A -> B_sym, A))::Tensor{4, dim, Float64} ≈ zero(Tensor{4, dim})
+            @test (@inferred gradient(A -> B_sym, A_sym))::SymmetricTensor{4, dim, Float64} ≈ zero(SymmetricTensor{4, dim})
+            @test (@inferred gradient(x -> B_sym, x, :all))[2]::SymmetricTensor{2, dim, Float64} ≈ B_sym
+
+            # Nested differentiation
+            @test (@inferred gradient(y -> gradient(f, y), x))::Tensor{4, dim, Float64} ≈
+                  Tensor{4, dim}((i, j, k, l) -> δ(i, l) * δ(j, k) + δ(j, l) * δ(i, k))
+        end
+        # Different dimensions for the output and the input give a MixedTensor
+        g(x::Vec{3}) = symmetric(Tensor{2, 2}((i, j) -> x[i] * x[j]))
+        x = rand(Vec{3})
+        ∇g = (@inferred gradient(g, x))::MixedTensor3{2, 2, 3, Float64}
+        @test ∇g ≈ MixedTensor3{2, 2, 3}((i, j, k) -> δ(i, k) * x[j] + δ(j, k) * x[i])
+        @test (@inferred gradient(x -> zero(SymmetricTensor{2, 2}), x))::MixedTensor3{2, 2, 3, Float64} ≈ zero(MixedTensor3{2, 2, 3})
+    end
+
+
 
     @testset "analytical gradient implementation" begin
         # Consider the function f(g(x)), we need to test the following variations to cover all cases

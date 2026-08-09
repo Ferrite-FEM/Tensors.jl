@@ -78,6 +78,13 @@ end
 
 @inline _extract_gradient_dual(v::AbstractTensor{<:Any, <:Any, <:Dual}, u::AbstractTensor) = _extract_gradient(makemixed(v), makemixed(u))
 
+# A symmetric output combined with a non-symmetric input, e.g. a
+# `SymmetricTensor{2, dim}`-valued function of a `Vec{dim}`. The gradient is
+# symmetric in the indices stemming from the output, but there is no tensor
+# type with that symmetry (a `Tensor{3}` in the example above), so the symmetry
+# of the output is dropped and a full tensor is returned.
+@inline _extract_gradient_dual(v::SymmetricTensor{<:Any, <:Any, <:Dual}, u::Union{Tensor, MixedTensor}) = _extract_gradient_dual(densify(v), u)
+
 @generated function _extract_gradient_dual(v::MixedTensor{order1, dims1, <:Dual}, u::MixedTensor{order2, dims2}) where {order1, dims1, order2, dims2}
     expr = Expr(:tuple)
     N1 = n_components(MixedTensor{order1, dims1})
@@ -148,6 +155,19 @@ for TensorType in (Tensor, SymmetricTensor)
         end
     end
 end
+# The remaining combinations, mirroring the dispatch for the dual case above.
+# The return type must match the one obtained when the output does depend on
+# the input, hence the symmetry of a symmetric output is dropped here as well.
+@generated function _extract_gradient_nondual(v::MixedTensor{order1, dims1, T}, u::MixedTensor{order2, dims2}) where {order1, dims1, T, order2, dims2}
+    RetType = regular_if_possible(MixedTensor{order1 + order2, Tuple{size(v)..., size(u)...}, T})
+    return quote
+        $(Expr(:meta, :inline))
+        zero($RetType)
+    end
+end
+@inline _extract_gradient_nondual(v::Tensor, u::Union{Tensor, MixedTensor}) = _extract_gradient_nondual(makemixed(v), makemixed(u))
+@inline _extract_gradient_nondual(v::MixedTensor, u::Tensor) = _extract_gradient_nondual(v, makemixed(u))
+@inline _extract_gradient_nondual(v::SymmetricTensor, u::Union{Tensor, MixedTensor}) = _extract_gradient_nondual(densify(v), u)
 
 ######################
 # Gradient insertion #
@@ -370,6 +390,28 @@ julia> ∇f = gradient(norm, A)
 
 julia> ∇f, f = gradient(norm, A, :all);
 ```
+
+!!! note "Symmetric tensor valued functions"
+    The gradient of a `SymmetricTensor{2}` valued function is symmetric in the
+    two indices originating from the output. Since there is no tensor type with
+    that symmetry, e.g. for a `Vec` input the gradient is a third order tensor,
+    the symmetry is dropped and a full `Tensor` is returned. (The exception is
+    when the input is a `SymmetricTensor{2}` as well, in which case the
+    symmetric type `SymmetricTensor{4}` can represent the gradient.)
+
+    ```jldoctest
+    julia> f(x) = symmetric(x ⊗ x);
+
+    julia> gradient(f, Vec{2}((1.0, 2.0)))
+    2×2×2 Tensor{3, 2, Float64, 8}:
+    [:, :, 1] =
+     2.0  2.0
+     2.0  0.0
+
+    [:, :, 2] =
+     0.0  1.0
+     1.0  4.0
+    ```
 """
 function gradient(f::F, v::V) where {F, V <: Union{SecondOrderTensor, Vec, Number, MixedTensor}}
     v_dual = _load(v, Tag(f, V))

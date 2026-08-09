@@ -20,6 +20,8 @@ Instead, it is simpler to use `Tensors` own AD API to do the differentiation. Th
 
 The API for AD in `Tensors` is `gradient(f, A)` and `hessian(f, A)` where `f` is a function and `A` is a first or second order tensor. For `gradient` the function can return a scalar, vector (in case the input is a vector) or a second order tensor. For `hessian` the function should return a scalar.
 
+Note that a symmetric (`SymmetricTensor{2}` valued) output is only combined with the symmetric tensor type for the gradient when the input is symmetric as well; see the note in the [`gradient`](@ref) docstring below.
+
 When evaluating the function with dual numbers, the value (value and gradient in the case of hessian) is obtained automatically, along with the gradient. To obtain the lower order results `gradient` and `hessian` accepts a third arguement, a `Symbol`. Note that the symbol is only used to dispatch to the correct function, and thus it can be any symbol. In the examples the symbol `:all` is used to obtain all the lower order derivatives and values.
 
 ```@docs
