@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `gradient` now supports functions returning a `SymmetricTensor{2}` also when the
+  input is not symmetric. Since there is no tensor type with the corresponding
+  symmetry, the symmetry of the output is dropped, i.e. the gradient of a
+  `SymmetricTensor{2, dim}` valued function of a `Vec{dim}` is a `Tensor{3, dim}`
+  and of a `Tensor{2, dim}` is a `Tensor{4, dim}` ([#262], [#263]).
+
 ### Bugfixes
 - `isminorsymmetric` and `ismajorsymmetric` previously missed certain
   asymmetric components (e.g. a tensor with `A[1,2,1,2] != A[2,1,2,1]` was
@@ -77,3 +84,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#236]: https://github.com/Ferrite-FEM/Tensors.jl/issues/236
 [#238]: https://github.com/Ferrite-FEM/Tensors.jl/issues/238
 [#240]: https://github.com/Ferrite-FEM/Tensors.jl/issues/240
+[#262]: https://github.com/Ferrite-FEM/Tensors.jl/issues/262
+[#263]: https://github.com/Ferrite-FEM/Tensors.jl/issues/263
