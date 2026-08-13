@@ -34,7 +34,7 @@ By default, a tensor of `Float64`s is created, but by explicitly giving the `T` 
 
 ```jldoctest
 julia> zero(SymmetricTensor{4, 2, Float32})
-2×2×2×2 SymmetricTensor{4, 2, Float32, 9}:
+2×2×2×2 SymmetricTensor{4, 2, Float32}:
 [:, :, 1, 1] =
  0.0  0.0
  0.0  0.0
@@ -56,7 +56,7 @@ A Julia `Array` with zeroed tensors can be created with `zeros`, with the tensor
 
 ```jldoctest
 julia> zeros(Tensor{2,2}, 2, 3)
-2×3 Matrix{Tensor{2, 2, Float64, 4}}:
+2×3 Matrix{Tensor{2, 2, Float64}}:
  [0.0 0.0; 0.0 0.0]  [0.0 0.0; 0.0 0.0]  [0.0 0.0; 0.0 0.0]
  [0.0 0.0; 0.0 0.0]  [0.0 0.0; 0.0 0.0]  [0.0 0.0; 0.0 0.0]
 ```
@@ -67,7 +67,7 @@ A tensor filled with ones is created using the function `ones`, applied to the t
 
 ```jldoctest
 julia> ones(Tensor{2,2})
-2×2 Tensor{2, 2, Float64, 4}:
+2×2 Tensor{2, 2, Float64}:
  1.0  1.0
  1.0  1.0
 ```
@@ -81,7 +81,7 @@ By default, a tensor of `Float64`s is created, but by explicitly giving the `T` 
 
     ```jldoctest
     julia> [ones(Tensor{2,2}) for i in 1:2, j in 1:3]
-    2×3 Matrix{Tensor{2, 2, Float64, 4}}:
+    2×3 Matrix{Tensor{2, 2, Float64}}:
      [1.0 1.0; 1.0 1.0]  [1.0 1.0; 1.0 1.0]  [1.0 1.0; 1.0 1.0]
      [1.0 1.0; 1.0 1.0]  [1.0 1.0; 1.0 1.0]  [1.0 1.0; 1.0 1.0]
     ```
@@ -93,7 +93,7 @@ A tensor with random numbers is created using the function `rand`, applied to th
 
 ```jldoctest
 julia> rand(Tensor{2, 3})
-3×3 Tensor{2, 3, Float64, 9}:
+3×3 Tensor{2, 3, Float64}:
  0.325977  0.894245  0.953125
  0.549051  0.353112  0.795547
  0.218587  0.394255  0.49425
@@ -103,7 +103,7 @@ By specifying the type, `T`, a tensor of different type can be obtained:
 
 ```jldoctest
 julia> rand(SymmetricTensor{2,3,Float32})
-3×3 SymmetricTensor{2, 3, Float32, 6}:
+3×3 SymmetricTensor{2, 3, Float32}:
  0.325977  0.549051  0.218587
  0.549051  0.894245  0.353112
  0.218587  0.353112  0.394255
@@ -127,7 +127,7 @@ Identity tensors are created using the function `one`, applied to the type of te
 
 ```jldoctest
 julia> one(SymmetricTensor{2, 2})
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+2×2 SymmetricTensor{2, 2, Float64}:
  1.0  0.0
  0.0  1.0
 ```
@@ -136,7 +136,7 @@ A Julia `Array` with identity tensors can be created with `ones`, with the tenso
 
 ```jldoctest
 julia> ones(Tensor{2,2}, 2, 2)
-2×2 Matrix{Tensor{2, 2, Float64, 4}}:
+2×2 Matrix{Tensor{2, 2, Float64}}:
  [1.0 0.0; 0.0 1.0]  [1.0 0.0; 0.0 1.0]
  [1.0 0.0; 0.0 1.0]  [1.0 0.0; 0.0 1.0]
 ```
@@ -162,7 +162,7 @@ Below, a second order symmetric tensor in two dimensions is created from a tuple
 
 ```jldoctest
 julia> SymmetricTensor{2,2}((1.0,2.0,3.0))
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+2×2 SymmetricTensor{2, 2, Float64}:
  1.0  2.0
  2.0  3.0
 ```
@@ -173,7 +173,7 @@ A tensor can be created from a function `f(indices...) -> v` which maps a set of
 
 ```jldoctest
 julia> SymmetricTensor{2,2,Float64}((i,j) -> i + j)
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+2×2 SymmetricTensor{2, 2, Float64}:
  2.0  3.0
  3.0  4.0
 ```
@@ -186,12 +186,12 @@ A diagonal second order tensor can be created by either giving a number or a vec
 
 ```jldoctest
 julia> diagm(Tensor{2,2}, 2.0)
-2×2 Tensor{2, 2, Float64, 4}:
+2×2 Tensor{2, 2, Float64}:
  2.0  0.0
  0.0  2.0
 
 julia> diagm(SymmetricTensor{2,3}, [1.0, 2.0, 3.0])
-3×3 SymmetricTensor{2, 3, Float64, 6}:
+3×3 SymmetricTensor{2, 3, Float64}:
  1.0  0.0  0.0
  0.0  2.0  0.0
  0.0  0.0  3.0

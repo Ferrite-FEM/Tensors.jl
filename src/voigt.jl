@@ -72,21 +72,23 @@ end
 @inline tovoigt(::Type{Array}, A::SecondOrderTensor; kwargs...) = tovoigt(Vector, A; kwargs...)
 @inline tovoigt(::Type{Array}, A::FourthOrderTensor; kwargs...) = tovoigt(Matrix, A; kwargs...)
 
-@inline function tovoigt(::Type{<:Vector}, A::Tensor{2, dim, T, M}; order=nothing) where {dim, T, M}
-    @inbounds _tovoigt!(Vector{T}(undef, M), A, order)
+@inline function tovoigt(::Type{<:Vector}, A::Tensor{2, dim, T}; order=nothing) where {dim, T}
+    @inbounds _tovoigt!(Vector{T}(undef, dim*dim), A, order)
 end
-@inline function tovoigt(::Type{<:Matrix}, A::Tensor{4, dim, T, M}; order=nothing) where {dim, T, M}
-    @inbounds _tovoigt!(Matrix{T}(undef, Int(√M), Int(√M)), A, order)
+@inline function tovoigt(::Type{<:Matrix}, A::Tensor{4, dim, T}; order=nothing) where {dim, T}
+    @inbounds _tovoigt!(Matrix{T}(undef, dim*dim, dim*dim), A, order)
 end
 # the destination element type accounts for the scaling, so e.g. `tomandel`
 # of an integer tensor gives a float array instead of an InexactError
-@inline function tovoigt(::Type{<:Vector}, A::SymmetricTensor{2, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
+@inline function tovoigt(::Type{<:Vector}, A::SymmetricTensor{2, dim, T}; offdiagscale=one(T), order=nothing) where {dim, T}
     Tv = typeof(zero(T) * offdiagscale)
+    M = n_components(SymmetricTensor{2, dim})
     @inbounds _tovoigt!(Vector{Tv}(undef, M), A, order; offdiagscale=offdiagscale)
 end
-@inline function tovoigt(::Type{<:Matrix}, A::SymmetricTensor{4, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
+@inline function tovoigt(::Type{<:Matrix}, A::SymmetricTensor{4, dim, T}; offdiagscale=one(T), order=nothing) where {dim, T}
     Tv = typeof(zero(T) * offdiagscale)
-    @inbounds _tovoigt!(Matrix{Tv}(undef, Int(√M), Int(√M)), A, order; offdiagscale=offdiagscale)
+    N = n_components(SymmetricTensor{2, dim})
+    @inbounds _tovoigt!(Matrix{Tv}(undef, N, N), A, order; offdiagscale=offdiagscale)
 end
 
 """
@@ -110,7 +112,7 @@ See also [`tovoigt`](@ref) and [`fromvoigt`](@ref).
 
 ```jldoctest
 julia> T = rand(Tensor{2,2})
-2×2 Tensor{2, 2, Float64, 4}:
+2×2 Tensor{2, 2, Float64}:
  0.325977  0.218587
  0.549051  0.894245
 
@@ -236,7 +238,7 @@ See also [`tovoigt`](@ref).
 
 ```jldoctest
 julia> fromvoigt(Tensor{2,3}, 1.0:1.0:9.0)
-3×3 Tensor{2, 3, Float64, 9}:
+3×3 Tensor{2, 3, Float64}:
  1.0  6.0  5.0
  9.0  2.0  4.0
  8.0  7.0  3.0
@@ -332,13 +334,13 @@ end
 ########################
 @inline tovoigt(::Type{SArray}, A::SecondOrderTensor; kwargs...) = tovoigt(SVector, A; kwargs...)
 @inline tovoigt(::Type{SArray}, A::FourthOrderTensor; kwargs...) = tovoigt(SMatrix, A; kwargs...)
-@inline function tovoigt(::Type{<:SVector}, A::Tensor{2, dim, T, M}; order=nothing) where {dim, T, M}
+@inline function tovoigt(::Type{<:SVector}, A::Tensor{2, dim, T}; order=nothing) where {dim, T}
     @inbounds _to_static_voigt(A, order)
 end
-@inline function tovoigt(::Type{<:SMatrix}, A::Tensor{4, dim, T, M}; order=nothing) where {dim, T, M}
+@inline function tovoigt(::Type{<:SMatrix}, A::Tensor{4, dim, T}; order=nothing) where {dim, T}
     @inbounds _to_static_voigt(A, order)
 end
-@inline function tovoigt(::Type{<:SVector}, A::SymmetricTensor{2, dim, T, M}; offdiagscale=one(T), order=nothing) where {dim, T, M}
+@inline function tovoigt(::Type{<:SVector}, A::SymmetricTensor{2, dim, T}; offdiagscale=one(T), order=nothing) where {dim, T}
     @inbounds _to_static_voigt(A, order; offdiagscale=offdiagscale)
 end
 @inline function tovoigt(::Type{<:SMatrix}, A::SymmetricTensor{4, dim, T}; offdiagscale=one(T), order=nothing) where {dim, T}
@@ -356,23 +358,24 @@ Base.@propagate_inbounds function _to_static_voigt(A::TT, ::Nothing; offdiagscal
 end
 
 # custom voigt order
-@inline function _to_static_voigt(A::Tensor{2, dim, T, M}, order::AbstractVecOrMat) where {dim, T, M}
-    v = MVector{M, T}(undef)
+@inline function _to_static_voigt(A::Tensor{2, dim, T}, order::AbstractVecOrMat) where {dim, T}
+    v = MVector{dim*dim, T}(undef)
     @inbounds _tovoigt!(v, A, order)
     return SVector(v)
 end
-@inline function _to_static_voigt(A::Tensor{4, dim, T, M}, order::AbstractVecOrMat) where {dim, T, M}
-    m = MMatrix{Int(√M), Int(√M), T}(undef)
+@inline function _to_static_voigt(A::Tensor{4, dim, T}, order::AbstractVecOrMat) where {dim, T}
+    m = MMatrix{dim*dim, dim*dim, T}(undef)
     @inbounds _tovoigt!(m, A, order)
     return SMatrix(m)
 end
-@inline function _to_static_voigt(A::SymmetricTensor{2, dim, T, M}, order::AbstractVecOrMat; offdiagscale=one(T)) where {dim, T, M}
-    v = MVector{M, T}(undef)
+@inline function _to_static_voigt(A::SymmetricTensor{2, dim, T}, order::AbstractVecOrMat; offdiagscale=one(T)) where {dim, T}
+    v = MVector{n_components(SymmetricTensor{2, dim}), T}(undef)
     @inbounds _tovoigt!(v, A, order; offdiagscale=offdiagscale)
     return SVector(v)
 end
-@inline function _to_static_voigt(A::SymmetricTensor{4, dim, T, M}, order::AbstractVecOrMat; offdiagscale=one(T)) where {dim, T, M}
-    m = MMatrix{Int(√M), Int(√M), T}(undef)
+@inline function _to_static_voigt(A::SymmetricTensor{4, dim, T}, order::AbstractVecOrMat; offdiagscale=one(T)) where {dim, T}
+    N = n_components(SymmetricTensor{2, dim})
+    m = MMatrix{N, N, T}(undef)
     @inbounds _tovoigt!(m, A, order; offdiagscale=offdiagscale)
     return SMatrix(m)
 end

@@ -39,14 +39,13 @@ Symmetric tensor type supported for `order ∈ (2,4)` and `dim ∈ (1,2,3)`.
 # Examples
 ```jldoctest
 julia> SymmetricTensor{2,2,Float64}((1.0, 2.0, 3.0))
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+2×2 SymmetricTensor{2, 2, Float64}:
  1.0  2.0
  2.0  3.0
 ```
 """
-struct SymmetricTensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
-    data::NTuple{M, T}
-    SymmetricTensor{order, dim, T, M}(data::NTuple) where {order, dim, T, M} = new{order, dim, T, M}(data)
+struct SymmetricTensor{order, dim, T} <: AbstractTensor{order, dim, T}
+    data::NTuple{div(dim*(dim+1),2)^div(order,2), T}
 end
 
 """
@@ -63,9 +62,8 @@ julia> Tensor{1,3,Float64}((1.0, 2.0, 3.0))
  3.0
 ```
 """
-struct Tensor{order, dim, T, M} <: AbstractTensor{order, dim, T}
-    data::NTuple{M, T}
-    Tensor{order, dim, T, M}(data::NTuple) where {order, dim, T, M} = new{order, dim, T, M}(data)
+struct Tensor{order, dim, T} <: AbstractTensor{order, dim, T}
+    data::NTuple{dim^order, T}
 end
 
 """
@@ -98,7 +96,7 @@ julia> a = MixedTensor2{2, 3}((1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
  2.0  4.0  6.0
 
 julia> a ⋅ a'
-2×2 Tensor{2, 2, Float64, 4}:
+2×2 Tensor{2, 2, Float64}:
  35.0  44.0
  44.0  56.0
 ```
@@ -139,7 +137,7 @@ MixedTensor{order, dims}(data::Tuple{Vararg{Any, M}}) where {order, dims, M} = M
 ###############
 # Typealiases #
 ###############
-const Vec{dim, T, M} = Tensor{1, dim, T, dim}
+const Vec{dim, T} = Tensor{1, dim, T}
 
 const AllTensors{dim, T} = Union{SymmetricTensor{2, dim, T}, Tensor{2, dim, T},
                                  SymmetricTensor{4, dim, T}, Tensor{4, dim, T},
@@ -177,10 +175,8 @@ end
 @pure get_base(::Type{<:SymmetricTensor{order, dim}}) where {order, dim} = SymmetricTensor{order, dim}
 @pure get_base(::Type{<:MixedTensor{order, dims}})    where {order, dims} = MixedTensor{order, dims}
 
-@pure Base.eltype(::Type{Tensor{order, dim, T, M}})          where {order, dim, T, M} = T
 @pure Base.eltype(::Type{Tensor{order, dim, T}})             where {order, dim, T}    = T
 @pure Base.eltype(::Type{Tensor{order, dim}})                where {order, dim}       = Any
-@pure Base.eltype(::Type{SymmetricTensor{order, dim, T, M}}) where {order, dim, T, M} = T
 @pure Base.eltype(::Type{SymmetricTensor{order, dim, T}})    where {order, dim, T}    = T
 @pure Base.eltype(::Type{SymmetricTensor{order, dim}})       where {order, dim}       = Any
 
@@ -205,7 +201,7 @@ Base.size(::Type{<:MixedTensor3{d1, d2, d3}}) where {d1, d2, d3} = (d1, d2, d3)
 Base.size(::Type{<:MixedTensor4{d1, d2, d3, d4}}) where {d1, d2, d3, d4} = (d1, d2, d3, d4)
 
 # Also define length for the type itself
-Base.length(::Type{Tensor{order, dim, T, M}}) where {order, dim, T, M} = M
+Base.length(::Type{Tensor{order, dim, T}}) where {order, dim, T} = n_components(Tensor{order, dim})
 
 #########################
 # Internal constructors #
@@ -214,8 +210,7 @@ for (TensorType, orders) in ((SymmetricTensor, (2,4)), (Tensor, (2,3,4)))
     for order in orders, dim in (1, 2, 3)
         N = n_components(TensorType{order, dim})
         @eval begin
-            @inline $TensorType{$order, $dim}(t::NTuple{$N, T}) where {T} = $TensorType{$order, $dim, T, $N}(t)
-            @inline $TensorType{$order, $dim, T1}(t::NTuple{$N, T2}) where {T1, T2} = $TensorType{$order, $dim, T1, $N}(t)
+            @inline $TensorType{$order, $dim}(t::NTuple{$N, T}) where {T} = $TensorType{$order, $dim, T}(t)
         end
         if N > 1 # To avoid overwriting ::Tuple{Any}
             # Heterogeneous tuple
@@ -224,7 +219,7 @@ for (TensorType, orders) in ((SymmetricTensor, (2,4)), (Tensor, (2,3,4)))
     end
     if TensorType == Tensor
         for dim in (1, 2, 3)
-            @eval @inline Tensor{1, $dim}(t::NTuple{$dim, T}) where {T} = Tensor{1, $dim, T, $dim}(t)
+            @eval @inline Tensor{1, $dim}(t::NTuple{$dim, T}) where {T} = Tensor{1, $dim, T}(t)
             if dim > 1 # To avoid overwriting ::Tuple{Any}
                 # Heterogeneous tuple
                 @eval @inline Tensor{1, $dim}(t::Tuple{Vararg{Any,$dim}}) = Tensor{1, $dim}(promote(t...))
@@ -232,16 +227,15 @@ for (TensorType, orders) in ((SymmetricTensor, (2,4)), (Tensor, (2,3,4)))
         end
     end
 end
-# Special for Vec
-@inline Vec{dim}(data) where {dim} = Tensor{1, dim}(data)
+# Special for Vec (`Vec{dim}` is the same type as `Tensor{1, dim}`, so the
+# generic `Tensor` constructors cover `Vec{dim}(data)`)
 @inline Vec(data::NTuple{N}) where {N} = Vec{N}(data)
 @inline Vec(data::Vararg{T,N}) where {T, N} = Vec{N,T}(data)
 
-# General fallbacks
-@inline          Tensor{order, dim, T}(data::Union{AbstractArray, Tuple, Function}) where {order, dim, T} = convert(Tensor{order, dim, T}, Tensor{order, dim}(data))
-@inline SymmetricTensor{order, dim, T}(data::Union{AbstractArray, Tuple, Function}) where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, SymmetricTensor{order, dim}(data))
-@inline          Tensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = Tensor{order, dim, T}(data)
-@inline SymmetricTensor{order, dim, T, M}(data::Union{AbstractArray, Tuple, Function})  where {order, dim, T, M} = SymmetricTensor{order, dim, T}(data)
+# General fallbacks (Tuples of the right length hit the default constructor, which
+# converts to the computed NTuple field type)
+@inline          Tensor{order, dim, T}(data::Union{AbstractArray, Function}) where {order, dim, T} = convert(Tensor{order, dim, T}, Tensor{order, dim}(data))
+@inline SymmetricTensor{order, dim, T}(data::Union{AbstractArray, Function}) where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, SymmetricTensor{order, dim}(data))
 
 include("mixed_tensors.jl")
 include("indexing.jl")

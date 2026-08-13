@@ -5,24 +5,24 @@
 # Promotion between two tensors promote the eltype and promotes
 # symmetric tensors to tensors
 
-@inline function Base.promote_rule(::Type{SymmetricTensor{order, dim, A, M}},
-                                   ::Type{SymmetricTensor{order, dim, B, M}}) where {dim, A, B, order, M}
-    SymmetricTensor{order, dim, promote_type(A, B), M}
+@inline function Base.promote_rule(::Type{SymmetricTensor{order, dim, A}},
+                                   ::Type{SymmetricTensor{order, dim, B}}) where {dim, A, B, order}
+    SymmetricTensor{order, dim, promote_type(A, B)}
 end
 
-@inline function Base.promote_rule(::Type{Tensor{order, dim, A, M}},
-                                   ::Type{Tensor{order, dim, B, M}}) where {dim, A, B, order, M}
-    Tensor{order, dim, promote_type(A, B), M}
+@inline function Base.promote_rule(::Type{Tensor{order, dim, A}},
+                                   ::Type{Tensor{order, dim, B}}) where {dim, A, B, order}
+    Tensor{order, dim, promote_type(A, B)}
 end
 
-@inline function Base.promote_rule(::Type{SymmetricTensor{order, dim, A, M1}},
-                                   ::Type{Tensor{order, dim, B, M2}}) where {dim, A, B, order, M1, M2}
-    Tensor{order, dim, promote_type(A, B), M2}
+@inline function Base.promote_rule(::Type{SymmetricTensor{order, dim, A}},
+                                   ::Type{Tensor{order, dim, B}}) where {dim, A, B, order}
+    Tensor{order, dim, promote_type(A, B)}
 end
 
-@inline function Base.promote_rule(::Type{Tensor{order, dim, A, M1}},
-                                   ::Type{SymmetricTensor{order, dim, B, M2}}) where {dim, A, B, order, M1, M2}
-    Tensor{order, dim, promote_type(A, B), M1}
+@inline function Base.promote_rule(::Type{Tensor{order, dim, A}},
+                                   ::Type{SymmetricTensor{order, dim, B}}) where {dim, A, B, order}
+    Tensor{order, dim, promote_type(A, B)}
 end
 
 # inlined promote (promote in Base is not inlined)
@@ -54,9 +54,7 @@ end
 
 # Identity conversions
 @inline Base.convert(::Type{Tensor{order, dim, T}}, t::Tensor{order, dim, T}) where {order, dim, T} = t
-@inline Base.convert(::Type{Tensor{order, dim, T, M}}, t::Tensor{order, dim, T, M}) where {order, dim, T, M} = t
 @inline Base.convert(::Type{SymmetricTensor{order, dim, T}}, t::SymmetricTensor{order, dim, T}) where {order, dim, T} = t
-@inline Base.convert(::Type{SymmetricTensor{order, dim, T, M}}, t::SymmetricTensor{order, dim, T, M}) where {order, dim, T, M} = t
 
 # Change element type
 @inline function Base.convert(::Type{Tensor{order, dim, T1}}, t::Tensor{order, dim, T2}) where {order, dim, T1, T2}
@@ -66,12 +64,6 @@ end
 @inline function Base.convert(::Type{SymmetricTensor{order, dim, T1}}, t::SymmetricTensor{order, dim, T2}) where {order, dim, T1, T2}
     apply_all(SymmetricTensor{order, dim}, @inline function(i) @inbounds T1(t.data[i]); end)
 end
-
-# Peel off the M but define these so that convert(typeof(...), ...) works
-@inline Base.convert(::Type{Tensor{order, dim, T1, M}}, t::Tensor{order, dim})                   where {order, dim, T1, M} = convert(Tensor{order, dim, T1}, t)
-@inline Base.convert(::Type{SymmetricTensor{order, dim, T1, M}}, t::SymmetricTensor{order, dim}) where {order, dim, T1, M} = convert(SymmetricTensor{order, dim, T1}, t)
-@inline Base.convert(::Type{Tensor{order, dim, T1, M}}, t::SymmetricTensor{order, dim})          where {order, dim, T1, M} = convert(Tensor{order, dim, T1}, t)
-@inline Base.convert(::Type{SymmetricTensor{order, dim, T1, M}}, t::Tensor{order, dim})          where {order, dim, T1, M} = convert(SymmetricTensor{order, dim, T1}, t)
 
 @inline Base.convert(::Type{Tensor{order, dim}}, t::SymmetricTensor{order, dim, T}) where {order, dim, T} = convert(Tensor{order, dim, T}, t)
 @inline Base.convert(::Type{SymmetricTensor{order, dim}}, t::Tensor{order, dim, T}) where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, t)

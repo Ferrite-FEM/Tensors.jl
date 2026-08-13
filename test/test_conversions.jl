@@ -230,8 +230,8 @@ T = Float32
 WIDE_T = widen(T)
 for dim in (1,2,3), order in (1,2,4)
 
-    tens = Tensor{order, dim, T, dim^order}
-    tens_wide = Tensor{order, dim, WIDE_T, dim^order}
+    tens = Tensor{order, dim, T}
+    tens_wide = Tensor{order, dim, WIDE_T}
 
     @test promote_type(tens, tens) == tens
     @test promote_type(tens_wide, tens) == tens_wide
@@ -248,9 +248,8 @@ for dim in (1,2,3), order in (1,2,4)
     @test isa((@inferred convert(tens_wide, At)), tens_wide)
 
     if order != 1
-        M = Tensors.n_components(SymmetricTensor{order, dim})
-        sym = SymmetricTensor{order, dim, T, M}
-        sym_wide = SymmetricTensor{order, dim, WIDE_T, M}
+        sym = SymmetricTensor{order, dim, T}
+        sym_wide = SymmetricTensor{order, dim, WIDE_T}
 
         @test promote_type(sym, sym) == sym
         @test promote_type(sym_wide, sym) == sym_wide
@@ -360,6 +359,6 @@ end end
     @test_throws ArgumentError adjoint(x)
 
     # Non-implemented single contractions
-    t10 = Tensor{10, 1, Float64, 10}(tuple((1.0 for _ in 1:10)...));
+    t10 = Tensor{10, 1, Float64}((1.0,));
     @test_throws ArgumentError (t10 ⋅ t10)
 end # of testset

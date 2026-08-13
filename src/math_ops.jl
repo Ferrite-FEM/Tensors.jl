@@ -9,7 +9,7 @@ Computes the norm of a tensor.
 # Examples
 ```jldoctest
 julia> A = rand(Tensor{2,3})
-3×3 Tensor{2, 3, Float64, 9}:
+3×3 Tensor{2, 3, Float64}:
  0.325977  0.894245  0.953125
  0.549051  0.353112  0.795547
  0.218587  0.394255  0.49425
@@ -61,7 +61,7 @@ Computes the determinant of a second order tensor.
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
-3×3 SymmetricTensor{2, 3, Float64, 6}:
+3×3 SymmetricTensor{2, 3, Float64}:
  0.325977  0.549051  0.218587
  0.549051  0.894245  0.353112
  0.218587  0.353112  0.394255
@@ -86,13 +86,13 @@ Computes the inverse of a second order tensor.
 # Examples
 ```jldoctest
 julia> A = rand(Tensor{2,3})
-3×3 Tensor{2, 3, Float64, 9}:
+3×3 Tensor{2, 3, Float64}:
  0.325977  0.894245  0.953125
  0.549051  0.353112  0.795547
  0.218587  0.394255  0.49425
 
 julia> inv(A)
-3×3 Tensor{2, 3, Float64, 9}:
+3×3 Tensor{2, 3, Float64}:
  -587.685  -279.668   1583.46
  -411.743  -199.494   1115.12
   588.35    282.819  -1587.79
@@ -191,12 +191,12 @@ second order tensor `S`, such that `√S ⋅ √S == S`.
 # Examples
 ```jldoctest
 julia> S = rand(SymmetricTensor{2,2}); S = tdot(S)
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+2×2 SymmetricTensor{2, 2, Float64}:
  0.407718  0.298993
  0.298993  0.349237
 
 julia> sqrt(S)
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+2×2 SymmetricTensor{2, 2, Float64}:
  0.578172  0.270989
  0.270989  0.525169
 
@@ -232,7 +232,7 @@ Computes the trace of a second order tensor.
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
-3×3 SymmetricTensor{2, 3, Float64, 6}:
+3×3 SymmetricTensor{2, 3, Float64}:
  0.325977  0.549051  0.218587
  0.549051  0.894245  0.353112
  0.218587  0.353112  0.394255
@@ -259,13 +259,13 @@ based on the additive decomposition.
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricTensor{2,3})
-3×3 SymmetricTensor{2, 3, Float64, 6}:
+3×3 SymmetricTensor{2, 3, Float64}:
  0.325977  0.549051  0.218587
  0.549051  0.894245  0.353112
  0.218587  0.353112  0.394255
 
 julia> vol(A)
-3×3 SymmetricTensor{2, 3, Float64, 6}:
+3×3 SymmetricTensor{2, 3, Float64}:
  0.538159  0.0       0.0
  0.0       0.538159  0.0
  0.0       0.0       0.538159
@@ -286,7 +286,7 @@ Computes the deviatoric part of a second order tensor.
 julia> A = rand(Tensor{2, 3});
 
 julia> dev(A)
-3×3 Tensor{2, 3, Float64, 9}:
+3×3 Tensor{2, 3, Float64}:
  -0.065136   0.894245   0.953125
   0.549051  -0.0380011  0.795547
   0.218587   0.394255   0.103137

@@ -24,11 +24,11 @@ const SVec{N, T} = SIMD.Vec{N, T}
 
 const SIMDTypes = Union{Float16, Float32, Float64}
 
-const AllSIMDTensors{T <: SIMDTypes} = Union{Tensor{1, 1, T, 1}, Tensor{1, 2, T, 2}, Tensor{1, 3, T, 3},
-                                             Tensor{2, 1, T, 1}, Tensor{2, 2, T, 4}, Tensor{2, 3, T, 9},
-                                             Tensor{4, 1, T, 1}, Tensor{4, 2, T, 16}, #=Tensor{4, 3, T, 81},=#
-                                             SymmetricTensor{2, 1, T, 1}, SymmetricTensor{2, 2, T, 3}, SymmetricTensor{2, 3, T, 6},
-                                             SymmetricTensor{4, 1, T, 1}, SymmetricTensor{4, 2, T, 9}, SymmetricTensor{4, 3, T, 36}}
+const AllSIMDTensors{T <: SIMDTypes} = Union{Tensor{1, 1, T}, Tensor{1, 2, T}, Tensor{1, 3, T},
+                                             Tensor{2, 1, T}, Tensor{2, 2, T}, Tensor{2, 3, T},
+                                             Tensor{4, 1, T}, Tensor{4, 2, T}, #=Tensor{4, 3, T},=#
+                                             SymmetricTensor{2, 1, T}, SymmetricTensor{2, 2, T}, SymmetricTensor{2, 3, T},
+                                             SymmetricTensor{4, 1, T}, SymmetricTensor{4, 2, T}, SymmetricTensor{4, 3, T}}
 
 # factors for the symmetric tensors, return a quote
 function symmetric_factors(order, dim, T)

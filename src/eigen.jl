@@ -17,14 +17,14 @@ Compute the eigenvectors of a symmetric tensor.
 """
 @inline LinearAlgebra.eigvecs(S::SymmetricTensor) = eigvecs(eigen(S))
 
-struct Eigen{T, S, dim, M}
+struct Eigen{T, S, dim}
     values::Vec{dim, T}
-    vectors::Tensor{2, dim, S, M}
+    vectors::Tensor{2, dim, S}
 end
 
-struct FourthOrderEigen{dim,T,S,M}
+struct FourthOrderEigen{dim,T,S}
     values::Vector{T}
-    vectors::Vector{SymmetricTensor{2,dim,S,M}}
+    vectors::Vector{SymmetricTensor{2,dim,S}}
 end
 
 # destructure via iteration
@@ -54,7 +54,7 @@ julia> E.values
   0.8239521616782797
 
 julia> E.vectors
-2×2 Tensor{2, 2, Float64, 4}:
+2×2 Tensor{2, 2, Float64}:
  -0.671814  0.74072
   0.74072   0.671814
 ```

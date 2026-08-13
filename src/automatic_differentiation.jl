@@ -276,15 +276,17 @@ function _insert_full_gradient(f::Vec{dim}, dfdx::Tensor{2,dim}, ::Tg) where{dim
     return y
 end
 
-function _insert_full_gradient(f::Tensor{2,dim,<:Any,N}, dfdx::Tensor{4,dim}, ::Tg) where{dim, N, Tg}
+function _insert_full_gradient(f::Tensor{2,dim}, dfdx::Tensor{4,dim}, ::Tg) where{dim, Tg}
     fdata = get_data(f)
     diffdata = get_data(dfdx)
+    N = length(fdata)
     @inbounds y = Tensor{2,dim}(ntuple(i->Dual{Tg}(fdata[i], ntuple(j->diffdata[i+N*(j-1)],N)), N))
     return y
 end
-function _insert_full_gradient(f::SymmetricTensor{2,dim,<:Any,N}, dfdx::SymmetricTensor{4,dim}, ::Tg) where{dim, N, Tg}
+function _insert_full_gradient(f::SymmetricTensor{2,dim}, dfdx::SymmetricTensor{4,dim}, ::Tg) where{dim, Tg}
     fdata = get_data(f)
     diffdata = get_data(dfdx)
+    N = length(fdata)
     @inbounds y = SymmetricTensor{2,dim}(ntuple(i->Dual{Tg}(fdata[i], ntuple(j->diffdata[i+N*(j-1)],N)), N))
     return y
 end
@@ -364,7 +366,7 @@ is given, the value of the function is also returned as a second output argument
 julia> A = rand(SymmetricTensor{2, 2});
 
 julia> ∇f = gradient(norm, A)
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+2×2 SymmetricTensor{2, 2, Float64}:
  0.374672  0.63107
  0.63107   0.25124
 
@@ -396,7 +398,7 @@ also returned as a second and third output argument.
 julia> A = rand(SymmetricTensor{2, 2});
 
 julia> ∇∇f = hessian(norm, A)
-2×2×2×2 SymmetricTensor{4, 2, Float64, 9}:
+2×2×2×2 SymmetricTensor{4, 2, Float64}:
 [:, :, 1, 1] =
   0.988034  -0.271765
  -0.271765  -0.108194

@@ -37,7 +37,7 @@ Since `Tensor`s are immutable there is no `setindex!` function defined on them. 
 
 ```jldoctest
 julia> Tensor{2, 2}((i,j) -> i == 1 && j == 2 ? 1.0 : 0.0)
-2×2 Tensor{2, 2, Float64, 4}:
+2×2 Tensor{2, 2, Float64}:
  0.0  1.0
  0.0  0.0
 ```
@@ -46,12 +46,12 @@ For symmetric tensors, note that you should only set the lower triangular part o
 
 ```jldoctest
 julia> SymmetricTensor{2, 2}((i,j) -> i == 1 && j == 2 ? 1.0 : 0.0)
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+2×2 SymmetricTensor{2, 2, Float64}:
  0.0  0.0
  0.0  0.0
 
 julia> SymmetricTensor{2, 2}((i,j) -> i == 2 && j == 1 ? 1.0 : 0.0)
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+2×2 SymmetricTensor{2, 2, Float64}:
  0.0  1.0
  1.0  0.0
 ```

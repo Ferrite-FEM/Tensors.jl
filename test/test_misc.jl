@@ -7,7 +7,6 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,3,4)
             N = Tensors.n_components(TensorType{order, dim})
             t = (@inferred (op)(TensorType{order, dim}))::TensorType{order, dim, Float64}
             t = (@inferred (op)(TensorType{order, dim, T}))::TensorType{order, dim, T}
-            t = (@inferred (op)(TensorType{order, dim, T, N}))::TensorType{order, dim, T}
             t = (@inferred (op)(t))::TensorType{order, dim, T}
 
             op == zero && @test zero(TensorType{order, dim, T}) == zeros(T, size(t))
@@ -22,8 +21,8 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,3,4)
     # Special Vec constructor
     if order == 1
         t = ntuple(i -> T(i), dim)
-        @test (@inferred Vec(t))::Tensor{1,dim,T,dim} == Vec{dim}(t)
-        @test (@inferred Vec(t...))::Tensor{1,dim,T,dim} == Vec{dim}(t)
+        @test (@inferred Vec(t))::Tensor{1,dim,T} == Vec{dim}(t)
+        @test (@inferred Vec(t...))::Tensor{1,dim,T} == Vec{dim}(t)
     end
     for TensorType in (Tensor, SymmetricTensor), (func, el) in ((zeros, zero), (ones, one))
         TensorType == SymmetricTensor && isodd(order) && continue
@@ -31,10 +30,10 @@ for T in (Float32, Float64, F64), dim in (1,2,3), order in (1,2,3,4)
         N = Tensors.n_components(TensorType{order, dim})
         tens_arr1 = func(TensorType{order, dim}, 1)
         tens_arr2 = func(TensorType{order, dim, T}, 2, 2)
-        tens_arr3 = func(TensorType{order, dim, T, N}, 3, 3, 3)
+        tens_arr3 = func(TensorType{order, dim, T}, 3, 3, 3)
         @test tens_arr1[1] == tens_arr2[1, 1] == tens_arr3[1, 1, 1] == el(TensorType{order, dim, T})
-        @test eltype(tens_arr1) == TensorType{order, dim, Float64, N}
-        @test eltype(tens_arr2) == eltype(tens_arr3) == TensorType{order, dim, T, N}
+        @test eltype(tens_arr1) == TensorType{order, dim, Float64}
+        @test eltype(tens_arr2) == eltype(tens_arr3) == TensorType{order, dim, T}
     end
 end
 for dim in (1, 2, 3)
@@ -82,10 +81,6 @@ for T in (Float32, Float64), dim in (1,2,3)
     # one
     @test one(Tensor{2, dim, T}) == diagm(Tensor{2, dim}, one(T)) == Matrix(I, dim, dim)
     @test one(SymmetricTensor{2, dim, T}) == diagm(SymmetricTensor{2, dim}, one(T)) == Matrix(I, dim, dim)
-
-    M = 1 # dummy
-    @test one(Tensor{2, dim, T, M}) == one(Tensor{2, dim, T})
-    @test one(SymmetricTensor{2, dim, T, M}) == one(SymmetricTensor{2, dim, T})
 
     _I =  (@inferred one(Tensor{2, dim, T}))::Tensor{2, dim, T}
     II = (@inferred one(Tensor{4, dim, T}))::Tensor{4, dim, T}

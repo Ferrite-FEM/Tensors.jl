@@ -63,7 +63,6 @@ end
 for TensorType in (SymmetricTensor, Tensor)
     @eval begin
         @inline Base.one(::Type{$(TensorType){order, dim}}) where {order, dim} = one($TensorType{order, dim, Float64})
-        @inline Base.one(::Type{$(TensorType){order, dim, T, M}}) where {order, dim, T, M} = one($TensorType{order, dim, T})
         @inline Base.one(::$TensorType{order, dim, T}) where {order, dim, T} = one($TensorType{order, dim, T})
 
         @generated function Base.one(S::Type{$(TensorType){order, dim, T}}) where {order, dim, T}
@@ -93,8 +92,10 @@ for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))
 for TensorType in (SymmetricTensor, Tensor, MixedTensor)
     @eval begin
         @inline Base.$op(::Type{$TensorType{order, dim}}) where {order, dim} = $op($TensorType{order, dim, Float64})
-        @inline Base.$op(::Type{$TensorType{order, dim, T, N}}) where {order, dim, T, N} = $op($TensorType{order, dim, T})
         @inline Base.$op(::Type{$TensorType{order, dim, T}}) where {order, dim, T} = fill($el, $TensorType{order, dim})
+    end
+    if TensorType === MixedTensor
+        @eval @inline Base.$op(::Type{MixedTensor{order, dims, T, N}}) where {order, dims, T, N} = $op(MixedTensor{order, dims, T})
     end
 end
 @eval @inline Base.$op(S::Type{Vec{dim}}) where {dim} = $op(Vec{dim, Float64})

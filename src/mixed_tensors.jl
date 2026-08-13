@@ -13,7 +13,7 @@ function regular_if_possible(::Type{TT}) where {order, dims, T, TT <: MixedTenso
     return isregular(TT) ? Tensor{order, size(TT)[1], T} : TT
 end
 function regular_if_possible(::Type{TT}) where {order, dims, T, M, TT <: MixedTensor{order, dims, T, M}}
-    return isregular(TT) ? Tensor{order, size(TT)[1], T, M} : TT
+    return isregular(TT) ? Tensor{order, size(TT)[1], T} : TT
 end
 function regular_if_possible(t::TT) where {order, dims, TT <: MixedTensor{order, dims}}
     return isregular(TT) ? Tensor{order, size(TT)[1]}(get_data(t)) : t

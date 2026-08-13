@@ -64,12 +64,12 @@ f(\mathbf{A}) = \det \mathbf{A} \quad \Rightarrow \quad \partial f / \partial \m
 julia> A = rand(SymmetricTensor{2,2});
 
 julia> gradient(det, A)
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+2×2 SymmetricTensor{2, 2, Float64}:
   0.218587  -0.549051
  -0.549051   0.325977
 
 julia> inv(A)' * det(A)
-2×2 SymmetricTensor{2, 2, Float64, 3}:
+2×2 SymmetricTensor{2, 2, Float64}:
   0.218587  -0.549051
  -0.549051   0.325977
 ```
