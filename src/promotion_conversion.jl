@@ -73,6 +73,12 @@ end
 @inline Base.convert(::Type{Tensor{order, dim, T1, M}}, t::SymmetricTensor{order, dim})          where {order, dim, T1, M} = convert(Tensor{order, dim, T1}, t)
 @inline Base.convert(::Type{SymmetricTensor{order, dim, T1, M}}, t::Tensor{order, dim})          where {order, dim, T1, M} = convert(SymmetricTensor{order, dim, T1}, t)
 
+# MixedTensor
+@inline Base.convert(::Type{MixedTensor{order, dims, T}}, t::MixedTensor{order, dims, T}) where {order, dims, T} = t
+@inline Base.convert(::Type{MixedTensor{order, dims, T, M}}, t::MixedTensor{order, dims, T, M}) where {order, dims, T, M} = t
+@inline Base.convert(::Type{MixedTensor{order, dims, T1}}, t::MixedTensor{order, dims}) where {order, dims, T1} = MixedTensor{order, dims, T1}(t.data)
+@inline Base.convert(::Type{MixedTensor{order, dims, T1, M}}, t::MixedTensor{order, dims}) where {order, dims, T1, M} = convert(MixedTensor{order, dims, T1}, t)
+
 @inline Base.convert(::Type{Tensor{order, dim}}, t::SymmetricTensor{order, dim, T}) where {order, dim, T} = convert(Tensor{order, dim, T}, t)
 @inline Base.convert(::Type{SymmetricTensor{order, dim}}, t::Tensor{order, dim, T}) where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, t)
 @inline Base.convert(::Type{Tensor}, t::SymmetricTensor{order, dim, T})             where {order, dim, T} = convert(Tensor{order, dim, T}, t)

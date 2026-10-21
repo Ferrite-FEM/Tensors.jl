@@ -26,6 +26,22 @@
             @test (@inferred Tensors.makemixed(tt))::TR === tr
         end
     end
+    @testset "convert" begin
+        for TM in (MixedTensor2{3, 2}, MixedTensor3{2, 3, 3}, MixedTensor4{1, 3, 2, 2})
+            t = TM((i...) -> Float64(sum(i)))
+            @test (@inferred convert(TM{Float64}, t)) === t
+            @test (@inferred convert(typeof(t), t)) === t
+            for T in (Float32, Int)
+                tT = TM((i...) -> T(sum(i)))
+                @test (@inferred convert(TM{T}, t)) === tT
+                @test (@inferred convert(typeof(tT), t)) === tT
+            end
+            # Storing in an array with a different eltype
+            v = [rand(TM{Float32})]
+            v[1] = t
+            @test v[1] === TM((i...) -> Float32(sum(i)))
+        end
+    end
     @testset "construction" begin
         @testset "from tuples" begin
             data = ntuple(_ -> rand(), 6)
