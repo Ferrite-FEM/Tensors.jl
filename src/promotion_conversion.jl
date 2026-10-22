@@ -58,46 +58,28 @@ end
 @inline Base.convert(::Type{SymmetricTensor{order, dim, T}}, t::SymmetricTensor{order, dim, T}) where {order, dim, T} = t
 @inline Base.convert(::Type{SymmetricTensor{order, dim, T, M}}, t::SymmetricTensor{order, dim, T, M}) where {order, dim, T, M} = t
 
-# Change element type
-@inline function Base.convert(::Type{Tensor{order, dim, T1}}, t::Tensor{order, dim, T2}) where {order, dim, T1, T2}
-    apply_all(Tensor{order, dim}, @inline function(i) @inbounds T1(t.data[i]); end)
-end
-
-@inline function Base.convert(::Type{SymmetricTensor{order, dim, T1}}, t::SymmetricTensor{order, dim, T2}) where {order, dim, T1, T2}
-    apply_all(SymmetricTensor{order, dim}, @inline function(i) @inbounds T1(t.data[i]); end)
-end
-
-# Peel off the M but define these so that convert(typeof(...), ...) works
-@inline Base.convert(::Type{Tensor{order, dim, T1, M}}, t::Tensor{order, dim})                   where {order, dim, T1, M} = convert(Tensor{order, dim, T1}, t)
-@inline Base.convert(::Type{SymmetricTensor{order, dim, T1, M}}, t::SymmetricTensor{order, dim}) where {order, dim, T1, M} = convert(SymmetricTensor{order, dim, T1}, t)
-@inline Base.convert(::Type{Tensor{order, dim, T1, M}}, t::SymmetricTensor{order, dim})          where {order, dim, T1, M} = convert(Tensor{order, dim, T1}, t)
-@inline Base.convert(::Type{SymmetricTensor{order, dim, T1, M}}, t::Tensor{order, dim})          where {order, dim, T1, M} = convert(SymmetricTensor{order, dim, T1}, t)
-
-# MixedTensor
-@inline Base.convert(::Type{MixedTensor{order, dims, T}}, t::MixedTensor{order, dims, T}) where {order, dims, T} = t
-@inline Base.convert(::Type{MixedTensor{order, dims, T, M}}, t::MixedTensor{order, dims, T, M}) where {order, dims, T, M} = t
-@inline Base.convert(::Type{MixedTensor{order, dims, T1}}, t::MixedTensor{order, dims}) where {order, dims, T1} = MixedTensor{order, dims, T1}(t.data)
-@inline Base.convert(::Type{MixedTensor{order, dims, T1, M}}, t::MixedTensor{order, dims}) where {order, dims, T1, M} = convert(MixedTensor{order, dims, T1}, t)
-
-@inline Base.convert(::Type{Tensor{order, dim}}, t::SymmetricTensor{order, dim, T}) where {order, dim, T} = convert(Tensor{order, dim, T}, t)
-@inline Base.convert(::Type{SymmetricTensor{order, dim}}, t::Tensor{order, dim, T}) where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, t)
-@inline Base.convert(::Type{Tensor}, t::SymmetricTensor{order, dim, T})             where {order, dim, T} = convert(Tensor{order, dim, T}, t)
-@inline Base.convert(::Type{SymmetricTensor}, t::Tensor{order, dim, T})             where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, t)
-
-# SymmetricTensor -> Tensor
-@inline function Base.convert(::Type{Tensor{2, dim, T1}}, t::SymmetricTensor{2, dim, T2}) where {dim, T1, T2}
-    Tensor{2, dim}(@inline function(i,j) @inbounds T1(t[i,j]); end)
-end
-
-@inline function Base.convert(::Type{Tensor{4, dim, T1}}, t::SymmetricTensor{4, dim, T2}) where {dim, T1, T2}
-    Tensor{4, dim}(@inline function(i,j,k,l) @inbounds T1(t[i,j,k,l]); end)
+# Same tensor type, change element type (also Tensor -> Tensor, SymmetricTensor -> SymmetricTensor, MixedTensor -> MixedTensor)
+@inline function Base.convert(::Type{TT}, x::AbstractTensor{order, dim}) where {order, dim, T, TT <: AbstractTensor{order, dim, T}}
+    apply_all(get_base(TT), @inline function(i) @inbounds T(x.data[i]); end)
 end
 
 # Tensor -> SymmetricTensor
-@inline function Base.convert(::Type{SymmetricTensor{order, dim, T1}}, t::Tensor{order, dim}) where {dim, order, T1}
-    if issymmetric(t)
-        return convert(SymmetricTensor{order, dim, T1}, symmetric(t))
+@inline function Base.convert(::Type{TT}, x::Tensor{order, dim}) where {order, dim, T, TT <: SymmetricTensor{order, dim, T}}
+    if issymmetric(x)
+        return convert(TT, symmetric(x))
     else
-        throw(InexactError(:convert, SymmetricTensor{order, dim, T1}, t))
+        throw(InexactError(:convert, TT, x))
     end
 end
+
+# SymmetricTensor -> Tensor
+@inline function Base.convert(::Type{TT}, x::SymmetricTensor{order, dim}) where {order, dim, T, TT <: Tensor{order, dim, T}}
+    Tensor{order, dim}(@inline function(args::Vararg{Int}) @inbounds T(x[args...]); end)
+end
+
+# Not passing eltype to conversion
+@inline Base.convert(::Type{Tensor{order, dim}}, x::AbstractTensor{order, dim, T}) where {order, dim, T} = convert(Tensor{order, dim, T}, x)
+@inline Base.convert(::Type{SymmetricTensor{order, dim}}, x::AbstractTensor{order, dim, T}) where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, x)
+@inline Base.convert(::Type{MixedTensor{order, dims}}, x::MixedTensor{order, dims, T}) where {order, dims, T} = convert(MixedTensor{order, dims, T}, x)
+@inline Base.convert(::Type{Tensor}, x::SymmetricTensor{order, dim, T}) where {order, dim, T} = convert(Tensor{order, dim, T}, x)
+@inline Base.convert(::Type{SymmetricTensor}, x::Tensor{order, dim, T}) where {order, dim, T} = convert(SymmetricTensor{order, dim, T}, x)
