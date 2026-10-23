@@ -7,27 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.17.2]
+
 ### Bugfixes
 - `isminorsymmetric` and `ismajorsymmetric` previously missed certain
   asymmetric components (e.g. a tensor with `A[1,2,1,2] != A[2,1,2,1]` was
   reported minor symmetric), which could silently corrupt data through
   `convert(SymmetricTensor{4,dim}, A)`. Both predicates now check every
-  component.
+  component. [#255]
 - `MixedTensor{order, dims}` constructors validate that the number of
   dimensions matches the order and that the data has the right number of
   components (previously a too-short tuple was accepted and later read out
-  of bounds).
+  of bounds). [#255]
 - `tomandel`/`tovoigt` with `offdiagscale` promote the element type of the
-  returned array, so integer tensors no longer throw `InexactError`.
+  returned array, so integer tensors no longer throw `InexactError`. [#255]
 - The cross product of two `Vec{1}` returns the element type of the product
-  (relevant for `Unitful`-style quantities).
+  (relevant for `Unitful`-style quantities). [#255]
 - The one-argument `Base.promote(::AbstractTensor)` method is removed: it
   returned a bare (densified) tensor, violating `promote`'s contract of
-  returning a tuple. Use `Tensors.densify` for the old behavior.
+  returning a tuple. Use `Tensors.densify` for the old behavior. [#255]
 - `MixedTensor`s can be converted to a different element type, e.g.
   `convert(MixedTensor2{3, 2, Float32}, t)`. Previously this threw a
   `MethodError`, also when storing a `MixedTensor` in an array of a different
-  element type.
+  element type. [#264]
 
 ## [v1.17.0]
 
