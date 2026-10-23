@@ -26,6 +26,25 @@
             @test (@inferred Tensors.makemixed(tt))::TR === tr
         end
     end
+    @testset "convert" begin
+        for TM in (MixedTensor2{3, 2}, MixedTensor3{2, 3, 3}, MixedTensor4{1, 3, 2, 2})
+            for Tbase in (Int, Float32, Float64)
+                for Tconv in (Int, Float32, Float64)
+                    t_base = TM((i...) -> Tbase(sum(i)))::TM{Tbase}
+                    t_conv = TM((i...) -> Tconv(sum(i)))::TM{Tconv}
+
+                    @test (@inferred convert(TM, t_base)) === t_base # Shape only (keep eltype)
+                    @test (@inferred convert(TM{Tconv}, t_base)) === t_conv # Shape + eltype (change eltype)
+                    @test (@inferred convert(typeof(t_conv), t_base)) === t_conv # Full type (change eltype)
+                end
+            end
+            # Implicit conversion in setindex! goes through Base.convert.
+            t = TM((i...) -> Float64(sum(i)))
+            v = [rand(TM{Float32})]
+            v[1] = t
+            @test v[1] === TM((i...) -> Float32(sum(i)))
+        end
+    end
     @testset "construction" begin
         @testset "from tuples" begin
             data = ntuple(_ -> rand(), 6)

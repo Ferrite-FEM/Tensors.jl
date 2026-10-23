@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The one-argument `Base.promote(::AbstractTensor)` method is removed: it
   returned a bare (densified) tensor, violating `promote`'s contract of
   returning a tuple. Use `Tensors.densify` for the old behavior.
+- `MixedTensor`s can be converted to a different element type, e.g.
+  `convert(MixedTensor2{3, 2, Float32}, t)`. Previously this threw a
+  `MethodError`, also when storing a `MixedTensor` in an array of a different
+  element type.
 
 ## [v1.17.0]
 
