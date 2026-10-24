@@ -83,6 +83,24 @@ where ``\mathbf{I}`` is the second order identity tensor.
 Tensors.inv
 ```
 
+## Powers
+
+Integer powers of a second order tensor are defined as repeated single
+contractions, `A^2 == A ⋅ A`, with `A^0 == one(A)` and negative powers acting
+on the inverse, `A^-2 == inv(A) ⋅ inv(A)`. Both literal exponents (`A^3`) and
+runtime integers (`A^n`) are supported, and powers of a `SymmetricTensor`
+remain symmetric:
+
+```jldoctest
+julia> A = rand(SymmetricTensor{2,2});
+
+julia> A^3 ≈ A ⋅ A ⋅ A
+true
+
+julia> A^3 ≈ A^Int(3)
+true
+```
+
 ## Transpose
 
 Transpose of tensors is defined by changing the order of the tensor's "legs". The transpose of a vector/symmetric tensor is the vector/tensor itself. The transpose of a second order tensor can be written as:
